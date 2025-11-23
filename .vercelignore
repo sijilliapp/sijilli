@@ -1,0 +1,36 @@
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub/
+build/
+!build/web/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Android/iOS
+android/
+ios/
+
+# Tests
+test/
+coverage/
+
+# Documentation
+*.md
+!README.md
+
+# Other
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+pubspec.lock
+
