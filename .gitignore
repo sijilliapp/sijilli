@@ -25,8 +25,6 @@ migrate_working_dir/
 .packages
 .pub-cache/
 .pub/
-/build/
-build/
 
 # Android Studio will place build artifacts here
 /android/app/debug
@@ -47,9 +45,6 @@ flutter_*.log
 *.dylib
 *.dll
 
-# Web build
-/build/web/
-
 # Android build
 /build/app/
 
@@ -65,6 +60,5 @@ flutter_*.log
 # Windows build
 /build/windows/
 
-# All build directories
-build/
+# Other build directories (keep web build for Vercel)
 .build/
