@@ -1,8 +1,14 @@
 {
-  "rewrites": [
+  "buildCommand": null,
+  "outputDirectory": "build/web",
+  "installCommand": null,
+  "routes": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
