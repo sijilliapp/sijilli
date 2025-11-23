@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="تطبيق سجلي لإدارة المواعيد والفعاليات مع دعم التقويم الهجري والميلادي">
+  <meta name="keywords" content="سجلي، مواعيد، فعاليات، تقويم هجري، تقويم ميلادي، إدارة الوقت">
+  <meta name="author" content="سجلي">
+  <meta name="robots" content="index, follow">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sijilli.com/">
+  <meta property="og:title" content="سجلي - إدارة المواعيد والفعاليات">
+  <meta property="og:description" content="تطبيق سجلي لإدارة المواعيد والفعاليات مع دعم التقويم الهجري والميلادي">
+  <meta property="og:image" content="https://sijilli.com/icons/Icon-512.png">
+  <meta property="og:locale" content="ar_SA">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://sijilli.com/">
+  <meta property="twitter:title" content="سجلي - إدارة المواعيد والفعاليات">
+  <meta property="twitter:description" content="تطبيق سجلي لإدارة المواعيد والفعاليات مع دعم التقويم الهجري والميلادي">
+  <meta property="twitter:image" content="https://sijilli.com/icons/Icon-512.png">
+
+  <!-- PWA Meta Tags -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="سجلي">
+
+  <!-- iOS Safari Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="سجلي">
+  <meta name="format-detection" content="telephone=no">
+
+  <!-- iOS Icons -->
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="icons/Icon-192.png">
+
+  <!-- iOS Splash Screens -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon.png">
+  <link rel="shortcut icon" href="favicon.png">
+
+  <title>سجلي - إدارة المواعيد والفعاليات</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Theme Color -->
+  <meta name="theme-color" content="#2196F3">
+  <meta name="msapplication-TileColor" content="#2196F3">
+  <meta name="msapplication-navbutton-color" content="#2196F3">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#2196F3">
+</head>
+<body>
+  <!-- PWA Install Banner -->
+  <div id="pwa-install-banner" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(135deg, #2196F3, #1976D2); color: white; padding: 16px; text-align: center; z-index: 9999; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; direction: rtl; box-shadow: 0 -4px 12px rgba(0,0,0,0.15); border-radius: 16px 16px 0 0;">
+    <div style="max-width: 400px; margin: 0 auto;">
+      <div style="margin-bottom: 12px;">
+        <div style="font-size: 18px; font-weight: 600; margin-bottom: 4px;">📱 أضف سجلي إلى هاتفك</div>
+        <div style="font-size: 14px; opacity: 0.9;">للوصول السريع والسهل</div>
+      </div>
+      <div style="display: flex; gap: 12px; justify-content: center;">
+        <button id="pwa-install-btn" style="background: white; color: #2196F3; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; flex: 1; max-width: 120px;">إضافة</button>
+        <button id="pwa-dismiss-btn" style="background: transparent; color: white; border: 2px solid rgba(255,255,255,0.3); padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; flex: 1; max-width: 120px;">لاحقاً</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Safari Install Instructions -->
+  <div id="safari-install-banner" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(135deg, #007AFF, #0056CC); color: white; padding: 20px; text-align: center; z-index: 9999; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; direction: rtl; box-shadow: 0 -4px 12px rgba(0,0,0,0.15); border-radius: 16px 16px 0 0;">
+    <div style="max-width: 400px; margin: 0 auto;">
+      <div style="font-size: 18px; font-weight: 600; margin-bottom: 16px;">📱 أضف سجلي إلى الشاشة الرئيسية</div>
+      <div style="background: rgba(255,255,255,0.1); padding: 16px; border-radius: 12px; margin-bottom: 16px; text-align: right;">
+        <div style="font-size: 14px; line-height: 1.6;">
+          <div style="margin-bottom: 8px;">1️⃣ اضغط على زر المشاركة <span style="font-size: 20px;">⬆️</span></div>
+          <div style="margin-bottom: 8px;">2️⃣ اختر "إضافة إلى الشاشة الرئيسية" <span style="font-size: 16px;">➕</span></div>
+          <div>3️⃣ اضغط "إضافة" لتأكيد العملية ✅</div>
+        </div>
+      </div>
+      <button id="safari-dismiss-btn" style="background: white; color: #007AFF; border: none; padding: 12px 32px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">فهمت</button>
+    </div>
+  </div>
+
+  <script>
+    // PWA Install functionality
+    let deferredPrompt;
+    let installBanner = document.getElementById('pwa-install-banner');
+    let safariInstallBanner = document.getElementById('safari-install-banner');
+    let updateNotificationShown = false;
+
+    // Check if app is already installed
+    function isAppInstalled() {
+      return window.matchMedia('(display-mode: standalone)').matches ||
+             window.navigator.standalone === true ||
+             document.referrer.includes('android-app://');
+    }
+
+    // Check if it's Safari on iOS
+    function isSafariIOS() {
+      const ua = window.navigator.userAgent;
+      const iOS = /iPad|iPhone|iPod/.test(ua);
+      const webkit = /WebKit/.test(ua);
+      const chrome = /CriOS|Chrome/.test(ua);
+      return iOS && webkit && !chrome;
+    }
+
+    // Show appropriate install banner
+    function showInstallBanner() {
+      if (isAppInstalled()) return;
+
+      // Don't show if user dismissed recently
+      const dismissed = localStorage.getItem('pwa-install-dismissed');
+      if (dismissed && Date.now() - parseInt(dismissed) < 7 * 24 * 60 * 60 * 1000) return; // 7 days
+
+      if (isSafariIOS()) {
+        safariInstallBanner.style.display = 'block';
+      } else if (deferredPrompt) {
+        installBanner.style.display = 'block';
+      }
+    }
+
+    // PWA install event
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      setTimeout(showInstallBanner, 3000); // Show after 3 seconds
+    });
+
+    // Install button click
+    document.getElementById('pwa-install-btn').addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        installBanner.style.display = 'none';
+      }
+    });
+
+    // Dismiss buttons
+    document.getElementById('pwa-dismiss-btn').addEventListener('click', () => {
+      installBanner.style.display = 'none';
+      localStorage.setItem('pwa-install-dismissed', Date.now().toString());
+    });
+
+    document.getElementById('safari-dismiss-btn').addEventListener('click', () => {
+      safariInstallBanner.style.display = 'none';
+      localStorage.setItem('pwa-install-dismissed', Date.now().toString());
+    });
+
+    // Show Safari banner after page load
+    window.addEventListener('load', () => {
+      if (isSafariIOS() && !isAppInstalled()) {
+        setTimeout(showInstallBanner, 5000); // Show after 5 seconds
+      }
+    });
+
+    // Hide banners when app is installed
+    window.addEventListener('appinstalled', () => {
+      installBanner.style.display = 'none';
+      safariInstallBanner.style.display = 'none';
+    });
+
+    // Show update notification (only once per update)
+    function showUpdateNotification(newWorker) {
+      // Check if we already showed notification for this update
+      const lastUpdateShown = localStorage.getItem('last-update-shown');
+      const currentCacheVersion = 'sijilli-v1.0.1'; // Should match SW cache version
+
+      if (lastUpdateShown === currentCacheVersion) {
+        console.log('Update notification already shown for this version');
+        return;
+      }
+
+      if (updateNotificationShown) return;
+      updateNotificationShown = true;
+
+      // Mark this update as shown
+      localStorage.setItem('last-update-shown', currentCacheVersion);
+
+      // Create update notification
+      const updateBanner = document.createElement('div');
+      updateBanner.id = 'update-banner';
+      updateBanner.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #4CAF50, #45a049);
+        color: white;
+        padding: 8px 16px;
+        text-align: center;
+        z-index: 10000;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        direction: rtl;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      `;
+
+      updateBanner.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; max-width: 600px; margin: 0 auto;">
+          <div style="font-size: 14px; font-weight: 500;">
+            🔄 تحديث جديد متوفر
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button id="update-btn" style="background: white; color: #4CAF50; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px;">
+              تحديث
+            </button>
+            <button id="update-dismiss-btn" style="background: transparent; color: white; border: 1px solid rgba(255,255,255,0.5); padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+              لاحقاً
+            </button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(updateBanner);
+
+      // Update button click
+      document.getElementById('update-btn').addEventListener('click', () => {
+        // Disable the button to prevent multiple clicks
+        document.getElementById('update-btn').disabled = true;
+        document.getElementById('update-btn').textContent = 'جاري التحديث...';
+
+        newWorker.postMessage({ type: 'SKIP_WAITING' });
+
+        // Wait for the new service worker to take control
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          // Small delay to ensure SW is fully active
+          setTimeout(() => {
+            window.location.reload();
+          }, 100);
+        }, { once: true });
+
+        // Remove banner after a short delay
+        setTimeout(() => {
+          updateBanner.remove();
+        }, 500);
+      });
+
+      // Dismiss button click
+      document.getElementById('update-dismiss-btn').addEventListener('click', () => {
+        updateBanner.remove();
+      });
+
+      // Auto-hide after 10 seconds
+      setTimeout(() => {
+        if (updateBanner.parentNode) {
+          updateBanner.remove();
+        }
+      }, 10000);
+    }
+  </script>
+
+  <!-- Service Worker Registration -->
+  <script>
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log('Service Worker registered successfully:', registration.scope);
+
+            // Check for updates
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              if (newWorker) {
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    // New content is available, show update notification
+                    showUpdateNotification(newWorker);
+                  }
+                });
+              }
+            });
+          })
+          .catch((error) => {
+            console.log('Service Worker registration failed:', error);
+          });
+      });
+
+      // Listen for service worker messages
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'BACKGROUND_SYNC') {
+          // Trigger sync in Flutter app
+          console.log('Background sync available');
+        }
+      });
+    }
+  </script>
+
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

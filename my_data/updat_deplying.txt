@@ -1,0 +1,4 @@
+flutter build web --release
+git add .
+git commit -m "update"
+git push
