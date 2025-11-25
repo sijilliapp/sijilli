@@ -62,3 +62,6 @@ flutter_*.log
 
 # Other build directories (keep web build for Vercel)
 .build/
+
+# Don't ignore public folder (for Vercel deployment)
+!public/
