@@ -39,7 +39,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
   final AuthService _authService = AuthService();
   late final UserAppointmentStatusService _statusService;
   bool _isPrivate = false; // حالة الخصوصية
-  
+
   // حالة الملاحظة الخاصة
   final TextEditingController _noteController = TextEditingController();
   String _noteSaveStatus = 'saved'; // saved, saving, unsaved
@@ -52,7 +52,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
     _loadPrivacyStatus(); // تحميل حالة الخصوصية
     _loadPrivateNote(); // تحميل الملاحظة الخاصة
   }
-  
+
   @override
   void dispose() {
     _noteController.dispose();
@@ -71,19 +71,19 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
       }
     }
   }
-  
+
   // تحميل الملاحظة الخاصة
   Future<void> _loadPrivateNote() async {
     final currentUserId = _authService.currentUser?.id;
     if (currentUserId == null) return;
-    
+
     try {
       // جلب الملاحظة من قاعدة البيانات مباشرة
       final userStatus = await _statusService.getUserAppointmentStatus(
         userId: currentUserId,
         appointmentId: widget.appointment.id,
       );
-      
+
       if (userStatus != null && mounted) {
         setState(() {
           _initialNote = userStatus.myNote;
@@ -106,21 +106,21 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
       }
     }
   }
-  
+
   // حفظ الملاحظة الخاصة
   Future<void> _savePrivateNote(String note) async {
     if (_initialNote == note) return; // لا تغيير
-    
+
     setState(() {
       _noteSaveStatus = 'saving';
     });
-    
+
     try {
       await _statusService.updateUserAppointmentNote(
         widget.appointment.id,
         note.isEmpty ? null : note,
       );
-      
+
       if (mounted) {
         setState(() {
           _noteSaveStatus = 'saved';
@@ -194,42 +194,44 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                   ),
                   Switch(
                     value: _isPrivate,
-                    onChanged: widget.isFromArchive ? null : (value) async {
-                      // تحديث الـ UI فوراً (Optimistic Update)
-                      setState(() {
-                        _isPrivate = value;
-                      });
-                      
-                      // تحديث الخصوصية في الخلفية
-                      try {
-                        await _statusService.updateUserAppointmentPrivacy(
-                          widget.appointment.id,
-                          value ? 'private' : 'public',
-                        );
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                value
-                                    ? 'تم تغيير الموعد إلى خاص'
-                                    : 'تم تغيير الموعد إلى عام',
-                              ),
-                              backgroundColor: Colors.green,
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('خطأ في تحديث الخصوصية: $e'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      }
-                    },
+                    onChanged: widget.isFromArchive
+                        ? null
+                        : (value) async {
+                            // تحديث الـ UI فوراً (Optimistic Update)
+                            setState(() {
+                              _isPrivate = value;
+                            });
+
+                            // تحديث الخصوصية في الخلفية
+                            try {
+                              await _statusService.updateUserAppointmentPrivacy(
+                                widget.appointment.id,
+                                value ? 'private' : 'public',
+                              );
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      value
+                                          ? 'تم تغيير الموعد إلى خاص'
+                                          : 'تم تغيير الموعد إلى عام',
+                                    ),
+                                    backgroundColor: Colors.green,
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('خطأ في تحديث الخصوصية: $e'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          },
                     activeThumbColor: const Color(0xFF2196F3),
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
@@ -462,7 +464,10 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
             InkWell(
               onTap: _showAddParticipantDialog,
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 16,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
@@ -471,7 +476,11 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.person_add, color: Colors.green.shade700, size: 20),
+                    Icon(
+                      Icons.person_add,
+                      color: Colors.green.shade700,
+                      size: 20,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'إضافة مشارك',
@@ -507,19 +516,20 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
 
     // الحصول على حالة المشارك من participantsStatus
     final participantStatus = widget.participantsStatus?[user.id];
-    
+
     // تحديد اللون بناءً على الحالة
     final appointmentDate = widget.appointment.appointmentDate;
     final now = DateTime.now();
     final appointmentPassed = now.isAfter(appointmentDate);
-    
+
     Color ringColor;
     if (participantStatus != null) {
       if (participantStatus.status.toLowerCase() == 'deleted') {
         // فحص إذا حذف قبل أو بعد الموعد
-        final deletedBeforeAppointment = participantStatus.deletedAt != null && 
-                                         participantStatus.deletedAt!.isBefore(appointmentDate);
-        
+        final deletedBeforeAppointment =
+            participantStatus.deletedAt != null &&
+            participantStatus.deletedAt!.isBefore(appointmentDate);
+
         if (deletedBeforeAppointment) {
           ringColor = const Color(0xFFE57373); // أحمر: غائب (حذف قبل الموعد)
         } else if (appointmentPassed) {
@@ -566,10 +576,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
               height: 40,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: ringColor,
-                  width: 2,
-                ),
+                border: Border.all(color: ringColor, width: 2),
               ),
               child: CircleAvatar(
                 radius: 18,
@@ -625,41 +632,58 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
   Widget _buildStatusTimeline(UserModel user, InvitationModel invitation) {
     final participantStatus = widget.participantsStatus?[user.id];
     final isHost = user.id == widget.appointment.hostId;
-    
+
     // ✅ تحويل جميع التواريخ للتوقيت المحلي
-    final localAppointmentDate = TimezoneService.toLocal(widget.appointment.appointmentDate);
+    final localAppointmentDate = TimezoneService.toLocal(
+      widget.appointment.appointmentDate,
+    );
     final now = DateTime.now();
     final appointmentPassed = now.isAfter(localAppointmentDate);
-    
+
     List<InlineSpan> eventSpans = [];
 
     if (isHost) {
       // المضيف: متى أنشأ (دائماً)
-      eventSpans.add(WidgetSpan(
-        child: Icon(Icons.add_circle_outline, size: 14, color: Colors.green),
-      ));
-      eventSpans.add(TextSpan(text: ' أنشأ: ${_getTimeRelativeToAppointmentShort(widget.appointment.created)}'));
-      
+      eventSpans.add(
+        WidgetSpan(
+          child: Icon(Icons.add_circle_outline, size: 14, color: Colors.green),
+        ),
+      );
+      eventSpans.add(
+        TextSpan(
+          text:
+              ' أنشأ: ${_getTimeRelativeToAppointmentShort(widget.appointment.created)}',
+        ),
+      );
+
       // فحص إذا حذف قبل الموعد (مع تحويل deletedAt للتوقيت المحلي)
-      final localDeletedAt = participantStatus?.deletedAt != null 
+      final localDeletedAt = participantStatus?.deletedAt != null
           ? TimezoneService.toLocal(participantStatus!.deletedAt!)
           : null;
-      final deletedBeforeAppointment = localDeletedAt != null && 
-                                       localDeletedAt.isBefore(localAppointmentDate);
-      
+      final deletedBeforeAppointment =
+          localDeletedAt != null &&
+          localDeletedAt.isBefore(localAppointmentDate);
+
       if (deletedBeforeAppointment) {
         // حذف قبل الموعد = غائب (نسجل الحذف فقط)
         eventSpans.add(TextSpan(text: '، '));
-        eventSpans.add(WidgetSpan(
-          child: Icon(Icons.cancel, size: 14, color: Colors.red),
-        ));
-        eventSpans.add(TextSpan(text: ' حذف: ${_getTimeRelativeToAppointmentShort(participantStatus!.deletedAt!)}'));
+        eventSpans.add(
+          WidgetSpan(child: Icon(Icons.cancel, size: 14, color: Colors.red)),
+        );
+        eventSpans.add(
+          TextSpan(
+            text:
+                ' حذف: ${_getTimeRelativeToAppointmentShort(participantStatus!.deletedAt!)}',
+          ),
+        );
       } else if (appointmentPassed) {
         // أدرك الموعد = منجز (لا نسجل الحذف بعد الموعد)
         eventSpans.add(TextSpan(text: '، '));
-        eventSpans.add(WidgetSpan(
-          child: Icon(Icons.check_circle, size: 14, color: Colors.green),
-        ));
+        eventSpans.add(
+          WidgetSpan(
+            child: Icon(Icons.check_circle, size: 14, color: Colors.green),
+          ),
+        );
         eventSpans.add(TextSpan(text: ' منجز'));
       }
     } else {
@@ -668,42 +692,71 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
       print('   invitation.status: ${invitation.status}');
       print('   invitation.respondedAt: ${invitation.respondedAt}');
       print('   participantStatus?.deletedAt: ${participantStatus?.deletedAt}');
-      
+
       // الضيف: متى وافق (دائماً إذا وافق)
       if (invitation.respondedAt != null && invitation.status == 'accepted') {
-        eventSpans.add(WidgetSpan(
-          child: Icon(Icons.check_circle_outline, size: 14, color: Colors.blue),
-        ));
-        eventSpans.add(TextSpan(text: ' وافق: ${_getTimeRelativeToAppointmentShort(invitation.respondedAt!)}'));
+        // 🔍 DEBUG: طباعة معلومات التاريخ
+        print('   invitation.respondedAt: ${invitation.respondedAt}');
+        print(
+          '   invitation.respondedAt.isUtc: ${invitation.respondedAt!.isUtc}',
+        );
+        print('   widget.appointment.created: ${widget.appointment.created}');
+        print(
+          '   widget.appointment.created.isUtc: ${widget.appointment.created.isUtc}',
+        );
+
+        eventSpans.add(
+          WidgetSpan(
+            child: Icon(
+              Icons.check_circle_outline,
+              size: 14,
+              color: Colors.blue,
+            ),
+          ),
+        );
+        eventSpans.add(
+          TextSpan(
+            text:
+                ' وافق: ${_getTimeRelativeToAppointmentShort(invitation.respondedAt!)}',
+          ),
+        );
       }
-      
+
       // فحص إذا حذف قبل الموعد (مع تحويل deletedAt للتوقيت المحلي)
-      final localDeletedAt = participantStatus?.deletedAt != null 
+      final localDeletedAt = participantStatus?.deletedAt != null
           ? TimezoneService.toLocal(participantStatus!.deletedAt!)
           : null;
-      final deletedBeforeAppointment = localDeletedAt != null && 
-                                       localDeletedAt.isBefore(localAppointmentDate);
-      
+      final deletedBeforeAppointment =
+          localDeletedAt != null &&
+          localDeletedAt.isBefore(localAppointmentDate);
+
       if (deletedBeforeAppointment) {
         // حذف قبل الموعد = غائب (نسجل الحذف فقط)
         if (eventSpans.isNotEmpty) {
           eventSpans.add(TextSpan(text: '، '));
         }
-        eventSpans.add(WidgetSpan(
-          child: Icon(Icons.cancel, size: 14, color: Colors.red),
-        ));
-        eventSpans.add(TextSpan(text: ' حذف: ${_getTimeRelativeToAppointmentShort(participantStatus!.deletedAt!)}'));
+        eventSpans.add(
+          WidgetSpan(child: Icon(Icons.cancel, size: 14, color: Colors.red)),
+        );
+        eventSpans.add(
+          TextSpan(
+            text:
+                ' حذف: ${_getTimeRelativeToAppointmentShort(participantStatus!.deletedAt!)}',
+          ),
+        );
       } else if (appointmentPassed && invitation.status == 'accepted') {
         // أدرك الموعد = منجز (لا نسجل الحذف بعد الموعد)
         if (eventSpans.isNotEmpty) {
           eventSpans.add(TextSpan(text: '، '));
         }
-        eventSpans.add(WidgetSpan(
-          child: Icon(Icons.check_circle, size: 14, color: Colors.green),
-        ));
+        eventSpans.add(
+          WidgetSpan(
+            child: Icon(Icons.check_circle, size: 14, color: Colors.green),
+          ),
+        );
         eventSpans.add(TextSpan(text: ' منجز'));
       }
-      
+
       print('   عدد الأحداث: ${eventSpans.length}');
     }
 
@@ -764,9 +817,11 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
   String _getTimeRelativeToAppointmentShort(DateTime actionDate) {
     try {
       // ✅ تحويل التواريخ للتوقيت المحلي أولاً
-      final localAppointmentDate = TimezoneService.toLocal(widget.appointment.appointmentDate);
+      final localAppointmentDate = TimezoneService.toLocal(
+        widget.appointment.appointmentDate,
+      );
       final localActionDate = TimezoneService.toLocal(actionDate);
-      
+
       final difference = localAppointmentDate.difference(localActionDate);
 
       if (difference.isNegative) {
@@ -874,7 +929,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
       'السبت',
       'الأحد',
     ];
-    
+
     const months = [
       'يناير',
       'فبراير',
@@ -889,24 +944,25 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
       'نوفمبر',
       'ديسمبر',
     ];
-    
+
     // فحص نوع التاريخ الأساسي
     final dateType = widget.appointment.dateType ?? 'gregorian';
-    
+
     DateTime displayDate;
-    
+
     if (dateType == 'hijri' || dateType == 'هجري') {
       // ✅ التاريخ الأساسي هجري → الميلادي ثانوي (نحسبه من الهجري مع عكس التصحيح)
       final hijriDay = widget.appointment.hijriDay;
       final hijriMonth = widget.appointment.hijriMonth;
       final hijriYear = widget.appointment.hijriYear;
-      
+
       if (hijriDay != null && hijriMonth != null && hijriYear != null) {
-        final currentUserAdjustment = _authService.currentUser?.hijriAdjustment ?? 0;
+        final currentUserAdjustment =
+            _authService.currentUser?.hijriAdjustment ?? 0;
         // نحول الهجري إلى ميلادي مع عكس إشارة التصحيح
         displayDate = DateConverter.componentsToGregorian(
           hijriYear,
-          hijriMonth, 
+          hijriMonth,
           hijriDay,
           adjustment: -currentUserAdjustment, // عكس الإشارة
         );
@@ -917,7 +973,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
       // ✅ التاريخ الأساسي ميلادي → نعرضه كما هو (الوثيقة المخزنة)
       displayDate = date;
     }
-    
+
     final weekday = weekdays[displayDate.weekday - 1];
     return '$weekday ${displayDate.day} ${months[displayDate.month - 1]} ${displayDate.year} ميلادي';
   }
@@ -968,26 +1024,33 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
 
       // فحص نوع التاريخ الأساسي
       final dateType = widget.appointment.dateType ?? 'gregorian';
-      
+
       print('🔍 DEBUG: dateType = $dateType');
       print('🔍 DEBUG: hijriDay = ${widget.appointment.hijriDay}');
       print('🔍 DEBUG: hijriMonth = ${widget.appointment.hijriMonth}');
       print('🔍 DEBUG: hijriYear = ${widget.appointment.hijriYear}');
-      
+
       if (dateType == 'hijri' || dateType == 'هجري') {
         // ✅ التاريخ الأساسي هجري → نعرضه كما هو (الوثيقة المقدسة - بدون تصحيح أبداً)
         final hijriDay = widget.appointment.hijriDay;
         final hijriMonth = widget.appointment.hijriMonth;
         final hijriYear = widget.appointment.hijriYear;
 
-        if (hijriDay != null && hijriMonth != null && hijriYear != null &&
-            hijriDay > 0 && hijriMonth > 0 && hijriYear > 0) {
-          print('✅ عرض الهجري الأساسي: $hijriDay ${hijriMonths[hijriMonth - 1]} $hijriYear');
+        if (hijriDay != null &&
+            hijriMonth != null &&
+            hijriYear != null &&
+            hijriDay > 0 &&
+            hijriMonth > 0 &&
+            hijriYear > 0) {
+          print(
+            '✅ عرض الهجري الأساسي: $hijriDay ${hijriMonths[hijriMonth - 1]} $hijriYear',
+          );
           return '$hijriDay ${hijriMonths[hijriMonth - 1]} $hijriYear هـ';
         }
       } else {
         // ✅ التاريخ الأساسي ميلادي → الهجري ثانوي (يتأثر بتصحيح المستخدم الحالي)
-        final currentUserAdjustment = _authService.currentUser?.hijriAdjustment ?? 0;
+        final currentUserAdjustment =
+            _authService.currentUser?.hijriAdjustment ?? 0;
         print('✅ عرض الهجري الثانوي مع تصحيح: $currentUserAdjustment');
         final hijriDate = DateConverter.toHijri(
           date,
@@ -1167,10 +1230,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
             const SizedBox(width: 6),
             Text(
               'جاري الحفظ...',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.purple.shade700,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.purple.shade700),
             ),
           ],
         );
@@ -1182,10 +1242,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
             const SizedBox(width: 4),
             Text(
               'محفوظ',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.green.shade600,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.green.shade600),
             ),
           ],
         );
@@ -1197,10 +1254,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
             const SizedBox(width: 4),
             Text(
               'غير محفوظ',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.orange.shade600,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.orange.shade600),
             ),
           ],
         );
@@ -1219,13 +1273,19 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
           height: 50,
           child: ElevatedButton.icon(
             onPressed: widget.isFromArchive ? _handleUnarchive : _handleArchive,
-            icon: Icon(widget.isFromArchive ? Icons.unarchive_outlined : Icons.archive_outlined),
+            icon: Icon(
+              widget.isFromArchive
+                  ? Icons.unarchive_outlined
+                  : Icons.archive_outlined,
+            ),
             label: Text(
               widget.isFromArchive ? 'إلغاء الأرشفة' : 'أرشفة',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: widget.isFromArchive ? Colors.green.shade400 : Colors.orange.shade400,
+              backgroundColor: widget.isFromArchive
+                  ? Colors.green.shade400
+                  : Colors.orange.shade400,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -1395,8 +1455,13 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
   void _handleClone() {
     // ✅ استنساخ ذكي للمواعيد السنوية
     // الفكرة: نستنسخ التاريخ الميلادي دائماً (اليوم والشهر فقط)
-    // المستخدم يختار "هجري" إذا أراد، فيتحول تلقائياً في صفحة الإضافة
-    
+    // المستخدم يمكنه تغييره يدوياً للهجري إذا أراد
+
+    // تحويل التاريخ للتوقيت المحلي
+    final localDate = TimezoneService.toLocal(
+      widget.appointment.appointmentDate,
+    );
+
     // الانتقال إلى صفحة الإضافة مع البيانات المستنسخة
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
@@ -1405,11 +1470,9 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
           clonedTitle: widget.appointment.title,
           clonedRegion: widget.appointment.region,
           clonedBuilding: widget.appointment.building,
-          // ✅ نمرر التاريخ الميلادي دائماً (بغض النظر عن النوع الأصلي)
-          clonedDate: widget.appointment.appointmentDate,
-          clonedTime: TimezoneService.toLocal(
-            widget.appointment.appointmentDate,
-          ),
+          // ✅ نمرر التاريخ المحلي (محول من UTC)
+          clonedDate: localDate,
+          clonedTime: localDate,
         ),
       ),
     );
@@ -1489,31 +1552,35 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
       final currentUserId = _authService.currentUser?.id;
       if (currentUserId == null) return;
 
-      final friendsResult = await _authService.pb.collection(AppConstants.friendshipCollection).getFullList(
-        filter: '(follower = "$currentUserId" || following = "$currentUserId") && status = "approved"',
-        expand: 'follower,following',
-      );
+      final friendsResult = await _authService.pb
+          .collection(AppConstants.friendshipCollection)
+          .getFullList(
+            filter:
+                '(follower = "$currentUserId" || following = "$currentUserId") && status = "approved"',
+            expand: 'follower,following',
+          );
 
       // استخراج الأصدقاء
       List<UserModel> friends = [];
       for (var record in friendsResult) {
         final followerId = record.data['follower'] as String;
         final followingId = record.data['following'] as String;
-        
+
         // الصديق هو الطرف الآخر
         final friendId = followerId == currentUserId ? followingId : followerId;
-        
+
         // التحقق من أنه ليس مشاركاً بالفعل
-        final isAlreadyParticipant = widget.guests.any((g) => g.id == friendId) || 
-                                      widget.host?.id == friendId;
-        
+        final isAlreadyParticipant =
+            widget.guests.any((g) => g.id == friendId) ||
+            widget.host?.id == friendId;
+
         if (!isAlreadyParticipant) {
           final expand = record.expand;
           if (expand != null) {
-            final friendData = followerId == currentUserId 
-                ? expand['following']?.first 
+            final friendData = followerId == currentUserId
+                ? expand['following']?.first
                 : expand['follower']?.first;
-            
+
             if (friendData != null) {
               friends.add(UserModel.fromJson(friendData.toJson()));
             }
@@ -1591,13 +1658,15 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
   Future<void> _inviteFriend(UserModel friend) async {
     try {
       // إنشاء دعوة جديدة
-      await _authService.pb.collection(AppConstants.invitationsCollection).create(
-        body: {
-          'appointment': widget.appointment.id,
-          'guest': friend.id,
-          'status': 'invited',
-        },
-      );
+      await _authService.pb
+          .collection(AppConstants.invitationsCollection)
+          .create(
+            body: {
+              'appointment': widget.appointment.id,
+              'guest': friend.id,
+              'status': 'invited',
+            },
+          );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

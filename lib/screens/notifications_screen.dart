@@ -32,7 +32,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
 
   // تتبع الدعوات المحدثة محلياً
   final Map<String, String> _localInvitationUpdates = {};
-  
+
   // تتبع حالة التحميل لكل دعوة
   final Map<String, bool> _invitationLoadingStates = {};
 
@@ -505,7 +505,10 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               icon: const Icon(Icons.delete_sweep, color: Colors.red, size: 20),
               label: const Text(
                 'مسح الكل',
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
         ],
@@ -1014,7 +1017,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                 const SizedBox(height: 12), // تقليل من 16 إلى 12
                 // تفاصيل الموعد
                 Directionality(
-                  textDirection: TextDirection.rtl, // ✅ اتجاه النص من اليمين لليسار
+                  textDirection:
+                      TextDirection.rtl, // ✅ اتجاه النص من اليمين لليسار
                   child: Container(
                     width: double.infinity, // عرض 100%
                     padding: const EdgeInsets.all(12),
@@ -1060,23 +1064,30 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                 if (!isResponded)
                   Builder(
                     builder: (context) {
-                      final isLoading = _invitationLoadingStates[invitationInfo['id']] ?? false;
-                      
+                      final isLoading =
+                          _invitationLoadingStates[invitationInfo['id']] ??
+                          false;
+
                       return Row(
                         children: [
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: isLoading ? null : () => _respondToInvitationFromData(
-                                invitationInfo['id'],
-                                'accepted',
-                              ),
+                              onPressed: isLoading
+                                  ? null
+                                  : () => _respondToInvitationFromData(
+                                      invitationInfo['id'],
+                                      'accepted',
+                                    ),
                               icon: isLoading
                                   ? const SizedBox(
                                       width: 18,
                                       height: 18,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
                                       ),
                                     )
                                   : const Icon(
@@ -1086,11 +1097,16 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                                     ),
                               label: Text(
                                 isLoading ? 'جاري المعالجة...' : 'موافق',
-                                style: const TextStyle(color: Colors.white, fontSize: 14),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                ),
                               ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green,
-                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -1100,17 +1116,22 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                           const SizedBox(width: 10),
                           Expanded(
                             child: OutlinedButton.icon(
-                              onPressed: isLoading ? null : () => _respondToInvitationFromData(
-                                invitationInfo['id'],
-                                'rejected',
-                              ),
+                              onPressed: isLoading
+                                  ? null
+                                  : () => _respondToInvitationFromData(
+                                      invitationInfo['id'],
+                                      'rejected',
+                                    ),
                               icon: isLoading
                                   ? const SizedBox(
                                       width: 18,
                                       height: 18,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.red,
+                                            ),
                                       ),
                                     )
                                   : const Icon(
@@ -1120,19 +1141,24 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                                     ),
                               label: Text(
                                 isLoading ? 'جاري المعالجة...' : 'رفض',
-                                style: const TextStyle(color: Colors.red, fontSize: 14),
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 14,
+                                ),
                               ),
                               style: OutlinedButton.styleFrom(
                                 side: const BorderSide(color: Colors.red),
-                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
                                 shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                    ],
-                  );
+                        ],
+                      );
                     },
                   )
                 else
@@ -1240,29 +1266,30 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       );
     } catch (e) {
       print('❌ خطأ في الاستجابة على الدعوة: $e');
-      
+
       setState(() {
         _invitationLoadingStates[invitationId] = false;
       });
-      
+
       String errorMessage = 'حدث خطأ أثناء الاستجابة على الدعوة';
-      
+
       // Check if invitation was deleted (404 error)
-      if (e.toString().contains('404') || e.toString().contains("wasn't found")) {
+      if (e.toString().contains('404') ||
+          e.toString().contains("wasn't found")) {
         errorMessage = 'هذه الدعوة لم تعد موجودة. سيتم تحديث القائمة.';
-        
+
         // Remove from local cache
         setState(() {
           _notifications.removeWhere((n) => n.id == 'inv_$invitationId');
         });
-        
+
         // Save updated cache
         final currentUserId = _authService.currentUser?.id;
         if (currentUserId != null) {
           _saveNotificationsToCache(currentUserId, _notifications);
         }
       }
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(errorMessage),
@@ -1582,7 +1609,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       // 🕒 تحويل من UTC إلى التوقيت المحلي
       final dateTime = DateTime.parse(dateTimeString).toLocal();
       final isPrimaryHijri = dateType == 'hijri';
-      
+
       // ✅ التحقق إذا كان الموعد متعدد الأيام
       final appointmentDuration = duration ?? 45;
       final isMultiDay = appointmentDuration >= 1440;
@@ -1966,10 +1993,23 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       // جلب معلومات الدعوة لمعرفة الموعد
       final invitation = await _authService.pb
           .collection(AppConstants.invitationsCollection)
-          .getOne(invitationId);
+          .getOne(invitationId, expand: 'appointment');
 
       final appointmentId = invitation.data['appointment'];
       final currentUserId = _authService.currentUser!.id;
+
+      // ✅ جلب بيانات الموعد من expand باستخدام get<T>()
+      final title = invitation.get<String?>('expand.appointment.title');
+      final region = invitation.get<String?>('expand.appointment.region');
+      final building = invitation.get<String?>('expand.appointment.building');
+      final appointmentDateStr = invitation.get<String?>(
+        'expand.appointment.appointment_date',
+      );
+
+      DateTime? appointmentDate;
+      if (appointmentDateStr != null) {
+        appointmentDate = DateTime.parse(appointmentDateStr).toUtc();
+      }
 
       // إنشاء خدمة user_appointment_status
       final statusService = UserAppointmentStatusService(_authService);
@@ -1981,9 +2021,16 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         appointmentId: appointmentId,
         status: 'active',
         privacy: 'public', // الضيف يقبل الموعد بخصوصية عامة افتراضياً
+        // ✅ نسخ بيانات الموعد الأساسية
+        title: title,
+        region: region,
+        building: building,
+        appointmentDate: appointmentDate,
       );
 
-      print('✅ تم إنشاء سجل user_appointment_status للضيف عند قبول الدعوة');
+      print(
+        '✅ تم إنشاء سجل user_appointment_status للضيف عند قبول الدعوة مع نسخ البيانات',
+      );
     } catch (e) {
       print('⚠️ خطأ في إنشاء سجل user_appointment_status عند قبول الدعوة: $e');
       // لا نرمي الخطأ لأن قبول الدعوة تم بنجاح
@@ -2040,30 +2087,48 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       'ذو الحجة',
     ];
 
-    if (isPrimaryHijri && hijriDay != null && hijriMonth != null && hijriYear != null) {
+    if (isPrimaryHijri &&
+        hijriDay != null &&
+        hijriMonth != null &&
+        hijriYear != null) {
       // التاريخ الأساسي هجري
-      final startHijriText = '$hijriDay ${hijriMonths[hijriMonth - 1]} $hijriYear هـ';
-      final startGregText = '${startDate.day} ${gregorianMonths[startDate.month - 1]} ${startDate.year}';
+      final startHijriText =
+          '$hijriDay ${hijriMonths[hijriMonth - 1]} $hijriYear هـ';
+      final startGregText =
+          '${startDate.day} ${gregorianMonths[startDate.month - 1]} ${startDate.year}';
 
       // حساب التاريخ الهجري للنهاية (تقريبي)
       final hostAdjustment = _getHostAdjustment(hostId);
-      final endHijri = DateConverter.toHijri(endDate, adjustment: hostAdjustment);
-      final endHijriText = '${endHijri.hDay} ${hijriMonths[endHijri.hMonth - 1]} ${endHijri.hYear} هـ';
-      final endGregText = '${endDate.day} ${gregorianMonths[endDate.month - 1]} ${endDate.year}';
+      final endHijri = DateConverter.toHijri(
+        endDate,
+        adjustment: hostAdjustment,
+      );
+      final endHijriText =
+          '${endHijri.hDay} ${hijriMonths[endHijri.hMonth - 1]} ${endHijri.hYear} هـ';
+      final endGregText =
+          '${endDate.day} ${gregorianMonths[endDate.month - 1]} ${endDate.year}';
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'من $startHijriText الموافق $startGregText',
-            style: TextStyle(color: Colors.grey[700], fontSize: 13, height: 1.5),
+            style: TextStyle(
+              color: Colors.grey[700],
+              fontSize: 13,
+              height: 1.5,
+            ),
             overflow: TextOverflow.ellipsis,
             maxLines: 1,
           ),
           const SizedBox(height: 4),
           Text(
             'إلى $endHijriText الموافق $endGregText',
-            style: TextStyle(color: Colors.grey[700], fontSize: 13, height: 1.5),
+            style: TextStyle(
+              color: Colors.grey[700],
+              fontSize: 13,
+              height: 1.5,
+            ),
             overflow: TextOverflow.ellipsis,
             maxLines: 1,
           ),
@@ -2071,30 +2136,48 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       );
     } else {
       // التاريخ الأساسي ميلادي
-      final startGregText = '${startDate.day} ${gregorianMonths[startDate.month - 1]} ${startDate.year}';
-      final endGregText = '${endDate.day} ${gregorianMonths[endDate.month - 1]} ${endDate.year}';
+      final startGregText =
+          '${startDate.day} ${gregorianMonths[startDate.month - 1]} ${startDate.year}';
+      final endGregText =
+          '${endDate.day} ${gregorianMonths[endDate.month - 1]} ${endDate.year}';
 
       // حساب التاريخ الهجري
       final hostAdjustment = _getHostAdjustment(hostId);
-      final startHijri = DateConverter.toHijri(startDate, adjustment: hostAdjustment);
-      final endHijri = DateConverter.toHijri(endDate, adjustment: hostAdjustment);
-      
-      final startHijriText = '${startHijri.hDay} ${hijriMonths[startHijri.hMonth - 1]} ${startHijri.hYear} هـ';
-      final endHijriText = '${endHijri.hDay} ${hijriMonths[endHijri.hMonth - 1]} ${endHijri.hYear} هـ';
+      final startHijri = DateConverter.toHijri(
+        startDate,
+        adjustment: hostAdjustment,
+      );
+      final endHijri = DateConverter.toHijri(
+        endDate,
+        adjustment: hostAdjustment,
+      );
+
+      final startHijriText =
+          '${startHijri.hDay} ${hijriMonths[startHijri.hMonth - 1]} ${startHijri.hYear} هـ';
+      final endHijriText =
+          '${endHijri.hDay} ${hijriMonths[endHijri.hMonth - 1]} ${endHijri.hYear} هـ';
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'من $startGregText الموافق $startHijriText',
-            style: TextStyle(color: Colors.grey[700], fontSize: 13, height: 1.5),
+            style: TextStyle(
+              color: Colors.grey[700],
+              fontSize: 13,
+              height: 1.5,
+            ),
             overflow: TextOverflow.ellipsis,
             maxLines: 1,
           ),
           const SizedBox(height: 4),
           Text(
             'إلى $endGregText الموافق $endHijriText',
-            style: TextStyle(color: Colors.grey[700], fontSize: 13, height: 1.5),
+            style: TextStyle(
+              color: Colors.grey[700],
+              fontSize: 13,
+              height: 1.5,
+            ),
             overflow: TextOverflow.ellipsis,
             maxLines: 1,
           ),

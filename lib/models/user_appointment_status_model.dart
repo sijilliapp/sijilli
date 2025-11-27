@@ -6,6 +6,11 @@ class UserAppointmentStatusModel {
   final String? privacy; // public, private - خصوصية نسخة المستخدم
   final DateTime? deletedAt;
   final String? myNote; // ملاحظة خاصة للمستخدم
+  // ✅ نسخة من بيانات الموعد الأساسية
+  final String? title;
+  final String? region;
+  final String? building;
+  final DateTime? appointmentDate;
   final DateTime created;
   final DateTime updated;
 
@@ -17,6 +22,10 @@ class UserAppointmentStatusModel {
     this.privacy,
     this.deletedAt,
     this.myNote,
+    this.title,
+    this.region,
+    this.building,
+    this.appointmentDate,
     required this.created,
     required this.updated,
   });
@@ -31,6 +40,10 @@ class UserAppointmentStatusModel {
         privacy: json['privacy'], // null means inherit from appointment
         deletedAt: _parseDateTime(json['deleted_at']),
         myNote: json['my_note'],
+        title: json['title'],
+        region: json['region'],
+        building: json['building'],
+        appointmentDate: _parseDateTime(json['appointment_date']),
         created: _parseDateTime(json['created']) ?? DateTime.now(),
         updated: _parseDateTime(json['updated']) ?? DateTime.now(),
       );
@@ -57,8 +70,10 @@ class UserAppointmentStatusModel {
           return null;
         }
 
-        // محاولة تحليل التاريخ
-        return DateTime.parse(cleanValue);
+        // محاولة تحليل التاريخ والتأكد من أنه UTC
+        final parsed = DateTime.parse(cleanValue);
+        // إذا لم يكن UTC، نحوله إلى UTC
+        return parsed.isUtc ? parsed : parsed.toUtc();
       }
       return null;
     } catch (e) {
@@ -79,6 +94,10 @@ class UserAppointmentStatusModel {
       'privacy': privacy,
       'deleted_at': deletedAt?.toIso8601String(),
       'my_note': myNote,
+      'title': title,
+      'region': region,
+      'building': building,
+      'appointment_date': appointmentDate?.toIso8601String(),
       'created': created.toIso8601String(),
       'updated': updated.toIso8601String(),
     };
@@ -108,6 +127,10 @@ class UserAppointmentStatusModel {
         privacy: map['privacy'],
         deletedAt: _parseDateTime(map['deleted_at']),
         myNote: map['my_note'],
+        title: map['title'],
+        region: map['region'],
+        building: map['building'],
+        appointmentDate: _parseDateTime(map['appointment_date']),
         created: _parseDateTime(map['created']) ?? DateTime.now(),
         updated: _parseDateTime(map['updated']) ?? DateTime.now(),
       );

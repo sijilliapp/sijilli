@@ -3,7 +3,8 @@ class AppointmentModel {
   final String title;
   final String? region;
   final String? building;
-  final String? privacy; // للتوافق فقط - الخصوصية الفعلية في user_appointment_status
+  final String?
+  privacy; // للتوافق فقط - الخصوصية الفعلية في user_appointment_status
   final String status;
   final DateTime appointmentDate;
   final String?
@@ -80,8 +81,10 @@ class AppointmentModel {
           return null;
         }
 
-        // محاولة تحليل التاريخ
-        return DateTime.parse(cleanValue);
+        // محاولة تحليل التاريخ والتأكد من أنه UTC
+        final parsed = DateTime.parse(cleanValue);
+        // إذا لم يكن UTC، نحوله إلى UTC
+        return parsed.isUtc ? parsed : parsed.toUtc();
       }
       return null;
     } catch (e) {

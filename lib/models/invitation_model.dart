@@ -50,8 +50,9 @@ class InvitationModel {
           return null;
         }
 
-        // محاولة تحليل التاريخ
-        return DateTime.parse(cleanValue);
+        // محاولة تحليل التاريخ والتأكد من أنه UTC
+        // ✅ نستخدم .toUtc() دائماً لضمان أن النتيجة UTC
+        return DateTime.parse(cleanValue).toUtc();
       }
       return null;
     } catch (e) {

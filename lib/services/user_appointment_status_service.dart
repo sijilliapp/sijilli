@@ -13,6 +13,11 @@ class UserAppointmentStatusService {
     required String appointmentId,
     String status = 'active',
     String? privacy, // null = يرث من الموعد الأصلي
+    // ✅ نسخة من بيانات الموعد الأساسية
+    String? title,
+    String? region,
+    String? building,
+    DateTime? appointmentDate,
   }) async {
     try {
       final body = {
@@ -20,12 +25,26 @@ class UserAppointmentStatusService {
         'appointment': appointmentId,
         'status': status,
       };
-      
+
       // إضافة privacy فقط إذا كان محدداً
       if (privacy != null) {
         body['privacy'] = privacy;
       }
-      
+
+      // ✅ إضافة نسخة من بيانات الموعد
+      if (title != null) {
+        body['title'] = title;
+      }
+      if (region != null) {
+        body['region'] = region;
+      }
+      if (building != null) {
+        body['building'] = building;
+      }
+      if (appointmentDate != null) {
+        body['appointment_date'] = appointmentDate.toIso8601String();
+      }
+
       final record = await _authService.pb
           .collection(AppConstants.userAppointmentStatusCollection)
           .create(body: body);
@@ -98,12 +117,13 @@ class UserAppointmentStatusService {
   ) async {
     try {
       print('🔍 جلب حالات المشاركين للموعد: $appointmentId');
-      
+
       // جلب كل الحالات (active, deleted, archived) بشكل صريح
       final records = await _authService.pb
           .collection(AppConstants.userAppointmentStatusCollection)
           .getFullList(
-            filter: 'appointment = "$appointmentId" && (status = "active" || status = "deleted" || status = "archived")',
+            filter:
+                'appointment = "$appointmentId" && (status = "active" || status = "deleted" || status = "archived")',
             expand: 'user',
           );
 
@@ -126,7 +146,7 @@ class UserAppointmentStatusService {
       return {};
     }
   }
-  
+
   // إضافة حالات افتراضية للمشاركين المفقودين
   // بدلاً من إنشاء سجلات في قاعدة البيانات (قد يفشل بسبب قواعد الوصول)
   // نضيف حالات افتراضية في الذاكرة فقط
@@ -139,42 +159,47 @@ class UserAppointmentStatusService {
       final appointment = await _authService.pb
           .collection(AppConstants.appointmentsCollection)
           .getOne(appointmentId);
-      
+
       final hostId = appointment.data['host'] as String;
-      
+
       // جلب جميع الدعوات (accepted و deleted_after_accept)
       final invitations = await _authService.pb
           .collection(AppConstants.invitationsCollection)
           .getFullList(
-        filter: 'appointment = "$appointmentId" && (status = "accepted" || status = "deleted_after_accept")',
-      );
-      
+            filter:
+                'appointment = "$appointmentId" && (status = "accepted" || status = "deleted_after_accept")',
+          );
+
       // قائمة المشاركين (المضيف + الضيوف)
       final participantIds = <String>{hostId};
       final deletedGuestIds = <String>{}; // الضيوف الذين حذفوا الموعد
-      
+
       for (final invitation in invitations) {
         final guestId = invitation.data['guest'] as String;
         participantIds.add(guestId);
-        
+
         // إذا كانت الدعوة deleted_after_accept، فهذا يعني أن الضيف حذف الموعد
         if (invitation.data['status'] == 'deleted_after_accept') {
           deletedGuestIds.add(guestId);
         }
       }
-      
-      print('🔍 المشاركون المتوقعون: ${participantIds.length} (مضيف + ${invitations.length} ضيف)');
+
+      print(
+        '🔍 المشاركون المتوقعون: ${participantIds.length} (مضيف + ${invitations.length} ضيف)',
+      );
       print('🗑️ ضيوف حذفوا الموعد: ${deletedGuestIds.length}');
-      
+
       // إضافة حالات افتراضية للمشاركين المفقودين
       for (final participantId in participantIds) {
         if (!existingStatuses.containsKey(participantId)) {
           // تحديد الحالة بناءً على حالة الدعوة
           final isDeleted = deletedGuestIds.contains(participantId);
           final status = isDeleted ? 'deleted' : 'active';
-          
-          print('⚠️ مشارك بدون سجل: $participantId - إضافة حالة افتراضية ($status, public)');
-          
+
+          print(
+            '⚠️ مشارك بدون سجل: $participantId - إضافة حالة افتراضية ($status, public)',
+          );
+
           // إنشاء حالة افتراضية في الذاكرة فقط
           final now = DateTime.now();
           existingStatuses[participantId] = UserAppointmentStatusModel(
@@ -347,22 +372,21 @@ class UserAppointmentStatusService {
       appointmentId: appointmentId,
       newStatus: 'deleted',
     );
-    
+
     // تحديث حالة الدعوة أيضاً (للتوافق مع النظام القديم)
     try {
       final invitationRecords = await _authService.pb
           .collection(AppConstants.invitationsCollection)
           .getFullList(
-        filter: 'appointment = "$appointmentId" && guest = "$currentUserId"',
-      );
-      
+            filter:
+                'appointment = "$appointmentId" && guest = "$currentUserId"',
+          );
+
       if (invitationRecords.isNotEmpty) {
         final invitationId = invitationRecords.first.id;
         await _authService.pb
             .collection(AppConstants.invitationsCollection)
-            .update(invitationId, body: {
-          'status': 'deleted_after_accept',
-        });
+            .update(invitationId, body: {'status': 'deleted_after_accept'});
         print('✅ تم تحديث حالة الدعوة إلى deleted_after_accept');
       }
     } catch (e) {
@@ -396,22 +420,21 @@ class UserAppointmentStatusService {
       appointmentId: appointmentId,
       newStatus: 'active',
     );
-    
+
     // تحديث حالة الدعوة أيضاً (للتوافق مع النظام القديم)
     try {
       final invitationRecords = await _authService.pb
           .collection(AppConstants.invitationsCollection)
           .getFullList(
-        filter: 'appointment = "$appointmentId" && guest = "$currentUserId"',
-      );
-      
+            filter:
+                'appointment = "$appointmentId" && guest = "$currentUserId"',
+          );
+
       if (invitationRecords.isNotEmpty) {
         final invitationId = invitationRecords.first.id;
         await _authService.pb
             .collection(AppConstants.invitationsCollection)
-            .update(invitationId, body: {
-          'status': 'accepted',
-        });
+            .update(invitationId, body: {'status': 'accepted'});
         print('✅ تم تحديث حالة الدعوة إلى accepted');
       }
     } catch (e) {
@@ -432,8 +455,10 @@ class UserAppointmentStatusService {
       final appointmentIds = records
           .map((record) => record.data['appointment'] as String)
           .toList();
-      
-      print('📊 المواعيد النشطة للمستخدم $currentUserId: ${appointmentIds.length} موعد');
+
+      print(
+        '📊 المواعيد النشطة للمستخدم $currentUserId: ${appointmentIds.length} موعد',
+      );
       return appointmentIds;
     } catch (e) {
       print('❌ خطأ في جلب المواعيد النشطة: $e');
@@ -449,7 +474,9 @@ class UserAppointmentStatusService {
     try {
       final records = await _authService.pb
           .collection(AppConstants.userAppointmentStatusCollection)
-          .getFullList(filter: 'user = "$currentUserId" && status = "archived"');
+          .getFullList(
+            filter: 'user = "$currentUserId" && status = "archived"',
+          );
 
       return records
           .map((record) => record.data['appointment'] as String)

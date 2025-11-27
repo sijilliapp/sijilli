@@ -628,21 +628,31 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
   Map<String, List<Map<String, dynamic>>> _friendInvitations = {};
   List<AppointmentModel> _allAppointments = [];
 
+  bool _hasInitialized = false; // Flag لمنع إعادة التهيئة
+
   @override
   void initState() {
     super.initState();
-    _initializeDates();
+
+    // فقط إذا لم يكن هناك بيانات مستنسخة، نهيئ التواريخ
+    if (widget.clonedDate == null && widget.clonedTime == null) {
+      _initializeDates();
+    }
+
     _loadFriends();
 
     // ✅ تطبيق البيانات المستنسخة
     if (widget.clonedTitle != null) {
       _titleController.text = widget.clonedTitle!;
+      print('✅ استنساخ عنوان: ${widget.clonedTitle}');
     }
     if (widget.clonedRegion != null) {
       _regionController.text = widget.clonedRegion!;
+      print('✅ استنساخ منطقة: ${widget.clonedRegion}');
     }
     if (widget.clonedBuilding != null) {
       _buildingController.text = widget.clonedBuilding!;
+      print('✅ استنساخ مبنى: ${widget.clonedBuilding}');
     }
     if (widget.clonedTime != null) {
       final clonedTime = widget.clonedTime!;
@@ -652,12 +662,15 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
       if (_selectedHour == 0) _selectedHour = 12;
       _selectedMinute = clonedTime.minute;
       _selectedPeriod = clonedTime.hour >= 12 ? 'مساءً' : 'صباحاً';
+      print('✅ استنساخ وقت: $_selectedHour:$_selectedMinute $_selectedPeriod');
     }
 
     // ✅ استنساخ التاريخ الميلادي (اليوم والشهر فقط، مع السنة الحالية)
+    // دائماً نستنسخ كتاريخ ميلادي، والمستخدم يمكنه تغييره يدوياً للهجري
     if (widget.clonedDate != null) {
       final clonedDate = widget.clonedDate!;
       final currentYear = DateTime.now().year;
+      final userAdjustment = _authService.currentUser?.hijriAdjustment ?? 0;
 
       // إنشاء تاريخ ميلادي جديد مع السنة الحالية
       _selectedGregorianDate = DateTime(
@@ -666,24 +679,20 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
         clonedDate.day,
       );
 
-      // ضبط المتغيرات
-      _selectedDay = clonedDate.day;
-      _selectedMonth = _getMonthName(clonedDate.month);
-      _selectedYear = currentYear;
-      _selectedWeekday = _getWeekdayName(_selectedGregorianDate.weekday);
-
       // تحديث التاريخ الهجري المقابل
-      final userAdjustment = _authService.currentUser?.hijriAdjustment ?? 0;
       _selectedHijriDate = DateConverter.toHijri(
         _selectedGregorianDate,
         adjustment: userAdjustment,
       );
 
+      // ضبط المتغيرات للتاريخ الميلادي
+      _selectedDay = clonedDate.day;
+      _selectedMonth = _getMonthName(clonedDate.month);
+      _selectedYear = currentYear;
+      _selectedWeekday = _getWeekdayName(_selectedGregorianDate.weekday);
+
       print(
         '✅ استنساخ تاريخ ميلادي: $_selectedDay $_selectedMonth $currentYear',
-      );
-      print(
-        '   التاريخ الهجري المقابل: ${_selectedHijriDate.hDay} ${_getHijriMonthName(_selectedHijriDate.hMonth)} ${_selectedHijriDate.hYear}',
       );
     }
   }
@@ -691,8 +700,14 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Re-initialize dates when returning from settings
-    _initializeDates();
+    // Re-initialize dates only if not already initialized (to preserve cloned data)
+    if (!_hasInitialized) {
+      // فقط إذا لم يكن هناك بيانات مستنسخة، نهيئ التواريخ
+      if (widget.clonedDate == null && widget.clonedTime == null) {
+        _initializeDates();
+      }
+      _hasInitialized = true;
+    }
   }
 
   @override
@@ -1009,7 +1024,6 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
       _friendInvitations.clear();
       _allAppointments.clear();
 
-      // جلب جميع المواعيد النشطة
       final appointmentRecords = await _authService.pb
           .collection(AppConstants.appointmentsCollection)
           .getFullList(sort: 'appointment_date');
@@ -1081,7 +1095,6 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
       final myId = _authService.currentUser?.id;
       if (myId == null) return;
 
-      // جلب مواعيدي كمضيف
       final myAppointments = await _authService.pb
           .collection(AppConstants.appointmentsCollection)
           .getFullList(filter: 'host = "$myId"', sort: 'appointment_date');
@@ -1385,6 +1398,39 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
       }
     }
 
+    // تجهيز معلومات المكان
+    final region = _regionController.text.trim();
+    final building = _buildingController.text.trim();
+    String? location;
+    if (region.isNotEmpty && building.isNotEmpty) {
+      location = '$region، $building';
+    } else if (region.isNotEmpty) {
+      location = region;
+    } else if (building.isNotEmpty) {
+      location = building;
+    }
+
+    // تجهيز قائمة الضيوف الكاملة
+    final selectedGuestModels = _selectedGuests
+        .map(
+          (guestId) => _availableFriends.firstWhere(
+            (f) => f.id == guestId,
+            orElse: () => UserModel(
+              id: guestId,
+              email: '',
+              username: '',
+              name:
+                  guestNames?.firstWhere(
+                    (name) => name.isNotEmpty,
+                    orElse: () => 'ضيف',
+                  ) ??
+                  'ضيف',
+              verified: false,
+            ),
+          ),
+        )
+        .toList();
+
     // إظهار مربع حوار التأكيد
     final confirmed = await showDialog<bool>(
       context: context,
@@ -1392,7 +1438,9 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
       builder: (context) => AppointmentConfirmationDialog(
         title: _titleController.text.trim(),
         guestNames: guestNames,
+        guests: selectedGuestModels,
         appointmentDateTime: localAppointmentDateTime,
+        location: location,
         onConfirm: () async {
           // تنفيذ الحفظ الفعلي
           await _performSaveAppointment(localAppointmentDateTime);
@@ -1476,6 +1524,15 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
           record.id,
           _selectedGuests,
           _isPrivate ? 'private' : 'public',
+          // ✅ تمرير بيانات الموعد الأساسية
+          _titleController.text.trim(),
+          _regionController.text.trim().isEmpty
+              ? null
+              : _regionController.text.trim(),
+          _buildingController.text.trim().isEmpty
+              ? null
+              : _buildingController.text.trim(),
+          utcAppointmentDateTime,
         );
 
         // إضافة الضيوف إذا كانوا موجودين
@@ -1614,6 +1671,15 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
           record.id,
           _selectedGuests,
           _isPrivate ? 'private' : 'public',
+          // ✅ تمرير بيانات الموعد الأساسية
+          _titleController.text.trim(),
+          _regionController.text.trim().isEmpty
+              ? null
+              : _regionController.text.trim(),
+          _buildingController.text.trim().isEmpty
+              ? null
+              : _buildingController.text.trim(),
+          utcAppointmentDateTime,
         );
 
         // إضافة الضيوف إذا كانوا موجودين
@@ -1731,6 +1797,11 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
     String appointmentId,
     List<String> guestIds,
     String privacy, // إضافة معامل الخصوصية
+    // ✅ إضافة بيانات الموعد الأساسية
+    String title,
+    String? region,
+    String? building,
+    DateTime appointmentDate,
   ) async {
     try {
       final statusService = UserAppointmentStatusService(_authService);
@@ -1742,6 +1813,11 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
         appointmentId: appointmentId,
         status: 'active',
         privacy: privacy, // استخدام الخصوصية الممررة
+        // ✅ نسخ بيانات الموعد الأساسية
+        title: title,
+        region: region,
+        building: building,
+        appointmentDate: appointmentDate,
       );
 
       // ملاحظة: لا ننشئ سجلات للضيوف هنا

@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import '../models/user_model.dart';
+import '../config/constants.dart';
+import '../services/auth_service.dart';
 
 /// مربع حوار تأكيد إرسال الموعد
 class AppointmentConfirmationDialog extends StatefulWidget {
   final String title;
   final List<String>? guestNames;
+  final List<UserModel>? guests; // قائمة الضيوف الكاملة
   final DateTime appointmentDateTime;
+  final String? location; // المنطقة والمبنى
   final Future<void> Function() onConfirm;
   final VoidCallback onReview;
 
@@ -12,7 +17,9 @@ class AppointmentConfirmationDialog extends StatefulWidget {
     super.key,
     required this.title,
     this.guestNames,
+    this.guests,
     required this.appointmentDateTime,
+    this.location,
     required this.onConfirm,
     required this.onReview,
   });
@@ -28,6 +35,7 @@ class _AppointmentConfirmationDialogState
   bool _isProcessing = false;
   bool _isSuccess = false;
   late AnimationController _animationController;
+  final AuthService _authService = AuthService();
   late Animation<double> _scaleAnimation;
   late Animation<double> _checkAnimation;
 
@@ -102,50 +110,89 @@ class _AppointmentConfirmationDialogState
   Widget build(BuildContext context) {
     // تنسيق التاريخ والوقت بشكل يدوي لتجنب مشاكل Locale
     final date = widget.appointmentDateTime;
-    final formattedDate = '${date.year}/${date.month}/${date.day}';
+
+    // أسماء الأشهر بالعربية
+    const arabicMonths = [
+      'يناير',
+      'فبراير',
+      'مارس',
+      'أبريل',
+      'مايو',
+      'يونيو',
+      'يوليو',
+      'أغسطس',
+      'سبتمبر',
+      'أكتوبر',
+      'نوفمبر',
+      'ديسمبر',
+    ];
+
+    final formattedDate =
+        '${date.day} ${arabicMonths[date.month - 1]} ${date.year}';
     final hour = date.hour > 12
         ? date.hour - 12
         : (date.hour == 0 ? 12 : date.hour);
-    final period = date.hour >= 12 ? 'م' : 'ص';
+    final period = date.hour >= 12 ? 'مساءً' : 'صباحاً';
     final formattedTime =
         '${hour}:${date.minute.toString().padLeft(2, '0')} $period';
 
+    // حساب الأيام المتبقية
+    final now = DateTime.now();
+    final difference = date.difference(now);
+    final daysRemaining = difference.inDays;
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 500),
+        padding: const EdgeInsets.all(32),
         child: _isSuccess
             ? _buildSuccessView()
-            : _buildConfirmationView(formattedDate, formattedTime),
+            : _buildConfirmationView(
+                formattedDate,
+                formattedTime,
+                daysRemaining,
+              ),
       ),
     );
   }
 
-  Widget _buildConfirmationView(String formattedDate, String formattedTime) {
+  Widget _buildConfirmationView(
+    String formattedDate,
+    String formattedTime,
+    int daysRemaining,
+  ) {
+    // اسم الضيف الأول (إذا وجد)
+    final firstGuestName = widget.guestNames?.isNotEmpty == true
+        ? widget.guestNames!.first
+        : null;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // أيقونة التنبيه
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            color: Colors.blue.shade50,
-            shape: BoxShape.circle,
+        // النص العلوي
+        if (firstGuestName != null) ...[
+          Text(
+            'أنت على وشك إرسال طلب توثيق موعد لـ($firstGuestName):',
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey.shade600,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
           ),
-          child: Icon(
-            Icons.send_rounded,
-            size: 32,
-            color: Colors.blue.shade700,
-          ),
-        ),
-        const SizedBox(height: 20),
+          const SizedBox(height: 20),
+        ],
 
-        // العنوان
-        const Text(
-          'أنت على وشك إرسال طلب',
-          style: TextStyle(
-            fontSize: 20,
+        // الصور المتداخلة (placeholder - سنضيف الصور الحقيقية لاحقاً)
+        _buildOverlappingAvatars(),
+        const SizedBox(height: 24),
+
+        // عنوان الموعد (كبير وواضح)
+        Text(
+          widget.title,
+          style: const TextStyle(
+            fontSize: 22,
             fontWeight: FontWeight.bold,
             color: Color(0xFF1A1A1A),
           ),
@@ -153,75 +200,58 @@ class _AppointmentConfirmationDialogState
         ),
         const SizedBox(height: 20),
 
-        // تفاصيل الموعد
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade50,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade200),
+        // المكان (إذا وجد)
+        if (widget.location != null && widget.location!.isNotEmpty) ...[
+          Text(
+            widget.location!,
+            style: TextStyle(fontSize: 15, color: Colors.grey.shade600),
+            textAlign: TextAlign.center,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // العنوان
-              _buildDetailRow(Icons.title, 'العنوان', widget.title),
-              if (widget.guestNames != null &&
-                  widget.guestNames!.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                _buildDetailRow(
-                  Icons.person,
-                  'مع',
-                  widget.guestNames!.length == 1
-                      ? widget.guestNames!.first
-                      : '${widget.guestNames!.first} و${widget.guestNames!.length - 1} آخرين',
-                ),
-              ],
-              const SizedBox(height: 12),
-              _buildDetailRow(Icons.calendar_today, 'التاريخ', formattedDate),
-              const SizedBox(height: 12),
-              // الوقت بالعريض
-              Row(
-                children: [
-                  Icon(
-                    Icons.access_time,
-                    size: 20,
-                    color: Colors.grey.shade600,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'الساعة:',
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      formattedTime,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A1A1A),
-                      ),
-                      textAlign: TextAlign.right,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
+          const SizedBox(height: 16),
+        ],
 
-        // سؤال التأكيد
-        const Text(
-          'هل أنت متأكد من ذلك؟',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF424242),
+        // التاريخ
+        Directionality(
+          textDirection: TextDirection.rtl,
+          child: Text(
+            formattedDate,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1A1A1A),
+            ),
+            textAlign: TextAlign.center,
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 12),
+
+        // الوقت
+        Directionality(
+          textDirection: TextDirection.rtl,
+          child: Text(
+            formattedTime,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1A1A1A),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // الأيام المتبقية
+        if (daysRemaining >= 0)
+          Text(
+            daysRemaining == 0
+                ? 'الموعد اليوم'
+                : daysRemaining == 1
+                ? 'تبقى على الموعد يوم واحد'
+                : 'تبقى على الموعد $daysRemaining أيام',
+            style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
+            textAlign: TextAlign.center,
+          ),
+        const SizedBox(height: 32),
 
         // الأزرار
         if (_isProcessing)
@@ -230,11 +260,33 @@ class _AppointmentConfirmationDialogState
             child: Center(child: CircularProgressIndicator()),
           )
         else
-          Column(
+          Row(
             children: [
+              // زر المراجعة
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(false);
+                    widget.onReview();
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.grey.shade700,
+                    backgroundColor: Colors.grey.shade100,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    side: BorderSide.none,
+                  ),
+                  child: const Text(
+                    'مراجعة',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
               // زر الإرسال
-              SizedBox(
-                width: double.infinity,
+              Expanded(
                 child: ElevatedButton(
                   onPressed: _handleConfirm,
                   style: ElevatedButton.styleFrom(
@@ -252,57 +304,128 @@ class _AppointmentConfirmationDialogState
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-              // زر المراجعة
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(false);
-                    widget.onReview();
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.grey.shade700,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    side: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  child: const Text(
-                    'مراجعة الطلب',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
             ],
           ),
       ],
     );
   }
 
-  Widget _buildDetailRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: Colors.grey.shade600),
-        const SizedBox(width: 12),
-        Text(
-          '$label:',
-          style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1A1A),
+  // بناء الصور المتداخلة
+  Widget _buildOverlappingAvatars() {
+    // الحصول على الضيف الأول
+    final firstGuest = widget.guests?.isNotEmpty == true
+        ? widget.guests!.first
+        : null;
+
+    // الحصول على المستخدم الحالي
+    final currentUser = _authService.currentUser;
+
+    return SizedBox(
+      height: 90,
+      width: 140,
+      child: Stack(
+        children: [
+          // صورة المستخدم (كبيرة - يمين)
+          Positioned(
+            right: 0,
+            child: _buildAvatar(size: 90, user: currentUser, isHost: true),
+          ),
+          // صورة الضيف (صغيرة - يسار متداخلة)
+          if (firstGuest != null)
+            Positioned(
+              left: 0,
+              bottom: 0,
+              child: _buildAvatar(size: 70, user: firstGuest, isHost: false),
             ),
-            textAlign: TextAlign.right,
+        ],
+      ),
+    );
+  }
+
+  // بناء صورة واحدة (مستخدم أو ضيف)
+  Widget _buildAvatar({
+    required double size,
+    required UserModel? user,
+    required bool isHost,
+  }) {
+    // الحصول على رابط الصورة
+    String? avatarUrl;
+    if (user?.avatar != null && user!.avatar!.isNotEmpty) {
+      final cleanAvatar = user.avatar!
+          .replaceAll('[', '')
+          .replaceAll(']', '')
+          .replaceAll('"', '');
+      avatarUrl =
+          '${AppConstants.pocketbaseUrl}/api/files/${AppConstants.usersCollection}/${user.id}/$cleanAvatar';
+    }
+
+    // لون الطوق: أزرق للداعي، رمادي للمدعوين
+    final ringColor = isHost ? const Color(0xFF2196F3) : Colors.grey.shade400;
+    final ringWidth = 3.0;
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: ringColor, width: ringWidth),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(ringWidth),
+        child: Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: avatarUrl == null
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isHost
+                        ? [
+                            const Color(0xFF2196F3).withValues(alpha: 0.1),
+                            const Color(0xFF2196F3).withValues(alpha: 0.05),
+                          ]
+                        : [Colors.grey.shade300, Colors.grey.shade200],
+                  )
+                : null,
+          ),
+          child: ClipOval(
+            child: avatarUrl != null
+                ? Image.network(
+                    avatarUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Center(
+                        child: Icon(
+                          isHost ? Icons.person : Icons.person_outline,
+                          size: size * 0.4,
+                          color: isHost
+                              ? const Color(0xFF2196F3).withValues(alpha: 0.6)
+                              : Colors.grey.shade600,
+                        ),
+                      );
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: ringColor,
+                        ),
+                      );
+                    },
+                  )
+                : Center(
+                    child: Icon(
+                      isHost ? Icons.person : Icons.person_outline,
+                      size: size * 0.4,
+                      color: isHost
+                          ? const Color(0xFF2196F3).withValues(alpha: 0.6)
+                          : Colors.grey.shade600,
+                    ),
+                  ),
           ),
         ),
-      ],
+      ),
     );
   }
 

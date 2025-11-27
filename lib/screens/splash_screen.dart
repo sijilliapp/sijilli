@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../services/auth_service.dart';
 import '../widgets/app_logo.dart';
+import '../utils/route_handler.dart';
 import 'login_screen.dart';
 import 'main_screen.dart';
+import 'user_profile_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -28,6 +31,38 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (!mounted) return;
 
+    // 🔗 معالجة Deep Links (للويب فقط)
+    if (kIsWeb) {
+      final currentUrl = Uri.base.toString();
+      final path = RouteHandler.extractPath(currentUrl);
+
+      print('🌐 URL الحالي: $currentUrl');
+      print('📍 المسار: $path');
+
+      // إذا كان المسار ليس الصفحة الرئيسية
+      if (path != '/' && path.isNotEmpty) {
+        final targetScreen = RouteHandler.handleRoute(path);
+
+        if (targetScreen != null) {
+          // إذا كان المستخدم مسجل دخول، افتح الصفحة المطلوبة
+          if (isAuthenticated) {
+            Navigator.of(
+              context,
+            ).pushReplacement(MaterialPageRoute(builder: (_) => targetScreen));
+            return;
+          } else {
+            // إذا لم يكن مسجل دخول، اذهب لصفحة تسجيل الدخول
+            // TODO: حفظ الرابط المطلوب وفتحه بعد تسجيل الدخول
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const LoginScreen()),
+            );
+            return;
+          }
+        }
+      }
+    }
+
+    // السلوك الافتراضي
     if (isAuthenticated) {
       Navigator.of(
         context,
@@ -56,7 +91,7 @@ class _SplashScreenState extends State<SplashScreen> {
               AppLogo(
                 width: 150,
                 height: 150,
-                variant: LogoVariant.hd,
+                variant: LogoVariant.normal,
                 useHighQuality: true,
               ),
               const SizedBox(height: 24),
