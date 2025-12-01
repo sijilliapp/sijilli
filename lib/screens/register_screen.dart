@@ -94,7 +94,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   AppLogo(
                     width: 100,
                     height: 100,
-                    variant: LogoVariant.hd,
+                    variant: LogoVariant.normal,
                     useHighQuality: true,
                   ),
                   const SizedBox(height: 16),
