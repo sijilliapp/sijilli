@@ -27,7 +27,9 @@ jobs:
       
       # Copy vercel.json to build/web directory for proper routing
       - name: Copy vercel.json to build directory
-        run: cp vercel.json build/web/
+        run: |
+          cp vercel.json build/web/
+          ls -la build/web/
       
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v25
