@@ -1441,6 +1441,7 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
         guests: selectedGuestModels,
         appointmentDateTime: localAppointmentDateTime,
         location: location,
+        dateType: _dateType, // تمرير نوع التاريخ المختار
         onConfirm: () async {
           // تنفيذ الحفظ الفعلي
           await _performSaveAppointment(localAppointmentDateTime);

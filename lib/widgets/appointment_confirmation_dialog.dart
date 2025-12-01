@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../config/constants.dart';
 import '../services/auth_service.dart';
+import '../utils/date_converter.dart';
+import '../services/hijri_service.dart';
+import 'package:hijri/hijri_calendar.dart';
 
 /// مربع حوار تأكيد إرسال الموعد
 class AppointmentConfirmationDialog extends StatefulWidget {
@@ -12,6 +15,7 @@ class AppointmentConfirmationDialog extends StatefulWidget {
   final String? location; // المنطقة والمبنى
   final Future<void> Function() onConfirm;
   final VoidCallback onReview;
+  final String dateType; // نوع التاريخ المختار: 'ميلادي' أو 'هجري'
 
   const AppointmentConfirmationDialog({
     super.key,
@@ -22,6 +26,7 @@ class AppointmentConfirmationDialog extends StatefulWidget {
     this.location,
     required this.onConfirm,
     required this.onReview,
+    required this.dateType, // إضافة نوع التاريخ
   });
 
   @override
@@ -127,8 +132,37 @@ class _AppointmentConfirmationDialogState
       'ديسمبر',
     ];
 
-    final formattedDate =
-        '${date.day} ${arabicMonths[date.month - 1]} ${date.year}';
+    // تنسيق التاريخ حسب النوع المختار
+    String formattedDate;
+    if (widget.dateType == 'هجري') {
+      // تحويل التاريخ الميلادي إلى هجري
+      final userAdjustment = _authService.currentUser?.hijriAdjustment ?? 0;
+      final hijriDate = DateConverter.toHijri(date, adjustment: userAdjustment);
+
+      // تنسيق التاريخ الهجري
+      const hijriMonths = [
+        'محرم',
+        'صفر',
+        'ربيع الأول',
+        'ربيع الآخر',
+        'جمادى الأولى',
+        'جمادى الآخرة',
+        'رجب',
+        'شعبان',
+        'رمضان',
+        'شوال',
+        'ذو القعدة',
+        'ذو الحجة',
+      ];
+
+      final hijriMonthName = hijriMonths[hijriDate.hMonth - 1];
+      formattedDate = '${hijriDate.hDay} $hijriMonthName ${hijriDate.hYear}هـ';
+    } else {
+      // تنسيق التاريخ الميلادي
+      final formattedDateGregorian =
+          '${date.day} ${arabicMonths[date.month - 1]} ${date.year}';
+      formattedDate = formattedDateGregorian;
+    }
     final hour = date.hour > 12
         ? date.hour - 12
         : (date.hour == 0 ? 12 : date.hour);
@@ -369,6 +403,8 @@ class _AppointmentConfirmationDialogState
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(color: ringColor, width: ringWidth),
+        color: Colors
+            .white, // White background to fill the gap between border and image
       ),
       child: Padding(
         padding: EdgeInsets.all(ringWidth),
