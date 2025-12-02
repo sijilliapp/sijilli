@@ -820,10 +820,10 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
       final localAppointmentDate = TimezoneService.toLocal(
         widget.appointment.appointmentDate,
       );
-      // لا نحتاج لتحويل actionDate إذا كان بالفعل في التوقيت المحلي
-      final localActionDate = actionDate.isUtc
-          ? TimezoneService.toLocal(actionDate)
-          : actionDate;
+
+      // ✅ التعديل هنا: إزالة الشرط وإجبار التحويل للتوقيت المحلي دائماً
+      // لأن البيانات القادمة من السيرفر تكون UTC غالباً حتى لو لم تحمل العلامة
+      final localActionDate = TimezoneService.toLocal(actionDate);
 
       final difference = localAppointmentDate.difference(localActionDate);
 
