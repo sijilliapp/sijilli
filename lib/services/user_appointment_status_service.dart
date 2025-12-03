@@ -1,6 +1,7 @@
 import '../config/constants.dart';
 import '../models/user_appointment_status_model.dart';
 import '../services/auth_service.dart';
+import '../services/timezone_service.dart';
 
 class UserAppointmentStatusService {
   final AuthService _authService;
@@ -13,6 +14,7 @@ class UserAppointmentStatusService {
     required String appointmentId,
     String status = 'active',
     String? privacy, // null = يرث من الموعد الأصلي
+    DateTime? acceptedAt, // ✅ متى وافق على الدعوة (للضيوف فقط)
     // ✅ نسخة من بيانات الموعد الأساسية
     String? title,
     String? region,
@@ -29,6 +31,11 @@ class UserAppointmentStatusService {
       // إضافة privacy فقط إذا كان محدداً
       if (privacy != null) {
         body['privacy'] = privacy;
+      }
+
+      // ✅ إضافة acceptedAt إذا كان محدداً
+      if (acceptedAt != null) {
+        body['accepted_at'] = TimezoneService.toUtc(acceptedAt).toIso8601String();
       }
 
       // ✅ إضافة نسخة من بيانات الموعد

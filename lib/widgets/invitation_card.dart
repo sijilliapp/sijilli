@@ -612,7 +612,7 @@ class _InvitationCardState extends State<InvitationCard> {
             widget.invitation.id,
             body: {
               'status': response,
-              'respondedAt': DateTime.now().toIso8601String(),
+              'respondedAt': TimezoneService.toUtc(DateTime.now()).toIso8601String(),
             },
           );
 

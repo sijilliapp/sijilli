@@ -8,6 +8,7 @@ import 'package:sijilli/screens/user_profile_screen.dart';
 
 import 'package:sijilli/config/constants.dart';
 import 'package:sijilli/services/user_appointment_status_service.dart';
+import 'package:sijilli/services/timezone_service.dart';
 import 'package:sijilli/utils/date_converter.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -1222,7 +1223,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
             invitationId,
             body: {
               'status': response,
-              'respondedAt': DateTime.now().toIso8601String(),
+              'respondedAt': TimezoneService.toUtc(DateTime.now()).toIso8601String(),
             },
           );
 
@@ -2021,6 +2022,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         appointmentId: appointmentId,
         status: 'active',
         privacy: 'public', // الضيف يقبل الموعد بخصوصية عامة افتراضياً
+        acceptedAt: DateTime.now(), // ✅ حفظ وقت القبول
         // ✅ نسخ بيانات الموعد الأساسية
         title: title,
         region: region,

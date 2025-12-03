@@ -4,6 +4,7 @@ class UserAppointmentStatusModel {
   final String appointmentId;
   final String status; // active, deleted, archived
   final String? privacy; // public, private - خصوصية نسخة المستخدم
+  final DateTime? acceptedAt; // متى وافق على الدعوة (للضيوف فقط)
   final DateTime? deletedAt;
   final String? myNote; // ملاحظة خاصة للمستخدم
   // ✅ نسخة من بيانات الموعد الأساسية
@@ -20,6 +21,7 @@ class UserAppointmentStatusModel {
     required this.appointmentId,
     required this.status,
     this.privacy,
+    this.acceptedAt,
     this.deletedAt,
     this.myNote,
     this.title,
@@ -38,6 +40,7 @@ class UserAppointmentStatusModel {
         appointmentId: json['appointment'] ?? '',
         status: json['status'] ?? 'active',
         privacy: json['privacy'], // null means inherit from appointment
+        acceptedAt: _parseDateTime(json['accepted_at']),
         deletedAt: _parseDateTime(json['deleted_at']),
         myNote: json['my_note'],
         title: json['title'],
@@ -92,6 +95,7 @@ class UserAppointmentStatusModel {
       'appointment': appointmentId,
       'status': status,
       'privacy': privacy,
+      'accepted_at': acceptedAt?.toIso8601String(),
       'deleted_at': deletedAt?.toIso8601String(),
       'my_note': myNote,
       'title': title,
@@ -110,6 +114,7 @@ class UserAppointmentStatusModel {
       'appointment_id': appointmentId,
       'status': status,
       'privacy': privacy,
+      'accepted_at': acceptedAt?.toIso8601String(),
       'deleted_at': deletedAt?.toIso8601String(),
       'my_note': myNote,
       'created': created.toIso8601String(),
@@ -125,6 +130,7 @@ class UserAppointmentStatusModel {
         appointmentId: map['appointment_id'] ?? '',
         status: map['status'] ?? 'active',
         privacy: map['privacy'],
+        acceptedAt: _parseDateTime(map['accepted_at']),
         deletedAt: _parseDateTime(map['deleted_at']),
         myNote: map['my_note'],
         title: map['title'],
@@ -157,6 +163,7 @@ class UserAppointmentStatusModel {
     String? appointmentId,
     String? status,
     String? privacy,
+    DateTime? acceptedAt,
     DateTime? deletedAt,
     String? myNote,
     DateTime? created,
@@ -168,6 +175,7 @@ class UserAppointmentStatusModel {
       appointmentId: appointmentId ?? this.appointmentId,
       status: status ?? this.status,
       privacy: privacy ?? this.privacy,
+      acceptedAt: acceptedAt ?? this.acceptedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       myNote: myNote ?? this.myNote,
       created: created ?? this.created,
@@ -190,6 +198,7 @@ class UserAppointmentStatusModel {
         other.appointmentId == appointmentId &&
         other.status == status &&
         other.privacy == privacy &&
+        other.acceptedAt == acceptedAt &&
         other.deletedAt == deletedAt;
   }
 
@@ -200,6 +209,7 @@ class UserAppointmentStatusModel {
         appointmentId.hashCode ^
         status.hashCode ^
         privacy.hashCode ^
+        acceptedAt.hashCode ^
         deletedAt.hashCode;
   }
 }

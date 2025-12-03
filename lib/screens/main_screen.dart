@@ -90,12 +90,6 @@ class _MainScreenState extends State<MainScreen> {
       _loadAllDataInBackground();
     }
 
-    // فحص الإشعارات غير المقروءة بعد ثانية واحدة فقط
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        _checkUnreadNotifications();
-      }
-    });
   }
 
   // تهيئة التطبيق وجلب البيانات
@@ -114,9 +108,6 @@ class _MainScreenState extends State<MainScreen> {
         _loadNotificationsInBackground(),
         _preloadHomeScreenData(),
       ]);
-
-      // فحص الإشعارات غير المقروءة
-      await _checkUnreadNotifications();
 
       print('✅ تم تحميل جميع البيانات بنجاح');
     } else {
@@ -240,63 +231,48 @@ class _MainScreenState extends State<MainScreen> {
         try {
           // إشعار للضيف عن الدعوة
           if (record.data['guest'] == currentUserId) {
-            final appointmentData = record.get<List<dynamic>>(
-              'expand.appointment',
-            );
-            final hostData = record.get<List<dynamic>>(
-              'expand.appointment.host',
-            );
+            final appointmentExpand = record.expand['appointment'];
+            final hostExpand = appointmentExpand?.first.expand['host'];
 
-            if (appointmentData.isNotEmpty && hostData.isNotEmpty) {
-              final appointment = appointmentData.first;
-              final host = hostData.first;
+            if (appointmentExpand != null && appointmentExpand.isNotEmpty &&
+                hostExpand != null && hostExpand.isNotEmpty) {
+              final appointment = appointmentExpand.first;
+              final host = hostExpand.first;
 
-              final hostName = host['name'] ?? 'مستخدم';
-              final appointmentTitle = appointment['title'] ?? 'موعد';
+              final hostName = host.data['name'] ?? 'مستخدم';
+              final appointmentTitle = appointment.data['title'] ?? 'موعد';
 
-              String title, message;
+              // ✅ فقط الدعوات التي لم يتم الرد عليها (invited) تكون غير مقروءة
               if (record.data['status'] == 'invited') {
-                title = 'دعوة جديدة';
-                message = 'دعاك $hostName لموعد $appointmentTitle';
-              } else if (record.data['status'] == 'accepted') {
-                title = 'تم قبول الدعوة';
-                message = 'وافق $hostName على دعوتك لموعد $appointmentTitle';
-              } else if (record.data['status'] == 'rejected') {
-                title = 'تم رفض الدعوة';
-                message = 'رفض $hostName دعوتك لموعد $appointmentTitle';
-              } else {
-                continue;
+                notifications.add({
+                  'id': record.id,
+                  'title': 'دعوة جديدة',
+                  'message': 'دعاك $hostName لموعد $appointmentTitle',
+                  'type': 'NotificationType.invitation',
+                  'isRead': false, // غير مقروء - يحتاج رد
+                  'createdAt': record.data['created'],
+                  'senderId': host.id,
+                  'senderName': hostName,
+                  'senderAvatar': host.data['avatar'] ?? '',
+                  'invitationData': record.data,
+                });
               }
-
-              notifications.add({
-                'id': record.id,
-                'title': title,
-                'message': message,
-                'type': 'NotificationType.invitation',
-                'isRead': false, // جميع الإشعارات الجديدة غير مقروءة
-                'createdAt': record.data['created'],
-                'senderId': host['id'],
-                'senderName': hostName,
-                'senderAvatar': host['avatar'] ?? '',
-                'invitationData': record.data,
-              });
+              // الحالات الأخرى (accepted, rejected, deleted_after_accept) لا تُنشئ إشعارات للضيف
             }
           }
 
           // إشعار للمضيف عن استجابة الضيف
-          final appointmentData = record.get<List<dynamic>>(
-            'expand.appointment',
-          );
-          if (appointmentData.isNotEmpty) {
-            final appointment = appointmentData.first;
-            if (appointment['host'] == currentUserId &&
+          final appointmentExpand = record.expand['appointment'];
+          if (appointmentExpand != null && appointmentExpand.isNotEmpty) {
+            final appointment = appointmentExpand.first;
+            if (appointment.data['host'] == currentUserId &&
                 (record.data['status'] == 'accepted' ||
                     record.data['status'] == 'rejected')) {
-              final guestData = record.get<List<dynamic>>('expand.guest');
-              if (guestData.isNotEmpty) {
-                final guest = guestData.first;
-                final guestName = guest['name'] ?? 'ضيف';
-                final appointmentTitle = appointment['title'] ?? 'موعد';
+              final guestExpand = record.expand['guest'];
+              if (guestExpand != null && guestExpand.isNotEmpty) {
+                final guest = guestExpand.first;
+                final guestName = guest.data['name'] ?? 'ضيف';
+                final appointmentTitle = appointment.data['title'] ?? 'موعد';
 
                 final title = record.data['status'] == 'accepted'
                     ? 'تم قبول الدعوة'
@@ -312,9 +288,9 @@ class _MainScreenState extends State<MainScreen> {
                   'type': 'NotificationType.response',
                   'isRead': false, // جميع الإشعارات الجديدة غير مقروءة
                   'createdAt': record.data['updated'],
-                  'senderId': guest['id'],
+                  'senderId': guest.id,
                   'senderName': guestName,
-                  'senderAvatar': guest['avatar'] ?? '',
+                  'senderAvatar': guest.data['avatar'] ?? '',
                   'invitationData': record.data,
                 });
               }
@@ -329,12 +305,22 @@ class _MainScreenState extends State<MainScreen> {
 
       print('✅ تم إنشاء ${notifications.length} إشعار');
 
+      // 🔍 DEBUG: طباعة تفاصيل الإشعارات قبل الحفظ
+      for (var i = 0; i < notifications.length && i < 5; i++) {
+        print('   📋 إشعار $i: ${notifications[i]['title']} - isRead: ${notifications[i]['isRead']}');
+      }
+
       // حفظ الإشعارات في SharedPreferences
       if (notifications.isNotEmpty) {
         final prefs = await SharedPreferences.getInstance();
         final cacheKey = 'notifications_$currentUserId';
         await prefs.setString(cacheKey, json.encode(notifications));
         print('💾 تم حفظ ${notifications.length} إشعار في التخزين المحلي');
+        
+        // ✅ تحديث النقطة الحمراء بعد حفظ الإشعارات
+        _checkUnreadNotifications();
+      } else {
+        print('⚠️ لا توجد إشعارات لحفظها - النقطة الحمراء يجب أن تكون مخفية');
       }
     } catch (e) {
       print('❌ خطأ في جلب الإشعارات في الخلفية: $e');
@@ -362,10 +348,16 @@ class _MainScreenState extends State<MainScreen> {
 
       if (cachedData != null) {
         final List<dynamic> jsonList = json.decode(cachedData);
-        final hasUnread = jsonList.any((json) => json['isRead'] == false);
-
+        
+        // 🔍 DEBUG: طباعة تفاصيل الإشعارات
         print('📊 عدد الإشعارات: ${jsonList.length}');
+        for (var i = 0; i < jsonList.length && i < 3; i++) {
+          print('   إشعار $i: isRead = ${jsonList[i]['isRead']}');
+        }
+        
+        final hasUnread = jsonList.any((json) => json['isRead'] == false);
         print('🔴 يوجد إشعارات غير مقروءة: $hasUnread');
+        print('🔴 الحالة الحالية: $_hasUnreadNotifications');
 
         if (mounted && _hasUnreadNotifications != hasUnread) {
           setState(() {
@@ -375,6 +367,12 @@ class _MainScreenState extends State<MainScreen> {
         }
       } else {
         print('❌ لا توجد إشعارات محفوظة في التخزين المحلي');
+        // إذا لا توجد إشعارات، النقطة الحمراء يجب أن تكون false
+        if (mounted && _hasUnreadNotifications) {
+          setState(() {
+            _hasUnreadNotifications = false;
+          });
+        }
       }
     } catch (e) {
       print('❌ خطأ في فحص الإشعارات غير المقروءة: $e');
@@ -597,7 +595,7 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
   int _selectedDay = DateTime.now().day;
   int _selectedYear = DateTime.now().year;
   String _selectedWeekday = 'السبت';
-  int _selectedHour = 9;
+  int _selectedHour = 6; // الوقت الافتراضي 6:00 مساءً
   int _selectedMinute = 0;
   String _selectedPeriod = 'مساءً';
   String _selectedDuration = '45 دقيقة';
@@ -745,9 +743,6 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
     _endHijriDay = hijriToday.hDay;
     _endHijriMonth = _getHijriMonthName(hijriToday.hMonth);
     _endHijriYear = hijriToday.hYear;
-
-    // تطبيق وقت الغروب كوقت افتراضي لليوم الحالي
-    _applySunsetTime(today);
   }
 
   // Method to refresh dates when returning from settings
@@ -1197,9 +1192,6 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
         _selectedGregorianDate = gregorianDate;
         _selectedHijriDate = hijriDate;
         _selectedWeekday = _getWeekdayName(gregorianDate.weekday);
-
-        // تطبيق وقت الغروب كوقت افتراضي
-        _applySunsetTime(gregorianDate);
       });
     } catch (e) {
       // Handle invalid date
@@ -1225,9 +1217,6 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
         _selectedHijriDate = hijriDate;
         _selectedGregorianDate = gregorianDate;
         _selectedWeekday = _getWeekdayName(gregorianDate.weekday);
-
-        // تطبيق وقت الغروب كوقت افتراضي
-        _applySunsetTime(gregorianDate);
       });
     } catch (e) {
       // Handle invalid date
@@ -1728,23 +1717,37 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
     // لأن HomeScreen تستخدم initState و didChangeDependencies
   }
 
-  // تطبيق وقت الغروب كوقت افتراضي
-  void _applySunsetTime(DateTime date) {
-    final sunsetData = SunsetService.getParsedSunsetTime(date);
-    if (sunsetData != null) {
-      _selectedHour = sunsetData['hour'];
-      _selectedMinute = sunsetData['minute'];
-      _selectedPeriod = sunsetData['period'];
+  // الحصول على وقت الغروب للتاريخ المحدد (للعرض فقط)
+  String _getSunsetTimeForSelectedDate() {
+    final sunsetTime = SunsetService.getSunsetTime(_selectedGregorianDate);
+    if (sunsetTime != null) {
+      // تحويل من "5:04 PM" إلى "5:04 مساءً"
+      final parts = sunsetTime.split(' ');
+      if (parts.length == 2) {
+        final time = parts[0];
+        final period = parts[1] == 'PM' ? 'مساءً' : 'صباحاً';
+        return '$time $period';
+      }
+      return sunsetTime;
     }
+    return 'غير متاح';
   }
 
   // بناء تاريخ ووقت الموعد
   DateTime _buildAppointmentDateTime() {
-    int hour = _selectedHour;
-    if (_selectedPeriod == 'مساءً' && hour != 12) {
-      hour += 12;
-    } else if (_selectedPeriod == 'صباحاً' && hour == 12) {
-      hour = 0;
+    // ✅ إذا كانت المدة "عدة أيام"، استخدم 12:00 AM (منتصف الليل)
+    int hour, minute;
+    if (_selectedDuration == 'عدة أيام') {
+      hour = 0; // 12:00 AM
+      minute = 0;
+    } else {
+      hour = _selectedHour;
+      minute = _selectedMinute;
+      if (_selectedPeriod == 'مساءً' && hour != 12) {
+        hour += 12;
+      } else if (_selectedPeriod == 'صباحاً' && hour == 12) {
+        hour = 0;
+      }
     }
 
     if (_dateType == 'ميلادي') {
@@ -1753,7 +1756,7 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
         _getMonthNumber(_selectedMonth),
         _selectedDay,
         hour,
-        _selectedMinute,
+        minute,
       );
     } else {
       // تحويل التاريخ الهجري إلى ميلادي
@@ -1767,7 +1770,7 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
         gregorianDate.month,
         gregorianDate.day,
         hour,
-        _selectedMinute,
+        minute,
       );
     }
   }
@@ -1849,7 +1852,7 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
       _selectedDay = DateTime.now().day;
       _selectedYear = DateTime.now().year;
       _selectedWeekday = 'السبت';
-      _selectedHour = 9;
+      _selectedHour = 6; // الوقت الافتراضي 6:00 مساءً
       _selectedMinute = 0;
       _selectedPeriod = 'مساءً';
       _selectedDuration = '45 دقيقة';
@@ -2656,9 +2659,101 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
                         if (_selectedDuration != 'عدة أيام')
                           Column(
                             children: [
-                              // الساعة والدقيقة في صف واحد
+                              // الدقيقة والساعة في صف واحد (معكوس)
                               Row(
                                 children: [
+                                  // الدقيقة أولاً (على اليسار)
+                                  Expanded(
+                                    flex: 2,
+                                    child: DropdownButtonFormField<int>(
+                                      initialValue: _selectedMinute,
+                                      menuMaxHeight: 300,
+                                      decoration: InputDecoration(
+                                        labelText: 'الدقيقة',
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            18,
+                                          ),
+                                          borderSide: BorderSide(
+                                            color: _hasMyTimeConflict()
+                                                ? Colors.red
+                                                : Colors.grey,
+                                            width: _hasMyTimeConflict() ? 2 : 1,
+                                          ),
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            18,
+                                          ),
+                                          borderSide: BorderSide(
+                                            color: _hasMyTimeConflict()
+                                                ? Colors.red
+                                                : Colors.grey,
+                                            width: _hasMyTimeConflict() ? 2 : 1,
+                                          ),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            18,
+                                          ),
+                                          borderSide: BorderSide(
+                                            color: _hasMyTimeConflict()
+                                                ? Colors.red
+                                                : Colors.blue,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        isDense: true,
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 8,
+                                            ),
+                                      ),
+                                      selectedItemBuilder: (context) {
+                                        // ✅ استخدام نفس الترتيب المخصص للمعاينة
+                                        final commonMinutes = [0, 15, 30, 45];
+                                        final otherMinutes = List.generate(60, (i) => i)
+                                            .where((m) => !commonMinutes.contains(m))
+                                            .toList();
+                                        final sortedMinutes = [...commonMinutes, ...otherMinutes];
+                                        
+                                        return sortedMinutes.map((minute) => Text(
+                                              minute.toString().padLeft(2, '0'),
+                                              style: const TextStyle(fontSize: 14),
+                                            )).toList();
+                                      },
+                                      items: () {
+                                        // ترتيب مخصص: الدقائق الشائعة أولاً ثم الباقي
+                                        final commonMinutes = [0, 15, 30, 45];
+                                        final otherMinutes = List.generate(60, (i) => i)
+                                            .where((m) => !commonMinutes.contains(m))
+                                            .toList();
+                                        final sortedMinutes = [...commonMinutes, ...otherMinutes];
+                                        
+                                        return sortedMinutes.map(
+                                          (minute) => DropdownMenuItem(
+                                            value: minute,
+                                            child: Container(
+                                              width: 40,
+                                              alignment: Alignment.center,
+                                              child: Text(
+                                                minute.toString().padLeft(2, '0'),
+                                                style: const TextStyle(fontSize: 14),
+                                              ),
+                                            ),
+                                          ),
+                                        ).toList();
+                                      }(),
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _selectedMinute = value!;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  // الساعة ثانياً (على اليمين)
                                   Expanded(
                                     flex: 2,
                                     child: DropdownButtonFormField<int>(
@@ -2731,76 +2826,6 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
-                                    flex: 2,
-                                    child: DropdownButtonFormField<int>(
-                                      initialValue: _selectedMinute,
-                                      decoration: InputDecoration(
-                                        labelText: 'الدقيقة',
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            18,
-                                          ),
-                                          borderSide: BorderSide(
-                                            color: _hasMyTimeConflict()
-                                                ? Colors.red
-                                                : Colors.grey,
-                                            width: _hasMyTimeConflict() ? 2 : 1,
-                                          ),
-                                        ),
-                                        enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            18,
-                                          ),
-                                          borderSide: BorderSide(
-                                            color: _hasMyTimeConflict()
-                                                ? Colors.red
-                                                : Colors.grey,
-                                            width: _hasMyTimeConflict() ? 2 : 1,
-                                          ),
-                                        ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            18,
-                                          ),
-                                          borderSide: BorderSide(
-                                            color: _hasMyTimeConflict()
-                                                ? Colors.red
-                                                : Colors.blue,
-                                            width: 2,
-                                          ),
-                                        ),
-                                        isDense: true,
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 8,
-                                            ),
-                                      ),
-                                      items: List.generate(60, (index) => index)
-                                          .map(
-                                            (minute) => DropdownMenuItem(
-                                              value: minute,
-                                              child: Text(
-                                                minute.toString().padLeft(
-                                                  2,
-                                                  '0',
-                                                ),
-                                                style: const TextStyle(
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                            ),
-                                          )
-                                          .toList(),
-                                      onChanged: (value) {
-                                        setState(() {
-                                          _selectedMinute = value!;
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
                                     flex: 3,
                                     child: DropdownButtonFormField<String>(
                                       initialValue: _selectedPeriod,
@@ -2839,6 +2864,46 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
                                     ),
                                   ),
                                 ],
+                              ),
+                            ],
+                          ),
+                        
+                        // عرض وقت الغروب للتاريخ المحدد
+                        if (_selectedDuration != 'عدة أيام')
+                          Column(
+                            children: [
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.amber.shade200,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.wb_twilight,
+                                      size: 16,
+                                      color: Colors.amber.shade700,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'غروب الشمس لهذا اليوم: ${_getSunsetTimeForSelectedDate()}',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.amber.shade900,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),

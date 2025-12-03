@@ -3,6 +3,7 @@ import '../config/constants.dart';
 import '../models/appointment_model.dart';
 import '../models/invitation_model.dart';
 import '../services/auth_service.dart';
+import '../services/timezone_service.dart';
 
 class AppointmentService {
   final AuthService _authService;
@@ -145,7 +146,7 @@ class AppointmentService {
             body: {
               'appointment': guestRecord.id,
               'status': 'accepted',
-              'respondedAt': DateTime.now().toIso8601String(),
+              'respondedAt': TimezoneService.toUtc(DateTime.now()).toIso8601String(),
             },
           );
 
@@ -167,7 +168,7 @@ class AppointmentService {
             invitationId,
             body: {
               'status': 'rejected',
-              'respondedAt': DateTime.now().toIso8601String(),
+              'respondedAt': TimezoneService.toUtc(DateTime.now()).toIso8601String(),
             },
           );
 

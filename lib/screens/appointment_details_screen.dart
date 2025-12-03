@@ -517,50 +517,39 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
     // الحصول على حالة المشارك من participantsStatus
     final participantStatus = widget.participantsStatus?[user.id];
 
-    // تحديد اللون بناءً على الحالة
-    final appointmentDate = widget.appointment.appointmentDate;
-    final now = DateTime.now();
-    final appointmentPassed = now.isAfter(appointmentDate);
-
+    // تحديد اللون بناءً على الحالة (نفس سياسة appointment_card)
     Color ringColor;
+    
     if (participantStatus != null) {
-      if (participantStatus.status.toLowerCase() == 'deleted') {
-        // فحص إذا حذف قبل أو بعد الموعد
-        final deletedBeforeAppointment =
-            participantStatus.deletedAt != null &&
-            participantStatus.deletedAt!.isBefore(appointmentDate);
-
-        if (deletedBeforeAppointment) {
-          ringColor = const Color(0xFFE57373); // أحمر: غائب (حذف قبل الموعد)
-        } else if (appointmentPassed) {
-          ringColor = Colors.green; // أخضر: منجز (حذف بعد الموعد)
-        } else {
+      // لدينا بيانات من user_appointment_status
+      switch (participantStatus.status.toLowerCase()) {
+        case 'deleted': // حذف الموعد
+          if (isHost) {
+            ringColor = const Color(0xFFE57373); // أحمر ناعم للمضيف
+          } else {
+            ringColor = const Color(0xFFC62828); // أحمر داكن للضيف
+          }
+          break;
+        case 'archived': // أرشف الموعد
+          ringColor = Colors.grey;
+          break;
+        case 'active': // نشط
+        default:
           ringColor = Colors.blue; // أزرق: نشط
-        }
-      } else if (participantStatus.status.toLowerCase() == 'archived') {
-        ringColor = Colors.grey; // رمادي: مؤرشف
-      } else {
-        // active
-        if (appointmentPassed) {
-          ringColor = Colors.green; // أخضر: منجز
-        } else {
-          ringColor = Colors.blue; // أزرق: نشط
-        }
       }
     } else {
-      // إذا لم تكن البيانات متاحة، استخدم حالة الدعوة
-      if (invitation.status == 'invited') {
-        ringColor = Colors.grey; // رمادي: انتظار
-      } else if (invitation.status == 'accepted') {
-        if (appointmentPassed) {
-          ringColor = Colors.green; // أخضر: منجز
-        } else {
+      // لا توجد بيانات من user_appointment_status، نستخدم invitation
+      switch (invitation.status.toLowerCase()) {
+        case 'accepted':
+        case 'deleted_after_accept':
           ringColor = Colors.blue; // أزرق: وافق
-        }
-      } else if (invitation.status == 'rejected') {
-        ringColor = Colors.grey; // رمادي: رفض
-      } else {
-        ringColor = Colors.grey; // رمادي: افتراضي
+          break;
+        case 'rejected':
+          ringColor = Colors.grey; // رمادي: رفض
+          break;
+        case 'invited':
+        default:
+          ringColor = Colors.grey; // رمادي: لم يرد
       }
     }
 
@@ -665,7 +654,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
           localDeletedAt.isBefore(localAppointmentDate);
 
       if (deletedBeforeAppointment) {
-        // حذف قبل الموعد = غائب (نسجل الحذف فقط)
+        // حذف قبل الموعد = غائب (نسجل الحذف)
         eventSpans.add(TextSpan(text: '، '));
         eventSpans.add(
           WidgetSpan(child: Icon(Icons.cancel, size: 14, color: Colors.red)),
@@ -687,24 +676,17 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
         eventSpans.add(TextSpan(text: ' منجز'));
       }
     } else {
-      // الضيف
-      print('🔍 ضيف: ${user.name}');
-      print('   invitation.status: ${invitation.status}');
-      print('   invitation.respondedAt: ${invitation.respondedAt}');
-      print('   participantStatus?.deletedAt: ${participantStatus?.deletedAt}');
+      // الضيف: متى وافق (دائماً إذا وافق - حتى لو حذف لاحقاً)
+      // ✅ نستخدم participantStatus.acceptedAt بدلاً من invitation.respondedAt
+      // لأن participantStatus محفوظ حتى لو الضيف حذف سجل الدعوة
+      final acceptedAt = participantStatus?.acceptedAt ??
+          (invitation.respondedAt != null &&
+                  (invitation.status == 'accepted' ||
+                      invitation.status == 'deleted_after_accept')
+              ? invitation.respondedAt
+              : null);
 
-      // الضيف: متى وافق (دائماً إذا وافق)
-      if (invitation.respondedAt != null && invitation.status == 'accepted') {
-        // 🔍 DEBUG: طباعة معلومات التاريخ
-        print('   invitation.respondedAt: ${invitation.respondedAt}');
-        print(
-          '   invitation.respondedAt.isUtc: ${invitation.respondedAt!.isUtc}',
-        );
-        print('   widget.appointment.created: ${widget.appointment.created}');
-        print(
-          '   widget.appointment.created.isUtc: ${widget.appointment.created.isUtc}',
-        );
-
+      if (acceptedAt != null) {
         eventSpans.add(
           WidgetSpan(
             child: Icon(
@@ -716,8 +698,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
         );
         eventSpans.add(
           TextSpan(
-            text:
-                ' وافق: ${_getTimeRelativeToAppointmentShort(invitation.respondedAt!)}',
+            text: ' وافق: ${_getTimeRelativeToAppointmentShort(acceptedAt)}',
           ),
         );
       }
@@ -731,7 +712,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
           localDeletedAt.isBefore(localAppointmentDate);
 
       if (deletedBeforeAppointment) {
-        // حذف قبل الموعد = غائب (نسجل الحذف فقط)
+        // حذف قبل الموعد = غائب (نسجل الحذف)
         if (eventSpans.isNotEmpty) {
           eventSpans.add(TextSpan(text: '، '));
         }
@@ -744,7 +725,9 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                 ' حذف: ${_getTimeRelativeToAppointmentShort(participantStatus!.deletedAt!)}',
           ),
         );
-      } else if (appointmentPassed && invitation.status == 'accepted') {
+      } else if (appointmentPassed &&
+          (invitation.status == 'accepted' ||
+              invitation.status == 'deleted_after_accept')) {
         // أدرك الموعد = منجز (لا نسجل الحذف بعد الموعد)
         if (eventSpans.isNotEmpty) {
           eventSpans.add(TextSpan(text: '، '));
@@ -756,8 +739,6 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
         );
         eventSpans.add(TextSpan(text: ' منجز'));
       }
-
-      print('   عدد الأحداث: ${eventSpans.length}');
     }
 
     return Directionality(
@@ -820,9 +801,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
       final localAppointmentDate = TimezoneService.toLocal(
         widget.appointment.appointmentDate,
       );
-
-      // ✅ التعديل هنا: إزالة الشرط وإجبار التحويل للتوقيت المحلي دائماً
-      // لأن البيانات القادمة من السيرفر تكون UTC غالباً حتى لو لم تحمل العلامة
+      // ✅ دائماً نحول actionDate للتوقيت المحلي
       final localActionDate = TimezoneService.toLocal(actionDate);
 
       final difference = localAppointmentDate.difference(localActionDate);
@@ -833,34 +812,34 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
         if (absDiff.inDays > 0) {
           final hours = absDiff.inHours % 24;
           if (hours > 0) {
-            return 'بعد بـ${absDiff.inDays}ي و${hours}س';
+            return 'بعد الموعد بـ${absDiff.inDays}ي و${hours}س';
           }
-          return 'بعد بـ${absDiff.inDays}ي';
+          return 'بعد الموعد بـ${absDiff.inDays}ي';
         } else if (absDiff.inHours > 0) {
           final minutes = absDiff.inMinutes % 60;
           if (minutes > 0) {
-            return 'بعد بـ${absDiff.inHours}س و${minutes}د';
+            return 'بعد الموعد بـ${absDiff.inHours}س و${minutes}د';
           }
-          return 'بعد بـ${absDiff.inHours}س';
+          return 'بعد الموعد بـ${absDiff.inHours}س';
         } else {
-          return 'بعد بـ${absDiff.inMinutes}د';
+          return 'بعد الموعد بـ${absDiff.inMinutes}د';
         }
       } else {
         // الإجراء حدث قبل الموعد
         if (difference.inDays > 0) {
           final hours = difference.inHours % 24;
           if (hours > 0) {
-            return 'قبل بـ${difference.inDays}ي و${hours}س';
+            return 'قبل الموعد بـ${difference.inDays}ي و${hours}س';
           }
-          return 'قبل بـ${difference.inDays}ي';
+          return 'قبل الموعد بـ${difference.inDays}ي';
         } else if (difference.inHours > 0) {
           final minutes = difference.inMinutes % 60;
           if (minutes > 0) {
-            return 'قبل بـ${difference.inHours}س و${minutes}د';
+            return 'قبل الموعد بـ${difference.inHours}س و${minutes}د';
           }
-          return 'قبل بـ${difference.inHours}س';
+          return 'قبل الموعد بـ${difference.inHours}س';
         } else {
-          return 'قبل بـ${difference.inMinutes}د';
+          return 'قبل الموعد بـ${difference.inMinutes}د';
         }
       }
     } catch (e) {
