@@ -21,14 +21,14 @@ class ArchivedAppointmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ تحديد اللون حسب النوع
+    // ✅ تحديد اللون حسب النوع - ألوان أكثر وضوحاً
     final backgroundColor = isExpired 
-        ? Colors.red.shade50  // أحمر فاتح للمنتهية
-        : Colors.grey.shade100; // رمادي للمؤرشفة
+        ? const Color(0xFFFFEBEE)  // أحمر فاتح جداً للمنتهية (Red 50)
+        : const Color(0xFFF5F5F5); // رمادي فاتح للمؤرشفة (Grey 100)
     
     final borderColor = isExpired
-        ? Colors.red.shade200  // حدود حمراء للمنتهية
-        : Colors.grey.shade300; // حدود رمادية للمؤرشفة
+        ? const Color(0xFFEF9A9A)  // حدود حمراء واضحة للمنتهية (Red 200)
+        : const Color(0xFFE0E0E0); // حدود رمادية للمؤرشفة (Grey 300)
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
