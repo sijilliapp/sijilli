@@ -449,6 +449,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
     return ArchivedAppointmentCard(
       appointment: appointment,
       host: _appointmentHosts[appointment.id],
+      isExpired: isExpired, // ✅ تمرير حالة المنتهي
       onTap: () {
         Navigator.push(
           context,

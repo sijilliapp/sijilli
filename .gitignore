@@ -65,3 +65,6 @@ flutter_*.log
 
 # Don't ignore public folder (for Vercel deployment)
 !public/
+
+.vercel
+.env*.local
