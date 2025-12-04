@@ -9,7 +9,9 @@ import 'main_screen.dart';
 import 'user_profile_screen.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  final String? initialUsername;
+  
+  const SplashScreen({super.key, this.initialUsername});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();

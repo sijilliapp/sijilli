@@ -1154,43 +1154,46 @@ class _AppointmentCardState extends State<AppointmentCard> {
               // الهيدر الجديد
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                textDirection: TextDirection.rtl, // ✅ RTL للهيدر
                 children: [
+                  // من اليمين: زر الرابط + العد التنازلي + الخصوصية
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    textDirection: TextDirection.ltr, // ✅ LTR للعناصر داخلياً
+                    children: [
+                      // كبسولة الخصوصية (أقصى اليمين)
+                      _buildPrivacyCapsule(),
+                      const SizedBox(width: 4),
+                      // كبسولة العد التنازلي
+                      _buildCountdownCapsule(),
+                      // زر الرابط (إن وُجد)
+                      if (widget.appointment.streamLink != null &&
+                          widget.appointment.streamLink!.isNotEmpty) ...[
+                        const SizedBox(width: 4),
+                        _buildStreamLinkButton(),
+                      ],
+                    ],
+                  ),
+
+                  const SizedBox(width: 6),
+
                   // من اليسار: صورة أول ضيف + اسمه (ملتصقين)
                   if (_effectiveGuests.isNotEmpty)
                     Flexible(
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
+                        textDirection: TextDirection.ltr, // ✅ LTR للضيف
                         children: [
-                          // صورة أول ضيف
-                          _buildGuestAvatar(_effectiveGuests.first),
-                          const SizedBox(width: 6),
                           // اسم أول ضيف - يتمدد بحسب طول الاسم مع الاختصار عند التزاحم
                           Flexible(child: _buildFirstGuestName()),
+                          const SizedBox(width: 6),
+                          // صورة أول ضيف
+                          _buildGuestAvatar(_effectiveGuests.first),
                         ],
                       ),
                     )
                   else
                     const Spacer(),
-
-                  const SizedBox(width: 6),
-
-                  // من اليمين: زر الرابط + العد التنازلي + الخصوصية
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // زر الرابط (إن وُجد)
-                      if (widget.appointment.streamLink != null &&
-                          widget.appointment.streamLink!.isNotEmpty) ...[
-                        _buildStreamLinkButton(),
-                        const SizedBox(width: 4),
-                      ],
-                      // كبسولة العد التنازلي
-                      _buildCountdownCapsule(),
-                      const SizedBox(width: 4),
-                      // كبسولة الخصوصية (أقصى اليمين)
-                      _buildPrivacyCapsule(),
-                    ],
-                  ),
                 ],
               ),
               const SizedBox(height: 12),

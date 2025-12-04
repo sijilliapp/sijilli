@@ -9,7 +9,7 @@ import '../models/user_model.dart';
 import '../models/invitation_model.dart';
 import '../models/user_appointment_status_model.dart';
 import '../config/constants.dart';
-import '../widgets/archived_appointment_card.dart';
+import '../widgets/appointment_card.dart';
 import 'appointment_details_screen.dart';
 
 class ArchiveScreen extends StatefulWidget {
@@ -314,10 +314,26 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ تحديد لون الخلفية حسب نوع المحتوى
+    final hasExpired = _expiredAppointments.isNotEmpty;
+    final hasArchived = _archivedAppointments.isNotEmpty;
+    
+    Color backgroundColor;
+    if (hasExpired && !hasArchived) {
+      // فقط منتهية - خلفية حمراء فاتحة جداً
+      backgroundColor = const Color(0xFFFFF5F5);
+    } else if (hasArchived && !hasExpired) {
+      // فقط مؤرشفة - خلفية رمادية فاتحة
+      backgroundColor = const Color(0xFFF5F5F5);
+    } else {
+      // كلاهما أو لا شيء - خلفية عادية
+      backgroundColor = Colors.grey.shade50;
+    }
+    
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: Colors.grey.shade50,
+        backgroundColor: backgroundColor,
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
@@ -446,10 +462,13 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
   }
 
   Widget _buildAppointmentCard(AppointmentModel appointment, {bool isArchived = false, bool isExpired = false}) {
-    return ArchivedAppointmentCard(
+    return AppointmentCard(
       appointment: appointment,
+      guests: _appointmentGuests[appointment.id] ?? [],
+      invitations: _appointmentInvitations[appointment.id] ?? [],
       host: _appointmentHosts[appointment.id],
-      isExpired: isExpired, // ✅ تمرير حالة المنتهي
+      participantsStatus: _participantsStatus[appointment.id],
+      isPastAppointment: true, // كل المواعيد في الأرشيف تعتبر ماضية
       onTap: () {
         Navigator.push(
           context,
@@ -460,7 +479,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
               invitations: _appointmentInvitations[appointment.id] ?? [],
               host: _appointmentHosts[appointment.id],
               participantsStatus: _participantsStatus[appointment.id],
-              isFromArchive: true, // ✅ علامة أن الموعد من الأرشيف
+              isFromArchive: true,
             ),
           ),
         ).then((_) => _loadArchivedAppointments());

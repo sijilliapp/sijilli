@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:html' as html;
 import 'screens/splash_screen.dart';
 import 'services/timezone_service.dart';
 import 'services/sunset_service.dart';
@@ -24,8 +26,45 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  String? _initialUsername;
+
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb) {
+      _checkUrlForUsername();
+    }
+  }
+
+  void _checkUrlForUsername() {
+    try {
+      final url = html.window.location.href;
+      final uri = Uri.parse(url);
+      print('🌐 URL الحالي: $url');
+      print('📍 المسار: ${uri.path}');
+      
+      // التحقق من وجود username في المسار (مثل /hussain)
+      if (uri.pathSegments.isNotEmpty) {
+        final username = uri.pathSegments.first;
+        if (username.isNotEmpty && username != 'index.html') {
+          setState(() {
+            _initialUsername = username;
+          });
+          print('👤 تم العثور على username في الرابط: $username');
+        }
+      }
+    } catch (e) {
+      print('❌ خطأ في قراءة URL: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +78,6 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
         fontFamily: 'Arial',
-        // إعدادات شريط الحالة للتطبيق
         appBarTheme: const AppBarTheme(
           systemOverlayStyle: SystemUiOverlayStyle(
             statusBarColor: Colors.transparent,
@@ -48,7 +86,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const SplashScreen(),
+      home: SplashScreen(initialUsername: _initialUsername),
     );
   }
 }
