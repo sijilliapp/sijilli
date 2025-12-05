@@ -890,13 +890,28 @@ class _UserProfileScreenState extends State<UserProfileScreen>
 
       if (_friendshipStatus == 'none') {
         // إرسال طلب صداقة
-        await _authService.pb.collection(AppConstants.friendshipCollection).create(
-          body: {
-            'follower': currentUserId,
-            'following': _user!.id,
-            'status': 'pending',
-          },
-        );
+        try {
+          await _authService.pb.collection(AppConstants.friendshipCollection).create(
+            body: {
+              'follower': currentUserId,
+              'following': _user!.id,
+              'status': 'pending',
+            },
+          );
+          print('✅ تم إرسال طلب الصداقة بنجاح');
+        } catch (e) {
+          print('❌ خطأ في إرسال طلب الصداقة: $e');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('خطأ: ${e.toString()}'),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+          rethrow;
+        }
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

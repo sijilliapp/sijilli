@@ -11,6 +11,7 @@ import '../models/appointment_model.dart';
 import '../models/user_model.dart';
 import '../models/invitation_model.dart';
 import '../models/user_appointment_status_model.dart';
+import '../models/article_model.dart';
 import '../config/constants.dart';
 import '../widgets/appointment_card.dart';
 import '../utils/arabic_search_utils.dart';
@@ -20,6 +21,8 @@ import 'friends_screen.dart';
 import 'login_screen.dart';
 import 'archive_screen.dart';
 import 'appointment_details_screen.dart';
+import 'add_article_screen.dart';
+import 'article_details_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -47,6 +50,10 @@ class _HomeScreenState extends State<HomeScreen>
       {}; // معرف الموعد -> حالات المشاركين
   bool _isOnline = true;
   late TabController _tabController;
+  
+  // متغيرات المقالات
+  List<ArticleModel> _articles = [];
+  bool _isLoadingArticles = false;
 
   // متغيرات البحث
   final TextEditingController _searchController = TextEditingController();
@@ -78,6 +85,8 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _initializeData() async {
     // تحميل المواعيد فوراً (Local-First) - المصادقة تمت بالفعل في SplashScreen
     await _loadAppointments();
+    // تحميل المقالات
+    await _loadArticles();
   }
 
   void _listenToConnectivity() {
@@ -1212,30 +1221,23 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildTabBar() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          // التبويبات
-          Expanded(
-            child: TabBar(
-              controller: _tabController,
-              labelColor: const Color(0xFF2196F3),
-              unselectedLabelColor: Colors.grey.shade600,
-              indicatorColor: const Color(0xFF2196F3),
-              indicatorWeight: 2,
-              labelStyle: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-              ),
-              tabs: const [
-                Tab(text: 'المواعيد'),
-                Tab(text: 'المقالات'),
-              ],
-            ),
-          ),
+      child: TabBar(
+        controller: _tabController,
+        labelColor: const Color(0xFF2196F3),
+        unselectedLabelColor: Colors.grey.shade600,
+        indicatorColor: const Color(0xFF2196F3),
+        indicatorWeight: 2,
+        labelStyle: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
+        ),
+        tabs: const [
+          Tab(text: 'المواعيد'),
+          Tab(text: 'المقالات'),
         ],
       ),
     );
@@ -1410,28 +1412,178 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  // تحميل المقالات
+  Future<void> _loadArticles() async {
+    setState(() => _isLoadingArticles = true);
+    
+    try {
+      final currentUserId = _authService.currentUser?.id;
+      if (currentUserId == null) return;
+
+      final records = await _authService.pb
+          .collection('articles')
+          .getList(
+            page: 1,
+            perPage: 50,
+            sort: '-created',
+            filter: 'is_public = true || author = "$currentUserId"',
+          );
+
+      final articles = records.items
+          .map((record) => ArticleModel.fromJson(record.toJson()))
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _articles = articles;
+          _isLoadingArticles = false;
+        });
+      }
+    } catch (e) {
+      print('❌ خطأ في تحميل المقالات: $e');
+      if (mounted) {
+        setState(() => _isLoadingArticles = false);
+      }
+    }
+  }
+
   // Widget تبويب المقالات كـ Sliver
   Widget _buildArticlesSliver() {
-    return SliverFillRemaining(
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.article_outlined, size: 64, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            Text(
-              'لا توجد مقالات',
-              style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+    if (_isLoadingArticles) {
+      return const SliverFillRemaining(
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_articles.isEmpty) {
+      return SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.article_outlined, size: 64, color: Colors.grey.shade400),
+              const SizedBox(height: 16),
+              Text(
+                'لا توجد مقالات',
+                style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'اضغط على + لإضافة مقال جديد',
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return SliverList(
+      delegate: SliverChildListDelegate([
+        // هيدر المقالات
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // زر الإضافة على اليسار (LTR)
+              IconButton(
+                icon: const Icon(Icons.add, color: Color(0xFF2196F3), size: 28),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AddArticleScreen(),
+                    ),
+                  ).then((_) => _loadArticles());
+                },
+              ),
+              // عنوان "المقالات" على اليمين
+              const Text(
+                'المقالات',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+        // قائمة المقالات
+        ..._articles.map((article) => _buildArticleCard(article)),
+      ]),
+    );
+  }
+
+  // بطاقة المقال - قائمة عمودية بسيطة
+  Widget _buildArticleCard(ArticleModel article) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ArticleDetailsScreen(article: article),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'ابدأ بكتابة مقالك الأول',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
-            ),
-          ],
+          ).then((deleted) {
+            if (deleted == true) {
+              _loadArticles(); // إعادة تحميل المقالات إذا تم الحذف
+            }
+          });
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              // المحتوى - سطر واحد فقط
+              Expanded(
+                child: Text(
+                  article.content,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: Colors.black87,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textDirection: TextDirection.rtl,
+                  textAlign: TextAlign.right,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // أيقونة النقاط الثلاث
+              Icon(
+                Icons.more_horiz,
+                size: 20,
+                color: Colors.grey.shade600,
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  String _formatArticleDate(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+
+    if (diff.inDays == 0) {
+      return 'اليوم';
+    } else if (diff.inDays == 1) {
+      return 'أمس';
+    } else if (diff.inDays < 7) {
+      return 'منذ ${diff.inDays} أيام';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
   }
 
   // Widget شريط البحث المخفي

@@ -19,6 +19,7 @@ import 'home_screen.dart';
 import 'notifications_screen.dart';
 import 'editable_settings_screen.dart';
 import 'user_profile_screen.dart';
+import 'articles_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final int initialTabIndex;
