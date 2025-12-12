@@ -770,7 +770,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
     return IntrinsicWidth(
       child: Container(
         height: headerElementHeight,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.fromLTRB(3, 3, 12, 3), // 3px حول الصورة، 12px للنص
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(
@@ -778,20 +778,55 @@ class _AppointmentCardState extends State<AppointmentCard> {
           ), // كبسولة حقيقية
           border: Border.all(color: borderColor, width: 1),
         ),
-        child: Center(
-          child: Text(
-            firstGuest.name,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: textColor,
-              fontStyle: widget.isPastAppointment
-                  ? FontStyle.italic
-                  : FontStyle.normal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // الصورة في أقصى اليسار مع مسافات متساوية
+            Container(
+              width: headerElementHeight - 6, // مسافة 3 من كل جهة
+              height: headerElementHeight - 6,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.grey.shade200,
+              ),
+              child: _getUserAvatarUrl(firstGuest) == null
+                  ? Icon(
+                      Icons.person,
+                      size: 12,
+                      color: Colors.grey.shade500,
+                    )
+                  : ClipOval(
+                      child: Image.network(
+                        _getUserAvatarUrl(firstGuest)!,
+                        width: headerElementHeight - 6,
+                        height: headerElementHeight - 6,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            Icons.person,
+                            size: 12,
+                            color: Colors.grey.shade500,
+                          );
+                        },
+                      ),
+                    ),
             ),
-            overflow: TextOverflow.ellipsis, // اختصار بالنقاط إذا طال النص
-            maxLines: 1, // سطر واحد فقط
-          ),
+            const SizedBox(width: 8),
+            // النص
+            Text(
+              firstGuest.name,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+                fontStyle: widget.isPastAppointment
+                    ? FontStyle.italic
+                    : FontStyle.normal,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ],
         ),
       ),
     );
@@ -1177,21 +1212,9 @@ class _AppointmentCardState extends State<AppointmentCard> {
 
                   const SizedBox(width: 6),
 
-                  // من اليسار: صورة أول ضيف + اسمه (ملتصقين)
+                  // من اليسار: كبسولة الضيف (اسم + صورة)
                   if (_effectiveGuests.isNotEmpty)
-                    Flexible(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        textDirection: TextDirection.ltr, // ✅ LTR للضيف
-                        children: [
-                          // اسم أول ضيف - يتمدد بحسب طول الاسم مع الاختصار عند التزاحم
-                          Flexible(child: _buildFirstGuestName()),
-                          const SizedBox(width: 6),
-                          // صورة أول ضيف
-                          _buildGuestAvatar(_effectiveGuests.first),
-                        ],
-                      ),
-                    )
+                    Flexible(child: _buildFirstGuestName())
                   else
                     const Spacer(),
                 ],
