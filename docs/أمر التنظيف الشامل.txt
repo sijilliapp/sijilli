@@ -1,0 +1,18 @@
+أمر التنظيف الشامل
+taskkill /f /im "dart.exe" /im "java.exe" 2>$null; flutter clean
+
+
+
+
+PS J:\sijilli> taskkill /f /im "dart.exe" /im "flutter.exe" /im "gradle.exe" /im "java.exe" 2>$null; Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
+SUCCESS: The process "java.exe" with PID 94612 has been terminated.
+SUCCESS: The process "dart.exe" with PID 29552 has been terminated.
+PS J:\sijilli> Get-Process | Where-Object {$_.ProcessName -like "*gradle*" -or $_.ProcessName -like "*java*" -or $_.ProcessName -like "*dart*"} | Select-Object ProcessName, Id
+
+ProcessName       Id
+-----------       --
+dart           38452
+dartaotruntime  1636
+
+
+

@@ -1,0 +1,406 @@
+# 📍 قواعد مشروع "سجلي" - دليل شامل للمطورين
+
+> **ملاحظة مهمة**: هذا الملف يحدد القواعد والمعايير للمشروع. اقرأه بعناية قبل البدء في البرمجة.
+
+---
+
+## 🎯 هدف المشروع
+
+تطبيق "سجلي" لتنظيم المواعيد وإدارة الدعوات باللغة العربية مع دعم كامل للتقويم الهجري.
+
+**الميزات الرئيسية**:
+- 🗓️ إدارة المواعيد والدعوات
+- 📅 دعم التقويم الهجري
+- 🔍 بحث متقدم
+- 👥 شبكة اجتماعية
+- 🔔 نظام إشعارات
+
+---
+
+## 🏗️ هندسة المشروع
+
+المشروع يتبع **Clean Architecture** مع تنظيم **Feature-First**:
+
+### المبادئ الأساسية:
+- **Clean Architecture**: فصل الطبقات بوضوح (UI → Provider → Service → Model)
+- **Feature-First**: كل ميزة في مجلد منفصل
+- **Single Responsibility**: كل ملف له مسؤولية واحدة واضحة
+- **Arabic-First**: دعم كامل للغة العربية و RTL
+
+### هيكل المجلدات:
+```
+lib/
+├── core/              # الأساسيات المشتركة
+│   ├── constants/     # الثوابت (ألوان، نصوص، قياسات)
+│   ├── utils/         # أدوات مساعدة
+│   ├── widgets/       # عناصر واجهة مشتركة
+│   ├── services/      # خدمات مشتركة
+│   └── styles/        # تصاميم وثيمات
+│
+├── features/          # الميزات (كل تبويب منفصل)
+│   ├── auth/          # المصادقة
+│   ├── home/          # الرئيسية
+│   ├── search/        # البحث
+│   ├── add/           # إضافة موعد
+│   ├── notifications/ # الإشعارات
+│   └── settings/      # الإعدادات
+│
+├── models/            # نماذج البيانات
+├── routes/            # التوجيه
+└── main.dart          # نقطة البداية
+```
+
+### هيكل كل Feature:
+```
+features/[name]/
+├── screens/           # الشاشات فقط
+├── widgets/           # عناصر واجهة خاصة
+├── providers/         # إدارة حالة الميزة
+└── services/          # منطق العمل
+```
+
+---
+
+## 📝 قواعد الكود
+
+### 1. تسمية الملفات
+استخدم **snake_case** باللغة الإنجليزية:
+
+**✅ صحيحة:**
+- `home_screen.dart`
+- `profile_header.dart`
+- `auth_service.dart`
+- `user_model.dart`
+- `appointment_card.dart`
+
+**❌ خاطئة:**
+- `HomeScreen.dart` (PascalCase)
+- `homeScreen.dart` (camelCase)
+- `screen1.dart` (غير واضح)
+
+### 2. تسمية الدوال والمتغيرات
+استخدم **camelCase** باللغة الإنجليزية:
+
+**✅ صحيحة:**
+```dart
+String userName = 'فلاح';
+List<Appointment> appointmentsList = [];
+Future<void> createAppointment() async {}
+Future<User> fetchUserData() async {}
+```
+
+**❌ خاطئة:**
+```dart
+String اسم_المستخدم = 'فلاح';  // لا تستخدم العربية
+String user_name = 'فلاح';      // لا تستخدم snake_case
+```
+
+### 3. التعليقات
+استخدم **العربية** في التعليقات لتوضيح النية:
+
+```dart
+// جلب المواعيد القادمة للمستخدم
+Future<List<Appointment>> getUpcomingAppointments() async {
+  // التحقق من الاتصال بالشبكة أولاً
+  if (!await connectivityService.isConnected) {
+    throw NetworkException('لا يوجد اتصال بالإنترنت');
+  }
+  // ... باقي الكود
+}
+```
+
+### 4. النصوص المعروضة
+**جميع النصوص** يجب أن تكون من `AppStrings`:
+
+**✅ صحيحة:**
+```dart
+Text(AppStrings.welcome)
+Text(AppStrings.appointmentTitle)
+```
+
+**❌ خاطئة:**
+```dart
+Text('مرحبا')  // نص hardcoded
+Text('Welcome')  // نص hardcoded
+```
+
+### 5. الألوان
+**جميع الألوان** يجب أن تكون من `AppColors`:
+
+**✅ صحيحة:**
+```dart
+Container(color: AppColors.primary)
+Text('Hello', style: TextStyle(color: AppColors.textPrimary))
+```
+
+**❌ خاطئة:**
+```dart
+Container(color: Color(0xFF000000))  // لون hardcoded
+Container(color: Colors.blue)  // لون مباشر
+```
+
+### 6. القياسات
+**جميع القياسات** يجب أن تكون من `AppDimens`:
+
+**✅ صحيحة:**
+```dart
+SizedBox(height: AppDimens.spaceMedium)
+EdgeInsets.all(AppDimens.paddingSmall)
+```
+
+**❌ خاطئة:**
+```dart
+SizedBox(height: 16)  // قياس hardcoded
+EdgeInsets.all(8)  // قياس hardcoded
+```
+
+---
+
+## 📏 حدود الأسطر (حد أقصى)
+
+**قاعدة عامة**: إذا تجاوزت الحد، قسم الملف إلى أجزاء أصغر.
+
+| نوع الملف | الحد الأقصى | ملاحظات |
+|----------|------------|---------|
+| **الشاشات** | ≤ 200 سطر | إذا تجاوزت، استخرج widgets |
+| **Widgets** | ≤ 100 سطر | إذا تجاوزت، قسم إلى widgets أصغر |
+| **الخدمات** | ≤ 150 سطر | إذا تجاوزت، قسم إلى دوال أصغر |
+| **النماذج** | ≤ 100 سطر | إذا تجاوزت، راجع البنية |
+| **Providers** | ≤ 150 سطر | إذا تجاوزت، قسم المنطق |
+
+---
+
+## ✅ قواعد "افعل" (Best Practices)
+
+### 1. فصل المسؤوليات
+- **UI** في `widgets/` و `screens/`
+- **المنطق** في `providers/` و `services/`
+- **البيانات** في `models/`
+
+### 2. إعادة الاستخدام
+- إذا كررت كوداً **أكثر من مرتين**، أنشئ widget منفصل
+- استخدم widgets مشتركة من `core/widgets/`
+
+### 3. إدارة الحالة
+- استخدم **Provider** لإدارة الحالة
+- لا تستدعي الخدمات مباشرة من UI
+- استخدم Provider كطبقة وسيطة
+
+### 4. معالجة الأخطاء
+- استخدم try-catch في جميع العمليات غير المتزامنة
+- أظهر رسائل خطأ واضحة للمستخدم
+- سجل الأخطاء للتصحيح
+
+### 5. الأداء
+- استخدم `const` حيثما أمكن
+- تجنب rebuilds غير ضرورية
+- استخدم `ListView.builder` للقوائم الطويلة
+
+---
+
+## ❌ قواعد "لا تفعل" (Anti-Patterns)
+
+### 1. لا تخلط UI مع Logic
+**❌ خاطئ:**
+```dart
+class HomeScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    // ❌ منطق العمل داخل UI
+    final appointments = await fetchAppointments();
+    return ListView(...);
+  }
+}
+```
+
+**✅ صحيح:**
+```dart
+class HomeScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    // ✅ استخدام Provider
+    return Consumer<HomeProvider>(
+      builder: (context, provider, child) {
+        return ListView(...);
+      },
+    );
+  }
+}
+```
+
+### 2. لا تضع Business Logic في Widgets
+**❌ خاطئ:**
+```dart
+class AppointmentCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    // ❌ منطق العمل في widget
+    final isPast = appointment.date.isBefore(DateTime.now());
+    return Card(...);
+  }
+}
+```
+
+**✅ صحيح:**
+```dart
+// في Provider أو Service
+bool isAppointmentPast(Appointment appointment) {
+  return appointment.date.isBefore(DateTime.now());
+}
+
+// في Widget
+class AppointmentCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final isPast = provider.isAppointmentPast(appointment);
+    return Card(...);
+  }
+}
+```
+
+### 3. لا تكتب ملفات طويلة
+- إذا تجاوزت الحد الأقصى، قسم الملف
+- استخرج widgets فرعية
+- استخرج دوال مساعدة
+
+### 4. لا تكرر الكود
+- استخدم widgets مشتركة
+- استخدم دوال مساعدة
+- استخدم mixins حيثما أمكن
+
+### 5. لا تستخدم Hardcoded Values
+**❌ خاطئ:**
+```dart
+Text('مرحبا', style: TextStyle(fontSize: 16, color: Colors.black))
+Container(color: Color(0xFF000000), padding: EdgeInsets.all(8))
+```
+
+**✅ صحيح:**
+```dart
+Text(AppStrings.welcome, style: AppStyles.bodyMedium)
+Container(color: AppColors.primary, padding: AppDimens.paddingMedium)
+```
+
+---
+
+## 🎨 التصميم
+
+### المبادئ:
+- **Material Design 3**: اتبع إرشادات Material Design
+- **ألوان متسقة**: استخدم `AppColors` فقط
+- **دعم RTL**: جميع الشاشات تدعم العربية والإنجليزية
+- **تحريك سلس**: استخدم animations من `core/styles/animations.dart`
+
+### الثيم:
+- استخدم `ThemeData` من `core/styles/theme.dart`
+- دعم الوضع الفاتح والداكن
+- دعم RTL تلقائياً
+
+---
+
+## 🔧 التقنيات المستخدمة
+
+### الأساسية:
+- **Flutter**: 3.9+
+- **Dart**: 3.2+
+- **State Management**: Provider
+- **Backend**: PocketBase
+- **Local Storage**: SharedPreferences
+
+### الحزم:
+- `provider` - إدارة الحالة
+- `pocketbase` - قاعدة البيانات
+- `shared_preferences` - التخزين المحلي
+- `intl` - التوطين (عربي/إنجليزي)
+
+---
+
+## 🎯 القواعد الذهبية (Golden Rules)
+
+**هذه القواعد الأهم - احفظها!**
+
+1. **إذا أردت إضافة لون** ← `core/constants/app_colors.dart`
+2. **إذا أردت إضافة نص** ← `core/constants/app_strings.dart`
+3. **إذا أردت إضافة قياس** ← `core/constants/app_dimens.dart`
+4. **إذا أردت إضافة شاشة** ← `features/[name]/screens/`
+5. **إذا أردت إضافة عنصر** ← `features/[name]/widgets/` أو `core/widgets/`
+6. **إذا أردت إضافة منطق** ← `features/[name]/providers/`
+7. **إذا أردت إضافة خدمة** ← `core/services/` أو `features/[name]/services/`
+8. **إذا أردت إضافة نموذج** ← `lib/models/`
+
+---
+
+## 🚨 قواعد صارمة (لا استثناءات)
+
+1. ✅ **كل لون** من `AppColors`
+2. ✅ **كل نص** من `AppStrings`
+3. ✅ **كل قياس** من `AppDimens`
+4. ✅ **كل ملف** في مكانه المنطقي
+5. ✅ **لا ملفات God** (تحتوي كل شيء)
+6. ✅ **لا hardcoded strings**
+7. ✅ **لا hardcoded colors**
+8. ✅ **لا hardcoded dimensions**
+
+---
+
+## ⚠️ ممنوعات صريحة
+
+- ❌ **لا تكرار الكود** - استخدم widgets مشتركة
+- ❌ **لا ملفات أكبر من 200 سطر** - قسم الملف
+- ❌ **لا استيراد غير ضروري** - نظف imports
+- ❌ **لا hardcoded strings** - استخدم AppStrings
+- ❌ **لا hardcoded colors** - استخدم AppColors
+- ❌ **لا Business Logic في Widgets** - استخدم Providers/Services
+- ❌ **لا استدعاء مباشر للخدمات من UI** - استخدم Provider
+
+---
+
+## 📚 موارد إضافية
+
+### التوثيق:
+- `ARCHITECTURE.md` - هندسة المشروع الكاملة
+- `docs/CODING_GUIDE.md` - دليل البرمجة المفصل
+- `docs/API_DOCS.md` - واجهات API
+- `docs/DATABASE_SCHEMA.md` - مخطط قاعدة البيانات
+
+### القوالب:
+- `templates/new_feature/` - قالب ميزة جديدة
+- `templates/new_screen/` - قالب شاشة جديدة
+- `templates/new_widget/` - قالب widget جديد
+- `templates/new_service/` - قالب خدمة جديدة
+
+### الأدوات:
+- `scripts/setup_project.sh` - إعداد المشروع
+- `scripts/code_analysis.sh` - تحليل الكود
+- `scripts/generate_template.sh` - توليد القوالب
+
+---
+
+## 🆘 عندما تحتاج مساعدة
+
+1. **اقرأ التوثيق أولاً** - معظم الإجابات موجودة
+2. **راجع الكود المشابه** - انظر كيف تم حل مشاكل مماثلة
+3. **استخدم القوالب** - لتسريع العمل
+4. **اتبع القواعد** - تجنب المشاكل قبل حدوثها
+
+---
+
+## ✅ قائمة فحص سريعة
+
+قبل إرسال الكود، تأكد من:
+
+- [ ] جميع الألوان من `AppColors`
+- [ ] جميع النصوص من `AppStrings`
+- [ ] جميع القياسات من `AppDimens`
+- [ ] الملفات ضمن الحد الأقصى للأسطر
+- [ ] لا hardcoded values
+- [ ] لا Business Logic في Widgets
+- [ ] استخدام Provider لإدارة الحالة
+- [ ] معالجة الأخطاء بشكل صحيح
+- [ ] التعليقات بالعربية
+- [ ] الملف في المكان الصحيح
+
+---
+
+**آخر تحديث**: ديسمبر 2024  
+**النسخة**: 2.0.0

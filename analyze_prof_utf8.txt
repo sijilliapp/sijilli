@@ -1,0 +1,87 @@
+﻿Analyzing settings...
+
+warning - screens\blocked_users_screen.dart:5:8 - Duplicate import. Try removing all but one import of the library. - duplicate_import
+warning - screens\blocked_users_screen.dart:6:8 - Duplicate import. Try removing all but one import of the library. - duplicate_import
+warning - screens\blocked_users_screen.dart:8:8 - Unused import: 'package:sijilli/l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+warning - screens\blocked_users_screen.dart:56:42 - The left operand can't be null, so the right operand is never executed. Try removing the operator and the right operand. - dead_null_aware_expression
+warning - screens\blocked_users_screen.dart:64:80 - The left operand can't be null, so the right operand is never executed. Try removing the operator and the right operand. - dead_null_aware_expression
+warning - screens\contact_screen.dart:5:8 - Unused import: 'package:sijilli/l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+warning - screens\notification_settings_screen.dart:6:8 - Duplicate import. Try removing all but one import of the library. - duplicate_import
+warning - screens\notification_settings_screen.dart:9:8 - Unused import: 'package:sijilli/l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+warning - screens\profile_screen.dart:4:8 - Unused import: 'dart:io'. Try removing the import directive. - unused_import
+warning - screens\profile_screen.dart:13:8 - Unused import: 'package:sijilli/l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+warning - screens\profile_screen.dart:16:8 - Unused import: 'package:sijilli/features/home/widgets/profile_header.dart'. Try removing the import directive. - unused_import
+warning - screens\settings_screen.dart:7:8 - Unused import: '../../../core/constants/app_dimens.dart'. Try removing the import directive. - unused_import
+warning - screens\settings_screen.dart:16:8 - Unused import: 'package:sijilli/l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+warning - screens\settings_screen.dart:18:8 - Duplicate import. Try removing all but one import of the library. - duplicate_import
+warning - screens\settings_screen.dart:18:8 - Unused import: '../../../l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+warning - screens\settings_screen.dart:19:8 - Duplicate import. Try removing all but one import of the library. - duplicate_import
+warning - services\pb_moderation_service.dart:75:21 - The operand can't be 'null', so the condition is always 'true'. Remove the condition. - unnecessary_null_comparison
+warning - services\pb_user_service.dart:105:18 - The operand can't be 'null', so the condition is always 'true'. Remove the condition. - unnecessary_null_comparison
+warning - services\pb_user_service.dart:108:29 - The operand can't be 'null', so the condition is always 'true'. Remove the condition. - unnecessary_null_comparison
+warning - services\pb_user_service.dart:108:65 - The '!' will have no effect because the receiver can't be null. Try removing the '!' operator. - unnecessary_non_null_assertion
+warning - services\pb_user_service.dart:113:29 - The operand can't be 'null', so the condition is always 'true'. Remove the condition. - unnecessary_null_comparison
+warning - services\pb_user_service.dart:113:62 - The '!' will have no effect because the receiver can't be null. Try removing the '!' operator. - unnecessary_non_null_assertion
+   info - screens\contact_screen.dart:89:43 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\contact_screen.dart:90:43 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\contact_screen.dart:92:63 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\contact_screen.dart:115:17 - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\notification_settings_screen.dart:135:9 - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\profile_screen.dart:221:63 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\profile_screen.dart:221:95 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\settings_screen.dart:108:70 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\settings_screen.dart:115:44 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\settings_screen.dart:140:72 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\settings_screen.dart:252:64 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\settings_screen.dart:259:38 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\settings_screen.dart:271:66 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\settings_screen.dart:359:21 - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\settings_screen.dart:361:21 - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\settings_screen.dart:369:21 - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\settings_screen.dart:371:21 - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\settings_screen.dart:408:19 - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\settings_screen.dart:410:19 - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\settings_screen.dart:446:22 - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\settings_screen.dart:448:22 - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\settings_screen.dart:457:22 - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\settings_screen.dart:459:22 - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\settings_screen.dart:468:22 - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\settings_screen.dart:470:22 - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\contact_service.dart:18:36 - 'model' is deprecated and shouldn't be used. use record. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\pb_moderation_service.dart:9:40 - 'model' is deprecated and shouldn't be used. use record. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\pb_moderation_service.dart:20:40 - 'model' is deprecated and shouldn't be used. use record. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\pb_moderation_service.dart:35:40 - 'model' is deprecated and shouldn't be used. use record. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\pb_moderation_service.dart:54:40 - 'model' is deprecated and shouldn't be used. use record. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\pb_moderation_service.dart:68:40 - 'model' is deprecated and shouldn't be used. use record. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\pb_user_service.dart:31:36 - 'model' is deprecated and shouldn't be used. use record. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\pb_user_service.dart:136:11 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_user_service.dart:141:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_user_service.dart:151:48 - 'model' is deprecated and shouldn't be used. use record. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\pb_user_service.dart:162:40 - 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+          You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+          record.get<String>("expand.user.email");
+          record.get<RecordModel>("expand.user");
+          record.get<List<RecordModel>>("expand.products");. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\pb_user_service.dart:170:11 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_user_service.dart:175:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_user_service.dart:184:36 - 'model' is deprecated and shouldn't be used. use record. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\pb_user_service.dart:209:36 - 'model' is deprecated and shouldn't be used. use record. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\pb_user_service.dart:232:36 - 'model' is deprecated and shouldn't be used. use record. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\pb_user_service.dart:278:38 - 'model' is deprecated and shouldn't be used. use record. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\pb_user_service.dart:330:36 - 'model' is deprecated and shouldn't be used. use record. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\pb_user_service.dart:356:34 - 'model' is deprecated and shouldn't be used. use record. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\pb_user_service.dart:375:40 - 'model' is deprecated and shouldn't be used. use record. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\pb_user_service.dart:394:34 - 'model' is deprecated and shouldn't be used. use record. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\pb_user_service.dart:413:34 - 'model' is deprecated and shouldn't be used. use record. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\pb_user_service.dart:433:48 - 'model' is deprecated and shouldn't be used. use record. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\pb_user_service.dart:444:40 - 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+          You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+          record.get<String>("expand.user.email");
+          record.get<RecordModel>("expand.user");
+          record.get<List<RecordModel>>("expand.products");. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\pb_user_service.dart:452:12 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_user_service.dart:457:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_user_service.dart:466:36 - 'model' is deprecated and shouldn't be used. use record. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\pb_user_service.dart:484:36 - 'model' is deprecated and shouldn't be used. use record. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+
+75 issues found.

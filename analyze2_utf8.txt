@@ -1,0 +1,28 @@
+﻿Analyzing notifications...
+
+warning - screens\notifications_screen.dart:12:8 - Unused import: '../../../l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+warning - screens\notifications_screen.dart:164:29 - The operand can't be 'null', so the condition is always 'true'. Remove the condition. - unnecessary_null_comparison
+warning - screens\notifications_screen.dart:179:27 - The operand can't be 'null', so the condition is always 'true'. Remove the condition. - unnecessary_null_comparison
+warning - widgets\invitation_action_buttons.dart:4:8 - Unused import: '../../../l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+warning - widgets\invitation_tile.dart:320:7 - This default clause is covered by the previous cases. Try removing the default clause, or restructuring the preceding patterns. - unreachable_switch_default
+warning - widgets\notification_item.dart:5:8 - Unused import: 'package:sijilli/l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+   info - providers\notification_provider.dart:81:9 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - services\notification_service.dart:40:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\notification_service.dart:41:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\notification_service.dart:45:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\notification_service.dart:48:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\notification_service.dart:50:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\notification_service.dart:81:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\notification_service.dart:99:12 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - widgets\invitation_action_buttons.dart:119:17 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\invitation_action_buttons.dart:123:17 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\invitation_tile.dart:134:51 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\invitation_tile.dart:134:92 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\invitation_tile.dart:144:49 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\invitation_tile.dart:149:33 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\invitation_time_row.dart:28:28 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\invitation_time_row.dart:29:66 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\invitation_time_row.dart:33:30 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\notification_item.dart:114:22 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+
+24 issues found.

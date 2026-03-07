@@ -1,0 +1,74 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:sijilli/models/appointment.dart';
+
+void main() {
+  group('Appointment Logic Tests', () {
+    final now = DateTime.now().toUtc();
+
+    test('isNow should be true during the duration window', () {
+      final appointment = Appointment(
+        id: '1',
+        title: 'Active Test',
+        hostId: 'host1',
+        startAt: now.subtract(const Duration(minutes: 10)), // Started 10 mins ago
+        duration: 45,
+        date: DateTime.now(),
+        time: '12:00',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      expect(appointment.isNow, isTrue);
+      expect(appointment.isPast, isFalse);
+    });
+
+    test('isNow should be false after duration ends', () {
+      final appointment = Appointment(
+        id: '2',
+        title: 'Past Test',
+        hostId: 'host1',
+        startAt: now.subtract(const Duration(minutes: 50)), // Started 50 mins ago (duration 45)
+        duration: 45,
+        date: DateTime.now(),
+        time: '12:00',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      expect(appointment.isNow, isFalse);
+      expect(appointment.isPast, isTrue);
+    });
+
+    test('isNow should be true exactly at startAt', () {
+      final appointment = Appointment(
+        id: '3',
+        title: 'Start Moment Test',
+        hostId: 'host1',
+        startAt: now,
+        duration: 45,
+        date: DateTime.now(),
+        time: '12:00',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      expect(appointment.isNow, isTrue);
+    });
+
+    test('statusText priority test', () {
+      final appointment = Appointment(
+        id: '4',
+        title: 'Priority Test',
+        hostId: 'host1',
+        startAt: now.subtract(const Duration(minutes: 10)),
+        duration: 45,
+        date: DateTime.now(),
+        time: '12:00',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      expect(appointment.statusText, 'جاري الآن');
+    });
+  });
+}

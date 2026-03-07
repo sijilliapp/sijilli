@@ -1,0 +1,55 @@
+﻿Analyzing auth...
+
+warning - providers\auth_provider.dart:96:54 - The '!' will have no effect because the receiver can't be null. Try removing the '!' operator. - unnecessary_non_null_assertion
+warning - providers\auth_provider.dart:338:17 - The value of the local variable 'refreshedUser' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - providers\auth_provider.dart:338:67 - The '!' will have no effect because the receiver can't be null. Try removing the '!' operator. - unnecessary_non_null_assertion
+warning - providers\auth_provider.dart:410:16 - The declaration '_saveSession' isn't referenced. Try removing the declaration of '_saveSession'. - unused_element
+warning - screens\forgot_password_screen.dart:12:8 - Unused import: 'package:sijilli/l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+warning - screens\login_screen.dart:16:8 - Unused import: '../../../l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+warning - screens\privacy_policy_screen.dart:3:8 - Unused import: 'package:sijilli/l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+warning - screens\register_screen.dart:9:8 - Unused import: '../providers/auth_provider.dart'. Try removing the import directive. - unused_import
+warning - screens\register_screen.dart:11:8 - Unused import: '../widgets/auth_text_field.dart'. Try removing the import directive. - unused_import
+warning - screens\register_screen.dart:12:8 - Unused import: '../widgets/auth_button.dart'. Try removing the import directive. - unused_import
+warning - screens\register_screen.dart:14:8 - Unused import: 'privacy_policy_screen.dart'. Try removing the import directive. - unused_import
+warning - screens\register_screen.dart:16:8 - Unused import: '../../../l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+warning - services\pb_auth_service.dart:49:11 - The value of the local variable 'record' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - widgets\auth_text_field.dart:2:8 - Unused import: '../../../core/constants/app_colors.dart'. Try removing the import directive. - unused_import
+warning - widgets\auth_text_field.dart:3:8 - Unused import: '../../../core/constants/app_dimens.dart'. Try removing the import directive. - unused_import
+warning - widgets\register_form_widget.dart:12:8 - Unused import: '../../../l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+   info - providers\auth_provider.dart:334:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - providers\auth_provider.dart:348:11 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - providers\auth_provider.dart:421:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - screens\login_screen.dart:89:27 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - screens\login_screen.dart:91:27 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - screens\login_screen.dart:93:27 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - screens\login_screen.dart:150:11 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - screens\login_screen.dart:186:9 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - screens\login_screen.dart:376:42 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\login_screen.dart:378:61 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\register_screen.dart:95:39 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - screens\register_screen.dart:97:39 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - screens\register_screen.dart:223:34 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\register_screen.dart:225:53 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\register_screen.dart:260:42 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\register_screen.dart:262:61 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\pb_auth_service.dart:94:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_auth_service.dart:111:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_auth_service.dart:113:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_auth_service.dart:134:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_auth_service.dart:136:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_auth_service.dart:147:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_auth_service.dart:149:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_auth_service.dart:160:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_auth_service.dart:163:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_auth_service.dart:174:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_auth_service.dart:176:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_auth_service.dart:187:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_auth_service.dart:189:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_auth_service.dart:200:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_auth_service.dart:202:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_auth_service.dart:206:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_auth_service.dart:208:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pb_auth_service.dart:211:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - widgets\auth_button.dart:35:42 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+
+51 issues found.

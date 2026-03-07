@@ -1,0 +1,50 @@
+﻿Analyzing add...
+
+warning - providers\add_event_provider.dart:477:76 - The '!' will have no effect because the receiver can't be null. Try removing the '!' operator. - unnecessary_non_null_assertion
+warning - providers\add_event_provider.dart:481:71 - The '!' will have no effect because the receiver can't be null. Try removing the '!' operator. - unnecessary_non_null_assertion
+warning - providers\add_event_provider.dart:570:13 - The value of the local variable 'dt' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - screens\add_event_screen.dart:7:8 - Unused import: 'package:intl/intl.dart'. Try removing the import directive. - unused_import
+warning - screens\add_event_screen.dart:8:8 - Unused import: 'package:adhan/adhan.dart'. Try removing the import directive. - unused_import
+warning - screens\add_event_screen.dart:9:8 - Unused import: 'package:hijri/hijri_calendar.dart'. Try removing the import directive. - unused_import
+warning - screens\add_event_screen.dart:17:8 - Unused import: '../widgets/datetime_picker_widget.dart'. Try removing the import directive. - unused_import
+warning - screens\add_event_screen.dart:26:8 - Unused import: 'package:sijilli/l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+warning - screens\add_event_screen.dart:46:39 - A value for optional parameter 'key' isn't ever given. Try removing the unused parameter. - unused_element_parameter
+warning - screens\add_event_screen.dart:94:14 - The value of the local variable 'allTitles' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - screens\add_event_screen.dart:160:8 - The declaration '_onPivotSelected' isn't referenced. Try removing the declaration of '_onPivotSelected'. - unused_element
+warning - screens\add_event_screen.dart:405:69 - The left operand can't be null, so the right operand is never executed. Try removing the operator and the right operand. - dead_null_aware_expression
+warning - screens\add_event_screen.dart:542:14 - The value of the local variable 'guest' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - widgets\add_event_widgets.dart:2:8 - Unused import: 'package:intl/intl.dart'. Try removing the import directive. - unused_import
+warning - widgets\add_event_widgets.dart:5:8 - Unused import: '../../../../models/user.dart'. Try removing the import directive. - unused_import
+warning - widgets\add_event_widgets.dart:6:8 - Unused import: '../../../../core/constants/app_dimens.dart'. Try removing the import directive. - unused_import
+warning - widgets\add_event_widgets.dart:7:8 - Unused import: 'package:sijilli/l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+warning - widgets\datetime_picker_widget.dart:6:8 - Unused import: 'package:sijilli/l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+warning - widgets\event_form_widget.dart:3:8 - Unused import: '../../../core/constants/app_dimens.dart'. Try removing the import directive. - unused_import
+warning - widgets\event_form_widget.dart:7:8 - Unused import: 'package:sijilli/l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+warning - widgets\invitees_widget.dart:6:8 - Unused import: 'package:sijilli/l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+warning - widgets\unified_date_picker.dart:5:8 - Unused import: '../../../core/constants/app_dimens.dart'. Try removing the import directive. - unused_import
+warning - widgets\unified_date_picker.dart:6:8 - Unused import: 'package:sijilli/l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+warning - widgets\unified_date_picker.dart:271:135 - Dead code. Try removing the code, or fixing the code before it so that it can be reached. - dead_code
+warning - widgets\unified_date_picker.dart:281:120 - Dead code. Try removing the code, or fixing the code before it so that it can be reached. - dead_code
+   info - screens\add_event_screen.dart:271:89 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\add_event_widgets.dart:47:33 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\add_event_widgets.dart:68:50 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\add_event_widgets.dart:162:42 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\add_event_widgets.dart:164:61 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\add_event_widgets.dart:270:17 - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor or activeTrackColor instead. This feature was deprecated after v3.31.0-2.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\add_event_widgets.dart:302:49 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\event_form_widget.dart:220:45 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\invitees_widget.dart:50:44 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\invitees_widget.dart:52:63 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\invitees_widget.dart:72:27 - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor or activeTrackColor instead. This feature was deprecated after v3.31.0-2.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\invitees_widget.dart:118:52 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\unified_date_picker.dart:106:37 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\unified_date_picker.dart:170:35 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\unified_date_picker.dart:173:66 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\unified_date_picker.dart:261:54 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\unified_date_picker.dart:290:42 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\unified_date_picker.dart:531:40 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\word_river_widget.dart:101:42 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\word_river_widget.dart:103:48 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\word_river_widget.dart:103:80 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+
+46 issues found.

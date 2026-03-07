@@ -1,0 +1,49 @@
+﻿Analyzing notifications...
+
+  error - widgets\invitation_tile.dart:179:15 - The method '_buildRow' isn't defined for the type '_InvitationTileState'. Try correcting the name to the name of an existing method, or defining a method named '_buildRow'. - undefined_method
+  error - widgets\invitation_tile.dart:185:27 - The method '_getAvatarStatus' isn't defined for the type '_InvitationTileState'. Try correcting the name to the name of an existing method, or defining a method named '_getAvatarStatus'. - undefined_method
+  error - widgets\invitation_tile.dart:213:36 - The method '_getNameColor' isn't defined for the type '_InvitationTileState'. Try correcting the name to the name of an existing method, or defining a method named '_getNameColor'. - undefined_method
+  error - widgets\invitation_tile.dart:248:17 - The method '_buildRow' isn't defined for the type '_InvitationTileState'. Try correcting the name to the name of an existing method, or defining a method named '_buildRow'. - undefined_method
+  error - widgets\invitation_tile.dart:276:16 - Function expressions can't be named. Try removing the name, or moving the function expression to a function declaration statement. - named_function_expression
+  error - widgets\invitation_tile.dart:276:32 - The element type 'AvatarStatus Function(InvitationStatus, Appointment)' can't be assigned to the list type 'Widget'. - list_element_type_not_assignable
+  error - widgets\invitation_tile.dart:293:3 - Expected to find ','. - expected_token
+  error - widgets\invitation_tile.dart:293:9 - Function expressions can't be named. Try removing the name, or moving the function expression to a function declaration statement. - named_function_expression
+  error - widgets\invitation_tile.dart:293:22 - The element type 'Color Function(InvitationStatus, Appointment)' can't be assigned to the list type 'Widget'. - list_element_type_not_assignable
+  error - widgets\invitation_tile.dart:295:26 - The method '_getAvatarStatus' isn't defined for the type '_InvitationTileState'. Try correcting the name to the name of an existing method, or defining a method named '_getAvatarStatus'. - undefined_method
+  error - widgets\invitation_tile.dart:307:3 - Expected to find ';'. - expected_token
+  error - widgets\invitation_tile.dart:308:1 - Expected to find ')'. - expected_token
+  error - widgets\invitation_tile.dart:308:1 - Expected to find ']'. - expected_token
+  error - widgets\invitation_tile.dart:309:1 - Expected to find '}'. - expected_token
+  error - widgets\invitation_time_row.dart:71:93 - The getter 'l10n' isn't defined for the type 'BuildContext'. Try importing the library that defines 'l10n', correcting the name to the name of an existing getter, or defining a getter or field named 'l10n'. - undefined_getter
+  error - widgets\invitation_time_row.dart:72:54 - The getter 'l10n' isn't defined for the type 'BuildContext'. Try importing the library that defines 'l10n', correcting the name to the name of an existing getter, or defining a getter or field named 'l10n'. - undefined_getter
+warning - screens\notifications_screen.dart:12:8 - Unused import: '../../../l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+warning - screens\notifications_screen.dart:164:29 - The operand can't be 'null', so the condition is always 'true'. Remove the condition. - unnecessary_null_comparison
+warning - screens\notifications_screen.dart:179:27 - The operand can't be 'null', so the condition is always 'true'. Remove the condition. - unnecessary_null_comparison
+warning - widgets\invitation_action_buttons.dart:4:8 - Unused import: '../../../l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+warning - widgets\invitation_tile.dart:2:8 - Unused import: 'package:intl/intl.dart'. Try removing the import directive. - unused_import
+warning - widgets\invitation_tile.dart:3:8 - Unused import: 'package:hijri/hijri_calendar.dart'. Try removing the import directive. - unused_import
+warning - widgets\invitation_tile.dart:9:8 - Unused import: '../../../core/constants/app_dimens.dart'. Try removing the import directive. - unused_import
+warning - widgets\invitation_tile.dart:14:8 - Unused import: '../../../l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+warning - widgets\invitation_tile.dart:91:13 - The value of the local variable 'host' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - widgets\invitation_time_row.dart:7:8 - Unused import: '../../../l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+warning - widgets\notification_item.dart:5:8 - Unused import: 'package:sijilli/l10n/app_localizations.dart'. Try removing the import directive. - unused_import
+   info - providers\notification_provider.dart:81:9 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - services\notification_service.dart:40:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\notification_service.dart:41:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\notification_service.dart:45:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\notification_service.dart:48:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\notification_service.dart:50:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\notification_service.dart:81:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\notification_service.dart:99:12 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - widgets\invitation_action_buttons.dart:119:17 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\invitation_action_buttons.dart:123:17 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\invitation_tile.dart:139:51 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\invitation_tile.dart:139:92 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\invitation_tile.dart:149:49 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\invitation_tile.dart:154:33 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\invitation_time_row.dart:28:28 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\invitation_time_row.dart:29:66 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\invitation_time_row.dart:33:30 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\notification_item.dart:114:22 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+
+45 issues found.

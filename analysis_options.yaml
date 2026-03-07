@@ -1,0 +1,22 @@
+analyzer:
+  strong-mode:
+    implicit-casts: false
+    implicit-dynamic: false
+  
+  errors:
+    unused_element: warning
+    unused_import: warning
+    dead_code: warning
+    missing_required_param: error
+    missing_return: error
+
+linter:
+  rules:
+    # قواعد أساسية
+    prefer_const_constructors: true
+    prefer_final_fields: true
+    avoid_print: true
+    unnecessary_this: true
+    unnecessary_new: true
+    prefer_single_quotes: false  # للعربية
+    lines_longer_than_80_chars: false  # للعربية

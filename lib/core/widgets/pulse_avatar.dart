@@ -1,0 +1,198 @@
+import 'package:flutter/material.dart';
+import '../constants/app_colors.dart';
+import '../constants/app_dimens.dart';
+import '../constants/app_config.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+
+
+enum AvatarStatus {
+  none,     // ⚪ Gray ring (Empty)
+  upcoming, // 🔵 Blue ring (Within 24h)
+  active,   // 🔦 Pulsing Blue (Now)
+  deleted   // 🔴 Red ring (Host deleted)
+}
+
+class PulseAvatar extends StatefulWidget {
+  final ImageProvider? image;
+  final String? imageUrl; // Support URL directly for caching
+  final double size;
+  final AvatarStatus status;
+  final VoidCallback? onTap;
+  final bool showGlow; // Control whether to show pulsing glow effect
+  final double? ringThickness; // Optional override for ring thickness
+  final double? gapThickness; // Optional override for separation gap
+
+  const PulseAvatar({
+    super.key,
+    this.image,
+    this.imageUrl,
+    this.size = AppDimens.avatarSizeProfile, // Default to 140
+    this.status = AvatarStatus.none,
+    this.onTap,
+    this.showGlow = true, // Default to true for backward compatibility
+    this.ringThickness,
+    this.gapThickness,
+  });
+
+  @override
+  State<PulseAvatar> createState() => _PulseAvatarState();
+}
+
+class _PulseAvatarState extends State<PulseAvatar> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: AppConfig.avatarPulseDurationMs), // From AppConfig
+    );
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut), 
+    );
+
+    _opacityAnimation = Tween<double>(begin: 0.3, end: 0.7).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    if (widget.status == AvatarStatus.active) {
+      _controller.repeat(reverse: true); // Breathing effect
+    }
+  }
+
+  @override
+  void didUpdateWidget(PulseAvatar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.status != oldWidget.status) {
+      if (widget.status == AvatarStatus.active) {
+        _controller.repeat();
+      } else {
+        _controller.stop();
+        _controller.reset();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Color _getRingColor() {
+    switch (widget.status) {
+      case AvatarStatus.active:
+      case AvatarStatus.upcoming:
+        return AppColors.primary;
+      case AvatarStatus.deleted:
+        return Colors.red;
+      case AvatarStatus.none:
+      default:
+        return Colors.grey.shade300;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Glow extends beyond the widget size without affecting layout
+    // We used to calculate totalSize here, but now we strictly respect widget.size
+    final ringWidth = widget.ringThickness ?? widget.size * AppDimens.avatarRingWidthRatio; 
+    
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: SizedBox(
+        width: widget.size,
+        height: widget.size,
+        child: Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none, // Allow glow to paint outside bounds
+          children: [
+            // ✨ Pulsing Glow Effect (Behind) - only if showGlow is true
+            if (widget.status == AvatarStatus.active && widget.showGlow)
+              Positioned(
+                // Use a large overflow box to contain the glow
+                top: -widget.size / 2,
+                bottom: -widget.size / 2,
+                left: -widget.size / 2,
+                right: -widget.size / 2,
+                child: Center(
+                  child: AnimatedBuilder(
+                    animation: _controller,
+                    builder: (context, child) {
+                      // Reduced scale to ~25%: 1.15 -> 1.04 (Just slightly larger than the avatar)
+                      final scale = _scaleAnimation.value * 1.04; 
+                      return Container(
+                        width: widget.size * scale,
+                        height: widget.size * scale,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              // Reduced opacity multiplier: 0.6 -> 0.4
+                              color: AppColors.primary.withOpacity(_opacityAnimation.value * AppConfig.avatarGlowOpacity),
+                              // Reduced blurRadius: 15 -> 4 (25%)
+                              blurRadius: 4 * _scaleAnimation.value,
+                              // Reduced spreadRadius: 4 -> 1 (25%)
+                              spreadRadius: 1 * _scaleAnimation.value,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+
+            // Static Outer Ring
+            Container(
+              width: widget.size,
+              height: widget.size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: _getRingColor(),
+                  width: ringWidth,
+                ),
+              ),
+            ),
+            
+            // Avatar Image
+            Builder(
+              builder: (context) {
+                 final gapWidth = widget.gapThickness ?? widget.size * AppDimens.avatarRingGapRatio;
+                 final innerSize = widget.size - (ringWidth * 2) - (gapWidth * 2);
+                 return Container(
+                  width: innerSize,
+                  height: innerSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.grey.shade200,
+                    image: (widget.imageUrl != null || widget.image != null)
+                        ? DecorationImage(
+                            image: widget.imageUrl != null 
+                                ? CachedNetworkImageProvider(widget.imageUrl!) 
+                                : widget.image!,
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: (widget.imageUrl == null && widget.image == null)
+                      ? Icon(
+                          Icons.person,
+                          size: widget.size * 0.5,
+                          color: Colors.grey,
+                        )
+                      : null,
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
