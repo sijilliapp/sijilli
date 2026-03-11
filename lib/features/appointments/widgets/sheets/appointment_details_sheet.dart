@@ -248,6 +248,7 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
                           privacy: _selectedPrivacy,
                           categories: _selectedCategories,
                         );
+                        Navigator.pop(context);
                       },
                     ),
 
@@ -255,10 +256,13 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
 
                     AppointmentActionButtons(
                       isArchived: _appointment.isArchived,
-                      onClone: () => Navigator.push(
-                         context, 
-                         MaterialPageRoute(builder: (_) => AddEventScreen(initialAppointment: _appointment))
-                      ),
+                      onClone: () {
+                         Navigator.pop(context);
+                         Navigator.push(
+                           context, 
+                           MaterialPageRoute(builder: (_) => AddEventScreen(initialAppointment: _appointment))
+                         );
+                      },
                       onArchive: () {
                          final provider = context.read<AppointmentProvider>();
                          if (_appointment.isArchived) {
@@ -514,6 +518,7 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
     try {
       showModalBottomSheet(
         context: context,
+        useRootNavigator: true,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
         builder: (context) {

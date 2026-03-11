@@ -459,6 +459,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
 
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => UserInviteeSheet(

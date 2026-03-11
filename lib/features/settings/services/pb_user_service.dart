@@ -364,6 +364,7 @@ class PbUserService {
         }
       }
     } catch (e) {
+      debugPrint('🚨 Error in accreditUser: $e');
       rethrow;
     }
   }
@@ -553,47 +554,52 @@ class PbUserService {
         final record = await _pb.collection('follows').update(requestId, body: {'status': 'accepted'});
         
         // 2. المتابعة المتبادلة تلقائياً (Reciprocal Follow)
-        final requesterId = record.getStringValue('follower');
-        final currentUserId = record.getStringValue('following');
-        
-        if (requesterId.isNotEmpty && currentUserId.isNotEmpty) {
-           final status = await getFollowStatus(requesterId);
-           if (status == 'none') {
-               await _pb.collection('follows').create(body: {
-                 'follower': currentUserId,
-                 'following': requesterId,
-                 'status': 'accepted', // Always accepted for mutual accreditation
-               });
-               
-               // 🔔 Trigger Notification
-               final followerName = _pb.authStore.model?.data['name'] ?? 'مستخدم';
-               try {
-                 await _notificationService.createNotification(
-                   targetUserId: requesterId,
-                   title: 'اعتماد متبادل',
-                   message: '$followerName قَبِل طلبك وبادلك الاعتماد',
-                   type: NotificationType.follow,
-                   relatedId: currentUserId,
+        try {
+          final requesterId = record.getStringValue('follower');
+          final currentUserId = record.getStringValue('following');
+          
+          if (requesterId.isNotEmpty && currentUserId.isNotEmpty) {
+             final status = await getFollowStatus(requesterId);
+             if (status == 'none') {
+                 await _pb.collection('follows').create(body: {
+                   'follower': currentUserId,
+                   'following': requesterId,
+                   'status': 'accepted', // Always accepted for mutual accreditation
+                 });
+                 
+                 // 🔔 Trigger Notification
+                 final followerName = _pb.authStore.model?.data['name'] ?? 'مستخدم';
+                 try {
+                   await _notificationService.createNotification(
+                     targetUserId: requesterId,
+                     title: 'اعتماد متبادل',
+                     message: '$followerName قَبِل طلبك وبادلك الاعتماد',
+                     type: NotificationType.follow,
+                     relatedId: currentUserId,
+                   );
+                 } catch (e) {
+                   debugPrint('⚠️ Failed to send notification: $e');
+                 }
+             } else if (status == 'pending') {
+                 // إذا كان يوجد طلب صادر منا معلق، نقبله فوراً (تحصيل حاصل)
+                 final myPendingList = await _pb.collection('follows').getList(
+                   filter: 'follower = "$currentUserId" && following = "$requesterId"',
+                   page: 1,
+                   perPage: 1,
                  );
-               } catch (e) {
-                 debugPrint('⚠️ Failed to send notification: $e');
-               }
-           } else if (status == 'pending') {
-               // إذا كان يوجد طلب صادر منا معلق، نقبله فوراً (تحصيل حاصل)
-               final myPendingList = await _pb.collection('follows').getList(
-                 filter: 'follower = "$currentUserId" && following = "$requesterId"',
-                 page: 1,
-                 perPage: 1,
-               );
-               if (myPendingList.items.isNotEmpty) {
-                 await _pb.collection('follows').update(myPendingList.items.first.id, body: {'status': 'accepted'});
-               }
-           }
+                 if (myPendingList.items.isNotEmpty) {
+                   await _pb.collection('follows').update(myPendingList.items.first.id, body: {'status': 'accepted'});
+                 }
+             }
+          }
+        } catch (e) {
+          debugPrint('⚠️ Reciprocal follow partially failed but main request accepted: $e');
         }
       } else {
         await _pb.collection('follows').delete(requestId);
       }
     } catch (e) {
+      debugPrint('🚨 Error in respondToFollowRequest: $e');
       rethrow;
     }
   }

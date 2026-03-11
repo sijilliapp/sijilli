@@ -110,6 +110,7 @@ class StandardPolicy extends AppointmentCardPolicy {
   VoidCallback? get onCardTap => customOnTap ?? () {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => AppointmentDetailsSheet(appointment: appointment),
@@ -128,6 +129,7 @@ class StandardPolicy extends AppointmentCardPolicy {
   VoidCallback? get onGuestActionTap => () {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => UserInviteeSheet(

@@ -18,6 +18,7 @@ class ProfileActionsHelper {
     if (streamLink != null && streamLink.isNotEmpty) {
       showModalBottomSheet(
         context: context,
+        useRootNavigator: true,
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -125,6 +126,7 @@ class ProfileActionsHelper {
 
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),

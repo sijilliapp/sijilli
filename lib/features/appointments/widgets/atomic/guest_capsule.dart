@@ -40,74 +40,74 @@ class GuestCapsule extends StatelessWidget {
 
     return Row(
       mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(
-            child: InteractionCapsule(
-              onTap: onTap,
-              borderColor: statusColor,
-              borderOpacity: 1.0, 
-              backgroundColor: _getGuestBackgroundColor(status, isDark),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-              padding: const EdgeInsetsDirectional.fromSTEB(8, 2, 2, 2), 
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: Text(
-                      name,
-                      style: TextStyle(
-                        fontSize: 12, // Slightly larger for better visibility
-                        color: statusColor,
-                        fontWeight: FontWeight.w600, // bolder
-                        height: 1.2, // Fix vertical alignment on mobile
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  if (icon != null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Icon(icon, size: 14, color: statusColor),
-                    )
-                  else
-                    CircleAvatar(
-                      radius: 12,
-                      backgroundColor: isDark ? const Color(0xFF374151) : Colors.grey.shade200,
-                      backgroundImage: avatarUrl != null ? CachedNetworkImageProvider(avatarUrl!) : null,
-                      child: avatarUrl == null ? Icon(Icons.person, size: 12, color: isDark ? Colors.grey.shade400 : Colors.grey) : null,
-                    ),
-                ],
+      children: [
+        if (extraGuests != null && extraGuests! > 0) ...[
+          InteractionCapsule(
+            borderColor: AppColors.primary,
+            borderOpacity: 1.0,
+            backgroundColor: AppColors.primary.withOpacity(isDark ? 0.1 : 0.05),
+            child: Text(
+              context.l10n.localeName == 'ar'
+                  ? AppDateFormatter.toEasternArabicDigits(context.l10n.extraGuestsCount(extraGuests!))
+                  : context.l10n.extraGuestsCount(extraGuests!),
+              style: const TextStyle(
+                fontSize: 10,
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
-          if (extraGuests != null && extraGuests! > 0) ...[
-            const SizedBox(width: 4),
-            InteractionCapsule(
-              borderColor: AppColors.primary,
-              borderOpacity: 1.0,
-              backgroundColor: AppColors.primary.withOpacity(isDark ? 0.1 : 0.05),
-              child: Text(
-                context.l10n.localeName == 'ar'
-                    ? AppDateFormatter.toEasternArabicDigits(context.l10n.extraGuestsCount(extraGuests!))
-                    : context.l10n.extraGuestsCount(extraGuests!),
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
+          const SizedBox(width: 4),
         ],
-      );
+        Flexible(
+          child: InteractionCapsule(
+            onTap: onTap,
+            borderColor: statusColor,
+            borderOpacity: 1.0, 
+            backgroundColor: _getGuestBackgroundColor(status, isDark),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+            padding: const EdgeInsetsDirectional.fromSTEB(8, 2, 2, 2), 
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    name,
+                    style: TextStyle(
+                      fontSize: 12, // Slightly larger for better visibility
+                      color: statusColor,
+                      fontWeight: FontWeight.w600, // bolder
+                      height: 1.2, // Fix vertical alignment on mobile
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                if (icon != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Icon(icon, size: 14, color: statusColor),
+                  )
+                else
+                  CircleAvatar(
+                    radius: 12,
+                    backgroundColor: isDark ? const Color(0xFF374151) : Colors.grey.shade200,
+                    backgroundImage: avatarUrl != null ? CachedNetworkImageProvider(avatarUrl!) : null,
+                    child: avatarUrl == null ? Icon(Icons.person, size: 12, color: isDark ? Colors.grey.shade400 : Colors.grey) : null,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Color _getGuestBackgroundColor(InvitationStatus status, bool isDark) {

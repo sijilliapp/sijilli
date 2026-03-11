@@ -26,6 +26,7 @@ class _AppointmentsTabState extends State<AppointmentsTab> {
   void _showAppointmentDetails(BuildContext context, Appointment appointment) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(

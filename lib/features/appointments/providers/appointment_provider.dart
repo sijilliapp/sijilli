@@ -469,7 +469,7 @@ class AppointmentProvider extends ChangeNotifier {
         perPage: 100,
         contextAdjustment: _currentHijriAdjustment ?? 0,
       );
-      _archivedAppointments.sort((a, b) => a.startAt.compareTo(b.startAt));
+      _archivedAppointments.sort((a, b) => b.startAt.compareTo(a.startAt));
       notifyListeners();
     } catch (e) {
       debugPrint('Failed to fetch archived: $e');
@@ -486,7 +486,7 @@ class AppointmentProvider extends ChangeNotifier {
         perPage: 100,
         contextAdjustment: _currentHijriAdjustment ?? 0,
       );
-      _trashedAppointments.sort((a, b) => a.startAt.compareTo(b.startAt));
+      _trashedAppointments.sort((a, b) => b.startAt.compareTo(a.startAt));
       notifyListeners();
     } catch (e) {
       debugPrint('Failed to fetch trash: $e');

@@ -82,18 +82,21 @@ class PbAppointmentRecurrenceService {
   }
 
   DateTime _calculateNextDate(Appointment appt) {
-    final current = appt.startAt;
+    // ⚠️ IMPORTANT: appt.startAt is UTC. 
+    // We must calculate the next date based on the user's LOCAL wall clock time 
+    // so the hour and minute (e.g. 9:00 AM) remain exactly the same.
+    final currentLocal = appt.startAt.toLocal();
     
     if (appt.dateType == 'hijri') {
-       final h = HijriCalendar.fromDate(current);
+       final h = HijriCalendar.fromDate(currentLocal);
        int hYear = h.hYear;
        int hMonth = h.hMonth;
        int hDay = h.hDay;
 
        if (appt.recurrenceType == 'daily') {
-          return current.add(const Duration(days: 1));
+          return currentLocal.add(const Duration(days: 1));
        } else if (appt.recurrenceType == 'weekly') {
-          return current.add(const Duration(days: 7));
+          return currentLocal.add(const Duration(days: 7));
        } else if (appt.recurrenceType == 'monthly') {
           hMonth++;
           if (hMonth > 12) {
@@ -116,36 +119,38 @@ class PbAppointmentRecurrenceService {
           next = hCalc.hijriToGregorian(hYear, hMonth, 29);
        }
        
+       // Preserve the exact wall-clock time
        return DateTime(
          next.year, next.month, next.day,
-         current.hour, current.minute, current.second
+         currentLocal.hour, currentLocal.minute, currentLocal.second
        );
 
     } else {
       switch (appt.recurrenceType) {
         case 'daily':
-          return current.add(const Duration(days: 1));
+          return currentLocal.add(const Duration(days: 1));
         case 'weekly':
-          return current.add(const Duration(days: 7));
+          return currentLocal.add(const Duration(days: 7));
         case 'monthly':
-          int nextMonth = current.month + 1;
-          int nextYear = current.year;
+          int nextMonth = currentLocal.month + 1;
+          int nextYear = currentLocal.year;
           if (nextMonth > 12) {
             nextMonth = 1;
             nextYear++;
           }
           final lastDayOfNextMonth = DateTime(nextYear, nextMonth + 1, 0).day;
-          final nextDay = current.day > lastDayOfNextMonth ? lastDayOfNextMonth : current.day;
-          return DateTime(nextYear, nextMonth, nextDay, current.hour, current.minute);
+          final nextDay = currentLocal.day > lastDayOfNextMonth ? lastDayOfNextMonth : currentLocal.day;
+          // Preserve exactly the local wall-clock hour and minute
+          return DateTime(nextYear, nextMonth, nextDay, currentLocal.hour, currentLocal.minute);
           
         case 'annual':
-           int nextYear = current.year + 1;
-           if (current.month == 2 && current.day == 29) {
-             return DateTime(nextYear, 2, 28, current.hour, current.minute);
+           int nextYear = currentLocal.year + 1;
+           if (currentLocal.month == 2 && currentLocal.day == 29) {
+             return DateTime(nextYear, 2, 28, currentLocal.hour, currentLocal.minute);
            }
-           return DateTime(nextYear, current.month, current.day, current.hour, current.minute);
+           return DateTime(nextYear, currentLocal.month, currentLocal.day, currentLocal.hour, currentLocal.minute);
         default:
-          return current.add(const Duration(days: 1));
+          return currentLocal.add(const Duration(days: 1));
       }
     }
   }

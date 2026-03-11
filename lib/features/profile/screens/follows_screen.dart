@@ -9,6 +9,7 @@ import 'package:sijilli/features/auth/providers/auth_provider.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
+import 'package:sijilli/core/services/pocketbase_client.dart';
 
 class FollowsScreen extends StatefulWidget {
   final String userId;
@@ -34,48 +35,119 @@ class _FollowsScreenState extends State<FollowsScreen> {
   bool _isLoading = true;
   bool _isCurrentUser = false;
 
+  UnsubscribeFunc? _unsubscribeFunc;
+
   @override
   void initState() {
     super.initState();
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     _isCurrentUser = widget.userId == authProvider.user?.id;
     _fetchAll();
+    if (_isCurrentUser) {
+      _subscribeToRealtime();
+    }
+  }
+
+  Future<void> _subscribeToRealtime() async {
+    try {
+      final pb = PocketBaseClient.instance.pb;
+      _unsubscribeFunc = await pb.collection('follows').subscribe('*', (e) {
+        // Only refresh if the event involves the current user
+        final record = e.record;
+        if (record != null) {
+          final follower = record.getStringValue('follower');
+          final following = record.getStringValue('following');
+          if (follower == widget.userId || following == widget.userId) {
+            _fetchAll(silent: true);
+          }
+        }
+      });
+    } catch (e) {
+      debugPrint('Error subscribing to follows realtime: $e');
+    }
   }
 
   Future<void> _fetchAll({bool silent = false}) async {
     if (!silent) setState(() => _isLoading = true);
     try {
+      final pb = PocketBaseClient.instance.pb;
+      
+      // Fetch all records where the user is involved
+      final allFollows = await pb.collection('follows').getFullList(
+        filter: 'follower = "${widget.userId}" || following = "${widget.userId}"',
+        expand: 'follower,following',
+      );
+
+      final incomingList = <RecordModel>[]; // Pending requests TO me
+      final outgoingList = <RecordModel>[]; // Pending requests FROM me
+      final iFollowAcc = <UserModel>[]; // Ones I follow (accepted)
+      final followsMeAcc = <UserModel>[]; // Ones following me (accepted)
+
+      for (var record in allFollows) {
+        final followerId = record.getStringValue('follower');
+        final followingId = record.getStringValue('following');
+        final status = record.getStringValue('status');
+
+        if (followerId == widget.userId) {
+          // I am the follower
+          if (status == 'pending') {
+            outgoingList.add(record);
+          } else if (status == 'accepted') {
+            final targetJson = record.expand['following']?.first.toJson();
+            if (targetJson != null) iFollowAcc.add(UserModel.fromJson(targetJson));
+          }
+        } 
+        
+        if (followingId == widget.userId) {
+          // I am the followed
+          if (status == 'pending') {
+            incomingList.add(record);
+          } else if (status == 'accepted') {
+            final sourceJson = record.expand['follower']?.first.toJson();
+            if (sourceJson != null) followsMeAcc.add(UserModel.fromJson(sourceJson));
+          }
+        }
+      }
+
       if (_isCurrentUser) {
-        final results = await Future.wait([
-          _userService.getIncomingFollowRequests(),
-          _userService.getOutgoingFollowRequests(),
-          _userService.getFollowedUsers(userId: widget.userId),
-          _userService.getFollowers(userId: widget.userId),
-        ]);
-
-        final incoming = results[0] as List<RecordModel>;
-        final outgoing = results[1] as List<RecordModel>;
-        final following = results[2] as List<UserModel>;
-        final followers = results[3] as List<UserModel>;
-
-        final followingIds = following.map((u) => u.id).toSet();
-        final accredited = followers.where((u) => followingIds.contains(u.id)).toList();
-        final unanswered = followers.where((u) => !followingIds.contains(u.id)).toList();
+        final followingIds = iFollowAcc.map((u) => u.id).toSet();
+        
+        final accredited = followsMeAcc.where((u) => followingIds.contains(u.id)).toList();
+        final unanswered = followsMeAcc.where((u) => !followingIds.contains(u.id)).toList();
+        
+        // Find people I follow who don't follow me back yet
+        final followsMeIds = followsMeAcc.map((u) => u.id).toSet();
+        final waitingForThemAcc = iFollowAcc.where((u) => !followsMeIds.contains(u.id)).toList();
 
         if (mounted) {
           setState(() {
-            _incomingRequests = incoming;
-            _outgoingRequests = outgoing;
+            _incomingRequests = incomingList;
+            _outgoingRequests = outgoingList;
+            // Also add the 'accepted but not mutual' to outgoing if we want them to show in waiting
+            // but let's just keep _accredited clean
             _accredited = accredited;
             _unansweredFollowers = unanswered;
+            
+            // For those I follow who are accepted but don't follow me back yet,
+            // they should appear in the "Waiting Their Accreditation" section.
+            // But we need a custom list for them since they are UserModels, not RecordModels.
+            // Actually, we can just fetch the record for them from allFollows!
+            for (var u in waitingForThemAcc) {
+               final rec = allFollows.firstWhere((r) => r.getStringValue('follower') == widget.userId && r.getStringValue('following') == u.id);
+               _outgoingRequests.add(rec);
+            }
+
             _isLoading = false;
           });
         }
       } else {
-        final users = await _userService.getFollowedUsers(userId: widget.userId);
+        // If not current user, maybe just show who they are accredited with (mutual)
+        final followingIds = iFollowAcc.map((u) => u.id).toSet();
+        final accredited = followsMeAcc.where((u) => followingIds.contains(u.id)).toList();
+        
         if (mounted) {
           setState(() {
-            _accredited = users;
+            _accredited = accredited;
             _isLoading = false;
           });
         }
@@ -327,6 +399,7 @@ class _FollowsScreenState extends State<FollowsScreen> {
 
   @override
   void dispose() {
+    _unsubscribeFunc?.call();
     super.dispose();
   }
 }

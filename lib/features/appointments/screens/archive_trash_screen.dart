@@ -85,7 +85,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
           final filtered = _searchQuery.isEmpty 
               ? appointments 
               : appointments.where((a) {
-                  final text = '${a.title} ${a.description ?? ''} ${a.host?.name ?? ''}'.toLowerCase();
+                  final text = '${a.title} ${a.description ?? ''} ${a.host?.name ?? ''} ${a.region ?? ''} ${a.building ?? ''} ${a.currentUserInvitation?.personalNote ?? ''}'.toLowerCase();
                   return text.contains(_searchQuery.toLowerCase());
                 }).toList();
 

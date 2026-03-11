@@ -71,7 +71,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
       ),
       body: Column(
         children: [
-          _buildSearchBar(context, isDark),
+          _buildSearchBar(context, isDark, provider),
           
           if (!provider.isSearching) 
             FolderTabBar(
@@ -92,7 +92,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     );
   }
 
-  Widget _buildSearchBar(BuildContext context, bool isDark) {
+  Widget _buildSearchBar(BuildContext context, bool isDark, SearchProvider provider) {
     return Container(
       padding: const EdgeInsets.all(AppDimens.spaceM),
       decoration: BoxDecoration(
@@ -105,12 +105,12 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
         decoration: InputDecoration(
           hintText: context.l10n.searchHint,
           prefixIcon: const Icon(Icons.search, color: AppColors.primary),
-          suffixIcon: _searchController.text.isNotEmpty 
+          suffixIcon: provider.query.isNotEmpty 
             ? IconButton(
                 icon: const Icon(Icons.close, size: 20),
                 onPressed: () {
                   _searchController.clear();
-                  context.read<SearchProvider>().updateQuery('');
+                  provider.updateQuery('');
                 },
               )
             : null,

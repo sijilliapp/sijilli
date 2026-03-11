@@ -147,16 +147,12 @@ class _PulseAvatarState extends State<PulseAvatar> with SingleTickerProviderStat
                 ),
               ),
 
-            // Static Outer Ring
-            Container(
-              width: widget.size,
-              height: widget.size,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: _getRingColor(),
-                  width: ringWidth,
-                ),
+            // Static Outer Ring (Using CustomPaint for better Web Anti-Aliasing)
+            CustomPaint(
+              size: Size(widget.size, widget.size),
+              painter: _RingPainter(
+                color: _getRingColor(),
+                strokeWidth: ringWidth,
               ),
             ),
             
@@ -194,5 +190,31 @@ class _PulseAvatarState extends State<PulseAvatar> with SingleTickerProviderStat
         ),
       ),
     );
+  }
+}
+
+class _RingPainter extends CustomPainter {
+  final Color color;
+  final double strokeWidth;
+
+  _RingPainter({required this.color, required this.strokeWidth});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..isAntiAlias = true;
+
+    // Size is the full size of the widget.
+    // The radius needs to account for half of the stroke width so it doesn't clip out of bounds.
+    final radius = (size.width - strokeWidth) / 2;
+    canvas.drawCircle(Offset(size.width / 2, size.height / 2), radius, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _RingPainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.strokeWidth != strokeWidth;
   }
 }
