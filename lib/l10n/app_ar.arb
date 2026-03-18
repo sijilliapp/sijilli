@@ -400,6 +400,17 @@
   "detailsPersonalSettings": "إعدادات النسخة الشخصية",
   "detailsTrashWarning": "لا يمكن استرجاع المواعيد من سلة المحذوفات.",
   "detailsSavePersonalSettings": "حفظ الإعدادات الشخصية",
+  "detailsAddToCalendar": "أضف للتقويم",
+  "batchSyncTitle": "مزامنة المواعيد العامة",
+  "batchSyncSuccess": "تم حفظ {count} مواعيد جديدة (تم)",
+  "@batchSyncSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "batchSyncNoNew": "لا توجد مواعيد جديدة لحفظها",
   "am": "ص",
   "pm": "م",
   "timeAgoJustNow": "الآن",
@@ -496,6 +507,8 @@
   "yesRemoveAccreditation": "نعم، إلغاء الاعتماد",
   "accreditedBadge": "معتمد",
   "connectAction": "تواصل",
+  "downloadFullImageConfirm": "تنزيل الصورة بكامل دقتها فقط بين المعتمدين",
+  "download": "تنزيل",
   "operationFailed": "فشلت العملية: {error}",
   "@operationFailed": {
     "placeholders": {

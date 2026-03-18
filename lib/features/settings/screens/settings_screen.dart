@@ -115,23 +115,15 @@ class SettingsScreen extends StatelessWidget {
                   color: AppColors.primary.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.archive_outlined, color: AppColors.primary),
+                child: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
               ),
-              title: RichText(
-                text: TextSpan(
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Tajawal',
-                    color: Theme.of(context).textTheme.bodyMedium?.color,
-                  ),
-                  children: [
-                    TextSpan(text: '${context.l10n.archive} & '),
-                    TextSpan(
-                      text: context.l10n.trash,
-                      style: const TextStyle(color: AppColors.error),
-                    ),
-                  ],
+              title: Text(
+                context.l10n.trash,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Tajawal',
+                  color: AppColors.error,
                 ),
               ),
               subtitle: Text(
@@ -149,7 +141,7 @@ class SettingsScreen extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ArchiveTrashScreen()),
+                  MaterialPageRoute(builder: (context) => const ArchiveTrashScreen(initialIndex: 1)),
                 );
               },
             ),

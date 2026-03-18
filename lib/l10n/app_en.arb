@@ -397,6 +397,17 @@
   "detailsPersonalSettings": "Personal Settings",
   "detailsTrashWarning": "Appointments in the trash cannot be restored.",
   "detailsSavePersonalSettings": "Save Personal Settings",
+  "detailsAddToCalendar": "Add to Calendar",
+  "batchSyncTitle": "Sync Public Appointments",
+  "batchSyncSuccess": "Saved {count} new appointments (Done)",
+  "@batchSyncSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "batchSyncNoNew": "No new appointments to save",
   "am": "AM",
   "pm": "PM",
   "timeAgoJustNow": "Just now",
@@ -493,6 +504,8 @@
   "yesRemoveAccreditation": "Yes, remove",
   "accreditedBadge": "Accredited",
   "connectAction": "Connect",
+  "downloadFullImageConfirm": "Download full resolution image (certified members only)",
+  "download": "Download",
   "operationFailed": "Operation failed: {error}",
   "@operationFailed": {
     "placeholders": {

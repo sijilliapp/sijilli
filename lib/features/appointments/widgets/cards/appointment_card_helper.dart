@@ -14,7 +14,7 @@ class AppointmentCardHelper {
   static String formatTimeText(Appointment appointment, BuildContext context) {
     final durationMins = appointment.duration;
     
-    if (durationMins >= 1440) {
+    if (durationMins > 1440) {
       final days = (durationMins / 1440).ceil();
       final daysLabel = context.l10n.daysLeft(days);
       

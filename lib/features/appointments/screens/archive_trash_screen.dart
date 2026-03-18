@@ -8,7 +8,8 @@ import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class ArchiveTrashScreen extends StatefulWidget {
-  const ArchiveTrashScreen({super.key});
+  final int initialIndex;
+  const ArchiveTrashScreen({super.key, this.initialIndex = 0});
 
   @override
   State<ArchiveTrashScreen> createState() => _ArchiveTrashScreenState();
@@ -20,7 +21,11 @@ class _ArchiveTrashScreenState extends State<ArchiveTrashScreen> with SingleTick
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: 2, 
+      vsync: this,
+      initialIndex: widget.initialIndex,
+    );
     
     // Fetch data on init
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -34,7 +39,7 @@ class _ArchiveTrashScreenState extends State<ArchiveTrashScreen> with SingleTick
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${context.l10n.archive} & ${context.l10n.trash}'),
+        title: Text(context.l10n.trash),
         bottom: TabBar(
           controller: _tabController,
           tabs: [

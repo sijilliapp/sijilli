@@ -15,6 +15,7 @@ class ProfileActionsHelper {
   }) {
     if (!targetUser.hasAvatar) return;
 
+    // If there is an active stream link, priority is to show the options (Watch/Download)
     if (streamLink != null && streamLink.isNotEmpty) {
       showModalBottomSheet(
         context: context,
@@ -44,7 +45,7 @@ class ProfileActionsHelper {
                   title: Text(context.l10n.saveImage),
                   onTap: () {
                     Navigator.pop(context);
-                    downloadAvatar(context, targetUser, currentUser);
+                    _showDownloadConfirmation(context, targetUser, currentUser);
                   },
                 ),
                 const SizedBox(height: 16),
@@ -54,8 +55,41 @@ class ProfileActionsHelper {
         },
       );
     } else {
-      downloadAvatar(context, targetUser, currentUser);
+      // Normal case: Just the download confirmation
+      _showDownloadConfirmation(context, targetUser, currentUser);
     }
+  }
+
+  static void _showDownloadConfirmation(BuildContext context, UserModel targetUser, UserModel? currentUser) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        content: Text(
+          context.l10n.downloadFullImageConfirm,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(context.l10n.cancel, style: const TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              downloadAvatar(context, targetUser, currentUser);
+            },
+            child: Text(context.l10n.download),
+          ),
+        ],
+      ),
+    );
   }
 
   static Widget _buildHandle(BuildContext context) {
@@ -90,6 +124,7 @@ class ProfileActionsHelper {
     final bool isApproved = currentUser?.isApproved ?? false;
     final bool isAdmin = currentUser?.isAdmin ?? false;
     
+    // Detailed check for certified members (Approved or Admin)
     final String? avatarUrl = targetUser.getAvatarUrl(
       'https://sijilli.pockethost.io', 
       thumb: (isApproved || isAdmin) ? null : '300x300'

@@ -13,6 +13,9 @@ import '../../appointments/screens/archive_trash_screen.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../core/extensions/context_l10n.dart';
 
+import '../../search/providers/search_provider.dart';
+import '../../../core/services/calendar_sync_service.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -22,6 +25,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final CalendarSyncService _calendarSyncService = CalendarSyncService();
 
   @override
   void initState() {
@@ -30,6 +34,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     // Fetch appointments when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AppointmentProvider>().fetchAppointments();
+      // Also pre-fetch explore appointments for sync
+      context.read<SearchProvider>().init();
     });
   }
 
@@ -37,6 +43,49 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleBatchSync() async {
+    final searchProvider = context.read<SearchProvider>();
+    final appointments = searchProvider.exploreAppointments;
+
+    if (appointments.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.batchSyncNoNew)),
+        );
+      }
+      return;
+    }
+
+    // Show loading? Optional, but let's just run it.
+    final result = await _calendarSyncService.syncAppointments(appointments);
+
+    if (!mounted) return;
+
+    if (result >= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 4),
+          backgroundColor: Colors.green.shade600,
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 12),
+              Text(
+                result > 0 
+                  ? context.l10n.batchSyncSuccess(result)
+                  : context.l10n.batchSyncNoNew,
+              ),
+            ],
+          ),
+        ),
+      );
+    } else if (result == -1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.errorOccurred)),
+      );
+    }
   }
 
   @override
@@ -120,18 +169,30 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         if (value == 'archive') {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const ArchiveTrashScreen()),
+            MaterialPageRoute(builder: (context) => const ArchiveTrashScreen(initialIndex: 0)),
           );
         } else if (value == 'contact') {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const ContactScreen()),
           );
+        } else if (value == 'sync') {
+          _handleBatchSync();
         } else if (value == 'logout') {
           context.read<AuthProvider>().logout();
         }
       },
       itemBuilder: (BuildContext context) => [
+        PopupMenuItem(
+          value: 'sync',
+          child: Row(
+            children: [
+              const Icon(Icons.calendar_month_outlined, size: 20, color: Colors.blue),
+              const SizedBox(width: 8),
+              Text(context.l10n.batchSyncTitle),
+            ],
+          ),
+        ),
         PopupMenuItem(
           value: 'archive',
           child: Row(

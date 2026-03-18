@@ -1084,6 +1084,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailsSavePersonalSettings => 'Save Personal Settings';
 
   @override
+  String get detailsAddToCalendar => 'Add to Calendar';
+
+  @override
+  String get batchSyncTitle => 'Sync Public Appointments';
+
+  @override
+  String batchSyncSuccess(int count) {
+    return 'Saved $count new appointments (Done)';
+  }
+
+  @override
+  String get batchSyncNoNew => 'No new appointments to save';
+
+  @override
   String get am => 'AM';
 
   @override
@@ -1342,6 +1356,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get connectAction => 'Connect';
+
+  @override
+  String get downloadFullImageConfirm =>
+      'Download full resolution image (certified members only)';
+
+  @override
+  String get download => 'Download';
 
   @override
   String operationFailed(String error) {

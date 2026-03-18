@@ -30,6 +30,9 @@ class BaseAppointmentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final appointment = policy.appointment;
 
+    final category = appointment.currentUserInvitation?.categories;
+    final categoryColor = category?.getColor();
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 0, vertical: AppDimens.spaceS),
       child: Material(
@@ -258,6 +261,8 @@ class _AppointmentCardBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appointment = policy.appointment;
+    final category = appointment.currentUserInvitation?.categories;
+    final categoryColor = category?.getColor();
     
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

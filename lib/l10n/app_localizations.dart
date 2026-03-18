@@ -2042,6 +2042,30 @@ abstract class AppLocalizations {
   /// **'حفظ الإعدادات الشخصية'**
   String get detailsSavePersonalSettings;
 
+  /// No description provided for @detailsAddToCalendar.
+  ///
+  /// In ar, this message translates to:
+  /// **'أضف للتقويم'**
+  String get detailsAddToCalendar;
+
+  /// No description provided for @batchSyncTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'مزامنة المواعيد العامة'**
+  String get batchSyncTitle;
+
+  /// No description provided for @batchSyncSuccess.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم حفظ {count} مواعيد جديدة (تم)'**
+  String batchSyncSuccess(int count);
+
+  /// No description provided for @batchSyncNoNew.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد مواعيد جديدة لحفظها'**
+  String get batchSyncNoNew;
+
   /// No description provided for @am.
   ///
   /// In ar, this message translates to:
@@ -2443,6 +2467,18 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'تواصل'**
   String get connectAction;
+
+  /// No description provided for @downloadFullImageConfirm.
+  ///
+  /// In ar, this message translates to:
+  /// **'تنزيل الصورة بكامل دقتها فقط بين المعتمدين'**
+  String get downloadFullImageConfirm;
+
+  /// No description provided for @download.
+  ///
+  /// In ar, this message translates to:
+  /// **'تنزيل'**
+  String get download;
 
   /// No description provided for @operationFailed.
   ///

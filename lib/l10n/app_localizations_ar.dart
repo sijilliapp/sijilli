@@ -1095,6 +1095,20 @@ class AppLocalizationsAr extends AppLocalizations {
   String get detailsSavePersonalSettings => 'حفظ الإعدادات الشخصية';
 
   @override
+  String get detailsAddToCalendar => 'أضف للتقويم';
+
+  @override
+  String get batchSyncTitle => 'مزامنة المواعيد العامة';
+
+  @override
+  String batchSyncSuccess(int count) {
+    return 'تم حفظ $count مواعيد جديدة (تم)';
+  }
+
+  @override
+  String get batchSyncNoNew => 'لا توجد مواعيد جديدة لحفظها';
+
+  @override
   String get am => 'ص';
 
   @override
@@ -1371,6 +1385,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get connectAction => 'تواصل';
+
+  @override
+  String get downloadFullImageConfirm =>
+      'تنزيل الصورة بكامل دقتها فقط بين المعتمدين';
+
+  @override
+  String get download => 'تنزيل';
 
   @override
   String operationFailed(String error) {

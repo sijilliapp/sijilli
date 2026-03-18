@@ -20,13 +20,14 @@ class AppointmentActionButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Align(
-          alignment: context.l10n.localeName == 'ar' ? Alignment.centerRight : Alignment.centerLeft,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0),
           child: Text(
             context.l10n.detailsQuickActions,
             style: TextStyle(
-              fontSize: AppDimens.textSize,
+              fontSize: AppDimens.textSizeS,
               fontWeight: FontWeight.bold,
               color: AppColors.getTextSecondary(context),
             ),
@@ -36,23 +37,23 @@ class AppointmentActionButtons extends StatelessWidget {
         Row(
           children: [
             _buildQuickActionBtn(
-              icon: Icons.copy,
+              icon: Icons.copy_rounded,
               label: context.l10n.detailsClone,
               color: AppColors.primary,
               onTap: onClone,
             ),
             const SizedBox(width: AppDimens.space),
             _buildQuickActionBtn(
-              icon: isArchived ? Icons.unarchive : Icons.archive,
+              icon: isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
               label: isArchived ? context.l10n.detailsUnarchive : context.l10n.detailsArchive,
-              color: isArchived ? Colors.green : AppColors.alert,
+              color: isArchived ? Colors.green : Colors.amber.shade700,
               onTap: onArchive,
             ),
             const SizedBox(width: AppDimens.space),
             _buildQuickActionBtn(
-              icon: Icons.delete_outline,
+              icon: Icons.delete_outline_rounded,
               label: context.l10n.delete,
-              color: AppColors.warning,
+              color: Colors.redAccent,
               onTap: onDelete,
             ),
           ],

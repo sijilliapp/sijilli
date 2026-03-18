@@ -63,6 +63,18 @@ class AppointmentCategory {
     'color': color,
     'user': userId,
   };
+
+  /// الحصول على اللون كـ Color
+  Color? getColor() {
+    if (color == null || color!.isEmpty) return null;
+    try {
+      String hexColor = color!.replaceAll('#', '');
+      if (hexColor.length == 6) hexColor = 'FF$hexColor';
+      return Color(int.parse('0x$hexColor'));
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 /// حالة نشر الموعد (أين يتواجد)
