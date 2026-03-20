@@ -34,7 +34,7 @@ class SelectionUserPolicy extends UserCardPolicy {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (isHost)
-            _buildBadge('أنت (المنشئ)', AppColors.primary),
+            _buildBadge('أنت', AppColors.primary),
           if (isFollowed && !isHost) ...[
             Icon(Icons.star, color: Colors.amber.shade400, size: 12),
             const SizedBox(width: 4),
@@ -68,27 +68,24 @@ class SelectionUserPolicy extends UserCardPolicy {
       return Icon(Icons.check_circle, color: Colors.grey.shade400);
     }
 
-    if (!isFollowed) {
-      return SizedBox(
-        height: 32,
-        child: ElevatedButton(
-          onPressed: onSelected,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
-          child: Text(
-            context.l10n.hostAndConnect,
-            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-          ),
+    // Professional Unified Button
+    return SizedBox(
+      height: 32,
+      child: ElevatedButton(
+        onPressed: onSelected,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
-      );
-    }
-
-    return const Icon(Icons.add_circle_outline, color: AppColors.primary);
+        child: Text(
+          !isFollowed ? context.l10n.hostAndConnect : context.l10n.hostAction,
+          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
   }
 
   @override

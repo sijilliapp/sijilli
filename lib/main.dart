@@ -23,7 +23,10 @@ import 'package:sijilli/l10n/app_localizations.dart';
 import 'features/home/providers/public_profile_provider.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/locale_provider.dart';
+import 'core/providers/settings_provider.dart';
 import 'l10n/app_localizations.dart';
+
+final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
 void main() async { // Changed to async
   // معالجة الأخطاء الشاملة
@@ -61,25 +64,31 @@ void main() async { // Changed to async
   // Initialize ThemeProvider (Pre-load settings to avoid flash)
   final themeProvider = ThemeProvider();
   await themeProvider.loadSettings();
-  
-  // Initialize LocaleProvider
-  final localeProvider = LocaleProvider();
-  
-  // تشغيل التطبيق
-  runApp(SijilliApp(
-    themeProvider: themeProvider,
-    localeProvider: localeProvider,
-  ));
+    // Initialize LocaleProvider
+    final localeProvider = LocaleProvider();
+    
+    // Initialize SettingsProvider
+    final settingsProvider = SettingsProvider();
+    await settingsProvider.loadSettings();
+    
+    // تشغيل التطبيق
+    runApp(SijilliApp(
+      themeProvider: themeProvider,
+      localeProvider: localeProvider,
+      settingsProvider: settingsProvider,
+    ));
 }
 
 class SijilliApp extends StatelessWidget {
   final ThemeProvider themeProvider;
   final LocaleProvider localeProvider;
+  final SettingsProvider settingsProvider;
   
   const SijilliApp({
     super.key, 
     required this.themeProvider,
     required this.localeProvider,
+    required this.settingsProvider,
   });
 
   @override
@@ -118,9 +127,13 @@ class SijilliApp extends StatelessWidget {
             return notification ?? NotificationProvider();
           },
         ),
-        // إدارة حالة البحث
-        ChangeNotifierProvider(
+        // إدارة حالة البحث - تعتمد على حالة المصادقة (للمنطقة والوقت)
+        ChangeNotifierProxyProvider<AuthProvider, SearchProvider>(
           create: (context) => SearchProvider()..init(),
+          update: (context, auth, search) {
+            search?.updateContext(auth.user);
+            return search ?? SearchProvider();
+          },
         ),
         // إدارة بيانات الملفات الشخصية العامة
         ChangeNotifierProvider(
@@ -133,6 +146,10 @@ class SijilliApp extends StatelessWidget {
         // إدارة اللغة
         ChangeNotifierProvider.value(
           value: localeProvider,
+        ),
+        // إدارة الإعدادات العامة
+        ChangeNotifierProvider.value(
+          value: settingsProvider,
         ),
       ],
       child: Consumer2<ThemeProvider, LocaleProvider>(
@@ -259,6 +276,7 @@ class SijilliApp extends StatelessWidget {
               }
               return null;
             },
+            navigatorObservers: [routeObserver],
             routes: {
               '/main': (context) => const AuthWrapper(),
             },

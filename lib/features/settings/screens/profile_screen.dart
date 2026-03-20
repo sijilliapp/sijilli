@@ -73,23 +73,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final provider = context.read<AuthProvider>();
     
-    // التحقق من توفر اسم المستخدم إذا تم تغييره
-    final currentUsername = provider.user?.username;
     final newUsername = _usernameController.text.trim();
-        if (newUsername != currentUsername) {
-      final isAvailable = await provider.isUsernameAvailable(newUsername);
-      if (!isAvailable) {
-        if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.l10n.usernameTaken),
-              backgroundColor: AppColors.warning,
-            ),
-          );
-        }
-        return;
-      }
-    }
+
+    // Security Refactor: 
+    // We no longer pre-check availability via public endpoints to prevent data leakage.
+    // The `provider.updateUser` call will handle uniqueness constraints and return a localized error if taken.
 
     final Map<String, dynamic> data = {
       'name': _nameController.text.trim(),

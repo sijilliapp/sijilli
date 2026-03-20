@@ -1445,7 +1445,7 @@ abstract class AppLocalizations {
   /// No description provided for @hostAndConnect.
   ///
   /// In ar, this message translates to:
-  /// **'استضافة واتصال'**
+  /// **'استضافة وتواصل'**
   String get hostAndConnect;
 
   /// No description provided for @searchUserHint.
@@ -2453,14 +2453,26 @@ abstract class AppLocalizations {
   /// No description provided for @yesRemoveAccreditation.
   ///
   /// In ar, this message translates to:
-  /// **'نعم، إلغاء الاعتماد'**
+  /// **'نعم، إزالة'**
   String get yesRemoveAccreditation;
 
   /// No description provided for @accreditedBadge.
   ///
   /// In ar, this message translates to:
-  /// **'معتمد'**
+  /// **'معتمَد'**
   String get accreditedBadge;
+
+  /// No description provided for @magneticHome.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرئيسية المغناطيسية'**
+  String get magneticHome;
+
+  /// No description provided for @magneticHomeDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'التركيز التلقائي على المواعيد عند الدخول'**
+  String get magneticHomeDesc;
 
   /// No description provided for @connectAction.
   ///

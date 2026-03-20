@@ -10,7 +10,7 @@ class PbAppointmentBrowseService {
 
   /// جلب مواعيد الحسابات المعتمدة (تبويب الأخبار)
   /// الشروط: عام، منشور، مؤكد، من حساب معتمد/مشرف، مستقبلي أو جاري (آخر ساعتين)
-  Future<List<Appointment>> getExploreAppointments({int page = 1, int perPage = 50, int contextAdjustment = 0}) async {
+  Future<List<Appointment>> getExploreAppointments({String? userRegion, int page = 1, int perPage = 50, int contextAdjustment = 0}) async {
     try {
       // السماح بظهور المواعيد التي بدأت خلال آخر ساعتين (جارية)
       final now = DateTime.now().toUtc();
@@ -19,11 +19,18 @@ class PbAppointmentBrowseService {
       // الشروط:
       // 1. الخصوصية عام (public)
       // 2. الموعد مؤكد (is_confirmed)
-      // 3. المضيف دوره معتمد (approved) أو مشرف (admin)
+      // 3. المضيف خصوصية حسابه عام (isPublic)
       // 4. الموعد مستقبلي أو جاري (start_at > threshold)
-      // 5. المضيف خصوصية حسابه عام (isPublic)
-      // 6. غير ملغى وغير محذوف
-      final filter = 'privacy = "public" && is_confirmed = true && (host.role = "approved" || host.role = "admin") && host.isPublic = true && start_at > "$ongoingThreshold" && is_cancelled = false && is_deleted = false';
+      // 5. غير ملغى وغير محذوف
+      // 6. الأولوية (أو): مضيف معتمد/مشرف OR الموعد في نفس منطقة المستخدم
+      
+      String filter = 'privacy = "public" && is_confirmed = true && host.isPublic = true && start_at > "$ongoingThreshold" && is_cancelled = false && is_deleted = false';
+      
+      if (userRegion != null && userRegion.isNotEmpty) {
+        filter += ' && (host.role = "approved" || host.role = "admin" || region = "$userRegion")';
+      } else {
+        filter += ' && (host.role = "approved" || host.role = "admin")';
+      }
 
       final resultList = await _pb.collection(collectionAppointments).getList(
         page: page,

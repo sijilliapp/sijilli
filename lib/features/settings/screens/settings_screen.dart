@@ -14,6 +14,7 @@ import '../../auth/screens/privacy_policy_screen.dart';
 import 'notification_settings_screen.dart';
 import '../../../core/providers/locale_provider.dart';
 import 'package:sijilli/l10n/app_localizations.dart';
+import '../../../core/providers/settings_provider.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../core/extensions/context_l10n.dart';
@@ -81,6 +82,21 @@ class SettingsScreen extends StatelessWidget {
                 onTap: () {
                   _showFontSelectionDialog(context);
                 },
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          
+          // الرئيسية المغناطيسية
+          Consumer<SettingsProvider>(
+            builder: (context, settings, _) {
+              return _buildSwitchCard(
+                context,
+                icon: Icons.auto_mode_outlined,
+                title: context.l10n.magneticHome,
+                subtitle: context.l10n.magneticHomeDesc,
+                value: settings.isMagneticScrollEnabled,
+                onChanged: (val) => settings.setMagneticScrollEnabled(val),
               );
             },
           ),
@@ -270,6 +286,48 @@ class SettingsScreen extends StatelessWidget {
           color: Theme.of(context).dividerColor,
         ),
         onTap: onTap,
+      ),
+    );
+  }
+
+  Widget _buildSwitchCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+      ),
+      color: Theme.of(context).cardColor, 
+      child: SwitchListTile(
+        secondary: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: AppColors.primary),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(
+            color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7),
+            fontSize: 12,
+          ),
+        ),
+        value: value,
+        onChanged: onChanged,
+        activeColor: AppColors.primary,
       ),
     );
   }

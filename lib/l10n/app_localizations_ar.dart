@@ -716,7 +716,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get hostAFriend => 'ادعُ صديقاً';
 
   @override
-  String get hostAndConnect => 'استضافة واتصال';
+  String get hostAndConnect => 'استضافة وتواصل';
 
   @override
   String get searchUserHint => 'البحث بالاسم أو اسم المستخدم...';
@@ -1378,10 +1378,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get newAppointmentAction => 'موعد جديد';
 
   @override
-  String get yesRemoveAccreditation => 'نعم، إلغاء الاعتماد';
+  String get yesRemoveAccreditation => 'نعم، إزالة';
 
   @override
-  String get accreditedBadge => 'معتمد';
+  String get accreditedBadge => 'معتمَد';
+
+  @override
+  String get magneticHome => 'الرئيسية المغناطيسية';
+
+  @override
+  String get magneticHomeDesc => 'التركيز التلقائي على المواعيد عند الدخول';
 
   @override
   String get connectAction => 'تواصل';

@@ -1355,6 +1355,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accreditedBadge => 'Accredited';
 
   @override
+  String get magneticHome => 'Magnetic Home';
+
+  @override
+  String get magneticHomeDesc => 'Auto-scroll to appointments on entry';
+
+  @override
   String get connectAction => 'Connect';
 
   @override

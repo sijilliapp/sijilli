@@ -18,4 +18,7 @@ class ArchivedPolicy extends StandardPolicy {
 
   @override
   IconData? get guestActionIcon => Icons.archive_outlined;
+
+  @override
+  VoidCallback? get onGuestActionTap => null; // Disable tap for archived state
 }

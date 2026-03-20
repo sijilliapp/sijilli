@@ -503,6 +503,8 @@
   "newAppointmentAction": "New Appointment",
   "yesRemoveAccreditation": "Yes, remove",
   "accreditedBadge": "Accredited",
+  "magneticHome": "Magnetic Home",
+  "magneticHomeDesc": "Auto-scroll to appointments on entry",
   "connectAction": "Connect",
   "downloadFullImageConfirm": "Download full resolution image (certified members only)",
   "download": "Download",

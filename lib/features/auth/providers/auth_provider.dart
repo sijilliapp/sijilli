@@ -60,14 +60,10 @@ class AuthProvider extends ChangeNotifier {
       // Load recent usernames
       await _loadRecentUsernames();
 
-      // 2. تهيئة PocketBase (تتم الآن في main.dart)
-      
-      // إذا وجدنا مستخدم محلي، نقوم بتحميل التوكن إلى PocketBase
+      // 2. تهيئة PocketBase
       if (_user != null && _user!.token != null) {
-        // تحميل التوكن للمزامنة السحابية
         try {
            final pb = PocketBaseClient.instance.pb;
-           // نكتفي بشحن التوكن حالياً لضمان صلاحية الطلبات، وسيتم تحديث الموديل في الخطوة التالية
            pb.authStore.save(_user!.token!, null); 
            debugPrint('✅ AuthProvider: Restored local token to PocketBase AuthStore');
         } catch (e) {
@@ -75,11 +71,10 @@ class AuthProvider extends ChangeNotifier {
         }
       }
       
-      // 3. فحص الجلسة مع الخادم (في الخلفية أو إذا لم يوجد بيانات محلية)
+      // 3. فحص الجلسة مع الخادم
       await _checkSavedSession();
       
     } catch (e) {
-      // في حال الخطأ، إذا كان لدينا بيانات محلية، نبقي المستخدم مسجل الدخول
       if (_user == null) {
         _setError('خطأ في تهيئة التطبيق: $e');
       }
@@ -88,27 +83,18 @@ class AuthProvider extends ChangeNotifier {
   
   /// فحص الجلسة المحفوظة وتحديث البيانات
   Future<void> _checkSavedSession() async {
-    // إذا لم يكن لدينا اتصال (توكن)، لا داعي للمحاولة
     if (!PocketBaseClient.instance.pb.authStore.isValid && _user == null) {
       _setStatus(AuthStatus.unauthenticated);
       return;
     }
 
     try {
-      // محاولة تحديث التوكن إذا كان لدينا اتصال
-      // حتى لو كان التوكن منتهي الصلاحية، refreshAuth قد تنجح إذا كان لا يزال ضمن فترة السماح
-      // أو ستفشل ونقوم بتسجيل الخروج
-      // Final check with server (refresh)
-      // PB Client handles refresh
       final authData = await PocketBaseClient.instance.pb.collection('users').authRefresh();
       final user = UserModel.fromJson(authData.record!.toJson(), token: authData.token);
       await _updateUserLocally(user);
       debugPrint('✅ AuthProvider: Session refreshed successfully');
     } catch (e) {
       debugPrint('⚠️ Session refresh failed: $e');
-      
-      // المميز هنا: إذا فشل التحديث بسبب انقطاع الإنترنت (0) أو توقف الخادم (5xx)،
-      // لا نقوم بتسجيل الخروج! بل نبقي الجلسة المحلية تعمل حالياً.
       
       bool isPermanentError = false;
       if (e is ClientException) {
@@ -120,52 +106,22 @@ class AuthProvider extends ChangeNotifier {
       if (isPermanentError) {
          debugPrint('❌ Token invalid/expired permanently, logging out...');
          await logout(); 
-      } else {
-        // خطأ مؤقت (شبكة/خادم)، نبقي البيانات المحلية ولا نغير الحالة لـ unauthenticated
-        debugPrint('ℹ️ Keeping local session active despite temporary refresh error');
       }
     }
   }
   
   // ====================== تسجيل الدخول ======================
   
-  /// تسجيل الدخول بالبريد الإلكتروني
-  Future<bool> loginWithEmail({
-    required String email,
-    required String password,
-  }) async {
-    if (_isLoading) return false;
-    return _performLogin(() async {
-      return await _authService.loginWithEmail(
-        email: email,
-        password: password,
-      );
-    });
+  Future<bool> loginWithEmail({required String email, required String password}) async {
+    return _performLogin(() => _authService.loginWithEmail(email: email, password: password));
   }
   
-  /// تسجيل الدخول باسم المستخدم
-  Future<bool> loginWithUsername({
-    required String username,
-    required String password,
-  }) async {
-    if (_isLoading) return false;
-    return _performLogin(() async {
-      return await _authService.loginWithUsername(
-        username: username,
-        password: password,
-      );
-    });
+  Future<bool> loginWithUsername({required String username, required String password}) async {
+    return _performLogin(() => _authService.loginWithUsername(username: username, password: password));
   }
   
-  /// تسجيل الدخول التلقائي (بريد أو اسم مستخدم)
-  Future<bool> login({
-    required String identifier, // بريد أو اسم مستخدم
-    required String password,
-  }) async {
-    if (_isLoading) return false;
-    // تحديد نوع المعرف
+  Future<bool> login({required String identifier, required String password}) async {
     final isEmail = identifier.contains('@');
-    
     if (isEmail) {
       return await loginWithEmail(email: identifier, password: password);
     } else {
@@ -173,47 +129,16 @@ class AuthProvider extends ChangeNotifier {
     }
   }
   
-  /// دالة مساعدة لتنفيذ تسجيل الدخول
   Future<bool> _performLogin(Future<UserModel> Function() loginFunction) async {
     _setLoading(true);
     _clearError();
-    
     try {
       final user = await loginFunction();
       await _updateUserLocally(user);
-      
-      // Save recent username
       await _saveRecentUsername(user.username ?? user.email ?? '');
-      
       return true;
     } catch (e) {
-      String message = 'Unknown error occurred';
-      
-      if (e is ClientException) {
-        final statusCode = e.statusCode;
-        final responseData = e.response;
-        
-        if (statusCode == 400 || statusCode == 401) {
-          message = 'Invalid credentials. Please check your email/username and password.';
-          // التحقق من حالات خاصة في البيانات الراجعة
-          final errorData = responseData['data'] as Map<String, dynamic>?;
-          if (errorData != null) {
-             if (errorData.containsKey('email') && errorData['email']['code'] == 'validation_is_not_verified') {
-               message = 'Please verify your email first to be able to login.';
-             }
-          }
-        } else if (statusCode == 403) {
-          message = 'Sorry, this account is currently disabled.';
-        } else if (statusCode == 429) {
-          message = 'Too many failed attempts! Please wait a while.';
-        } else if (statusCode == 0) {
-          message = 'Failed to connect to server. Please check your internet.';
-        }
-      } else {
-        message = 'Unknown error: ${e.toString()}';
-      }
-      
-      _setError(message);
+      _setError(_parsePbError(e));
       return false;
     } finally {
       _setLoading(false);
@@ -222,7 +147,6 @@ class AuthProvider extends ChangeNotifier {
   
   // ====================== التسجيل ======================
   
-  /// إنشاء حساب جديد
   Future<bool> register({
     required String username,
     required String email,
@@ -233,7 +157,6 @@ class AuthProvider extends ChangeNotifier {
   }) async {
     _setLoading(true);
     _clearError();
-    
     try {
       final user = await _authService.register(
         username: username,
@@ -243,12 +166,10 @@ class AuthProvider extends ChangeNotifier {
         name: name,
         phone: phone,
       );
-      
       await _updateUserLocally(user);
-      
       return true;
     } catch (e) {
-      _setError(e.toString());
+      _setError(_parsePbError(e));
       return false;
     } finally {
       _setLoading(false);
@@ -257,41 +178,16 @@ class AuthProvider extends ChangeNotifier {
   
   // ====================== تسجيل الخروج ======================
   
-  /// تسجيل الخروج
   Future<void> logout() async {
     _setLoading(true);
-    debugPrint('🚪 AuthProvider: performing logout...');
-    
     try {
-      try {
-        _authService.logout();
-        debugPrint('✅ AuthService logout done');
-      } catch (e) {
-        debugPrint('⚠️ AuthService logout failed: $e');
-      }
-      
-      try {
-        await _clearSession();
-        debugPrint('✅ Session cleared');
-      } catch (e) {
-        debugPrint('⚠️ Clear session failed: $e');
-      }
-      
-      try {
-        await _localDb.clearUser();
-         debugPrint('✅ Local DB cleared');
-      } catch (e) {
-        debugPrint('⚠️ Local DB clear failed: $e');
-      }
-      
+      _authService.logout();
+      await _clearSession();
+      await _localDb.clearUser();
       _setUser(null);
       _setStatus(AuthStatus.unauthenticated);
-      debugPrint('✅ AuthStatus set to unauthenticated');
-      
     } catch (e) {
-      debugPrint('❌ Logout critical error: $e');
       _setError('Logout error: $e');
-      // Force unauthenticated even on error to prevent being stuck
       _setUser(null);
       _setStatus(AuthStatus.unauthenticated);
     } finally {
@@ -299,204 +195,98 @@ class AuthProvider extends ChangeNotifier {
     }
   }
   
-  // ====================== إعادة تعيين كلمة المرور ======================
-  
-  /// إرسال رابط إعادة تعيين كلمة المرور
-  Future<bool> requestPasswordReset(String email) async {
-    _setLoading(true);
-    _clearError();
-    
-    try {
-      await _authService.requestPasswordReset(email);
-      return true;
-    } catch (e) {
-      _setError(e.toString());
-      return false;
-    } finally {
-      _setLoading(false);
-    }
-  }
-  
-  // ====================== تحديث البيانات ======================
-  
-  /// تحديث بيانات المستخدم
-  Future<bool> updateUser(Map<String, dynamic> data, {String? avatarPath}) async {
-    // إذا كنت غير متصل وحاولت التحديث، يمكنك تنفيذ حفظ محلي "تفاؤلي"
-    // ولكن حالياً سنطلب الاتصال
-    // TODO: Implement optimistic UI updates properly queueing requests
-    
-    if (!isAuthenticated) return false;
-    
-    _setLoading(true);
-    _clearError();
-    
-    try {
-      final updatedUser = await _userService.updateCurrentUser(data, avatarPath: avatarPath);
-      await _updateUserLocally(updatedUser);
-      return true;
-    } catch (e) {
-      // إذا كان الخطأ بسبب انتهاء التوكن (401/403)
-      bool isAuthError = false;
-      if (e is ClientException) {
-         if (e.statusCode == 401 || e.statusCode == 403) {
-            isAuthError = true;
-         }
-      }
-      
-      if (isAuthError) {
-        
-        print('🔄 Token expired during update, attempting refresh...');
-        try {
-          // محاولة تحديث التوكن
-          final authData = await PocketBaseClient.instance.pb.collection('users').authRefresh();
-          final refreshedUser = UserModel.fromJson(authData.record!.toJson(), token: authData.token);
-          
-          // إعادة المحاولة بالتوكن الجديد
-          final retryUserResult = await _userService.updateCurrentUser(data, avatarPath: avatarPath);
-          // دمج البيانات الجديدة مع التوكن الجديد
-          final finalUser = retryUserResult.copyWith(token: authData.token);
-          
-          await _updateUserLocally(finalUser);
-          return true;
-        } catch (retryError) {
-          print('❌ Refresh failed or retry failed: $retryError');
-          
-          // فقط إذا كان الخطأ هو عدم صلاحية التوكن (401/403) نقوم بتسجيل الخروج
-          bool isRetryAuthError = false;
-          if (retryError is ClientException) {
-             if (retryError.statusCode == 401 || retryError.statusCode == 403) {
-                isRetryAuthError = true;
-             }
-          }
-          
-          if (isRetryAuthError) {
-            await logout();
-            _setError('Please login again (session expired).');
-          } else {
-             _setError('Update failed: $retryError');
-          }
-          return false;
-        }
-      }
-      
-      _setError(e.toString());
-      return false;
-    } finally {
-      _setLoading(false);
-    }
-  }
-  
-  // ====================== التحقق من البيانات ======================
-  
-  /// التحقق من توفر اسم المستخدم
-  Future<bool> isUsernameAvailable(String username) async {
-    try {
-      return await _authService.isUsernameAvailable(username);
-    } catch (e) {
-      return false;
-    }
-  }
-  
-  /// التحقق من توفر البريد الإلكتروني
-  Future<bool> isEmailAvailable(String email) async {
-    try {
-      return await _authService.isEmailAvailable(email);
-    } catch (e) {
-      return false;
-    }
-  }
-  
-  // ====================== إدارة الجلسة ======================
-  
-  Future<void> _updateUserLocally(UserModel user) async {
-    // 🔑 الحفاظ على التوكن القديم إذا كان الجديد فارغاً (يحدث عند التحديث العادي للبيانات)
-    final userWithToken = (user.token == null && _user?.token != null)
-        ? user.copyWith(token: _user!.token)
-        : user;
-
-    _setUser(userWithToken);
-    _setStatus(AuthStatus.authenticated);
-    // الحفظ في قاعدة البيانات المحلية (Isar)
-    await _localDb.saveUser(userWithToken);
-  }
-  
-  /// حفظ معلومات الجلسة (قديم - لم نعد بحاجة له مع Isar لكن نتركه احتياطاً)
-  Future<void> _saveSession() async {
-    // تم استبداله بـ _localDb.saveUser(user)
-  }
-  
-  /// مسح معلومات الجلسة المحلية
   Future<void> _clearSession() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('user_id');
       await prefs.remove('user_data');
     } catch (e) {
-      print('❌ خطأ في مسح الجلسة: $e');
+      debugPrint('❌ Error clearing session: $e');
     }
   }
-  
-  // ====================== إدارة الحالة ======================
-  
-  void _setStatus(AuthStatus status) {
-    _status = status;
-    notifyListeners();
-  }
-  
-  void _setUser(UserModel? user) {
-    _user = user;
-    notifyListeners();
-  }
-  
-  void _setError(String error) {
-    _errorMessage = error;
-    _status = AuthStatus.error;
-    notifyListeners();
-  }
-  
-  void _clearError() {
-    _errorMessage = null;
-    notifyListeners();
-  }
-  
-  void _setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
-  }
-  
-  // ====================== حذف الحساب ======================
 
-  /// حذف الحساب نهائياً
-  Future<bool> deleteAccount({bool performLogout = true}) async {
-    if (_user == null) return false;
-    
+  // ====================== إعادة تعيين كلمة المرور ======================
+  
+  Future<bool> requestPasswordReset(String email) async {
     _setLoading(true);
     _clearError();
-    
-    final userId = _user!.id; // Capture ID before potential logout side effects
-    debugPrint('🗑️ Attempting to delete user account: $userId');
-    
     try {
-      debugPrint('🗑️ Calling PocketBase delete service...');
-      await _authService.deleteAccount(userId);
-      debugPrint('✅ PocketBase delete successful (no exception thrown)');
-      
-      if (performLogout) {
-        debugPrint('🗑️ Performing logout...');
-        await logout(); // تسجيل الخروج ومسح البيانات
-      }
-      
+      await _authService.requestPasswordReset(email);
       return true;
     } catch (e) {
-      debugPrint('❌ DELETE ACCOUNT FAILED: $e');
-      _setError('فشل حذف الحساب: $e');
+      _setError(_parsePbError(e));
       return false;
     } finally {
       _setLoading(false);
     }
   }
 
-  // ====================== Recent Usernames Logic ======================
+  // ====================== تحديث البيانات ======================
+  
+  Future<bool> updateUser(Map<String, dynamic> data, {String? avatarPath}) async {
+    if (!isAuthenticated) return false;
+    _setLoading(true);
+    _clearError();
+    try {
+      final updatedUser = await _userService.updateCurrentUser(data, avatarPath: avatarPath);
+      await _updateUserLocally(updatedUser);
+      return true;
+    } catch (e) {
+      if (e is ClientException && (e.statusCode == 401 || e.statusCode == 403)) {
+        try {
+          final authData = await PocketBaseClient.instance.pb.collection('users').authRefresh();
+          final retryUserResult = await _userService.updateCurrentUser(data, avatarPath: avatarPath);
+          final finalUser = retryUserResult.copyWith(token: authData.token);
+          await _updateUserLocally(finalUser);
+          return true;
+        } catch (retryError) {
+          if (retryError is ClientException && (retryError.statusCode == 401 || retryError.statusCode == 403)) {
+            await logout();
+            _setError('انتهت الجلسة، يرجى تسجيل الدخول مجدداً.');
+          } else {
+            _setError(_parsePbError(retryError));
+          }
+          return false;
+        }
+      }
+      _setError(_parsePbError(e));
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+  
+  // ====================== إدارة الجلسة ======================
+  
+  Future<void> _updateUserLocally(UserModel user) async {
+    final userWithToken = (user.token == null && _user?.token != null)
+        ? user.copyWith(token: _user!.token)
+        : user;
+    _setUser(userWithToken);
+    _setStatus(AuthStatus.authenticated);
+    await _localDb.saveUser(userWithToken);
+  }
+  
+  // ====================== حذف الحساب ======================
+
+  Future<bool> deleteAccount({bool performLogout = true}) async {
+    if (_user == null) return false;
+    _setLoading(true);
+    _clearError();
+    final userId = _user!.id;
+    try {
+      await _authService.deleteAccount(userId);
+      if (performLogout) await logout();
+      return true;
+    } catch (e) {
+      _setError(_parsePbError(e));
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // ====================== Recent Usernames ======================
   
   Future<void> _loadRecentUsernames() async {
     try {
@@ -524,10 +314,66 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // ====================== التنظيف ======================
+  // ====================== مساعدات ======================
   
-  @override
-  void dispose() {
-    super.dispose();
+  String _parsePbError(dynamic e) {
+    if (e is! ClientException) return e.toString();
+    final statusCode = e.statusCode;
+    final responseData = e.response;
+    
+    if (statusCode == 400) {
+      final errorData = responseData['data'] as Map<String, dynamic>?;
+      if (errorData != null) {
+        if (errorData.containsKey('username')) return 'اسم المستخدم مأخوذ بالفعل، يرجى اختيار اسم آخر.';
+        if (errorData.containsKey('email')) {
+           final code = errorData['email']['code'];
+           if (code == 'validation_invalid_email' || code == 'validation_is_unique') {
+             return 'البريد الإلكتروني مسجل مسبقاً، يرجى استخدام بريد آخر.';
+           }
+        }
+        if (errorData.containsKey('password')) return 'كلمة المرور غير صالحة أو ضعيفة جداً.';
+      }
+      return 'بيانات غير صالحة، يرجى مراجعة الحقول.';
+    }
+    
+    if (statusCode == 401) {
+      final errorData = responseData['data'] as Map<String, dynamic>?;
+      if (errorData != null && errorData.containsKey('email') && errorData['email']['code'] == 'validation_is_not_verified') {
+         return 'يرجى تأكيد بريدك الإلكتروني أولاً لتتمكن من الدخول.';
+      }
+      return 'تأكد من صحة البريد الإلكتروني أو كلمة المرور.';
+    }
+    
+    if (statusCode == 403) return 'عذراً، هذا الحساب معطل حالياً من قبل الإدارة.';
+    if (statusCode == 429) return 'محاولات كثيرة جداً! يرجى الانتظار قليلاً قبل المحاولة مجدداً.';
+    if (statusCode == 0) return 'فشل الاتصال بالخادم، يرجى التأكد من اتصالك بالإنترنت.';
+    
+    return 'فشل تنفيذ الطلب (رمز الخطأ: $statusCode)';
+  }
+
+  void _setStatus(AuthStatus status) {
+    _status = status;
+    notifyListeners();
+  }
+  
+  void _setUser(UserModel? user) {
+    _user = user;
+    notifyListeners();
+  }
+  
+  void _setError(String error) {
+    _errorMessage = error;
+    _status = AuthStatus.error;
+    notifyListeners();
+  }
+  
+  void _clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
+  
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
   }
 }

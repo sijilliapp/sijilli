@@ -15,6 +15,7 @@ class UserModel {
   final String? socialLink;
   final String? phone;
   final double? hijriAdjustment;
+  final String? region; // المنطقة
   
   // ====================== الإعدادات ======================
   final String role; // 'user', 'approved', 'admin'
@@ -48,6 +49,7 @@ class UserModel {
     this.socialLink,
     this.phone,
     this.hijriAdjustment,
+    this.region,
     this.role = 'user',
     this.isPublic = false,
     this.verified = false,
@@ -72,6 +74,7 @@ class UserModel {
       socialLink: json['social_link'],
       phone: json['phone']?.toString(),
       hijriAdjustment: json['hijri_adjustment']?.toDouble(),
+      region: json['region'] as String?,
       role: json['role'] ?? 'user',
       isPublic: _parseBool(json['isPublic']),
       verified: json['verified'] ?? false,
@@ -160,6 +163,7 @@ class UserModel {
       'social_link': socialLink,
       'phone': phone,
       'hijri_adjustment': hijriAdjustment,
+      'region': region,
       'role': role,
       'isPublic': isPublic,
       'verified': verified,
@@ -189,6 +193,7 @@ class UserModel {
     String? socialLink,
     String? phone,
     double? hijriAdjustment,
+    String? region,
     String? role,
     bool? isPublic,
     bool? verified,
@@ -209,6 +214,7 @@ class UserModel {
       socialLink: socialLink ?? this.socialLink,
       phone: phone ?? this.phone,
       hijriAdjustment: hijriAdjustment ?? this.hijriAdjustment,
+      region: region ?? this.region,
       role: role ?? this.role,
       isPublic: isPublic ?? this.isPublic,
       verified: verified ?? this.verified,

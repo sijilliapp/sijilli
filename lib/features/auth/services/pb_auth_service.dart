@@ -37,7 +37,7 @@ class PbAuthService {
     final body = {
       'username': username.toLowerCase().trim(),
       'email': email.toLowerCase().trim(),
-      'emailVisibility': true,
+      'emailVisibility': false, // Privacy: Do not expose email by default
       'password': password,
       'passwordConfirm': passwordConfirm,
       'name': name,
@@ -54,34 +54,6 @@ class PbAuthService {
     return UserModel.fromJson(authData.record.toJson(), token: authData.token);
   }
 
-  Future<bool> isUsernameAvailable(String username) async {
-    try {
-      final normalizedUsername = username.toLowerCase().trim();
-      final result = await _pb.collection(collectionUsers).getList(
-        filter: 'username = "$normalizedUsername"',
-        page: 1,
-        perPage: 1,
-      );
-      return result.items.isEmpty;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  Future<bool> isEmailAvailable(String email) async {
-    try {
-      final normalizedEmail = email.toLowerCase().trim();
-      final result = await _pb.collection(collectionUsers).getList(
-        filter: 'email = "$normalizedEmail"',
-        page: 1,
-        perPage: 1,
-      );
-      return result.items.isEmpty;
-    } catch (e) {
-      return false;
-    }
-  }
-
   void logout() {
     _pb.authStore.clear();
   }
@@ -91,119 +63,13 @@ class PbAuthService {
   }
 
   Future<void> deleteAccount(String userId) async {
-    print('🔌 PbAuthService: Deleting user $userId and all related data');
+    print('🔌 PbAuthService: Requesting user deletion for $userId');
     try {
-      // 1. Delete all INVITATIONS for appointments hosted by this user
-      // Reason: You cannot delete an appointment if it has required relations (invitations) pointing to it.
-      try {
-        final hostedAppointments = await _pb.collection('appointments').getFullList(
-          filter: 'host = "$userId"',
-        );
-        
-        for (final appt in hostedAppointments) {
-          final relatedInvitations = await _pb.collection('invitations').getFullList(
-            filter: 'appointment = "${appt.id}"',
-          );
-          for (final invite in relatedInvitations) {
-             await _pb.collection('invitations').delete(invite.id);
-          }
-        }
-        print('🔌 PbAuthService: Related invitations for hosted appointments deleted');
-      } catch (e) {
-        print('⚠️ PbAuthService: Error deleting hosted appointment invitations: $e');
-      }
-
-      // 2. Delete all FOLLOWS (follower or following)
-      // We split this into two queries to avoid complex OR logic permissions issues
-      try {
-        // 2a. Delete where user is FOLLOWER
-        final followingList = await _pb.collection('follows').getFullList(
-          filter: 'follower = "$userId"',
-        );
-        for (final f in followingList) {
-          await _pb.collection('follows').delete(f.id);
-        }
-        
-        // 2b. Delete where user is FOLLOWING (target)
-        final followerList = await _pb.collection('follows').getFullList(
-          filter: 'following = "$userId"',
-        );
-        for (final f in followerList) {
-          await _pb.collection('follows').delete(f.id);
-        }
-        print('🔌 PbAuthService: Follows deleted');
-      } catch (e) {
-        print('⚠️ PbAuthService: Error deleting follows: $e');
-      }
-
-      // 3. Delete all REPORTS (made by user)
-      try {
-        final reports = await _pb.collection('reports').getFullList(
-          filter: 'reporter = "$userId"',
-        );
-        for (final r in reports) {
-          await _pb.collection('reports').delete(r.id);
-        }
-        print('🔌 PbAuthService: Reports deleted');
-      } catch (e) {
-        print('⚠️ PbAuthService: Error deleting reports: $e');
-      }
-
-      // 4. Delete all CONTACT MESSAGES
-      try {
-        final msgs = await _pb.collection('contact_messages').getFullList(
-          filter: 'user = "$userId"',
-        );
-        for (final m in msgs) {
-          await _pb.collection('contact_messages').delete(m.id);
-        }
-        print('🔌 PbAuthService: Contact messages deleted');
-      } catch (e) {
-        // Collection might not exist yet, ignore
-        print('⚠️ PbAuthService: Error deleting contact messages (collection might be missing): $e');
-      }
-
-      // 5. Delete all NOTIFICATIONS
-      try {
-        final notifications = await _pb.collection('notifications').getFullList(
-          filter: 'user = "$userId"',
-        );
-        for (final n in notifications) {
-          await _pb.collection('notifications').delete(n.id);
-        }
-        print('🔌 PbAuthService: Notifications deleted');
-      } catch (e) {
-        print('⚠️ PbAuthService: Error deleting notifications: $e');
-      }
-
-      // 6. Delete all INVITATIONS where user is GUEST
-      try {
-        final guestInvitations = await _pb.collection('invitations').getFullList(
-          filter: 'user = "$userId"',
-        );
-        for (final invite in guestInvitations) {
-          await _pb.collection('invitations').delete(invite.id);
-        }
-        print('🔌 PbAuthService: Guest invitations deleted');
-      } catch (e) {
-        print('⚠️ PbAuthService: Error deleting guest invitations: $e');
-      }
-
-      // 7. Delete HOSTED APPOINTMENTS (Now safe as children invitations are gone)
-      try {
-        final appointments = await _pb.collection('appointments').getFullList(
-          filter: 'host = "$userId"',
-        );
-        for (final appt in appointments) {
-          await _pb.collection('appointments').delete(appt.id);
-        }
-        print('🔌 PbAuthService: Hosted appointments deleted');
-      } catch (e) {
-        print('⚠️ PbAuthService: Error deleting appointments: $e');
-      }
+      // Security Improvement: 
+      // All cascading deletes (invitations, follows, reports, etc.) MUST be handled by the backend
+      // (e.g. via PocketBase SQLite relations `ON DELETE CASCADE` or OnRecordBeforeDeleteRequest hooks).
+      // Doing it from the client is insecure and prone to partial failures.
       
-      // 8. Delete the USER record
-      print('🔌 PbAuthService: Deleting user record $userId');
       await _pb.collection(collectionUsers).delete(userId);
       print('🔌 PbAuthService: Delete request completed successfully');
       

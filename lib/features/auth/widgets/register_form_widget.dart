@@ -36,12 +36,6 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _acceptTerms = false;
-  
-  // حالة التحقق من التوفر
-  bool _isCheckingUsername = false;
-  bool _isCheckingEmail = false;
-  bool? _isUsernameAvailable;
-  bool? _isEmailAvailable;
 
   @override
   void dispose() {
@@ -60,73 +54,6 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
     super.dispose();
   }
 
-  void _checkUsernameAvailability(String username) async {
-    if (username.length < 3) {
-      setState(() {
-        _isUsernameAvailable = null;
-        _isCheckingUsername = false;
-      });
-      return;
-    }
-    
-    setState(() {
-      _isCheckingUsername = true;
-      _isUsernameAvailable = null;
-    });
-    
-    try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final isAvailable = await authProvider.isUsernameAvailable(username);
-      
-      if (mounted && _usernameController.text == username) {
-        setState(() {
-          _isUsernameAvailable = isAvailable;
-          _isCheckingUsername = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isUsernameAvailable = null;
-          _isCheckingUsername = false;
-        });
-      }
-    }
-  }
-  
-  void _checkEmailAvailability(String email) async {
-    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
-      setState(() {
-        _isEmailAvailable = null;
-        _isCheckingEmail = false;
-      });
-      return;
-    }
-    
-    setState(() {
-      _isCheckingEmail = true;
-      _isEmailAvailable = null;
-    });
-    
-    try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final isAvailable = await authProvider.isEmailAvailable(email);
-      
-      if (mounted && _emailController.text == email) {
-        setState(() {
-          _isEmailAvailable = isAvailable;
-          _isCheckingEmail = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isEmailAvailable = null;
-          _isCheckingEmail = false;
-        });
-      }
-    }
-  }
 
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
@@ -210,29 +137,8 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
               _emailFocusNode.requestFocus();
             },
             onChanged: (value) {
-              _checkUsernameAvailability(value);
+              // Real-time server checks removed for security (data leakage prevention)
             },
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9_.]')),
-              TextInputFormatter.withFunction((oldValue, newValue) {
-                return newValue.copyWith(text: newValue.text.toLowerCase());
-              }),
-            ],
-            suffixIcon: _isCheckingUsername
-                ? const SizedBox(
-                    width: AppDimens.iconSizeS, // 20
-                    height: AppDimens.iconSizeS, // 20
-                    child: Padding(
-                      padding: EdgeInsets.all(AppDimens.spaceM), // 12
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  )
-                : _isUsernameAvailable != null
-                    ? Icon(
-                        _isUsernameAvailable! ? Icons.check_circle : Icons.error,
-                        color: _isUsernameAvailable! ? Colors.green : Colors.red,
-                      )
-                    : null,
             validator: (value) {
               if (value?.isEmpty ?? true) {
                 return context.l10n.fieldRequired;
@@ -242,9 +148,6 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
               }
               if (!RegExp(r'^[a-z0-9_.]+$').hasMatch(value)) {
                 return context.l10n.dataError; 
-              }
-              if (_isUsernameAvailable == false) {
-                return context.l10n.usernameTaken;
               }
               return null;
             },
@@ -264,32 +167,14 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
               _passwordFocusNode.requestFocus();
             },
             onChanged: (value) {
-              _checkEmailAvailability(value);
+              // Real-time server checks removed for security (data leakage prevention)
             },
-            suffixIcon: _isCheckingEmail
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: Padding(
-                      padding: EdgeInsets.all(12),
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  )
-                : _isEmailAvailable != null
-                    ? Icon(
-                        _isEmailAvailable! ? Icons.check_circle : Icons.error,
-                        color: _isEmailAvailable! ? Colors.green : Colors.red,
-                      )
-                    : null,
             validator: (value) {
               if (value?.isEmpty ?? true) {
                 return context.l10n.fieldRequired;
               }
               if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value!)) {
                 return context.l10n.invalidEmail;
-              }
-              if (_isEmailAvailable == false) {
-                return context.l10n.emailTaken;
               }
               return null;
             },
@@ -331,7 +216,10 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
                   if (value!.length < 8) {
                     return context.l10n.passwordMinLength;
                   }
-                  // لا نمنع كلمات المرور الضعيفة، فقط نعرض مؤشر القوة
+                  // Enforce at least one letter and one number for minimal professional security
+                  if (!RegExp(r'^(?=.*[A-Za-z])(?=.*\d).{8,}$').hasMatch(value)) {
+                    return context.l10n.invalidPassword; // Reuse or add custom message if needed
+                  }
                   return null;
                 },
               ),

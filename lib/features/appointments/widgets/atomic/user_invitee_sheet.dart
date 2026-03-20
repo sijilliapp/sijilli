@@ -224,9 +224,9 @@ class _UserInviteeSheetState extends State<UserInviteeSheet> {
                         isHost: isHost,
                         isFollowed: isFollowed,
                         onSelected: () {
-                           // Dual-action: Host AND Connect if not followed
+                           // Dual-action: Host AND Connect (Accredit) if not followed
                            if (!isFollowed && !isHost) {
-                               _userService.followUser(user.id).catchError((_) {});
+                               _userService.accreditUser(user.id).catchError((_) {});
                            }
                            widget.onUserSelected(user);
                         },

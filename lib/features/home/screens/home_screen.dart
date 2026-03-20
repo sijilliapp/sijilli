@@ -10,11 +10,13 @@ import '../../../core/widgets/folder_tab_bar.dart';
 import '../../settings/screens/contact_screen.dart';
 import '../../appointments/screens/archive_trash_screen.dart';
 
+import '../../../core/providers/settings_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../core/extensions/context_l10n.dart';
 
 import '../../search/providers/search_provider.dart';
 import '../../../core/services/calendar_sync_service.dart';
+import '../../../main.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,25 +25,79 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin, RouteAware {
   late TabController _tabController;
+  final ScrollController _scrollController = ScrollController();
   final CalendarSyncService _calendarSyncService = CalendarSyncService();
+  bool _hasInitialSnapped = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    // Fetch appointments when screen loads
+    
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) {
+         _snapToTabs(force: true);
+      }
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AppointmentProvider>().fetchAppointments();
-      // Also pre-fetch explore appointments for sync
       context.read<SearchProvider>().init();
+      
+      // Initial snap to tabs after short delay for layout
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) _snapToTabs(force: true);
+      });
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      routeObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void didPopNext() {
+    // When returning to this screen from another screen
+    _snapToTabs(force: true);
+  }
+
+  void _snapToTabs({bool force = false}) {
+    if (!mounted || !_scrollController.hasClients) return;
+
+    // Check if auto-scroll should be skipped
+    final settings = context.read<SettingsProvider>();
+    final appointments = context.read<AppointmentProvider>().appointments;
+    
+    if (!settings.isMagneticScrollEnabled || appointments.isEmpty) {
+      return;
+    }
+
+    final hasBio = context.read<AuthProvider>().user?.hasBio ?? false;
+    // Calculate header height (App Bar + Profile Header)
+    // App bar is pinned (56 approx), Profile Header is dynamic
+    // We want the Scroll offset to be exactly where ProfileHeader is hidden
+    final double snapOffset = hasBio ? 310 : 280;
+
+    if (force || (_scrollController.offset > 0 && _scrollController.offset < snapOffset)) {
+      _scrollController.animateTo(
+        snapOffset,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.fastOutSlowIn,
+      );
+    }
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -91,12 +147,43 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
-    final double headerHeight = (user?.hasBio ?? false) ? 440 : 370;
+    final double headerHeight = (user?.hasBio ?? false) ? 310 : 280;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) {
+      body: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification is ScrollEndNotification) {
+            final settings = context.read<SettingsProvider>();
+            final appointments = context.read<AppointmentProvider>().appointments;
+
+            // Skip snap if disabled or no appointments
+            if (!settings.isMagneticScrollEnabled || appointments.isEmpty) {
+              return false;
+            }
+
+            final user = context.read<AuthProvider>().user;
+            final double snapOffset = (user?.hasBio ?? false) ? 310 : 280;
+            final offset = _scrollController.offset;
+
+            // Magnetic snap if between 0 and snapOffset
+            if (offset > 0 && offset < snapOffset) {
+              if (offset > snapOffset / 2) {
+                _snapToTabs();
+              } else {
+                _scrollController.animateTo(
+                  0,
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeOut,
+                );
+              }
+            }
+          }
+          return false;
+        },
+        child: NestedScrollView(
+          controller: _scrollController,
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
             // 1. Collapsing Profile Header
             // 1. Pinned App Bar
@@ -158,8 +245,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildMenuButton() {
     return PopupMenuButton<String>(

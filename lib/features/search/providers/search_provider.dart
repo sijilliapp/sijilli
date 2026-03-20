@@ -14,6 +14,7 @@ class SearchProvider extends ChangeNotifier {
   SearchTab _selectedTab = SearchTab.news;
   String _query = '';
   bool _isLoading = false;
+  UserModel? _currentUser;
 
   List<Appointment> _exploreAppointments = [];
   List<Appointment> _followedAppointments = [];
@@ -36,6 +37,13 @@ class SearchProvider extends ChangeNotifier {
     _selectedTab = tab;
     notifyListeners();
     _fetchDefaultContent();
+  }
+
+  void updateContext(UserModel? user) {
+    if (_currentUser?.id != user?.id || _currentUser?.region != user?.region) {
+      _currentUser = user;
+      _fetchDefaultContent();
+    }
   }
 
   void updateQuery(String newQuery) {
@@ -67,7 +75,10 @@ class SearchProvider extends ChangeNotifier {
 
     try {
       if (_selectedTab == SearchTab.news) {
-        _exploreAppointments = await _appointmentService.getExploreAppointments();
+        _exploreAppointments = await _appointmentService.getExploreAppointments(
+          userRegion: _currentUser?.region,
+          contextAdjustment: (_currentUser?.hijriAdjustment ?? 0).toInt(),
+        );
       } else {
         _followedAppointments = await _appointmentService.getFollowedAppointments();
       }
