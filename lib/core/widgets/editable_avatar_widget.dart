@@ -1,16 +1,14 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import '../constants/app_colors.dart';
 import 'pulse_avatar.dart';
 import '../../models/user.dart';
-import '../../l10n/app_localizations.dart';
 
 class EditableAvatarWidget extends StatefulWidget {
   final UserModel? user;
   final AvatarStatus avatarStatus;
-  final ValueChanged<String?> onImageCropped;
+  final ValueChanged<XFile?> onImageCropped;
 
   const EditableAvatarWidget({
     super.key,
@@ -25,12 +23,17 @@ class EditableAvatarWidget extends StatefulWidget {
 
 class _EditableAvatarWidgetState extends State<EditableAvatarWidget> {
   final ImagePicker _picker = ImagePicker();
-  String? _selectedAvatarPath;
+  XFile? _selectedAvatar;
+  dynamic _imageBytes;
 
   Future<void> _pickImage() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image != null && mounted) {
-      _cropImage(image.path);
+    try {
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      if (image != null && mounted) {
+        _cropImage(image.path);
+      }
+    } catch (e) {
+      debugPrint('Error picking image: $e');
     }
   }
 
@@ -57,15 +60,34 @@ class _EditableAvatarWidgetState extends State<EditableAvatarWidget> {
         ),
         WebUiSettings(
           context: context,
+          presentStyle: WebPresentStyle.dialog,
+          size: const CropperSize(
+            width: 480,
+            height: 480,
+          ),
+          translations: WebTranslations(
+            title: l10nTitle,
+            rotateLeftTooltip: 'تدوير لليسار',
+            rotateRightTooltip: 'تدوير لليمين',
+            setAspectRatioTooltip: 'تحديد النسبة',
+            cropTooltip: 'قص',
+            resetTooltip: 'إعادة تعيين',
+          ),
         ),
       ],
     );
 
     if (croppedFile != null && mounted) {
-      setState(() {
-        _selectedAvatarPath = croppedFile.path;
-      });
-      widget.onImageCropped(croppedFile.path);
+      try {
+        final bytes = await croppedFile.readAsBytes();
+        setState(() {
+          _selectedAvatar = XFile.fromData(bytes, name: 'crop_${DateTime.now().millisecondsSinceEpoch}.jpg');
+          _imageBytes = bytes;
+        });
+        widget.onImageCropped(_selectedAvatar);
+      } catch (e) {
+        debugPrint('Error reading cropped bytes: $e');
+      }
     }
   }
 
@@ -77,8 +99,8 @@ class _EditableAvatarWidgetState extends State<EditableAvatarWidget> {
           onTap: _pickImage,
           child: PulseAvatar(
             size: 100,
-            image: _selectedAvatarPath != null
-                ? FileImage(File(_selectedAvatarPath!)) as ImageProvider
+            image: _imageBytes != null
+                ? MemoryImage(_imageBytes!) as ImageProvider
                 : (widget.user?.hasAvatar == true
                     ? NetworkImage(widget.user!.getAvatarUrl('https://sijilli.pockethost.io')!)
                     : null),

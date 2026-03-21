@@ -36,6 +36,16 @@
   <!-- Cropper.js for image_cropper web support -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+  <style>
+    /* Prevents cropper from overflowing and appearing distorted on web */
+    .cropper-container {
+      max-width: 100% !important;
+      max-height: 80vh !important;
+    }
+    img {
+      max-width: 100%;
+    }
+  </style>
 </head>
 
 <body>
