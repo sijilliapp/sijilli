@@ -67,8 +67,10 @@ class _EditableAvatarWidgetState extends State<EditableAvatarWidget> {
           ),
           translations: WebTranslations(
             title: l10nTitle,
+            rotateLeftTooltip: 'تدوير لليسار',
+            rotateRightTooltip: 'تدوير لليمين',
+            cancelButton: 'إلغاء',
             cropButton: 'قص',
-            resetButton: 'إعادة تعيين',
           ),
         ),
       ],
