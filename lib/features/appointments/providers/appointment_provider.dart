@@ -374,31 +374,41 @@ class AppointmentProvider extends ChangeNotifier {
     if (index == -1) return;
 
     final appointment = _appointments[index];
-    final invitationId = appointment.currentUserInvitation?.id;
-    if (invitationId == null) return;
+    final originalInv = appointment.currentUserInvitation;
+    if (originalInv == null) return;
+
+    // 1. Optimistic Update: Update local state immediately
+    final updatedInv = originalInv.copyWith(
+      privacy: privacy ?? originalInv.privacy,
+      categories: categories ?? originalInv.categories,
+      personalNote: personalNote ?? originalInv.personalNote,
+    );
+    
+    _appointments[index] = appointment.copyWith(currentUserInvitation: updatedInv);
+    notifyListeners();
 
     try {
+      // 2. Perform network request in the background
       await _invitationService.updateInvitationStatus(
-        invitationId, 
-        appointment.currentUserInvitation!.status,
+        originalInv.id, 
+        originalInv.status,
         privacy: privacy,
         categoryId: categories?.id,
         personalNote: personalNote,
       );
       
-      final updatedInv = appointment.currentUserInvitation!.copyWith(
-        privacy: privacy,
-        categories: categories,
-        personalNote: personalNote,
-      );
-      
-      _appointments[index] = appointment.copyWith(currentUserInvitation: updatedInv);
-      
+      // 3. Update local cache after successful network request
       await _localDb.saveAppointments(_appointments);
-      
-      notifyListeners();
     } catch (e) {
+      debugPrint('❌ Failed to update settings: $e');
       _errorMessage = 'Failed to update settings: $e';
+      
+      // 4. Revert state on error
+      final currentIndex = _appointments.indexWhere((a) => a.id == appointmentId);
+      if (currentIndex != -1) {
+        _appointments[currentIndex] = appointment.copyWith(currentUserInvitation: originalInv);
+      }
+      
       notifyListeners();
     }
   }

@@ -1,9 +1,9 @@
 // 📍 lib/features/settings/screens/profile_screen.dart
 // 👤 شاشة تعديل الملف الشخصي
 
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:sijilli/core/constants/app_colors.dart';
 import 'package:sijilli/core/constants/app_dimens.dart';
@@ -37,7 +37,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int _hijriAdjustment = 0;
   
   bool _isPublic = false;
-  String? _selectedAvatarPath;
+  XFile? _selectedAvatarFile;
 
   @override
   void initState() {
@@ -98,7 +98,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       data['phone'] = null;
     }
     
-    final success = await provider.updateUser(data, avatarPath: _selectedAvatarPath);
+    final success = await provider.updateUser(data, avatarFile: _selectedAvatarFile);
 
     if (mounted) {
       if (success) {
@@ -177,9 +177,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             return EditableAvatarWidget(
                               user: user,
                               avatarStatus: apptProvider.avatarStatus,
-                              onImageCropped: (path) {
+                              onImageCropped: (file) {
                                 setState(() {
-                                  _selectedAvatarPath = path;
+                                  _selectedAvatarFile = file;
                                 });
                               },
                             );

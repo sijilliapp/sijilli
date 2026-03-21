@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/services/pocketbase_client.dart';
 import '../services/pb_auth_service.dart';
 import '../../settings/services/pb_user_service.dart';
@@ -223,19 +224,19 @@ class AuthProvider extends ChangeNotifier {
 
   // ====================== تحديث البيانات ======================
   
-  Future<bool> updateUser(Map<String, dynamic> data, {String? avatarPath}) async {
+  Future<bool> updateUser(Map<String, dynamic> data, {XFile? avatarFile}) async {
     if (!isAuthenticated) return false;
     _setLoading(true);
     _clearError();
     try {
-      final updatedUser = await _userService.updateCurrentUser(data, avatarPath: avatarPath);
+      final updatedUser = await _userService.updateCurrentUser(data, avatarFile: avatarFile);
       await _updateUserLocally(updatedUser);
       return true;
     } catch (e) {
       if (e is ClientException && (e.statusCode == 401 || e.statusCode == 403)) {
         try {
           final authData = await PocketBaseClient.instance.pb.collection('users').authRefresh();
-          final retryUserResult = await _userService.updateCurrentUser(data, avatarPath: avatarPath);
+          final retryUserResult = await _userService.updateCurrentUser(data, avatarFile: avatarFile);
           final finalUser = retryUserResult.copyWith(token: authData.token);
           await _updateUserLocally(finalUser);
           return true;

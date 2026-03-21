@@ -6,6 +6,7 @@ import 'dart:collection';
 import 'package:http/http.dart' as http;
 import 'package:pocketbase/pocketbase.dart';
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/services/pocketbase_client.dart';
 import '../../../core/constants/app_config.dart';
 import '../../../models/user.dart';
@@ -22,7 +23,7 @@ class PbUserService {
   static final Map<String, DateTime> _cacheTime = {};
   static const Duration _cacheDuration = Duration(minutes: 5);
 
-  Future<UserModel> updateCurrentUser(Map<String, dynamic> data, {String? avatarPath}) async {
+  Future<UserModel> updateCurrentUser(Map<String, dynamic> data, {XFile? avatarFile}) async {
     try {
       if (!_pb.authStore.isValid) {
         throw Exception('يجب تسجيل الدخول أولاً');
@@ -31,9 +32,14 @@ class PbUserService {
       final userId = _pb.authStore.model!.id;
       final List<http.MultipartFile> files = [];
 
-      if (avatarPath != null) {
-        final avatarFile = await http.MultipartFile.fromPath('avatar', avatarPath);
-        files.add(avatarFile);
+      if (avatarFile != null) {
+        final bytes = await avatarFile.readAsBytes();
+        final file = http.MultipartFile.fromBytes(
+          'avatar',
+          bytes,
+          filename: avatarFile.name,
+        );
+        files.add(file);
       }
       
       final record = await _pb.collection(collectionUsers).update(
