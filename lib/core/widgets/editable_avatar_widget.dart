@@ -62,8 +62,8 @@ class _EditableAvatarWidgetState extends State<EditableAvatarWidget> {
           context: context,
           presentStyle: WebPresentStyle.dialog,
           size: const CropperSize(
-            width: 480,
-            height: 480,
+            width: 380,
+            height: 380,
           ),
           translations: WebTranslations(
             title: l10nTitle,
