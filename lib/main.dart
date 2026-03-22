@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/date_symbol_data_local.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timeago/timeago.dart' as timeago;
 import 'core/services/pocketbase_client.dart';
@@ -15,7 +13,6 @@ import 'features/appointments/providers/appointment_provider.dart';
 import 'features/appointments/providers/category_provider.dart';
 import 'features/profile/providers/user_status_provider.dart';
 import 'features/profile/providers/moderation_provider.dart';
-import 'features/home/screens/public_profile_screen.dart';
 import 'features/notifications/providers/notification_provider.dart';
 import 'features/search/providers/search_provider.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
@@ -24,12 +21,16 @@ import 'features/home/providers/public_profile_provider.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/locale_provider.dart';
 import 'core/providers/settings_provider.dart';
-import 'l10n/app_localizations.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
+import 'routes/app_router.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
 void main() async { // Changed to async
   // معالجة الأخطاء الشاملة
+  // اختيار نظام الروابط النظيفة (بدون #) للويب
+  usePathUrlStrategy();
+  
   WidgetsFlutterBinding.ensureInitialized();
   
   tz.initializeTimeZones();
@@ -267,15 +268,7 @@ class SijilliApp extends StatelessWidget {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: const AuthWrapper(),
-            onGenerateRoute: (settings) {
-              if (settings.name != null && settings.name!.startsWith('/profile/')) {
-                final usernameOrId = settings.name!.replaceFirst('/profile/', '');
-                return MaterialPageRoute(
-                  builder: (context) => PublicProfileScreen(usernameOrId: usernameOrId),
-                );
-              }
-              return null;
-            },
+            onGenerateRoute: AppRouter.onGenerateRoute,
             navigatorObservers: [routeObserver],
             routes: {
               '/main': (context) => const AuthWrapper(),
