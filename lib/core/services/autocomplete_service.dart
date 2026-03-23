@@ -143,7 +143,7 @@ class AutocompleteService {
 
   // --- Pivot Indexing ---
   
-  Map<String, List<String>> _pivotIndex = {}; 
+  final Map<String, List<String>> _pivotIndex = {}; 
   final Set<String> _stopWords = {
     'ليلة', 'يوم', 'مجلس', 'ذكرى', 'مولد', 'وفاة', 'شهادة', 'ميلاد', 'استشهاد', 
     'الإمام', 'السيدة', 'النبي', 'أم', 'أبي', 
