@@ -11,7 +11,6 @@ import '../../settings/screens/contact_screen.dart';
 import '../../appointments/screens/archive_trash_screen.dart';
 
 import '../../../core/providers/settings_provider.dart';
-import '../../../l10n/app_localizations.dart';
 import '../../../core/extensions/context_l10n.dart';
 
 import '../../search/providers/search_provider.dart';
@@ -22,14 +21,13 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin, RouteAware {
+class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin, RouteAware {
   late TabController _tabController;
   final ScrollController _scrollController = ScrollController();
   final CalendarSyncService _calendarSyncService = CalendarSyncService();
-  bool _hasInitialSnapped = false;
 
   @override
   void initState() {
@@ -64,8 +62,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   @override
   void didPopNext() {
-    // When returning to this screen from another screen
-    _snapToTabs(force: true);
+    // When returning to this screen from another screen (Navigator pop)
+    // We only want to snap if the profile is currently showing/partially showing
+    scrollToMagneticTop(force: false);
   }
 
   void _snapToTabs({bool force = false}) {
@@ -91,6 +90,32 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         duration: const Duration(milliseconds: 600),
         curve: Curves.fastOutSlowIn,
       );
+    }
+  }
+
+  void scrollToMagneticTop({bool force = false}) {
+    if (!mounted || !_scrollController.hasClients) return;
+
+    final user = context.read<AuthProvider>().user;
+    final double snapOffset = (user?.hasBio ?? false) ? 310 : 280;
+    final currentOffset = _scrollController.offset;
+
+    if (force) {
+      // Force means: Always scroll to magnetic top (usually for double-tap)
+      _scrollController.animateTo(
+        snapOffset,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.fastOutSlowIn,
+      );
+    } else {
+      // Not force means: Only snap if the profile header is currently visible
+      if (currentOffset < snapOffset) {
+        _scrollController.animateTo(
+          snapOffset,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.fastOutSlowIn,
+        );
+      }
     }
   }
 
@@ -146,8 +171,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AuthProvider>().user;
-    final double headerHeight = (user?.hasBio ?? false) ? 310 : 280;
+    context.watch<AuthProvider>().user;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,

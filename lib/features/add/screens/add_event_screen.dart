@@ -81,7 +81,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
     
     _streamLinkController = TextEditingController(text: appt?.streamLink);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
        final addEventProvider = context.read<AddEventProvider>();
        final appointmentProvider = context.read<AppointmentProvider>();
        // Collect history for Location Learning
@@ -92,14 +92,30 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
        
        final auth = context.read<AuthProvider>();
        
-       addEventProvider.init(widget.initialAppointment, history, currentUser: auth.user);
+       await addEventProvider.init(widget.initialAppointment, history, currentUser: auth.user);
        addEventProvider.initLocations(history);
        
        if (widget.initialGuest != null) {
           addEventProvider.addInvitee(widget.initialGuest!);
        }
        
-       // Trigger initial suggestion calculation
+       // --- Restoring Draft to Controllers ---
+       if (widget.initialAppointment == null) {
+          if (addEventProvider.draftTitle.isNotEmpty) {
+            _titleController.text = addEventProvider.draftTitle;
+          }
+          if (addEventProvider.draftLocation.isNotEmpty) {
+            _locationController.text = addEventProvider.draftLocation;
+          }
+          if (addEventProvider.draftBuilding.isNotEmpty) {
+            _buildingController.text = addEventProvider.draftBuilding;
+          }
+          if (addEventProvider.draftStreamLink.isNotEmpty) {
+            _streamLinkController.text = addEventProvider.draftStreamLink;
+          }
+       }
+
+       // Trigger suggestion calculation (after title is potentially restored)
        addEventProvider.onTitleChanged(_titleController.text);
     });
   }

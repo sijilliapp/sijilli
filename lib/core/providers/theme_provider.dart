@@ -136,8 +136,8 @@ class ThemeProvider extends ChangeNotifier {
           labelSmall: theme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
         );
       default:
-        // Return default theme (Arial as defined in main or system default)
-        return base.apply(fontFamily: 'Arial');
+        // Use system default font (San Francisco on iOS, Roboto on Android)
+        return base;
     }
   }
 }

@@ -120,33 +120,53 @@ class SettingsScreen extends StatelessWidget {
           Card(
             elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(
+                color: AppColors.error.withOpacity(0.1),
+                width: 1,
+              ),
             ),
-            color: Theme.of(context).cardColor,
+            color: isDark ? AppColors.error.withOpacity(0.05) : Colors.red.shade50.withOpacity(0.3),
             child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               leading: Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.error.withOpacity(0.15),
+                      AppColors.error.withOpacity(0.05),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.error.withOpacity(0.1),
+                    width: 1,
+                  ),
                 ),
-                child: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
+                child: const Icon(
+                  Icons.delete_sweep_rounded, 
+                  color: AppColors.error,
+                  size: 26,
+                ),
               ),
               title: Text(
                 context.l10n.trash,
                 style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Tajawal',
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
                   color: AppColors.error,
+                  letterSpacing: -0.5,
                 ),
               ),
               subtitle: Text(
                 context.l10n.manageArchiveTrash,
                 style: TextStyle(
-                  color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7),
-                  fontSize: 12,
+                  color: AppColors.error.withOpacity(0.7),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               trailing: Icon(
@@ -256,22 +276,31 @@ class SettingsScreen extends StatelessWidget {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
       ),
       color: Theme.of(context).cardColor, 
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: AppColors.primary.withOpacity(0.1),
-            shape: BoxShape.circle,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: AppColors.primary.withOpacity(0.05),
+              width: 1,
+            ),
           ),
-          child: Icon(icon, color: AppColors.primary),
+          child: Icon(icon, color: AppColors.primary, size: 24),
         ),
         title: Text(
           title,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontWeight: FontWeight.w900,
+            fontSize: 17,
+            letterSpacing: -0.5,
+          ),
         ),
         subtitle: Text(
           subtitle,
@@ -282,7 +311,7 @@ class SettingsScreen extends StatelessWidget {
         ),
         trailing: Icon(
           Icons.arrow_forward_ios, 
-          size: 16, 
+          size: 14, 
           color: Theme.of(context).dividerColor,
         ),
         onTap: onTap,
@@ -301,22 +330,31 @@ class SettingsScreen extends StatelessWidget {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
       ),
       color: Theme.of(context).cardColor, 
       child: SwitchListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         secondary: Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: AppColors.primary.withOpacity(0.1),
-            shape: BoxShape.circle,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: AppColors.primary.withOpacity(0.05),
+              width: 1,
+            ),
           ),
-          child: Icon(icon, color: AppColors.primary),
+          child: Icon(icon, color: AppColors.primary, size: 24),
         ),
         title: Text(
           title,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontWeight: FontWeight.w900,
+            fontSize: 17,
+            letterSpacing: -0.5,
+          ),
         ),
         subtitle: Text(
           subtitle,
@@ -334,14 +372,39 @@ class SettingsScreen extends StatelessWidget {
 
   Widget _buildLogoutButton(BuildContext context) {
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+      ),
+      color: Theme.of(context).cardColor, 
       child: ListTile(
-        leading: const Icon(Icons.logout, color: AppColors.warning),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.warning.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: AppColors.warning.withOpacity(0.05),
+              width: 1,
+            ),
+          ),
+          child: const Icon(Icons.logout_rounded, color: AppColors.warning, size: 24),
+        ),
         title: Text(
           context.l10n.logout,
           style: const TextStyle(
             color: AppColors.warning,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w900,
+            fontSize: 17,
+            letterSpacing: -0.5,
           ),
+        ),
+        trailing: Icon(
+          Icons.arrow_forward_ios, 
+          size: 14, 
+          color: Theme.of(context).dividerColor,
         ),
         onTap: () {
           _showLogoutDialog(context);

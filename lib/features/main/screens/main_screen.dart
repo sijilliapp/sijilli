@@ -17,10 +17,11 @@ class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  State<MainScreen> createState() => MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class MainScreenState extends State<MainScreen> {
+  final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
   @override
   void initState() {
     super.initState();
@@ -44,10 +45,9 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   int _currentIndex = 0;
-  final PageController _pageController = PageController();
-  
-  final List<Widget> _screens = [
-    const HomeScreen(),
+
+  late final List<Widget> _screens = [
+    HomeScreen(key: _homeKey),
     const SearchScreen(),
     const AddEventScreen(),
     const NotificationsScreen(),
@@ -57,13 +57,8 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: PageView(
-        controller: _pageController,
-        onPageChanged: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+      body: IndexedStack(
+        index: _currentIndex,
         children: _screens,
       ),
       bottomNavigationBar: _buildBottomNavigationBar(),
@@ -95,14 +90,25 @@ class _MainScreenState extends State<MainScreen> {
           child: BottomNavigationBar(
             currentIndex: _currentIndex,
             onTap: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
-              _pageController.animateToPage(
-                index,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
+              if (index == _currentIndex) {
+                // Already on this tab: Handle special re-selection logic
+                if (index == 0) {
+                  // If on Home tab, scroll to Magnetic Top
+                  _homeKey.currentState?.scrollToMagneticTop(force: true);
+                }
+              } else {
+                // Switching tabs: State is preserved by IndexedStack
+                setState(() {
+                  _currentIndex = index;
+                });
+                
+                // If switching back TO Home, check for magnetic snap
+                if (index == 0) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _homeKey.currentState?.scrollToMagneticTop(force: false);
+                  });
+                }
+              }
             },
             type: BottomNavigationBarType.fixed,
             backgroundColor: isDark ? AppColors.darkBackground : Colors.white,
@@ -152,7 +158,6 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   void dispose() {
-    _pageController.dispose();
     super.dispose();
   }
 

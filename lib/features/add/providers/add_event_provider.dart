@@ -10,9 +10,12 @@ import '../../appointments/providers/appointment_provider.dart';
 import '../../../core/utils/app_date_formatter.dart';
 import '../../../l10n/app_localizations.dart';
 
+import '../../../core/services/appointment_draft_service.dart';
+
 class AddEventProvider extends ChangeNotifier {
   final AutocompleteService _autocompleteService = AutocompleteService();
   final LocationService _locationService = LocationService();
+  final AppointmentDraftService _draftService = AppointmentDraftService();
 
   // Location Learning
   // Region -> Map<Building, Frequency>
@@ -20,8 +23,19 @@ class AddEventProvider extends ChangeNotifier {
   List<String> _regionSuggestions = [];
   List<String> _buildingSuggestions = [];
 
-  List<String> get regionSuggestions => _regionSuggestions;
+   List<String> get regionSuggestions => _regionSuggestions;
   List<String> get buildingSuggestions => _buildingSuggestions;
+
+  // Persistent Fields (for Drafts)
+  String _title = '';
+  String _location = '';
+  String _building = '';
+  String _streamLink = '';
+
+  String get draftTitle => _title;
+  String get draftLocation => _location;
+  String get draftBuilding => _building;
+  String get draftStreamLink => _streamLink;
 
 
   // State
@@ -156,7 +170,7 @@ class AddEventProvider extends ChangeNotifier {
   }
 
   // Initialization
-  void init(Appointment? initialAppointment, List<Appointment> history, {UserModel? currentUser}) {
+  Future<void> init(Appointment? initialAppointment, List<Appointment> history, {UserModel? currentUser}) async {
     // Clear previous singleton state to avoid cross-user data leaks and duplicate frequency indexing
     _autocompleteService.clearLearnedData();
 
@@ -218,8 +232,8 @@ class AddEventProvider extends ChangeNotifier {
 
       // Note: Other fields
     } else {
-      _selectedDate = DateTime.now();
       _selectedEndDate = _selectedDate;
+      await _loadDraft();
     }
     
     _getUserLocation();
@@ -228,6 +242,74 @@ class AddEventProvider extends ChangeNotifier {
     if (!_disposed) {
       notifyListeners();
     }
+  }
+
+  // --- Draft Persistence ---
+
+  Future<void> _loadDraft() async {
+    final draft = await _draftService.loadDraft();
+    if (draft == null) return;
+
+    try {
+      _title = draft['title'] ?? '';
+      _location = draft['location'] ?? '';
+      _building = draft['building'] ?? '';
+      _streamLink = draft['streamLink'] ?? '';
+      _privacy = draft['privacy'] ?? 'public';
+      _isHijri = draft['isHijri'] ?? false;
+      
+      if (draft['selectedDate'] != null) {
+        _selectedDate = DateTime.parse(draft['selectedDate']);
+      }
+      
+      if (draft['selectedTime'] != null) {
+        final t = draft['selectedTime'] as Map;
+        _selectedTime = TimeOfDay(hour: t['hour'], minute: t['minute']);
+      }
+      
+      _duration = draft['duration'] ?? 45;
+      
+      if (draft['selectedEndDate'] != null) {
+        _selectedEndDate = DateTime.parse(draft['selectedEndDate']);
+      }
+      
+      _isRecurring = draft['isRecurring'] ?? false;
+      _recurrenceType = draft['recurrenceType'] ?? 'daily';
+      _recurrenceCount = draft['recurrenceCount'] ?? 3;
+      _isFirstComeFirstServed = draft['isFirstComeFirstServed'] ?? false;
+
+      if (draft['selectedUsers'] != null) {
+        _selectedUsers.clear();
+        for (var u in (draft['selectedUsers'] as List)) {
+          _selectedUsers.add(UserModel.fromJson(Map<String, dynamic>.from(u)));
+        }
+      }
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error loading draft: $e');
+    }
+  }
+
+  void _saveDraft() {
+    // Basic debounce / throttle not needed for Hive usually, but good to keep simple.
+    _draftService.saveDraft({
+      'title': _title,
+      'location': _location,
+      'building': _building,
+      'streamLink': _streamLink,
+      'privacy': _privacy,
+      'isHijri': _isHijri,
+      'selectedDate': _selectedDate?.toIso8601String(),
+      'selectedTime': _selectedTime != null ? {'hour': _selectedTime!.hour, 'minute': _selectedTime!.minute} : null,
+      'duration': _duration,
+      'selectedEndDate': _selectedEndDate?.toIso8601String(),
+      'isRecurring': _isRecurring,
+      'recurrenceType': _recurrenceType,
+      'recurrenceCount': _recurrenceCount,
+      'isFirstComeFirstServed': _isFirstComeFirstServed,
+      'selectedUsers': _selectedUsers.map((u) => u.toJson()).toList(),
+    });
   }
 
   Future<void> _getUserLocation() async {
@@ -243,7 +325,8 @@ class AddEventProvider extends ChangeNotifier {
 
   // Logic Methods
   void setPrivacy(String value) {
-    _privacy = value; // No disposed check needed for sync methods called by UI
+    _privacy = value; 
+    _saveDraft();
     notifyListeners();
   }
 
@@ -254,6 +337,7 @@ class AddEventProvider extends ChangeNotifier {
       _selectedEndDate = _selectedDate;
     }
     if (!_canRecur()) _isRecurring = false;
+    _saveDraft();
     notifyListeners();
   }
 
@@ -263,23 +347,27 @@ class AddEventProvider extends ChangeNotifier {
       _selectedEndDate = date;
     }
     if (!_canRecur()) _isRecurring = false;
+    _saveDraft();
     notifyListeners();
   }
 
   void setTime(TimeOfDay time) {
     _selectedTime = time;
+    _saveDraft();
     notifyListeners();
   }
 
   void setDuration(int value) {
     _duration = value;
     if (!_canRecur()) _isRecurring = false;
+    _saveDraft();
     notifyListeners();
   }
 
   void setEndDate(DateTime date) {
     _selectedEndDate = date;
     if (!_canRecur()) _isRecurring = false;
+    _saveDraft();
     notifyListeners();
   }
 
@@ -294,38 +382,45 @@ class AddEventProvider extends ChangeNotifier {
   void toggleRecurrence(bool value) {
     if (value && !_canRecur()) return;
     _isRecurring = value;
+    _saveDraft();
     notifyListeners();
   }
 
   void setRecurrenceType(String type) {
     _recurrenceType = type;
+    _saveDraft();
     notifyListeners();
   }
 
   void setRecurrenceCount(int count) {
     _recurrenceCount = count;
+    _saveDraft();
     notifyListeners();
   }
 
   void toggleFirstComeFirstServed(bool value) {
     _isFirstComeFirstServed = value;
+    _saveDraft();
     notifyListeners();
   }
 
   void addInvitee(UserModel user) {
     if (!_selectedUsers.any((u) => u.id == user.id)) {
       _selectedUsers.add(user);
+      _saveDraft();
       notifyListeners();
     }
   }
 
   void removeInvitee(int index) {
     _selectedUsers.removeAt(index);
+    _saveDraft();
     notifyListeners();
   }
 
   // Suggestions Logic
   void onTitleChanged(String text) {
+    _title = text;
     _suggestions = _autocompleteService.getSuggestions(text);
     _pivotSuggestions = _autocompleteService.getPivotSuggestions(text);
     
@@ -338,6 +433,7 @@ class AddEventProvider extends ChangeNotifier {
     } else {
       _lastAutoMatch = null;
     }
+    _saveDraft();
     notifyListeners();
   }
 
@@ -381,9 +477,7 @@ class AddEventProvider extends ChangeNotifier {
     _isHijri = isHijri;
     _selectedEndDate = targetDate;
     
-    // Notifications should be handled by UI listening to changes if needed, 
-    // or we can expose a stream of "Events" (like ShowSnackBar).
-    // For now, simple state update.
+    _saveDraft();
   }
 
   // Helper for UI to trigger smart date check manually (e.g. on word selection)
@@ -496,6 +590,11 @@ class AddEventProvider extends ChangeNotifier {
     _isRecurring = false;
     _isSaving = false;
     _privacy = 'public';
+    _title = '';
+    _location = '';
+    _building = '';
+    _streamLink = '';
+    _draftService.clearDraft();
     notifyListeners();
   }
 
@@ -604,6 +703,7 @@ class AddEventProvider extends ChangeNotifier {
         inviteTitle: inviteTitle,
         inviteMessage: inviteMessage,
       );
+      _draftService.clearDraft();
       return null;
     } catch (e) {
       return e.toString();
