@@ -238,6 +238,12 @@ class AddEventProvider extends ChangeNotifier {
     
     _getUserLocation();
     
+    // Initialize Suggestions with empty query (Zero-Keyboard)
+    initLocations(history); // Build the location frequency map from history
+    onTitleChanged(_title);
+    updateRegionSuggestions(_location);
+    updateBuildingSuggestions(_location, _building);
+    
     // Safety check before notify
     if (!_disposed) {
       notifyListeners();
@@ -287,7 +293,7 @@ class AddEventProvider extends ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      debugPrint('Error loading draft: $e');
+      print('Error loading draft: $e');
     }
   }
 
@@ -319,7 +325,7 @@ class AddEventProvider extends ChangeNotifier {
       _userCoordinates = locationData.toCoordinates();
       notifyListeners();
     } catch (e) {
-      debugPrint('Error getting location: $e');
+      print('Error getting location: $e');
     }
   }
 
@@ -568,11 +574,11 @@ class AddEventProvider extends ChangeNotifier {
 
     if (normalizedQuery.isEmpty) {
        // Frequency Sort
-       allBuildings.sort((a, b) => buildingsMap![b]!.compareTo(buildingsMap![a]!));
+       allBuildings.sort((a, b) => buildingsMap![b]!.compareTo(buildingsMap[a]!));
        _buildingSuggestions = allBuildings.take(10).toList();
     } else {
        final matches = allBuildings.where((b) => b.toLowerCase().contains(normalizedQuery)).toList();
-       matches.sort((a, b) => buildingsMap![b]!.compareTo(buildingsMap![a]!));
+       matches.sort((a, b) => buildingsMap![b]!.compareTo(buildingsMap[a]!));
        _buildingSuggestions = matches.take(10).toList();
     }
     notifyListeners();
@@ -703,6 +709,20 @@ class AddEventProvider extends ChangeNotifier {
         inviteTitle: inviteTitle,
         inviteMessage: inviteMessage,
       );
+
+      // Learn Immediately for Autocomplete
+      _autocompleteService.learnSequence(title);
+      if (location.isNotEmpty) {
+        if (!_learnedLocations.containsKey(location)) {
+           _learnedLocations[location] = {};
+        }
+        if (building.isNotEmpty) {
+          _learnedLocations[location]![building] = (_learnedLocations[location]![building] ?? 0) + 1;
+        } else {
+          _learnedLocations[location]![''] = (_learnedLocations[location]![''] ?? 0) + 1;
+        }
+      }
+
       _draftService.clearDraft();
       return null;
     } catch (e) {

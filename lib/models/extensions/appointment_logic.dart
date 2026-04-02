@@ -1,7 +1,8 @@
 import '../appointment.dart';
-import '../user.dart';
 
 extension AppointmentLogic on Appointment {
+  /// الحصول على سجل المشاهد (سواء كان هو السجل الأساسي أو سجل طرفي)
+  Invitation? get viewerRecord => viewerInvitation ?? currentUserInvitation;
   
   /// الحصول على DateTime الكامل (بالتوقيت المحلي)
   /// Always returns accurate Local Time derived from startAt
@@ -14,6 +15,7 @@ extension AppointmentLogic on Appointment {
   /// إذا لم تتوفر، يتم الرجوع إلى الخصوصية العالمية للموعد.
   String get effectivePrivacy {
     final invPrivacy = currentUserInvitation?.privacy;
+    
     if (invPrivacy != null && invPrivacy.isNotEmpty) {
       return invPrivacy;
     }

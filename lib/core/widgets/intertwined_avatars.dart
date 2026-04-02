@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
-import 'pulse_avatar.dart'; // Reuse for individual avatar logic if needed, or simple CircleAvatar
+// Reuse for individual avatar logic if needed, or simple CircleAvatar
 
 class IntertwinedAvatars extends StatelessWidget {
   final ImageProvider? hostImage;
@@ -56,7 +55,7 @@ class IntertwinedAvatars extends StatelessWidget {
         ),
         boxShadow: isFront ? [
            BoxShadow(
-             color: Colors.black.withOpacity(0.1),
+             color: Colors.black.withValues(alpha: 0.1),
              blurRadius: 10,
              offset: const Offset(-4, 0), // Shadow to separate from back avatar
            )

@@ -3,10 +3,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../notifications/providers/notification_provider.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class NotificationSettingsScreen extends StatelessWidget {
@@ -132,7 +130,7 @@ class NotificationSettingsScreen extends StatelessWidget {
             : null,
         value: value,
         onChanged: enabled ? onChanged : null,
-        activeColor: AppColors.primary,
+        activeThumbColor: AppColors.primary,
         contentPadding: EdgeInsets.only(
           right: isSubItem ? 16 : 16, 
           left: 16

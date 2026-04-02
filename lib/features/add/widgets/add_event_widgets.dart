@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart' hide TextDirection;
 import 'package:hijri/hijri_calendar.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../models/user.dart';
-import '../../../../core/constants/app_dimens.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class DateTimeSection extends StatelessWidget {
@@ -44,7 +40,7 @@ class DateTimeSection extends StatelessWidget {
         boxShadow: [
           if (!isDark)
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -65,7 +61,7 @@ class DateTimeSection extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(Icons.access_time_filled, color: AppColors.primary, size: 20),
@@ -159,9 +155,9 @@ class DateTimeSection extends StatelessWidget {
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.04),
+                color: AppColors.primary.withValues(alpha: 0.04),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
               ),
               child: Row(
                 children: [
@@ -299,7 +295,7 @@ class RecurrenceSection extends StatelessWidget {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: isSelected 
-                            ? AppColors.primary.withOpacity(0.1) 
+                            ? AppColors.primary.withValues(alpha: 0.1) 
                             : (isDark ? Colors.grey.shade800 : Colors.grey.shade50),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(

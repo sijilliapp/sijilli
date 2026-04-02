@@ -4,7 +4,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_dimens.dart';
 import '../../../core/providers/theme_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../appointments/screens/archive_trash_screen.dart';
@@ -13,11 +12,8 @@ import 'blocked_users_screen.dart';
 import '../../auth/screens/privacy_policy_screen.dart';
 import 'notification_settings_screen.dart';
 import '../../../core/providers/locale_provider.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import '../../../core/providers/settings_provider.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
-import '../../../l10n/app_localizations.dart';
-import '../../../core/extensions/context_l10n.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -122,11 +118,11 @@ class SettingsScreen extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
               side: BorderSide(
-                color: AppColors.error.withOpacity(0.1),
+                color: AppColors.error.withValues(alpha: 0.1),
                 width: 1,
               ),
             ),
-            color: isDark ? AppColors.error.withOpacity(0.05) : Colors.red.shade50.withOpacity(0.3),
+            color: isDark ? AppColors.error.withValues(alpha: 0.05) : Colors.red.shade50.withValues(alpha: 0.3),
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               leading: Container(
@@ -134,15 +130,15 @@ class SettingsScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      AppColors.error.withOpacity(0.15),
-                      AppColors.error.withOpacity(0.05),
+                      AppColors.error.withValues(alpha: 0.15),
+                      AppColors.error.withValues(alpha: 0.05),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: AppColors.error.withOpacity(0.1),
+                    color: AppColors.error.withValues(alpha: 0.1),
                     width: 1,
                   ),
                 ),
@@ -164,7 +160,7 @@ class SettingsScreen extends StatelessWidget {
               subtitle: Text(
                 context.l10n.manageArchiveTrash,
                 style: TextStyle(
-                  color: AppColors.error.withOpacity(0.7),
+                  color: AppColors.error.withValues(alpha: 0.7),
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
@@ -277,7 +273,7 @@ class SettingsScreen extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+        side: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
       ),
       color: Theme.of(context).cardColor, 
       child: ListTile(
@@ -285,10 +281,10 @@ class SettingsScreen extends StatelessWidget {
         leading: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: AppColors.primary.withOpacity(0.05),
+              color: AppColors.primary.withValues(alpha: 0.05),
               width: 1,
             ),
           ),
@@ -305,7 +301,7 @@ class SettingsScreen extends StatelessWidget {
         subtitle: Text(
           subtitle,
           style: TextStyle(
-            color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7),
+            color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
             fontSize: 12,
           ),
         ),
@@ -331,7 +327,7 @@ class SettingsScreen extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+        side: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
       ),
       color: Theme.of(context).cardColor, 
       child: SwitchListTile(
@@ -339,10 +335,10 @@ class SettingsScreen extends StatelessWidget {
         secondary: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: AppColors.primary.withOpacity(0.05),
+              color: AppColors.primary.withValues(alpha: 0.05),
               width: 1,
             ),
           ),
@@ -359,13 +355,13 @@ class SettingsScreen extends StatelessWidget {
         subtitle: Text(
           subtitle,
           style: TextStyle(
-            color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7),
+            color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
             fontSize: 12,
           ),
         ),
         value: value,
         onChanged: onChanged,
-        activeColor: AppColors.primary,
+        activeThumbColor: AppColors.primary,
       ),
     );
   }
@@ -375,7 +371,7 @@ class SettingsScreen extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+        side: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
       ),
       color: Theme.of(context).cardColor, 
       child: ListTile(
@@ -383,10 +379,10 @@ class SettingsScreen extends StatelessWidget {
         leading: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.warning.withOpacity(0.1),
+            color: AppColors.warning.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: AppColors.warning.withOpacity(0.05),
+              color: AppColors.warning.withValues(alpha: 0.05),
               width: 1,
             ),
           ),

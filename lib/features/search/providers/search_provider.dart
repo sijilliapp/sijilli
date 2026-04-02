@@ -83,7 +83,7 @@ class SearchProvider extends ChangeNotifier {
         _followedAppointments = await _appointmentService.getFollowedAppointments();
       }
     } catch (e) {
-      debugPrint('Error fetching search tab content: $e');
+      print('Error fetching search tab content: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -98,7 +98,7 @@ class SearchProvider extends ChangeNotifier {
       // For now, search focuses on users, but can be expanded to appointments
       _userSearchResults = await _userService.searchUsers(query);
     } catch (e) {
-      debugPrint('Error performing search: $e');
+      print('Error performing search: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

@@ -3,7 +3,6 @@
 
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class InviteesWidget extends StatelessWidget {
@@ -47,9 +46,9 @@ class InviteesWidget extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.05),
+                  color: AppColors.primary.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
                 ),
                 child: Column(
                   children: [
@@ -115,7 +114,7 @@ class InviteesWidget extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 14,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                 child: const Icon(
                   Icons.person,
                   size: 14,

@@ -9,8 +9,6 @@ import 'package:sijilli/features/search/screens/search_screen.dart';
 import 'package:sijilli/features/add/screens/add_event_screen.dart';
 import 'package:sijilli/features/notifications/screens/notifications_screen.dart';
 import 'package:sijilli/features/settings/screens/settings_screen.dart';
-import 'package:sijilli/core/providers/locale_provider.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class MainScreen extends StatefulWidget {
@@ -81,7 +79,7 @@ class MainScreenState extends State<MainScreen> {
             boxShadow: [
               if (!isDark)
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 10,
                   offset: const Offset(0, -2),
                 ),

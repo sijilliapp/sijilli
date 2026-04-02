@@ -67,9 +67,9 @@ class AppointmentActionButtons extends StatelessWidget {
       child: Container(
         height: 80,
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(AppDimens.radiusM),
-          border: Border.all(color: color.withOpacity(0.2)),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Material(
           color: Colors.transparent,

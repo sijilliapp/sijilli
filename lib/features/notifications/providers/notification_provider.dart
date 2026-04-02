@@ -36,7 +36,7 @@ class NotificationProvider extends ChangeNotifier {
         if (_unsubscribeFunc != null) {
           _unsubscribeFunc!(); // Unsubscribe fire-and-forget
           _unsubscribeFunc = null;
-          debugPrint('🔌 [NotificationProvider] Dropped realtime subscription due to auth change.');
+          print('🔌 [NotificationProvider] Dropped realtime subscription due to auth change.');
         }
         _notifications = [];
         // Delay notifyListeners to avoid build phase conflicts
@@ -78,7 +78,7 @@ class NotificationProvider extends ChangeNotifier {
         AndroidInitializationSettings('@mipmap/launcher_icon');
 
     final DarwinInitializationSettings initializationSettingsDarwin =
-        DarwinInitializationSettings(
+        const DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
@@ -92,7 +92,7 @@ class NotificationProvider extends ChangeNotifier {
     await _localNotificationsPlugin.initialize(
       settings: initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        debugPrint('🔔 Notification tapped: ${response.payload}');
+        print('🔔 Notification tapped: ${response.payload}');
       },
     );
 
@@ -103,7 +103,7 @@ class NotificationProvider extends ChangeNotifier {
 
     if (androidImplementation != null) {
       final bool? granted = await androidImplementation.requestNotificationsPermission();
-      debugPrint('🔔 Notification Permission Granted: $granted');
+      print('🔔 Notification Permission Granted: $granted');
     }
   }
 
@@ -205,7 +205,7 @@ class NotificationProvider extends ChangeNotifier {
       }
 
     } catch (e) {
-      debugPrint('Error fetching notifications: $e');
+      print('Error fetching notifications: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -220,10 +220,10 @@ class NotificationProvider extends ChangeNotifier {
     }
 
     try {
-      debugPrint('🔌 [NotificationProvider] Subscribing to realtime for user: $userId');
+      print('🔌 [NotificationProvider] Subscribing to realtime for user: $userId');
       _unsubscribeFunc = await _service.subscribe(userId, (e) {
         try {
-          debugPrint('🔔 [NotificationProvider] RAW EVENT: ${e.action} - ${e.record}');
+          print('🔔 [NotificationProvider] RAW EVENT: ${e.action} - ${e.record}');
           if (e.action == 'create') {
             final newNotification = NotificationModel.fromRecord(e.record!);
             
@@ -253,7 +253,7 @@ class NotificationProvider extends ChangeNotifier {
             }
 
             if (shouldShow) {
-              debugPrint('🔔 [NotificationProvider] Attempting to show local notification (ID: ${newNotification.id})...');
+              print('🔔 [NotificationProvider] Attempting to show local notification (ID: ${newNotification.id})...');
               _showLocalNotification(
                 id: newNotification.id.hashCode,
                 title: newNotification.title,
@@ -263,12 +263,12 @@ class NotificationProvider extends ChangeNotifier {
             }
           }
         } catch (err, stack) {
-          debugPrint('‼️ [NotificationProvider] Error processing realtime event: $err');
-          debugPrint(stack.toString());
+          print('‼️ [NotificationProvider] Error processing realtime event: $err');
+          print(stack.toString());
         }
       });
     } catch (e) {
-      debugPrint('‼️ [NotificationProvider] Error subscribing to notifications: $e');
+      print('‼️ [NotificationProvider] Error subscribing to notifications: $e');
     }
   }
 
@@ -282,7 +282,7 @@ class NotificationProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('Error marking as read: $e');
+      print('Error marking as read: $e');
     }
   }
 
@@ -298,7 +298,7 @@ class NotificationProvider extends ChangeNotifier {
       }
       notifyListeners();
     } catch (e) {
-      debugPrint('Error marking all as read: $e');
+      print('Error marking all as read: $e');
     }
   }
 
@@ -308,7 +308,7 @@ class NotificationProvider extends ChangeNotifier {
        _notifications.removeWhere((n) => n.id == notificationId);
        notifyListeners();
     } catch (e) {
-      debugPrint('Error deleting notification: $e');
+      print('Error deleting notification: $e');
     }
   }
 
@@ -343,9 +343,9 @@ class NotificationProvider extends ChangeNotifier {
         notificationDetails: platformChannelSpecifics,
         payload: payload,
       );
-      debugPrint('✅ [NotificationProvider] Local notification shown successfully: $id');
+      print('✅ [NotificationProvider] Local notification shown successfully: $id');
     } catch (e) {
-      debugPrint('‼️ [NotificationProvider] Failed to show local notification: $e');
+      print('‼️ [NotificationProvider] Failed to show local notification: $e');
     }
   }
 

@@ -9,7 +9,6 @@ import '../../../models/appointment.dart';
 import '../../../models/notification.dart';
 import '../widgets/invitation_tile.dart';
 import '../widgets/notification_item.dart';
-import '../../../l10n/app_localizations.dart';
 import '../../../core/extensions/context_l10n.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -161,7 +160,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             return RefreshIndicator(
               onRefresh: () async {
                  await apptProvider.fetchAllInvitations();
-                 if (userId != null) await notifProvider.fetchNotifications(userId);
+                 await notifProvider.fetchNotifications(userId);
               },
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -176,7 +175,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           return RefreshIndicator(
             onRefresh: () async {
                await apptProvider.fetchAllInvitations();
-               if (userId != null) await notifProvider.fetchNotifications(userId);
+               await notifProvider.fetchNotifications(userId);
             },
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(vertical: 8),

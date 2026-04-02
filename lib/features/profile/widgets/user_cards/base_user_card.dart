@@ -36,12 +36,12 @@ class BaseUserCard extends StatelessWidget {
             color: policy.backgroundColor,
             borderRadius: BorderRadius.circular(AppDimens.radiusL),
             border: Border.all(
-              color: AppColors.getBorder(context).withOpacity(0.3),
+              color: AppColors.getBorder(context).withValues(alpha: 0.3),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.2 : 0.03),
+                color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.2 : 0.03),
                 blurRadius: 10,
                 spreadRadius: 0,
                 offset: const Offset(0, 4),

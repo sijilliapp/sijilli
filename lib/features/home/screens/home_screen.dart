@@ -36,6 +36,10 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
+         // Stop any current vertical scroll animation when switching tabs horizontally
+         if (_scrollController.hasClients) {
+           _scrollController.position.jumpTo(_scrollController.offset);
+         }
          _snapToTabs(force: true);
       }
     });
@@ -70,6 +74,9 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
   void _snapToTabs({bool force = false}) {
     if (!mounted || !_scrollController.hasClients) return;
 
+    // Safety check: Don't snap if user is already scrolling or already animating
+    if (!force && _scrollController.position.isScrollingNotifier.value) return;
+
     // Check if auto-scroll should be skipped
     final settings = context.read<SettingsProvider>();
     final appointments = context.read<AppointmentProvider>().appointments;
@@ -79,42 +86,45 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     }
 
     final hasBio = context.read<AuthProvider>().user?.hasBio ?? false;
-    // Calculate header height (App Bar + Profile Header)
-    // App bar is pinned (56 approx), Profile Header is dynamic
-    // We want the Scroll offset to be exactly where ProfileHeader is hidden
     final double snapOffset = hasBio ? 310 : 280;
+
+    // If offset is very close to snapOffset, skip to avoid jitter
+    if ((_scrollController.offset - snapOffset).abs() < 1.0) return;
 
     if (force || (_scrollController.offset > 0 && _scrollController.offset < snapOffset)) {
       _scrollController.animateTo(
         snapOffset,
         duration: const Duration(milliseconds: 600),
         curve: Curves.fastOutSlowIn,
-      );
+      ).catchError((_) {}); // Prevent crashes if unmounted mid-animation
     }
   }
 
   void scrollToMagneticTop({bool force = false}) {
     if (!mounted || !_scrollController.hasClients) return;
 
+    // If already animating, stop current and start new (mostly for double tap)
+    if (force && _scrollController.position.isScrollingNotifier.value) {
+      _scrollController.position.jumpTo(_scrollController.offset);
+    }
+
     final user = context.read<AuthProvider>().user;
     final double snapOffset = (user?.hasBio ?? false) ? 310 : 280;
     final currentOffset = _scrollController.offset;
 
     if (force) {
-      // Force means: Always scroll to magnetic top (usually for double-tap)
       _scrollController.animateTo(
         snapOffset,
         duration: const Duration(milliseconds: 600),
         curve: Curves.fastOutSlowIn,
-      );
+      ).catchError((_) {});
     } else {
-      // Not force means: Only snap if the profile header is currently visible
-      if (currentOffset < snapOffset) {
+      if (currentOffset < snapOffset && !_scrollController.position.isScrollingNotifier.value) {
         _scrollController.animateTo(
           snapOffset,
           duration: const Duration(milliseconds: 600),
           curve: Curves.fastOutSlowIn,
-        );
+        ).catchError((_) {});
       }
     }
   }
@@ -249,7 +259,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                       : const Color(0xFFF3F4F6),
                   activeTabShadowColor: Theme.of(context).brightness == Brightness.dark 
                       ? Colors.transparent 
-                      : Colors.black.withOpacity(0.05),
+                      : Colors.black.withValues(alpha: 0.05),
                 ),
               ),
             ),
@@ -258,6 +268,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
         body: Container(
           color: Theme.of(context).scaffoldBackgroundColor, // Body matches theme active tab
           child: TabBarView(
+            physics: const NeverScrollableScrollPhysics(),
             controller: _tabController,
             children: [
               // Tab 1: Appointments

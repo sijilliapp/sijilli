@@ -5,11 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimens.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/auth_text_field.dart';
 import '../widgets/auth_button.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -114,6 +114,28 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               );
             },
           ),
+          const SizedBox(height: 24),
+          const Text(
+            'أو راسلنا على البريد الإلكتروني',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          InkWell(
+            onTap: () => launchUrl(Uri.parse('mailto:sijilliapp@gmail.com')),
+            child: const Text(
+              'sijilliapp@gmail.com',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -157,6 +179,28 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               side: const BorderSide(color: AppColors.primary),
             ),
             child: Text(context.l10n.login),
+          ),
+        ),
+        const SizedBox(height: 24),
+        const Text(
+          'أو راسلنا على البريد الإلكتروني',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 14,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        InkWell(
+          onTap: () => launchUrl(Uri.parse('mailto:sijilliapp@gmail.com')),
+          child: const Text(
+            'sijilliapp@gmail.com',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
+              decoration: TextDecoration.underline,
+            ),
           ),
         ),
       ],

@@ -1,7 +1,6 @@
 import 'package:pocketbase/pocketbase.dart';
 import '../../../core/services/pocketbase_client.dart';
 import '../../../models/appointment.dart';
-import '../../../models/user.dart';
 
 class PbAppointmentBrowseService {
   final PocketBase _pb = PocketBaseClient.instance.pb;
@@ -51,7 +50,7 @@ class PbAppointmentBrowseService {
   /// الشروط: أي موعد عام ومؤكد لأحد المتابعين (ضيف أو مضيف)، مستقبلي أو جاري
   Future<List<Appointment>> getFollowedAppointments({int page = 1, int perPage = 50, int contextAdjustment = 0}) async {
     try {
-      final currentUserId = _pb.authStore.model?.id;
+      final currentUserId = _pb.authStore.record?.id;
       if (currentUserId == null) return [];
 
       final now = DateTime.now().toUtc();
@@ -108,14 +107,12 @@ class PbAppointmentBrowseService {
         });
         final myInv = (matches != null && matches.isNotEmpty) ? matches.first : null;
         
+        // Always use the friend's invitation as the primary record for display privacy
+        final friendInv = record.toJson();
+        apptJson['currentUserInvitation'] = friendInv;
+
         if (myInv != null) {
-          apptJson['currentUserInvitation'] = myInv is RecordModel ? myInv.toJson() : myInv;
-        } else {
-          // إذا لم يكن المستخدم جزءاً من الموعد، نستخدم دعوة الصديق كمرجع
-          // مع التأكد من أن خصوصية الموعد تسمح للمتابعين بالرؤية
-          final friendInv = record.toJson();
-          // ملاحظة: لا نحتاج لإزالة 'privacy' لأن Appointment.fromJson يعالج تعارض الخصوصية
-          apptJson['currentUserInvitation'] = friendInv;
+          apptJson['viewerInvitation'] = myInv is RecordModel ? myInv.toJson() : myInv;
         }
         
         appointments.add(Appointment.fromJson(apptJson, contextAdjustment: contextAdjustment));
@@ -194,18 +191,16 @@ class PbAppointmentBrowseService {
                 viewersInvitationJson = Map<String, dynamic>.from(
                   originalInv is RecordModel ? originalInv.toJson() : originalInv as Map
                 );
-                viewersInvitationJson.remove('privacy');
+                // We keep privacy here because it will be stored in viewerInvitation
              }
            }
         }
         
-        // حقن خصوصية المضيف في الموعد (لكي يرى الزائر نفس الكبسولة التي اختارها المضيف)
-        final hostPrivacy = invJson['privacy'];
-        if (hostPrivacy != null) {
-           apptJson['privacy'] = hostPrivacy;
-        }
+        // The primary record for display is the target user's invitation (the one we fetched)
+        apptJson['currentUserInvitation'] = invJson;
         
-        apptJson['currentUserInvitation'] = viewersInvitationJson;
+        // The viewer's information for interaction logic
+        apptJson['viewerInvitation'] = viewersInvitationJson;
 
         appointments.add(Appointment.fromJson(apptJson, contextAdjustment: contextAdjustment));
       }

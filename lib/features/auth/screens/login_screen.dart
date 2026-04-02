@@ -13,7 +13,6 @@ import '../widgets/auth_button.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 import '../../../core/providers/locale_provider.dart';
-import '../../../l10n/app_localizations.dart';
 import '../../../core/extensions/context_l10n.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -86,11 +85,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         
                         // العناصر الأقل أهمية
                         if (!isKeyboardVisible) ...[
-                          SizedBox(height: AppDimens.spaceM), // Removed const
+                          const SizedBox(height: AppDimens.spaceM), // Removed const
                           _buildForgotPassword(),
-                          SizedBox(height: AppDimens.spaceL), // Removed const
+                          const SizedBox(height: AppDimens.spaceL), // Removed const
                           _buildDivider(),
-                          SizedBox(height: AppDimens.spaceL), // Removed const
+                          const SizedBox(height: AppDimens.spaceL), // Removed const
                           _buildRegisterLink(),
                           // إضافة فراغ في الأسفل
                           SizedBox(height: constraints.maxHeight * 0.15), // 15% من ارتفاع الشاشة
@@ -147,7 +146,7 @@ class _LoginScreenState extends State<LoginScreen> {
         
         // الوصف - يختفي مع الكيبورد
         if (!isKeyboardVisible) ...[
-          SizedBox(height: AppDimens.spaceTiny), // Removed const
+          const SizedBox(height: AppDimens.spaceTiny), // Removed const
           Text(
             context.l10n.loginToContinue,
             style: TextStyle(
@@ -239,7 +238,7 @@ class _LoginScreenState extends State<LoginScreen> {
             );
           },
         ),
-        SizedBox(height: AppDimens.fontSizeCaption), // Removed const
+        const SizedBox(height: AppDimens.fontSizeCaption), // Removed const
         
         // كلمة المرور
         AuthTextField(
@@ -429,9 +428,9 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,

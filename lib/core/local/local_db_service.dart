@@ -1,10 +1,9 @@
 import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
-import 'dart:io' show Platform;
 import '../../models/user.dart';
 import '../../models/appointment.dart';
-import '../../models/extensions/appointment_logic.dart'; // Explicit import for extension
+// Explicit import for extension
 import 'schemas/user_schema.dart';
 import 'schemas/appointment_schema.dart';
 import 'dart:convert';
@@ -46,7 +45,7 @@ class LocalDbService {
       final directory = await getApplicationSupportDirectory();
       Hive.init(directory.path);
     } catch (e) {
-      debugPrint('Hive init error: $e');
+      print('Hive init error: $e');
     }
   }
 

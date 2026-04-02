@@ -7,7 +7,6 @@ import 'package:sijilli/features/appointments/widgets/appointment_card.dart';
 import '../timeline_separator.dart';
 import '../date_header.dart';
 import '../private_profile_wall.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class ProfileAppointmentsTab extends StatelessWidget {

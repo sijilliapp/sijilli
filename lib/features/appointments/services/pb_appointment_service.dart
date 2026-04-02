@@ -23,7 +23,7 @@ class PbAppointmentService {
     int contextAdjustment = 0,
   }) async {
     try {
-      final effectiveUserId = userId ?? _pb.authStore.model?.id;
+      final effectiveUserId = userId ?? _pb.authStore.record?.id;
       if (effectiveUserId == null) return [];
 
       String statusStr = status.toString().split('.').last;
@@ -89,7 +89,7 @@ class PbAppointmentService {
   /// إنشاء موعد جديد (سجل واحد رئيسي - Master Record)
   Future<Appointment> createAppointment(Appointment appointment, {List<String>? inviteeIds, String? inviteTitle, String? inviteMessage, int contextAdjustment = 0}) async {
     try {
-      final userId = _pb.authStore.model?.id;
+      final userId = _pb.authStore.record?.id;
       if (userId == null) throw Exception('User not authenticated');
 
       int count = appointment.recurrenceCount ?? 1;
@@ -130,7 +130,7 @@ class PbAppointmentService {
             'privacy': appointment.privacy,
           });
 
-          final hostName = _pb.authStore.model?.data['name'] ?? 'User';
+          final hostName = _pb.authStore.record?.data['name'] ?? 'User';
           try {
             await _notificationService.createNotification(
               targetUserId: guestId,
@@ -166,7 +166,7 @@ class PbAppointmentService {
 
       bool hasAcceptance = false;
       for (final inv in invites) {
-        if (inv.data['status'] == 'accepted' && inv.data['user'] != _pb.authStore.model?.id) {
+        if (inv.data['status'] == 'accepted' && inv.data['user'] != _pb.authStore.record?.id) {
           hasAcceptance = true;
           break;
         }
@@ -192,7 +192,7 @@ class PbAppointmentService {
         } catch (e) {}
 
         final userId = inv.data['user'];
-        if (userId != _pb.authStore.model?.id) {
+        if (userId != _pb.authStore.record?.id) {
            _sendCancelNotification(userId, id, title: cancelTitle, message: cancelMessage);
         }
       }

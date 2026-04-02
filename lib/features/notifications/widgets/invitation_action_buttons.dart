@@ -115,11 +115,11 @@ class InvitationActionButtons extends StatelessWidget {
     
     final bgColor = isFrozen 
         ? (isDark ? Colors.grey.shade800 : Colors.grey.shade100) 
-        : color.withOpacity(0.1);
+        : color.withValues(alpha: 0.1);
         
     final borderColor = isFrozen 
         ? (isDark ? Colors.grey.shade600 : Colors.grey.shade300) 
-        : color.withOpacity(0.3);
+        : color.withValues(alpha: 0.3);
         
     final textColor = isFrozen 
         ? (isDark ? Colors.grey.shade400 : Colors.grey.shade700) 

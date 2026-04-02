@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import '../../models/appointment.dart';
 
 /// Service responsible for generating smart suggestions for the "Word Buffet" (Zero Keyboard).
@@ -13,7 +12,7 @@ class AutocompleteService {
   // Optimized static data for religious occasions (Chain of Thought map)
   // Format: "Previous Word" -> ["Next Word 1", "Next Word 2", ...]
   final Map<String, List<String>> _ngramData = {
-    '': [], // Default empty context
+    '': [], 
   };
 
   // Dynamic Data (Learned)
@@ -31,7 +30,14 @@ class AutocompleteService {
     // 1. Clean the text and split into words
     final trimmedText = currentText.trim();
     if (currentText.isEmpty || trimmedText.isEmpty) {
-      return _ngramData['']!;
+      final starters = <String>{};
+      if (_ngramData.containsKey('')) starters.addAll(_ngramData['']!);
+      if (_learnedData.containsKey('')) {
+        final map = _learnedData['']!;
+        final sorted = map.keys.toList()..sort((a, b) => map[b]!.compareTo(map[a]!));
+        starters.addAll(sorted);
+      }
+      return starters.toList();
     }
     
     // 2. Identify Context (previous word) and Prefix (current being typed)
@@ -108,7 +114,7 @@ class AutocompleteService {
        final globalMatches = allWords.where((w) => w.startsWith(prefix) && w != prefix).take(10); // Limit fallback
        
        candidates.addAll(globalMatches);
-    }
+     }
 
     return candidates.toList();
   }
@@ -205,24 +211,7 @@ class AutocompleteService {
 
   // --- Semantic Deduction ---
 
-  final Map<String, EventDate> _knownEvents = {
-    'ليلة النصف من شعبان': EventDate(month: 8, day: 15),
-    'مولد الإمام الحسين': EventDate(month: 3, day: 3),
-    'مولد الإمام علي': EventDate(month: 7, day: 13),
-    'عيد الغدير': EventDate(month: 12, day: 18),
-    'يوم عرفة': EventDate(month: 12, day: 9),
-    'عاشوراء': EventDate(month: 1, day: 10),
-    'الأربعين': EventDate(month: 2, day: 20),
-    'المولد النبوي': EventDate(month: 3, day: 17),
-    'دعاء كميل': EventDate(weekday: 5), 
-    'دعاء الندبة': EventDate(weekday: 6),
-    // New Additions
-    'مولد الحجة': EventDate(month: 8, day: 15),
-    'مولد الإمام المهدي': EventDate(month: 8, day: 15),
-    'مولد صاحب الزمان': EventDate(month: 8, day: 15),
-    'مولد السيدة الزهراء': EventDate(month: 6, day: 20),
-    'شهادة السيدة الزهراء': EventDate(month: 6, day: 3), // Fatimiyya 3?
-  };
+  final Map<String, EventDate> _knownEvents = {};
 
   // Learned Dates: Title -> {EventDate -> Frequency}
   final Map<String, Map<EventDate, int>> _learnedDates = {};

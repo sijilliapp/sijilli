@@ -1,0 +1,365 @@
+Analyzing sijilli...                                            
+
+   info • 'desiredAccuracy' is deprecated and shouldn't be used. use settings parameter with AndroidSettings, AppleSettings, WebSettings, or LocationSettings • lib/core/services/location_service.dart:55:13 • deprecated_member_use
+   info • 'timeLimit' is deprecated and shouldn't be used. use settings parameter with AndroidSettings, AppleSettings, WebSettings, or LocationSettings • lib/core/services/location_service.dart:56:13 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/core/services/pocketbase_client.dart:24:35 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/core/services/pocketbase_client.dart:29:7 • avoid_print
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/core/utils/app_pickers.dart:22:54 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/core/utils/app_pickers.dart:32:52 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/core/utils/app_pickers.dart:35:57 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/core/widgets/auth_wrapper.dart:56:41 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/core/widgets/hijri_date_picker.dart:237:40 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/core/widgets/intertwined_avatars.dart:58:34 • deprecated_member_use
+warning • This default clause is covered by the previous cases • lib/core/widgets/pulse_avatar.dart:94:7 • unreachable_switch_default
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/core/widgets/pulse_avatar.dart:136:56 • deprecated_member_use
+warning • The value of the local variable 'dt' isn't used • lib/features/add/providers/add_event_provider.dart:669:13 • unused_local_variable
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/add/screens/add_event_screen.dart:257:89 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/add/widgets/add_event_widgets.dart:43:33 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/add/widgets/add_event_widgets.dart:64:50 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/add/widgets/add_event_widgets.dart:158:42 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/add/widgets/add_event_widgets.dart:160:61 • deprecated_member_use
+   info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor or activeTrackColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/features/add/widgets/add_event_widgets.dart:266:17 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/add/widgets/add_event_widgets.dart:298:49 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/add/widgets/event_form_widget.dart:218:45 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/add/widgets/invitees_widget.dart:49:44 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/add/widgets/invitees_widget.dart:51:63 • deprecated_member_use
+   info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor or activeTrackColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/features/add/widgets/invitees_widget.dart:71:27 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/add/widgets/invitees_widget.dart:117:52 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/add/widgets/unified_date_picker.dart:104:37 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/add/widgets/unified_date_picker.dart:168:35 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/add/widgets/unified_date_picker.dart:171:66 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/add/widgets/unified_date_picker.dart:259:54 • deprecated_member_use
+warning • Dead code • lib/features/add/widgets/unified_date_picker.dart:269:135 • dead_code
+warning • Dead code • lib/features/add/widgets/unified_date_picker.dart:279:120 • dead_code
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/add/widgets/unified_date_picker.dart:288:42 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/add/widgets/unified_date_picker.dart:529:40 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/add/widgets/word_river_widget.dart:101:42 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/add/widgets/word_river_widget.dart:103:48 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/add/widgets/word_river_widget.dart:103:80 • deprecated_member_use
+warning • The value of the field '_browseService' isn't used • lib/features/appointments/providers/appointment_provider.dart:15:36 • unused_field
+   info • Don't invoke 'print' in production code • lib/features/appointments/providers/appointment_provider.dart:307:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/providers/appointment_provider.dart:592:9 • avoid_print
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/screens/archive_trash_screen.dart:146:39 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_browse_service.dart:44:7 • avoid_print
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/appointments/services/pb_appointment_browse_service.dart:53:43 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/appointments/services/pb_appointment_browse_service.dart:91:33 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/appointments/services/pb_appointment_browse_service.dart:102:52 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_browse_service.dart:128:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_browse_service.dart:129:7 • avoid_print
+warning • The value of the local variable 'filterDate' isn't used • lib/features/appointments/services/pb_appointment_browse_service.dart:146:13 • unused_local_variable
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_browse_service.dart:217:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_recurrence_service.dart:13:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_recurrence_service.dart:21:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_recurrence_service.dart:23:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_recurrence_service.dart:29:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_recurrence_service.dart:55:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_recurrence_service.dart:59:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_recurrence_service.dart:81:5 • avoid_print
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/appointments/services/pb_appointment_service.dart:26:55 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_service.dart:84:7 • avoid_print
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/appointments/services/pb_appointment_service.dart:92:36 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/appointments/services/pb_appointment_service.dart:133:42 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_service.dart:151:7 • avoid_print
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/appointments/services/pb_appointment_service.dart:169:83 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/appointments/services/pb_appointment_service.dart:195:37 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_service.dart:200:7 • avoid_print
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/appointments/services/pb_category_service.dart:13:36 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_category_service.dart:27:7 • avoid_print
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/appointments/services/pb_category_service.dart:35:36 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_category_service.dart:48:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_category_service.dart:58:7 • avoid_print
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/appointments/services/pb_invitation_service.dart:54:42 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_invitation_service.dart:72:13 • avoid_print
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/appointments/services/pb_invitation_service.dart:80:51 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/appointments/services/pb_invitation_service.dart:112:49 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/appointments/services/pb_invitation_service.dart:129:41 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/appointments/services/pb_invitation_service.dart:130:41 • deprecated_member_use
+warning • The value of the local variable 'apptTitle' isn't used • lib/features/appointments/services/pb_invitation_service.dart:137:20 • unused_local_variable
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/appointments/services/pb_invitation_service.dart:139:42 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_invitation_service.dart:150:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_invitation_service.dart:181:9 • avoid_print
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/appointments/services/pb_invitation_service.dart:197:43 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_invitation_service.dart:216:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_invitation_service.dart:293:7 • avoid_print
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/atomic/appointment_privacy_badge.dart:26:47 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/atomic/appointment_privacy_badge.dart:27:51 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/atomic/appointment_privacy_badge.dart:27:91 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/atomic/appointment_privacy_badge.dart:32:49 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/atomic/appointment_privacy_badge.dart:33:53 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/atomic/appointment_privacy_badge.dart:33:95 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/atomic/appointment_privacy_badge.dart:51:31 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/atomic/appointment_status_badge.dart:30:28 • deprecated_member_use
+warning • The value of the local variable 'isAr' isn't used • lib/features/appointments/widgets/atomic/guest_capsule.dart:33:11 • unused_local_variable
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/atomic/guest_capsule.dart:47:48 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/atomic/guest_capsule.dart:69:37 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/atomic/guest_capsule.dart:114:44 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/atomic/guest_capsule.dart:117:43 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/atomic/interaction_capsule.dart:35:49 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/atomic/personal_settings_sheet.dart:86:54 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/atomic/personal_settings_sheet.dart:96:54 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/atomic/personal_settings_sheet.dart:183:36 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/atomic/personal_settings_sheet.dart:214:44 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/atomic/personal_settings_sheet.dart:260:26 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/atomic/personal_settings_sheet.dart:262:45 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/atomic/personal_settings_sheet.dart:319:51 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/features/appointments/widgets/atomic/user_invitee_sheet.dart:74:7 • avoid_print
+warning • The left operand can't be null, so the right operand is never executed • lib/features/appointments/widgets/atomic/user_invitee_sheet.dart:121:55 • dead_null_aware_expression
+   info • Don't invoke 'print' in production code • lib/features/appointments/widgets/atomic/user_invitee_sheet.dart:148:9 • avoid_print
+warning • This default clause is covered by the previous cases • lib/features/appointments/widgets/cards/appointment_card_helper.dart:103:7 • unreachable_switch_default
+warning • The value of the local variable 'categoryColor' isn't used • lib/features/appointments/widgets/cards/base_appointment_card.dart:32:11 • unused_local_variable
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/cards/base_appointment_card.dart:38:35 • deprecated_member_use
+warning • The value of the local variable 'isUnified' isn't used • lib/features/appointments/widgets/cards/base_appointment_card.dart:77:16 • unused_local_variable
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/cards/base_appointment_card.dart:81:51 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/cards/base_appointment_card.dart:82:55 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/cards/base_appointment_card.dart:87:49 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/cards/base_appointment_card.dart:88:53 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/cards/base_appointment_card.dart:88:95 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/cards/base_appointment_card.dart:115:39 • deprecated_member_use
+warning • The value of the local variable 'categoryColor' isn't used • lib/features/appointments/widgets/cards/base_appointment_card.dart:261:11 • unused_local_variable
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/cards/base_appointment_card.dart:272:37 • deprecated_member_use
+warning • This default clause is covered by the previous cases • lib/features/appointments/widgets/cards/policies/public_policy.dart:58:7 • unreachable_switch_default
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/cards/policies/public_policy.dart:74:49 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/cards/policies/public_policy.dart:74:84 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/cards/policies/standard_policy.dart:45:29 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/cards/policies/standard_policy.dart:46:34 • deprecated_member_use
+warning • This default clause is covered by the previous cases • lib/features/appointments/widgets/cards/policies/standard_policy.dart:82:7 • unreachable_switch_default
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/cards/policies/standard_policy.dart:91:54 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/cards/policies/standard_policy.dart:92:28 • deprecated_member_use
+warning • The left operand can't be null, so the right operand is never executed • lib/features/appointments/widgets/sheets/appointment_confirmation_sheet.dart:166:54 • dead_null_aware_expression
+warning • The left operand can't be null, so the right operand is never executed • lib/features/appointments/widgets/sheets/appointment_confirmation_sheet.dart:166:88 • dead_null_aware_expression
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/sheets/appointment_confirmation_sheet.dart:179:42 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/sheets/appointment_confirmation_sheet.dart:181:61 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/sheets/appointment_confirmation_sheet.dart:390:33 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/features/appointments/widgets/sheets/appointment_details_sheet.dart:172:6 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/widgets/sheets/appointment_details_sheet.dart:329:33 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/widgets/sheets/appointment_details_sheet.dart:516:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/widgets/sheets/appointment_details_sheet.dart:524:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/widgets/sheets/appointment_details_sheet.dart:528:15 • avoid_print
+warning • The left operand can't be null, so the right operand is never executed • lib/features/appointments/widgets/sheets/appointment_details_sheet.dart:535:81 • dead_null_aware_expression
+   info • Don't invoke 'print' in production code • lib/features/appointments/widgets/sheets/appointment_details_sheet.dart:541:17 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/widgets/sheets/appointment_details_sheet.dart:556:7 • avoid_print
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/sheets/components/appointment_action_buttons.dart:70:24 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/sheets/components/appointment_action_buttons.dart:72:43 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/sheets/components/appointment_category_selector.dart:48:56 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/sheets/components/appointment_category_selector.dart:58:56 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/sheets/components/appointment_participants_list.dart:81:44 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/sheets/components/appointment_participants_list.dart:83:63 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/appointments/widgets/sheets/components/appointment_privacy_toggle.dart:60:49 • deprecated_member_use
+warning • The left operand can't be null, so the right operand is never executed • lib/features/auth/providers/auth_provider.dart:139:50 • dead_null_aware_expression
+warning • The left operand can't be null, so the right operand is never executed • lib/features/auth/providers/auth_provider.dart:139:64 • dead_null_aware_expression
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/screens/login_screen.dart:431:42 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/screens/login_screen.dart:433:61 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/screens/register_screen.dart:218:34 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/screens/register_screen.dart:220:53 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/screens/register_screen.dart:255:42 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/screens/register_screen.dart:257:61 • deprecated_member_use
+warning • The value of the local variable 'record' isn't used • lib/features/auth/services/pb_auth_service.dart:49:11 • unused_local_variable
+   info • Don't invoke 'print' in production code • lib/features/auth/services/pb_auth_service.dart:66:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/auth/services/pb_auth_service.dart:74:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/auth/services/pb_auth_service.dart:77:7 • avoid_print
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/widgets/auth_button.dart:35:42 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/home/screens/home_screen.dart:252:38 • deprecated_member_use
+warning • The value of the local variable 'isFriend' isn't used • lib/features/home/screens/public_profile_screen.dart:69:15 • unused_local_variable
+warning • The declaration '_showAppointmentDetails' isn't referenced • lib/features/home/tabs/appointments_tab.dart:24:8 • unused_element
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/home/tabs/appointments_tab.dart:237:57 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/home/tabs/appointments_tab.dart:240:95 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/home/widgets/private_profile_wall.dart:38:50 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/home/widgets/private_profile_wall.dart:93:53 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/home/widgets/private_profile_wall.dart:93:90 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/home/widgets/private_profile_wall.dart:96:46 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/home/widgets/profile/social_stats_row.dart:105:61 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/home/widgets/profile_header.dart:167:52 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/home/widgets/profile_header.dart:219:50 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/home/widgets/sunset_separator.dart:44:35 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/home/widgets/sunset_separator.dart:45:35 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/main/screens/main_screen.dart:82:39 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/features/notifications/services/notification_service.dart:40:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/services/notification_service.dart:41:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/services/notification_service.dart:45:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/services/notification_service.dart:48:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/services/notification_service.dart:50:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/services/notification_service.dart:81:7 • avoid_print
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/notifications/widgets/invitation_action_buttons.dart:118:17 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/notifications/widgets/invitation_action_buttons.dart:122:17 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/notifications/widgets/invitation_tile.dart:134:51 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/notifications/widgets/invitation_tile.dart:134:92 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/notifications/widgets/invitation_tile.dart:144:49 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/notifications/widgets/invitation_tile.dart:149:33 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/notifications/widgets/invitation_time_row.dart:26:28 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/notifications/widgets/invitation_time_row.dart:27:66 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/notifications/widgets/invitation_time_row.dart:31:30 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/notifications/widgets/notification_item.dart:113:22 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/profile/providers/moderation_provider.dart:29:67 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/profile/providers/moderation_provider.dart:34:27 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/profile/providers/moderation_provider.dart:35:44 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/profile/screens/follows_screen.dart:95:39 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/profile/screens/follows_screen.dart:105:39 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/profile/screens/follows_screen.dart:184:29 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/profile/screens/follows_screen.dart:185:34 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/profile/screens/follows_screen.dart:223:30 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/profile/screens/follows_screen.dart:292:32 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/profile/screens/follows_screen.dart:363:32 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/profile/widgets/user_cards/base_user_card.dart:39:51 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/profile/widgets/user_cards/base_user_card.dart:44:37 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/profile/widgets/user_cards/policies/selection_user_policy.dart:55:22 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/profile/widgets/user_cards/policies/standard_user_policy.dart:12:66 • deprecated_member_use
+warning • This default clause is covered by the previous cases • lib/features/profile/widgets/user_cards/user_card.dart:67:7 • unreachable_switch_default
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/profile/widgets/user_cards/user_card_policy.dart:73:60 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/profile/widgets/user_follow_button.dart:288:34 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/profile/widgets/user_follow_button.dart:339:37 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/search/screens/search_screen.dart:62:35 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/search/screens/search_screen.dart:63:35 • deprecated_member_use
+warning • The left operand can't be null, so the right operand is never executed • lib/features/settings/screens/blocked_users_screen.dart:53:42 • dead_null_aware_expression
+warning • The left operand can't be null, so the right operand is never executed • lib/features/settings/screens/blocked_users_screen.dart:61:80 • dead_null_aware_expression
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/contact_screen.dart:88:43 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/contact_screen.dart:89:43 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/contact_screen.dart:91:63 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/profile_screen.dart:207:63 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/profile_screen.dart:207:95 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/settings_screen.dart:121:40 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/settings_screen.dart:125:45 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/settings_screen.dart:125:84 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/settings_screen.dart:133:39 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/settings_screen.dart:134:39 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/settings_screen.dart:141:44 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/settings_screen.dart:163:42 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/settings_screen.dart:276:64 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/settings_screen.dart:284:38 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/settings_screen.dart:287:40 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/settings_screen.dart:304:66 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/settings_screen.dart:330:64 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/settings_screen.dart:338:38 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/settings_screen.dart:341:40 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/settings_screen.dart:358:66 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/settings_screen.dart:374:64 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/settings_screen.dart:382:38 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/settings/screens/settings_screen.dart:385:40 • deprecated_member_use
+   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:468:21 • deprecated_member_use
+   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:470:21 • deprecated_member_use
+   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:478:21 • deprecated_member_use
+   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:480:21 • deprecated_member_use
+   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:517:19 • deprecated_member_use
+   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:519:19 • deprecated_member_use
+   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:555:22 • deprecated_member_use
+   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:557:22 • deprecated_member_use
+   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:566:22 • deprecated_member_use
+   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:568:22 • deprecated_member_use
+   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:577:22 • deprecated_member_use
+   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:579:22 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/settings/services/contact_service.dart:18:36 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/settings/services/pb_moderation_service.dart:9:40 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/settings/services/pb_moderation_service.dart:20:40 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/settings/services/pb_moderation_service.dart:35:40 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/settings/services/pb_moderation_service.dart:54:40 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/settings/services/pb_moderation_service.dart:68:40 • deprecated_member_use
+warning • The operand can't be 'null', so the condition is always 'true' • lib/features/settings/services/pb_moderation_service.dart:75:21 • unnecessary_null_comparison
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/settings/services/pb_user_service.dart:32:36 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/features/settings/services/pb_user_service.dart:140:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/settings/services/pb_user_service.dart:145:9 • avoid_print
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/settings/services/pb_user_service.dart:155:48 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/settings/services/pb_user_service.dart:166:40 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/features/settings/services/pb_user_service.dart:174:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/settings/services/pb_user_service.dart:179:7 • avoid_print
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/settings/services/pb_user_service.dart:188:36 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/settings/services/pb_user_service.dart:213:36 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/settings/services/pb_user_service.dart:236:36 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/settings/services/pb_user_service.dart:282:38 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/settings/services/pb_user_service.dart:334:36 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/settings/services/pb_user_service.dart:356:48 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/settings/services/pb_user_service.dart:381:34 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/settings/services/pb_user_service.dart:400:40 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/settings/services/pb_user_service.dart:419:34 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/settings/services/pb_user_service.dart:438:34 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/settings/services/pb_user_service.dart:458:48 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/settings/services/pb_user_service.dart:469:40 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/features/settings/services/pb_user_service.dart:477:12 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/settings/services/pb_user_service.dart:482:7 • avoid_print
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/settings/services/pb_user_service.dart:491:36 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/settings/services/pb_user_service.dart:509:36 • deprecated_member_use
+   info • 'model' is deprecated and shouldn't be used. use record • lib/features/settings/services/pb_user_service.dart:575:53 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/hijri_test.dart:6:3 • avoid_print
+   info • Don't invoke 'print' in production code • lib/hijri_test.dart:7:3 • avoid_print
+   info • Don't invoke 'print' in production code • lib/hijri_test.dart:8:3 • avoid_print
+   info • Don't invoke 'print' in production code • lib/hijri_test.dart:9:3 • avoid_print
+   info • Don't invoke 'print' in production code • lib/models/appointment.dart:382:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/models/appointment.dart:416:11 • avoid_print
+warning • The left operand can't be null, so the right operand is never executed • lib/models/appointment.dart:637:57 • dead_null_aware_expression
+   info • 'created' is deprecated and shouldn't be used. created is no longer mandatory field; use get<String>('created') • lib/models/notification.dart:84:38 • deprecated_member_use
+   info • 'updated' is deprecated and shouldn't be used. updated is no longer mandatory field; use get<String>('updated') • lib/models/notification.dart:85:38 • deprecated_member_use
+warning • Unused import: 'package:mocktail/mocktail.dart' • test/friendship_logic_test.dart:2:8 • unused_import
+  error • The named parameter 'localeProvider' is required, but there's no corresponding argument • test/widget_test.dart:15:35 • missing_required_argument
+  error • The named parameter 'settingsProvider' is required, but there's no corresponding argument • test/widget_test.dart:15:35 • missing_required_argument
+  error • The named parameter 'themeProvider' is required, but there's no corresponding argument • test/widget_test.dart:15:35 • missing_required_argument
+

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sijilli/core/constants/app_colors.dart';
 import 'package:sijilli/core/constants/app_dimens.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class AppointmentPrivacyToggle extends StatelessWidget {
@@ -58,7 +57,7 @@ class AppointmentPrivacyToggle extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppDimens.radiusM),
         child: Container(
           height: 80,
-          color: isSelected ? AppColors.primary.withOpacity(0.05) : Colors.transparent,
+          color: isSelected ? AppColors.primary.withValues(alpha: 0.05) : Colors.transparent,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

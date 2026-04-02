@@ -1,0 +1,5 @@
+CFBundleDisplayName = "Sijilli";
+NSCameraUsageDescription = "We need access to your camera to capture profile photos and event images.";
+NSPhotoLibraryUsageDescription = "We need access to your photo library to select profile photos and share event images.";
+NSLocationWhenInUseUsageDescription = "We need your location to show nearby events and suggest meeting places.";
+NSCalendarsUsageDescription = "We need access to your calendar to sync your appointments and events.";

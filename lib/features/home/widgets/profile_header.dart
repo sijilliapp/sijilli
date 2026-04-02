@@ -6,14 +6,12 @@ import 'package:sijilli/core/constants/app_dimens.dart';
 import 'package:sijilli/models/user.dart';
 import 'package:sijilli/features/auth/providers/auth_provider.dart';
 import 'package:sijilli/features/appointments/providers/appointment_provider.dart';
-import 'package:sijilli/features/appointments/widgets/cards/appointment_card_helper.dart';
 import 'package:sijilli/core/widgets/pulse_avatar.dart';
 import 'package:sijilli/core/widgets/user_name_with_badge.dart';
 import 'profile/social_stats_row.dart';
 import 'profile/profile_actions_helper.dart';
 import '../../profile/widgets/user_follow_button.dart';
 import 'package:sijilli/features/profile/screens/follows_screen.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class ProfileHeader extends StatelessWidget {
@@ -166,7 +164,7 @@ class ProfileHeader extends StatelessWidget {
                             border: Border.all(color: Theme.of(context).dividerColor),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.grey.withOpacity(0.05),
+                                color: Colors.grey.withValues(alpha: 0.05),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -218,7 +216,7 @@ class ProfileHeader extends StatelessWidget {
                           border: Border.all(color: Theme.of(context).dividerColor),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.grey.withOpacity(0.05),
+                              color: Colors.grey.withValues(alpha: 0.05),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),

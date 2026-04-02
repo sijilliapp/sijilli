@@ -29,7 +29,7 @@ class ImageSaverUtil {
 
       return true;
     } catch (e) {
-      debugPrint('❌ Error saving image: $e');
+      print('❌ Error saving image: $e');
       return false;
     }
   }

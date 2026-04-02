@@ -35,7 +35,7 @@ class ProfileEmptyState extends StatelessWidget {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: isDark ? Colors.black.withOpacity(0.3) : Colors.grey.shade200,
+                    color: isDark ? Colors.black.withValues(alpha: 0.3) : Colors.grey.shade200,
                     blurRadius: 24,
                     offset: const Offset(0, 8),
                   ),
@@ -90,17 +90,17 @@ class ProfileEmptyState extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.primary.withOpacity(0.1) : AppColors.primary.withOpacity(0.05),
+                  color: isDark ? AppColors.primary.withValues(alpha: 0.1) : AppColors.primary.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: AppColors.primary.withOpacity(0.2),
+                    color: AppColors.primary.withValues(alpha: 0.2),
                   ),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.person_add_alt_1_outlined, size: 16, color: AppColors.primary),
-                    const SizedBox(width: 8),
+                    Icon(Icons.person_add_alt_1_outlined, size: 16, color: AppColors.primary),
+                    SizedBox(width: 8),
                     Text(
                       'أرسل طلب اعتماد للتواصل',
                       style: TextStyle(

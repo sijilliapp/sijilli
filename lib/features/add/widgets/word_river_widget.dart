@@ -98,9 +98,9 @@ class _SuggestionChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: isPivot ? AppColors.primary.withOpacity(0.05) : Colors.white, // Light tint for pivot
+      color: isPivot ? AppColors.primary.withValues(alpha: 0.05) : Colors.white, // Light tint for pivot
       elevation: isPivot ? 2 : 1,
-      shadowColor: isPivot ? AppColors.primary.withOpacity(0.4) : Colors.black.withOpacity(0.3),
+      shadowColor: isPivot ? AppColors.primary.withValues(alpha: 0.4) : Colors.black.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
@@ -113,7 +113,7 @@ class _SuggestionChip extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Center(
             child: Text(
               label,

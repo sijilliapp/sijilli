@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimens.dart';
 import '../../../core/utils/app_date_formatter.dart';
-import 'package:intl/intl.dart';
 import '../../../models/appointment.dart';
 import '../../appointments/providers/appointment_provider.dart';
 import '../../appointments/widgets/appointment_card.dart';
@@ -11,7 +10,6 @@ import '../../auth/providers/auth_provider.dart';
 import '../widgets/date_header.dart';
 import '../widgets/timeline_separator.dart';
 
-import '../../../l10n/app_localizations.dart';
 import '../../../core/extensions/context_l10n.dart';
 
 class AppointmentsTab extends StatefulWidget {
@@ -236,10 +234,10 @@ class _AppointmentsTabState extends State<AppointmentsTab> {
                            Container(
                              padding: const EdgeInsets.all(20),
                              decoration: BoxDecoration(
-                               color: AppColors.primary.withOpacity(0.08),
+                               color: AppColors.primary.withValues(alpha: 0.08),
                                shape: BoxShape.circle,
                              ),
-                             child: Icon(Icons.event_note, size: 48, color: AppColors.primary.withOpacity(0.5)),
+                             child: Icon(Icons.event_note, size: 48, color: AppColors.primary.withValues(alpha: 0.5)),
                            ),
                            const SizedBox(height: 16),
                            Text(

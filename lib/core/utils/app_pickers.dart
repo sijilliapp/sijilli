@@ -19,7 +19,7 @@ class AppPickers {
                 ),
                 timePickerTheme: TimePickerThemeData(
                    dayPeriodBorderSide: const BorderSide(color: AppColors.primary),
-                   dayPeriodColor: AppColors.primary.withOpacity(0.2),
+                   dayPeriodColor: AppColors.primary.withValues(alpha: 0.2),
                    dayPeriodTextColor: Colors.white,
                    dialHandColor: AppColors.primary,
                    dialBackgroundColor: Colors.grey.shade800,
@@ -29,10 +29,10 @@ class AppPickers {
                colorScheme: const ColorScheme.light(primary: AppColors.primary),
                timePickerTheme: TimePickerThemeData(
                  dayPeriodBorderSide: const BorderSide(color: AppColors.primary),
-                 dayPeriodColor: AppColors.primary.withOpacity(0.1),
+                 dayPeriodColor: AppColors.primary.withValues(alpha: 0.1),
                  dayPeriodTextColor: AppColors.primary,
                  dialHandColor: AppColors.primary,
-                 dialBackgroundColor: AppColors.primary.withOpacity(0.05),
+                 dialBackgroundColor: AppColors.primary.withValues(alpha: 0.05),
                )
             ),
           child: child!,

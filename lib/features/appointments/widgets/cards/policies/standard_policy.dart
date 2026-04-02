@@ -4,13 +4,11 @@ import 'package:sijilli/core/constants/app_colors.dart';
 import 'package:sijilli/models/appointment.dart';
 import 'package:sijilli/features/home/screens/public_profile_screen.dart';
 import 'package:sijilli/features/appointments/providers/appointment_provider.dart';
-import 'package:sijilli/features/appointments/widgets/atomic/personal_settings_sheet.dart';
 import 'package:sijilli/features/appointments/widgets/atomic/user_invitee_sheet.dart';
 import 'package:sijilli/core/constants/app_dimens.dart';
 import 'package:sijilli/features/appointments/widgets/cards/appointment_card_policy.dart';
 import 'package:sijilli/core/widgets/pulse_avatar.dart';
 import 'package:sijilli/features/appointments/widgets/sheets/appointment_details_sheet.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class StandardPolicy extends AppointmentCardPolicy {
@@ -44,8 +42,8 @@ class StandardPolicy extends AppointmentCardPolicy {
 
     if (_invStatus == InvitationStatus.pending && !appointment.isDeleted && !_isHost) {
       return isDark 
-          ? AppColors.alert.withOpacity(0.15) 
-          : AppColors.alertLight.withOpacity(0.12);
+          ? AppColors.alert.withValues(alpha: 0.15) 
+          : AppColors.alertLight.withValues(alpha: 0.12);
     }
     return isDark ? AppColors.darkCardBackground : AppColors.appointmentCardBackground;
   }
@@ -90,8 +88,8 @@ class StandardPolicy extends AppointmentCardPolicy {
   Color get statusCapsuleBackgroundColor {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (appointment.isNow) return AppColors.primary;
-    if (appointment.isUrgent) return AppColors.alert.withOpacity(isDark ? 0.2 : 0.1);
-    return mainStatusColor.withOpacity(isDark ? 0.15 : 0.05);
+    if (appointment.isUrgent) return AppColors.alert.withValues(alpha: isDark ? 0.2 : 0.1);
+    return mainStatusColor.withValues(alpha: isDark ? 0.15 : 0.05);
   }
 
   @override

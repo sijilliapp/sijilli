@@ -3,8 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:sijilli/features/appointments/providers/appointment_provider.dart';
 import 'package:sijilli/features/appointments/widgets/appointment_card.dart';
 import 'package:sijilli/core/constants/app_colors.dart';
-import 'package:sijilli/models/appointment.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class ArchiveTrashScreen extends StatefulWidget {
@@ -49,6 +47,7 @@ class _ArchiveTrashScreenState extends State<ArchiveTrashScreen> with SingleTick
         ),
       ),
       body: TabBarView(
+        physics: const NeverScrollableScrollPhysics(),
         controller: _tabController,
         children: const [
           ArchiveTab(),
@@ -145,7 +144,7 @@ class TrashTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      color: isDark ? AppColors.error.withOpacity(0.1) : Colors.red[50], // Dynamic Red Tint
+      color: isDark ? AppColors.error.withValues(alpha: 0.1) : Colors.red[50], // Dynamic Red Tint
       child: Consumer<AppointmentProvider>(
         builder: (context, provider, child) {
           final appointments = provider.trashedAppointments;

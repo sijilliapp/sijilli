@@ -6,7 +6,7 @@ class PbModerationService {
 
   /// Block a user
   Future<void> blockUser(String userId) async {
-    final currentUserId = pb.authStore.model?.id;
+    final currentUserId = pb.authStore.record?.id;
     if (currentUserId == null) return;
 
     await pb.collection('blocks').create(body: {
@@ -17,7 +17,7 @@ class PbModerationService {
 
   /// Unblock a user
   Future<void> unblockUser(String targetUserId) async {
-    final currentUserId = pb.authStore.model?.id;
+    final currentUserId = pb.authStore.record?.id;
     if (currentUserId == null) return;
 
     try {
@@ -32,7 +32,7 @@ class PbModerationService {
 
   /// Get list of blocked users by current user
   Future<List<String>> getBlockedUserIds() async {
-    final currentUserId = pb.authStore.model?.id;
+    final currentUserId = pb.authStore.record?.id;
     if (currentUserId == null) return [];
 
     try {
@@ -51,7 +51,7 @@ class PbModerationService {
     required String subjectId,
     required String reason,
   }) async {
-    final currentUserId = pb.authStore.model?.id;
+    final currentUserId = pb.authStore.record?.id;
     if (currentUserId == null) return;
 
     await pb.collection('reports').create(body: {
@@ -65,7 +65,7 @@ class PbModerationService {
 
   /// Check if a user is blocked
   Future<bool> isBlocked(String targetUserId) async {
-    final currentUserId = pb.authStore.model?.id;
+    final currentUserId = pb.authStore.record?.id;
     if (currentUserId == null) return false;
 
     try {

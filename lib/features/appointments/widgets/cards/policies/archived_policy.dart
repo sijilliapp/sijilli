@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sijilli/models/appointment.dart';
 import 'package:sijilli/features/appointments/widgets/cards/policies/standard_policy.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class ArchivedPolicy extends StandardPolicy {

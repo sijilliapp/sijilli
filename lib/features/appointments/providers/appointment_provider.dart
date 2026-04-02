@@ -38,7 +38,7 @@ class AppointmentProvider extends ChangeNotifier {
     bool changed = false;
     
     if (userId != _currentUserId || hijriAdjustment != _currentHijriAdjustment) {
-      debugPrint('🔄 AppointmentProvider: User/Adjustment changed from $_currentUserId to $userId');
+      print('🔄 AppointmentProvider: User/Adjustment changed from $_currentUserId to $userId');
       _currentUserId = userId;
       _currentHijriAdjustment = hijriAdjustment;
       
@@ -89,8 +89,8 @@ class AppointmentProvider extends ChangeNotifier {
     if (_currentUserId == null) return 0;
     return _appointments.where((a) => 
       a.hostId != _currentUserId && 
-      a.currentUserInvitation?.status == InvitationStatus.pending &&
-      a.currentUserInvitation?.postStatus == PostStatus.published &&
+      a.viewerRecord?.status == InvitationStatus.pending &&
+      a.viewerRecord?.postStatus == PostStatus.published &&
       !a.isPast &&
       !a.isCancelled &&
       !a.isDeleted
@@ -101,8 +101,8 @@ class AppointmentProvider extends ChangeNotifier {
   AvatarStatus get avatarStatus {
     // Ensure we only consider PUBLISHED and ACCEPTED appointments
     final activeAppointments = _appointments.where((a) => 
-      a.currentUserInvitation?.postStatus == PostStatus.published &&
-      a.currentUserInvitation?.status == InvitationStatus.accepted
+      a.viewerRecord?.postStatus == PostStatus.published &&
+      a.viewerRecord?.status == InvitationStatus.accepted
     );
 
     if (activeAppointments.any((a) => a.isNow && !a.isCancelled && !a.isUserDeleted)) {
@@ -120,14 +120,14 @@ class AppointmentProvider extends ChangeNotifier {
     try {
       final cached = await _localDb.getAppointments();
       if (cached.isNotEmpty) {
-        debugPrint('📦 Loaded ${cached.length} appointments from local DB');
+        print('📦 Loaded ${cached.length} appointments from local DB');
         _appointments = cached;
         _sortAppointments();
       } else {
-         debugPrint('📦 Local DB empty');
+         print('📦 Local DB empty');
       }
     } catch (e) {
-      debugPrint('Failed to load local appointments: $e');
+      print('Failed to load local appointments: $e');
     } finally {
       // Don't set loading false yet, we chain fetch immediately
       notifyListeners();
@@ -185,7 +185,7 @@ class AppointmentProvider extends ChangeNotifier {
         );
         
         // ⚠️ IMPORTANT: Always overwrite with fresh data from server
-        debugPrint('☁️ Fetched ${fresh.length} fresh appointments from server');
+        print('☁️ Fetched ${fresh.length} fresh appointments from server');
         _appointments = fresh;
         _sortAppointments();
         
@@ -201,17 +201,17 @@ class AppointmentProvider extends ChangeNotifier {
                 // التحقق من أن التغيير يخص المستخدم الحالي (user field in invitation)
                 final eventUser = e.record?.data['user']?.toString();
                 if (eventUser == userId) {
-                  debugPrint('🔔 Realtime Event for me: ${e.action}');
+                  print('🔔 Realtime Event for me: ${e.action}');
                   // Add a small delay robustly to avoid fetching mid-transaction
                   Future.delayed(const Duration(milliseconds: 500), () {
                     fetchAllInvitations();
                   });
                 } else {
-                  debugPrint('🔔 Realtime Event for others (${e.record?.id}), ignoring.');
+                  print('🔔 Realtime Event for others (${e.record?.id}), ignoring.');
                 }
               });
             } catch (e) {
-               debugPrint('⚠️ Realtime subscription failed (non-fatal): $e');
+               print('⚠️ Realtime subscription failed (non-fatal): $e');
             }
           }
         }
@@ -223,7 +223,7 @@ class AppointmentProvider extends ChangeNotifier {
           completer.complete();
           return;
         }
-        debugPrint('❌ Fetch Appointments Error: $e');
+        print('❌ Fetch Appointments Error: $e');
         _errorMessage = e.toString();
         // ⚠️ Keep old data if fetch fails
         completer.completeError(e);
@@ -265,7 +265,7 @@ class AppointmentProvider extends ChangeNotifier {
            completer.complete();
            return;
         }
-        debugPrint('❌ Fetch All Invitations Error: $e');
+        print('❌ Fetch All Invitations Error: $e');
         _errorMessage = e.toString();
         completer.completeError(e);
       } finally {
@@ -323,7 +323,7 @@ class AppointmentProvider extends ChangeNotifier {
     if (index == -1) return;
 
     final appointment = _appointments[index];
-    final invitationId = appointment.currentUserInvitation?.id;
+    final invitationId = appointment.viewerRecord?.id;
     if (invitationId == null) return;
 
     final now = DateTime.now();
@@ -345,13 +345,16 @@ class AppointmentProvider extends ChangeNotifier {
         acceptanceMsg: acceptanceMsg,
       );
       
-      final updatedInv = appointment.currentUserInvitation!.copyWith(
+      final updatedInv = appointment.viewerRecord!.copyWith(
         status: status,
         acceptedAt: acceptedAt,
         declinedAt: declinedAt,
       );
       
-      _appointments[index] = appointment.copyWith(currentUserInvitation: updatedInv);
+      _appointments[index] = appointment.copyWith(
+        currentUserInvitation: appointment.currentUserInvitation == appointment.viewerRecord ? updatedInv : null,
+        viewerInvitation: appointment.viewerInvitation == appointment.viewerRecord ? updatedInv : null,
+      );
       notifyListeners();
 
       // Delay fetching to allow PocketBase to process hooks and evaluation logic
@@ -374,7 +377,7 @@ class AppointmentProvider extends ChangeNotifier {
     if (index == -1) return;
 
     final appointment = _appointments[index];
-    final originalInv = appointment.currentUserInvitation;
+    final originalInv = appointment.viewerRecord;
     if (originalInv == null) return;
 
     // 1. Optimistic Update: Update local state immediately
@@ -384,7 +387,10 @@ class AppointmentProvider extends ChangeNotifier {
       personalNote: personalNote ?? originalInv.personalNote,
     );
     
-    _appointments[index] = appointment.copyWith(currentUserInvitation: updatedInv);
+    _appointments[index] = appointment.copyWith(
+      currentUserInvitation: appointment.currentUserInvitation == originalInv ? updatedInv : null,
+      viewerInvitation: appointment.viewerInvitation == originalInv ? updatedInv : null,
+    );
     notifyListeners();
 
     try {
@@ -400,13 +406,16 @@ class AppointmentProvider extends ChangeNotifier {
       // 3. Update local cache after successful network request
       await _localDb.saveAppointments(_appointments);
     } catch (e) {
-      debugPrint('❌ Failed to update settings: $e');
+      print('❌ Failed to update settings: $e');
       _errorMessage = 'Failed to update settings: $e';
       
       // 4. Revert state on error
       final currentIndex = _appointments.indexWhere((a) => a.id == appointmentId);
       if (currentIndex != -1) {
-        _appointments[currentIndex] = appointment.copyWith(currentUserInvitation: originalInv);
+        _appointments[currentIndex] = appointment.copyWith(
+          currentUserInvitation: appointment.currentUserInvitation == originalInv ? originalInv : null,
+          viewerInvitation: appointment.viewerInvitation == originalInv ? originalInv : null,
+        );
       }
       
       notifyListeners();
@@ -419,18 +428,21 @@ class AppointmentProvider extends ChangeNotifier {
     if (index == -1) return;
 
     final appointment = _appointments[index];
-    final invitationId = appointment.currentUserInvitation?.id;
+    final invitationId = appointment.viewerRecord?.id;
     if (invitationId == null) return;
 
     try {
       await _invitationService.updateInvitationStatus(
         invitationId, 
-        appointment.currentUserInvitation!.status, 
+        appointment.viewerRecord!.status, 
         postStatus: PostStatus.archived
       );
       
-      final updatedInv = appointment.currentUserInvitation!.copyWith(postStatus: PostStatus.archived);
-      _appointments[index] = appointment.copyWith(currentUserInvitation: updatedInv);
+      final updatedInv = appointment.viewerRecord!.copyWith(postStatus: PostStatus.archived);
+      _appointments[index] = appointment.copyWith(
+        currentUserInvitation: appointment.currentUserInvitation == appointment.viewerRecord ? updatedInv : null,
+        viewerInvitation: appointment.viewerInvitation == appointment.viewerRecord ? updatedInv : null,
+      );
       _appointments.removeAt(index);
       
       notifyListeners();
@@ -447,13 +459,13 @@ class AppointmentProvider extends ChangeNotifier {
     if (index == -1) return;
 
     final appointment = _archivedAppointments[index];
-    final invitationId = appointment.currentUserInvitation?.id;
+    final invitationId = appointment.viewerRecord?.id;
     if (invitationId == null) return;
 
     try {
       await _invitationService.updateInvitationStatus(
         invitationId, 
-        appointment.currentUserInvitation!.status, 
+        appointment.viewerRecord!.status, 
         postStatus: PostStatus.published
       );
       
@@ -464,7 +476,7 @@ class AppointmentProvider extends ChangeNotifier {
       fetchAppointments();
     } catch (e) {
       _errorMessage = 'Failed to unarchive invitation: $e';
-      debugPrint('Error unarchiving: $e');
+      print('Error unarchiving: $e');
       notifyListeners();
     }
   }
@@ -482,7 +494,7 @@ class AppointmentProvider extends ChangeNotifier {
       _archivedAppointments.sort((a, b) => b.startAt.compareTo(a.startAt));
       notifyListeners();
     } catch (e) {
-      debugPrint('Failed to fetch archived: $e');
+      print('Failed to fetch archived: $e');
     }
   }
 
@@ -499,7 +511,7 @@ class AppointmentProvider extends ChangeNotifier {
       _trashedAppointments.sort((a, b) => b.startAt.compareTo(a.startAt));
       notifyListeners();
     } catch (e) {
-      debugPrint('Failed to fetch trash: $e');
+      print('Failed to fetch trash: $e');
     }
   }
 
@@ -519,7 +531,7 @@ class AppointmentProvider extends ChangeNotifier {
         ? _appointments[index] 
         : _archivedAppointments[index];
         
-    final invitationId = appointment.currentUserInvitation?.id;
+    final invitationId = appointment.viewerRecord?.id;
     if (invitationId == null) return;
 
     final bool isHost = appointment.hostId == _currentUserId;
@@ -529,7 +541,7 @@ class AppointmentProvider extends ChangeNotifier {
         await _apptService.updateAppointment(appointmentId, {'is_deleted': true});
       }
 
-      var newStatus = appointment.currentUserInvitation!.status;
+      var newStatus = appointment.viewerRecord!.status;
       if (newStatus == InvitationStatus.accepted) {
          newStatus = InvitationStatus.deletedAfterAccept; 
       }
@@ -617,9 +629,9 @@ class AppointmentProvider extends ChangeNotifier {
       if (appt.id == excludeId) return false;
       
       if (appt.isCancelled || appt.isDeleted || appt.isUserDeleted) return false;
-      if (appt.currentUserInvitation?.postStatus == PostStatus.trash) return false;
+      if (appt.viewerRecord?.postStatus == PostStatus.trash) return false;
       
-      if (appt.currentUserInvitation?.status == InvitationStatus.declined) return false;
+      if (appt.viewerRecord?.status == InvitationStatus.declined) return false;
       
       final apptStart = appt.startAt;
       final apptEnd = appt.startAt.add(Duration(minutes: appt.duration));

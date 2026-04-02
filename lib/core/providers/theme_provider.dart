@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:adhan/adhan.dart';
 import '../services/location_service.dart';
 
 class ThemeProvider extends ChangeNotifier {
-  String _fontFamily = 'Default';
+  String _fontFamily = kIsWeb ? 'Tajawal' : 'Default';
   static const String keyFontFamily = 'font_family';
   
   // Theme Mode
@@ -36,7 +37,7 @@ class ThemeProvider extends ChangeNotifier {
 
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    _fontFamily = prefs.getString(keyFontFamily) ?? 'Default';
+    _fontFamily = prefs.getString(keyFontFamily) ?? (kIsWeb ? 'Tajawal' : 'Default');
     _currentTheme = prefs.getString(keyThemeMode) ?? 'light';
     
     // Automatically check sunset if auto
@@ -58,7 +59,7 @@ class ThemeProvider extends ChangeNotifier {
        
        updateSunsetStatus(coords);
     } catch (e) {
-      debugPrint('Theme Sunset Check Error: $e');
+      print('Theme Sunset Check Error: $e');
     }
   }
   

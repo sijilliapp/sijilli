@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:hijri/hijri_calendar.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_dimens.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class UnifiedDatePicker extends StatefulWidget {
@@ -103,7 +101,7 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
             boxShadow: [
               if (!isDark)
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -167,10 +165,10 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
         decoration: BoxDecoration(
           color: isActive 
-              ? AppColors.primary.withOpacity(isDark ? 0.15 : 0.04) 
+              ? AppColors.primary.withValues(alpha: isDark ? 0.15 : 0.04) 
               : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
-          border: isActive ? Border.all(color: AppColors.primary.withOpacity(isDark ? 0.3 : 0.1)) : null,
+          border: isActive ? Border.all(color: AppColors.primary.withValues(alpha: isDark ? 0.3 : 0.1)) : null,
         ),
         child: Row(
           children: [
@@ -258,7 +256,7 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
                       : (isDark ? Colors.grey.shade700 : Colors.grey.shade200),
                 ),
                 boxShadow: isSelected ? [
-                  BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2))
+                  BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 4, offset: const Offset(0, 2))
                 ] : null,
               ),
               child: Column(
@@ -287,7 +285,7 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                     decoration: BoxDecoration(
                       color: isSelected 
-                          ? Colors.white.withOpacity(0.2) 
+                          ? Colors.white.withValues(alpha: 0.2) 
                           : (isDark ? Colors.grey.shade700 : Colors.grey.shade100),
                       borderRadius: BorderRadius.circular(4),
                     ),
@@ -528,7 +526,7 @@ class _BasePickerSheet extends StatelessWidget {
                   height: 46,
                   margin: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: Colors.grey.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),

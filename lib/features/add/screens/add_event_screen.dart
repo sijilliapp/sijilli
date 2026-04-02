@@ -4,7 +4,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../../../core/services/autocomplete_service.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../models/appointment.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -38,7 +37,7 @@ class AddEventScreen extends StatelessWidget {
 class _AddEventScreenContent extends StatefulWidget {
   final Appointment? initialAppointment;
   final UserModel? initialGuest;
-  const _AddEventScreenContent({super.key, this.initialAppointment, this.initialGuest});
+  const _AddEventScreenContent({this.initialAppointment, this.initialGuest});
 
   @override
   State<_AddEventScreenContent> createState() => _AddEventScreenContentState();
@@ -255,7 +254,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
           onPressed: provider.isSaving ? null : _clearForm, 
           child: Text(
             context.l10n.clear,
-            style: TextStyle(color: provider.isSaving ? Colors.grey : AppColors.primary.withOpacity(0.7)),
+            style: TextStyle(color: provider.isSaving ? Colors.grey : AppColors.primary.withValues(alpha: 0.7)),
           ),
         ),
         provider.isSaving 
@@ -311,7 +310,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
               builder: (context, auth, _) {
                 final name = auth.user?.name ?? auth.user?.username ?? '';
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
                     '${context.l10n.you}: $name',
                     style: const TextStyle(
@@ -350,7 +349,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
                 onBuildingSelected: _onBuildingSelected,
               ), 
               
-            const SizedBox(height: AppDimens.space),
+            const SizedBox(height: AppDimens.spaceTiny),
             
             Consumer<AuthProvider>(
               builder: (context, auth, _) {
@@ -373,7 +372,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
               },
             ),
             
-            const SizedBox(height: 8),
+            const SizedBox(height: AppDimens.spaceXS),
 
             DateTimeSection(
               isHijri: provider.isHijri,
@@ -386,7 +385,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
               onSelectEndDate: () => _selectEndDate(provider),
             ),
             
-            const SizedBox(height: 16),
+            const SizedBox(height: AppDimens.spaceCompact),
             
             InviteesWidget(
               invitees: provider.selectedUsers.map((u) => u.name.isNotEmpty ? u.name : u.username).toList(),
@@ -396,7 +395,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
               onRemoveInvitee: provider.removeInvitee,
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: AppDimens.spaceCompact),
 
             // Recurrence
             if (provider.duration < 1440) 
@@ -410,7 +409,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
               onCountChanged: provider.setRecurrenceCount,
             ),
             
-            const SizedBox(height: 16),
+            const SizedBox(height: AppDimens.spaceCompact),
             
             // Link Field (Moved to Bottom)
             // Import CustomTextField if not available in this file scope (It might come from imports or EventFormWidget exports)

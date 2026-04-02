@@ -1,7 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pocketbase/pocketbase.dart';
-import 'package:sijilli/features/settings/services/pb_user_service.dart';
 
 // Note: This is an illustrative test structure since real PB integration needs complex mocking.
 void main() {

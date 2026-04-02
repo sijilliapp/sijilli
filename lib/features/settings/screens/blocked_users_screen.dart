@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/pulse_avatar.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/widgets/pulse_avatar.dart';
 import '../../profile/providers/moderation_provider.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class BlockedUsersScreen extends StatelessWidget {

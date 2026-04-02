@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:sijilli/core/constants/app_colors.dart';
-import 'package:sijilli/models/appointment.dart';
 import 'package:sijilli/features/appointments/widgets/cards/policies/standard_policy.dart';
 
 import 'package:provider/provider.dart';
 import 'package:sijilli/features/auth/providers/auth_provider.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class DeletedPolicy extends StandardPolicy {

@@ -33,7 +33,7 @@ class _EditableAvatarWidgetState extends State<EditableAvatarWidget> {
         _cropImage(image.path);
       }
     } catch (e) {
-      debugPrint('Error picking image: $e');
+      print('Error picking image: $e');
     }
   }
 
@@ -85,7 +85,7 @@ class _EditableAvatarWidgetState extends State<EditableAvatarWidget> {
         });
         widget.onImageCropped(_selectedAvatar);
       } catch (e) {
-        debugPrint('Error reading cropped bytes: $e');
+        print('Error reading cropped bytes: $e');
       }
     }
   }

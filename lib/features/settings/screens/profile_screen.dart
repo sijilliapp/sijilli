@@ -10,10 +10,8 @@ import 'package:sijilli/core/constants/app_dimens.dart';
 import 'package:sijilli/features/auth/providers/auth_provider.dart';
 import 'package:sijilli/features/appointments/providers/appointment_provider.dart';
 import 'package:sijilli/core/widgets/editable_avatar_widget.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import 'package:sijilli/core/widgets/custom_text_field.dart';
-import 'package:sijilli/features/home/widgets/profile_header.dart';
 import 'package:sijilli/features/home/widgets/profile/social_stats_row.dart';
 import 'package:sijilli/features/settings/screens/widgets/delete_account_button.dart';
 
@@ -206,7 +204,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: isAdmin ? Colors.red.withOpacity(0.1) : Colors.green.withOpacity(0.1),
+                                  color: isAdmin ? Colors.red.withValues(alpha: 0.1) : Colors.green.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(4),
                                   border: Border.all(
                                     color: isAdmin ? Colors.red : Colors.green,

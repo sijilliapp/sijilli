@@ -16,7 +16,7 @@ class AuthWrapper extends StatelessWidget {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
         // عرض شاشة التحميل أثناء التهيئة
-        debugPrint('🔄 AuthWrapper building with status: ${authProvider.status}');
+        print('🔄 AuthWrapper building with status: ${authProvider.status}');
         if (authProvider.status == AuthStatus.initial || 
             authProvider.status == AuthStatus.loading) {
           return const LoadingScreen();
@@ -53,7 +53,7 @@ class LoadingScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),

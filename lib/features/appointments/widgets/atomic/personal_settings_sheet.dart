@@ -33,10 +33,10 @@ class _PersonalSettingsSheetState extends State<PersonalSettingsSheet> {
     final catProvider = context.watch<CategoryProvider>();
     
     return Container(
-      padding: EdgeInsets.all(AppDimens.spaceXL),
+      padding: const EdgeInsets.all(AppDimens.spaceXL),
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppDimens.radiusXXL)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppDimens.radiusXXL)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -47,31 +47,31 @@ class _PersonalSettingsSheetState extends State<PersonalSettingsSheet> {
             children: [
               Text(
                 context.l10n.detailsPersonalSettings,
-                style: TextStyle(fontSize: AppDimens.textSizeM, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: AppDimens.textSizeM, fontWeight: FontWeight.bold),
               ),
               IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
             ],
           ),
-          SizedBox(height: AppDimens.spaceL),
+          const SizedBox(height: AppDimens.spaceL),
           
           // الخصوصية
           Text(context.l10n.privacyProfileTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
-          SizedBox(height: AppDimens.spaceM),
+          const SizedBox(height: AppDimens.spaceM),
           Row(
             children: [
               _buildPrivacyOption('public', context.l10n.privacyPublicLabel, Icons.public),
-              SizedBox(width: AppDimens.spaceS),
+              const SizedBox(width: AppDimens.spaceS),
               _buildPrivacyOption('followers', context.l10n.privacyFollowersLabel, Icons.people),
-              SizedBox(width: AppDimens.spaceS),
+              const SizedBox(width: AppDimens.spaceS),
               _buildPrivacyOption('private', context.l10n.privacyPrivateLabel, Icons.lock),
             ],
           ),
           
-          SizedBox(height: AppDimens.spaceXL),
+          const SizedBox(height: AppDimens.spaceXL),
           
           // التصنيف
           Text(context.l10n.detailsPersonalCategory, style: const TextStyle(fontWeight: FontWeight.bold)),
-          SizedBox(height: AppDimens.spaceM),
+          const SizedBox(height: AppDimens.spaceM),
           SizedBox(
             height: 40,
             child: ListView(
@@ -83,7 +83,7 @@ class _PersonalSettingsSheetState extends State<PersonalSettingsSheet> {
                   child: ChoiceChip(
                     label: Text(context.l10n.detailsNoCategory),
                     selected: _selectedCategories == null,
-                    selectedColor: AppColors.primary.withOpacity(0.2),
+                    selectedColor: AppColors.primary.withValues(alpha: 0.2),
                     onSelected: (val) => setState(() => _selectedCategories = null),
                   ),
                 ),
@@ -93,7 +93,7 @@ class _PersonalSettingsSheetState extends State<PersonalSettingsSheet> {
                   child: ChoiceChip(
                     label: Text(cat.name),
                     selected: _selectedCategories?.id == cat.id,
-                    selectedColor: AppColors.primary.withOpacity(0.2),
+                    selectedColor: AppColors.primary.withValues(alpha: 0.2),
                     onSelected: (val) => setState(() => _selectedCategories = cat),
                   ),
                 )),
@@ -107,12 +107,12 @@ class _PersonalSettingsSheetState extends State<PersonalSettingsSheet> {
             ),
           ),
           
-          SizedBox(height: AppDimens.spaceXL),
+          const SizedBox(height: AppDimens.spaceXL),
           
           // إجراءات سريعة
           if (!widget.appointment.isUserDeleted) ...[
             Text(context.l10n.detailsQuickActions, style: const TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: AppDimens.spaceM),
+            const SizedBox(height: AppDimens.spaceM),
             Row(
               children: [
                 _buildActionButton(
@@ -129,7 +129,7 @@ class _PersonalSettingsSheetState extends State<PersonalSettingsSheet> {
                     );
                   },
                 ),
-                SizedBox(width: AppDimens.spaceS),
+                const SizedBox(width: AppDimens.spaceS),
                 _buildActionButton(
                   label: widget.appointment.isArchived ? context.l10n.detailsUnarchive : context.l10n.detailsArchive,
                   icon: widget.appointment.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
@@ -143,7 +143,7 @@ class _PersonalSettingsSheetState extends State<PersonalSettingsSheet> {
                     Navigator.pop(context);
                   },
                 ),
-                SizedBox(width: AppDimens.spaceS),
+                const SizedBox(width: AppDimens.spaceS),
                 _buildActionButton(
                   label: context.l10n.delete,
                   icon: Icons.delete_outline_rounded,
@@ -157,7 +157,7 @@ class _PersonalSettingsSheetState extends State<PersonalSettingsSheet> {
           ] else ...[
              // For Trash items: "Cannot be restored, only cloned"
              Text(context.l10n.detailsQuickActions, style: const TextStyle(fontWeight: FontWeight.bold)),
-             SizedBox(height: AppDimens.spaceM),
+             const SizedBox(height: AppDimens.spaceM),
              Row(
               children: [
                 _buildActionButton(
@@ -176,11 +176,11 @@ class _PersonalSettingsSheetState extends State<PersonalSettingsSheet> {
                 ),
               ],
              ),
-             SizedBox(height: AppDimens.spaceS),
+             const SizedBox(height: AppDimens.spaceS),
              Container(
                padding: const EdgeInsets.all(12),
                decoration: BoxDecoration(
-                 color: Colors.red.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.15 : 0.05),
+                 color: Colors.red.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.15 : 0.05),
                  borderRadius: BorderRadius.circular(8),
                ),
                child: Row(
@@ -201,7 +201,7 @@ class _PersonalSettingsSheetState extends State<PersonalSettingsSheet> {
              ),
           ],
           
-          SizedBox(height: AppDimens.spaceXXL),
+          const SizedBox(height: AppDimens.spaceXXL),
           
           // زر حفظ
           Container(
@@ -211,7 +211,7 @@ class _PersonalSettingsSheetState extends State<PersonalSettingsSheet> {
               borderRadius: BorderRadius.circular(AppDimens.radiusL),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.2),
+                  color: AppColors.primary.withValues(alpha: 0.2),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -257,9 +257,9 @@ class _PersonalSettingsSheetState extends State<PersonalSettingsSheet> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: AppDimens.spaceM),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.08),
+            color: color.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(AppDimens.radiusM),
-            border: Border.all(color: color.withOpacity(0.2)),
+            border: Border.all(color: color.withValues(alpha: 0.2)),
           ),
           child: Column(
             children: [
@@ -316,7 +316,7 @@ class _PersonalSettingsSheetState extends State<PersonalSettingsSheet> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: AppDimens.spaceM),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary.withOpacity(0.1) : (isDark ? Colors.grey.shade800 : Colors.grey.shade50),
+            color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : (isDark ? Colors.grey.shade800 : Colors.grey.shade50),
             borderRadius: BorderRadius.circular(AppDimens.radiusM),
             border: Border.all(color: isSelected ? AppColors.primary : (isDark ? Colors.grey.shade700 : Colors.grey.shade200)),
           ),

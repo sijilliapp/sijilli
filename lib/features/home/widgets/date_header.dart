@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:hijri/hijri_calendar.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import '../../../core/utils/app_date_formatter.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimens.dart';
 
 class DateHeader extends StatelessWidget {

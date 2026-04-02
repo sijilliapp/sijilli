@@ -3,7 +3,6 @@ import 'package:sijilli/core/constants/app_colors.dart';
 import 'package:sijilli/core/constants/app_dimens.dart';
 import 'package:sijilli/features/settings/services/pb_user_service.dart';
 import 'package:sijilli/features/profile/screens/follows_screen.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class SocialStatsRow extends StatefulWidget {
@@ -103,7 +102,7 @@ class _SocialStatsRowState extends State<SocialStatsRow> {
                     height: 16, 
                     child: CircularProgressIndicator(
                       strokeWidth: 2, 
-                      color: Theme.of(context).primaryColor.withOpacity(0.5),
+                      color: Theme.of(context).primaryColor.withValues(alpha: 0.5),
                     )
                   ),
                 )

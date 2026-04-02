@@ -133,7 +133,7 @@ class _PulseAvatarState extends State<PulseAvatar> with SingleTickerProviderStat
                           boxShadow: [
                             BoxShadow(
                               // Reduced opacity multiplier: 0.6 -> 0.4
-                              color: AppColors.primary.withOpacity(_opacityAnimation.value * AppConfig.avatarGlowOpacity),
+                              color: AppColors.primary.withValues(alpha: _opacityAnimation.value * AppConfig.avatarGlowOpacity),
                               // Reduced blurRadius: 15 -> 4 (25%)
                               blurRadius: 4 * _scaleAnimation.value,
                               // Reduced spreadRadius: 4 -> 1 (25%)

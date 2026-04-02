@@ -52,8 +52,10 @@ class LocationService {
           // استخدام دقة منخفضة (10كم) كما هو مطلوب لتوفير البطارية والسرعة
           // "100km square" implies roughly 10km radius is fine
           final position = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.low,
-            timeLimit: const Duration(seconds: 5), // لا ننتظر طويلاً
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.low,
+              timeLimit: Duration(seconds: 5),
+            ),
           );
           
           return GeoLocationData(
@@ -67,11 +69,11 @@ class LocationService {
         }
       }
     } catch (e) {
-      debugPrint('⚠️ GPS Location failed: $e');
+      print('⚠️ GPS Location failed: $e');
     }
 
     // 2. Fallback to IP Geolocation (دقة منخفضة - مدينة/دولة)
-    debugPrint('ℹ️ Falling back to IP Geolocation...');
+    print('ℹ️ Falling back to IP Geolocation...');
     return await getApproximateLocation();
   }
 
@@ -93,7 +95,7 @@ class LocationService {
         );
       }
     } catch (e) {
-      debugPrint('❌ IP Location failed: $e');
+      print('❌ IP Location failed: $e');
     }
 
     // 3. Fallback نهائي (الرياض - السعودية)

@@ -26,7 +26,7 @@ class ModerationProvider with ChangeNotifier {
       // We need to fetch the actual user models or at least their basic info
       // Let's modify the service or fetch them here
       final records = await PocketBaseClient.instance.pb.collection('blocks').getFullList(
-        filter: 'user = "${PocketBaseClient.instance.pb.authStore.model?.id}"',
+        filter: 'user = "${PocketBaseClient.instance.pb.authStore.record?.id}"',
         expand: 'blocked_user',
       );
       
@@ -35,7 +35,7 @@ class ModerationProvider with ChangeNotifier {
           .map((r) => UserModel.fromJson(r.expand['blocked_user']!.first.toJson()))
           .toList();
     } catch (e) {
-      debugPrint('Error fetching blocked users: $e');
+      print('Error fetching blocked users: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

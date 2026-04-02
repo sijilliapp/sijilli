@@ -29,7 +29,7 @@ class PbUserService {
         throw Exception('يجب تسجيل الدخول أولاً');
       }
       
-      final userId = _pb.authStore.model!.id;
+      final userId = _pb.authStore.record!.id;
       final List<http.MultipartFile> files = [];
 
       if (avatarFile != null) {
@@ -108,17 +108,15 @@ class PbUserService {
         }
 
         // Update Cache
-        if (user != null) {
-          _profileCache[usernameOrId] = user;
-          _profileCache[user.id] = user;
-          if (user.username != null) _profileCache[user.username!] = user;
-          
-          final now = DateTime.now();
-          _cacheTime[usernameOrId] = now;
-          _cacheTime[user.id] = now;
-          if (user.username != null) _cacheTime[user.username!] = now;
-        }
-
+        _profileCache[usernameOrId] = user;
+        _profileCache[user.id] = user;
+        _profileCache[user.username] = user;
+        
+        final now = DateTime.now();
+        _cacheTime[usernameOrId] = now;
+        _cacheTime[user.id] = now;
+        _cacheTime[user.username] = now;
+      
         return user;
 
       } catch (e) {
@@ -154,7 +152,7 @@ class PbUserService {
   /// جلب المتابَعين (الأشخاص الذين يتابعهم المستخدم)
   Future<List<UserModel>> getFollowedUsers({String? userId}) async {
     try {
-      final targetId = userId ?? _pb.authStore.model?.id;
+      final targetId = userId ?? _pb.authStore.record?.id;
       if (targetId == null) return [];
       
       // Use getFullList to fetch ALL records, not just first page (default 30)
@@ -187,7 +185,7 @@ class PbUserService {
   Future<String> getFollowStatus(String targetUserId) async {
     try {
       if (!_pb.authStore.isValid) return 'none';
-      final userId = _pb.authStore.model!.id;
+      final userId = _pb.authStore.record!.id;
       
       final result = await _pb.collection('follows').getList(
         filter: 'follower = "$userId" && following = "$targetUserId"',
@@ -212,7 +210,7 @@ class PbUserService {
   Future<bool> isFriend(String targetUserId) async {
     try {
       if (!_pb.authStore.isValid) return false;
-      final userId = _pb.authStore.model!.id;
+      final userId = _pb.authStore.record!.id;
       
       // فحص المتابعة من طرفي
       final myFollowStatus = await getFollowStatus(targetUserId);
@@ -235,7 +233,7 @@ class PbUserService {
   Future<bool> isUserFollowingMe(String targetUserId) async {
     try {
       if (!_pb.authStore.isValid) return false;
-      final userId = _pb.authStore.model!.id;
+      final userId = _pb.authStore.record!.id;
       
       final result = await _pb.collection('follows').getList(
         filter: 'follower = "$targetUserId" && following = "$userId"', // Removed status = "pending" to check for any follow
@@ -281,7 +279,7 @@ class PbUserService {
            continue;
         }
         
-        final userId = _pb.authStore.model!.id;
+        final userId = _pb.authStore.record!.id;
 
         // جلب السجلات المتعلقة بالطرفين (أنا أتابعه أو هو يتابعني)
         final records = await _pb.collection('follows').getList(
@@ -316,7 +314,7 @@ class PbUserService {
             });
         }
       } catch (e) {
-        debugPrint('⚠️ Error getting accreditation status for $targetUserId: $e');
+        print('⚠️ Error getting accreditation status for $targetUserId: $e');
         if (!completer.isCompleted) {
             completer.complete({'status': 'none', 'isFriend': false, 'isBeingFollowed': false});
         }
@@ -333,7 +331,7 @@ class PbUserService {
   Future<void> accreditUser(String targetUserId) async {
     try {
       if (!_pb.authStore.isValid) return;
-      final userId = _pb.authStore.model!.id;
+      final userId = _pb.authStore.record!.id;
 
       // 1. البحث عن طلب وارد معلق
       final result = await _pb.collection('follows').getList(
@@ -355,7 +353,7 @@ class PbUserService {
               'status': 'accepted', // Always accepted during accreditation
             });
             // 🔔 Trigger Notification
-            final followerName = _pb.authStore.model?.data['name'] ?? 'مستخدم';
+            final followerName = _pb.authStore.record?.data['name'] ?? 'مستخدم';
             try {
               await _notificationService.createNotification(
                 targetUserId: targetUserId,
@@ -365,12 +363,12 @@ class PbUserService {
                 relatedId: userId,
               );
             } catch (e) {
-              debugPrint('⚠️ Failed to send notification: $e');
+              print('⚠️ Failed to send notification: $e');
             }
         }
       }
     } catch (e) {
-      debugPrint('🚨 Error in accreditUser: $e');
+      print('🚨 Error in accreditUser: $e');
       rethrow;
     }
   }
@@ -380,7 +378,7 @@ class PbUserService {
       throw Exception('يجب تسجيل الدخول أولاً للمتابعة');
     }
     
-    final userId = _pb.authStore.model!.id;
+    final userId = _pb.authStore.record!.id;
     if (userId == targetUserId) return; 
     
     try {
@@ -399,7 +397,7 @@ class PbUserService {
       });
 
       // 🔔 Trigger Notification
-    final followerName = _pb.authStore.model?.data['name'] ?? 'مستخدم';
+    final followerName = _pb.authStore.record?.data['name'] ?? 'مستخدم';
     try {
       await _notificationService.createNotification(
         targetUserId: targetUserId,
@@ -409,7 +407,7 @@ class PbUserService {
         relatedId: userId,
       );
     } catch (e) {
-      debugPrint('⚠️ Failed to send notification: $e');
+      print('⚠️ Failed to send notification: $e');
     }
     } catch (e) {
       rethrow;
@@ -418,7 +416,7 @@ class PbUserService {
 
   /// إلغاء متابعة مستخدم
   Future<void> unfollowUser(String targetUserId) async {
-    final userId = _pb.authStore.model!.id;
+    final userId = _pb.authStore.record!.id;
     
     try {
       final result = await _pb.collection('follows').getList(
@@ -437,7 +435,7 @@ class PbUserService {
 
   /// حذف متابع (إجبار شخص على إلغاء متابعتي)
   Future<void> removeFollower(String targetUserId) async {
-    final userId = _pb.authStore.model!.id;
+    final userId = _pb.authStore.record!.id;
     
     try {
       final result = await _pb.collection('follows').getList(
@@ -457,7 +455,7 @@ class PbUserService {
   /// جلب المتابِعين (الأشخاص الذين يتابعون المستخدم الحالي أو مستخدم آخر)
   Future<List<UserModel>> getFollowers({String? userId}) async {
     try {
-      final targetId = userId ?? _pb.authStore.model?.id;
+      final targetId = userId ?? _pb.authStore.record?.id;
       if (targetId == null) return [];
       
       // Use getFullList instead of getList to correct pagination issues
@@ -490,7 +488,7 @@ class PbUserService {
   Future<List<RecordModel>> getIncomingFollowRequests() async {
     try {
       if (!_pb.authStore.isValid) return [];
-      final userId = _pb.authStore.model!.id;
+      final userId = _pb.authStore.record!.id;
       
       // Use getFullList
       final resultList = await _pb.collection('follows').getFullList(
@@ -508,7 +506,7 @@ class PbUserService {
   Future<List<RecordModel>> getOutgoingFollowRequests() async {
     try {
       if (!_pb.authStore.isValid) return [];
-      final userId = _pb.authStore.model!.id;
+      final userId = _pb.authStore.record!.id;
       
       final resultList = await _pb.collection('follows').getFullList(
         filter: 'follower = "$userId" && status = "pending"',
@@ -574,7 +572,7 @@ class PbUserService {
                  });
                  
                  // 🔔 Trigger Notification
-                 final followerName = _pb.authStore.model?.data['name'] ?? 'مستخدم';
+                 final followerName = _pb.authStore.record?.data['name'] ?? 'مستخدم';
                  try {
                    await _notificationService.createNotification(
                      targetUserId: requesterId,
@@ -584,7 +582,7 @@ class PbUserService {
                      relatedId: currentUserId,
                    );
                  } catch (e) {
-                   debugPrint('⚠️ Failed to send notification: $e');
+                   print('⚠️ Failed to send notification: $e');
                  }
              } else if (status == 'pending') {
                  // إذا كان يوجد طلب صادر منا معلق، نقبله فوراً (تحصيل حاصل)
@@ -599,13 +597,13 @@ class PbUserService {
              }
           }
         } catch (e) {
-          debugPrint('⚠️ Reciprocal follow partially failed but main request accepted: $e');
+          print('⚠️ Reciprocal follow partially failed but main request accepted: $e');
         }
       } else {
         await _pb.collection('follows').delete(requestId);
       }
     } catch (e) {
-      debugPrint('🚨 Error in respondToFollowRequest: $e');
+      print('🚨 Error in respondToFollowRequest: $e');
       rethrow;
     }
   }

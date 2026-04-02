@@ -5,7 +5,6 @@ import 'package:sijilli/core/extensions/context_l10n.dart';
 import 'package:sijilli/models/appointment.dart';
 import 'package:sijilli/core/widgets/pulse_avatar.dart';
 import 'package:sijilli/core/utils/app_date_formatter.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 
 class AppointmentParticipantsList extends StatelessWidget {
   final String? hostId;
@@ -79,9 +78,9 @@ class AppointmentParticipantsList extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.5), width: 0.5),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.5), width: 0.5),
                 ),
                 child: Text(
                   context.l10n.detailsOrganizer,

@@ -1,0 +1,5 @@
+CFBundleDisplayName = "سجلي Sijilli";
+NSCameraUsageDescription = "نحتاج للوصول إلى الكاميرا لالتقاط صور الملف الشخصي وصور المناسبات.";
+NSPhotoLibraryUsageDescription = "نحتاج للوصول إلى مكتبة الصور لاختيار صور المشاركين ومشاركة صور المناسبات.";
+NSLocationWhenInUseUsageDescription = "نحتاج للوصول إلى موقعك لعرض المناسبات القريبة واقتراح أماكن اللقاء.";
+NSCalendarsUsageDescription = "نحتاج للوصول إلى التقويم لمزامنة مواعيدك ومناسباتك.";

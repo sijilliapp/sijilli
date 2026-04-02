@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimens.dart';
 import '../services/contact_service.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class ContactScreen extends StatefulWidget {
@@ -86,10 +85,10 @@ class _ContactScreenState extends State<ContactScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Theme.of(context).brightness == Brightness.dark 
-                      ? AppColors.primary.withOpacity(0.1) 
-                      : AppColors.primary.withOpacity(0.05),
+                      ? AppColors.primary.withValues(alpha: 0.1) 
+                      : AppColors.primary.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   children: [
@@ -112,7 +111,7 @@ class _ContactScreenState extends State<ContactScreen> {
 
               // Type Dropdown
               DropdownButtonFormField<String>(
-                value: _selectedType,
+                initialValue: _selectedType,
                 decoration: InputDecoration(
                   labelText: context.l10n.contactMsgType,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

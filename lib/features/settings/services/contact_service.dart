@@ -15,7 +15,7 @@ class ContactService {
     }
 
     try {
-      final userId = _pb.authStore.model!.id;
+      final userId = _pb.authStore.record!.id;
       
       await _pb.collection(collectionName).create(body: {
         'user': userId,

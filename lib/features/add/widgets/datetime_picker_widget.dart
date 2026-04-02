@@ -3,7 +3,6 @@
 
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class DateTimePickerWidget extends StatelessWidget {

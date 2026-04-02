@@ -7,7 +7,6 @@ import 'package:sijilli/features/profile/widgets/user_cards/user_card.dart';
 import 'package:sijilli/features/profile/widgets/user_follow_button.dart';
 import 'package:sijilli/features/auth/providers/auth_provider.dart';
 import 'package:pocketbase/pocketbase.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import 'package:sijilli/core/services/pocketbase_client.dart';
 
@@ -63,7 +62,7 @@ class _FollowsScreenState extends State<FollowsScreen> {
         }
       });
     } catch (e) {
-      debugPrint('Error subscribing to follows realtime: $e');
+      print('Error subscribing to follows realtime: $e');
     }
   }
 

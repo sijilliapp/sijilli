@@ -45,7 +45,7 @@ class AppointmentCategorySelector extends StatelessWidget {
                     child: ChoiceChip(
                       label: Text(context.l10n.detailsNoCategory),
                       selected: selectedCategory == null,
-                      selectedColor: AppColors.primary.withOpacity(0.2),
+                      selectedColor: AppColors.primary.withValues(alpha: 0.2),
                       onSelected: (val) => onCategoryChanged(null),
                     ),
                   ),
@@ -55,7 +55,7 @@ class AppointmentCategorySelector extends StatelessWidget {
                     child: ChoiceChip(
                       label: Text(cat.name),
                       selected: selectedCategory?.id == cat.id,
-                      selectedColor: AppColors.primary.withOpacity(0.2),
+                      selectedColor: AppColors.primary.withValues(alpha: 0.2),
                       onSelected: (val) => onCategoryChanged(cat),
                     ),
                   )),

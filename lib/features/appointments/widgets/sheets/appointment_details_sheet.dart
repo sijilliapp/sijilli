@@ -12,7 +12,6 @@ import 'package:intl/intl.dart';
 import 'package:sijilli/core/utils/app_date_formatter.dart';
 import 'package:adhan/adhan.dart'; // For Sunset Calculation
 import 'package:hijri/hijri_calendar.dart'; // For robust Hijri
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 // Refactored Components
@@ -61,8 +60,8 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
   void initState() {
     super.initState();
     _appointment = widget.appointment;
-    _selectedPrivacy = widget.appointment.currentUserInvitation?.privacy ?? 'private';
-    _selectedCategories = widget.appointment.currentUserInvitation?.categories;
+    _selectedPrivacy = widget.appointment.viewerRecord?.privacy ?? 'private';
+    _selectedCategories = widget.appointment.viewerRecord?.categories;
     // _calculateData will be called in didChangeDependencies to support live updates
   }
 
@@ -314,7 +313,7 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
                       participants: _appointment.participants,
                       isPast: _appointment.isPast,
                       createdAt: _appointment.createdAt,
-                      viewerStatus: _appointment.currentUserInvitation?.status,
+                      viewerStatus: _appointment.viewerRecord?.status,
                     ),
 
                     const SizedBox(height: 40),

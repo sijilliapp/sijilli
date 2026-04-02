@@ -57,8 +57,8 @@ void main() async { // Changed to async
     try {
       FlutterError.presentError(details);
     } catch (e) {
-      debugPrint('⚠️ Flutter Error (Safe Log): ${details.exception}');
-      debugPrint('Stacktrace: ${details.stack}');
+      print('⚠️ Flutter Error (Safe Log): ${details.exception}');
+      print('Stacktrace: ${details.stack}');
     }
   };
   

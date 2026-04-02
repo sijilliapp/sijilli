@@ -3,22 +3,15 @@ import 'package:provider/provider.dart';
 import 'package:sijilli/features/auth/providers/auth_provider.dart';
 import 'package:sijilli/core/constants/app_colors.dart';
 import 'package:sijilli/core/constants/app_dimens.dart';
-import 'package:sijilli/models/user.dart';
 import 'package:sijilli/models/appointment.dart';
-import 'package:sijilli/features/settings/services/pb_user_service.dart';
-import 'package:sijilli/features/appointments/services/pb_appointment_browse_service.dart';
 import 'package:sijilli/features/home/widgets/profile_header.dart';
-import 'package:sijilli/features/appointments/widgets/appointment_card.dart';
 import 'package:sijilli/core/widgets/pulse_avatar.dart';
-import 'package:sijilli/features/profile/widgets/user_follow_button.dart';
-import 'package:sijilli/features/home/widgets/date_header.dart';
 import 'package:sijilli/core/widgets/folder_tab_bar.dart';
 import 'package:sijilli/features/home/widgets/profile_tabs/profile_appointments_tab.dart';
 import 'package:sijilli/features/home/widgets/profile_tabs/profile_articles_tab.dart';
 import 'package:sijilli/features/home/widgets/private_profile_wall.dart';
 import 'package:sijilli/features/home/providers/public_profile_provider.dart';
 import 'package:sijilli/features/profile/providers/moderation_provider.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class PublicProfileScreen extends StatefulWidget {
@@ -73,7 +66,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> with SingleTi
         final isLoading = profileProvider.isLoading;
         final error = profileProvider.error;
         final isFollowing = profileProvider.isFollowing;
-        final isFriend = profileProvider.isFriend;
         
         final isMe = user != null && user.id == authProvider.user?.id;
         final canView = (user?.isPublic ?? false) || isFollowing || isMe;
@@ -267,6 +259,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> with SingleTi
                   body: Container(
                     color: Theme.of(context).scaffoldBackgroundColor,
                     child: TabBarView(
+                      physics: const NeverScrollableScrollPhysics(),
                       controller: _tabController,
                       children: [
                         canView 

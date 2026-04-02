@@ -3,7 +3,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:sijilli/core/constants/app_colors.dart';
 import 'package:sijilli/core/utils/image_saver_util.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/models/user.dart';
 
 class ProfileActionsHelper {
@@ -178,7 +177,7 @@ class ProfileActionsHelper {
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: Text(
                   context.l10n.contactMethods,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey),
                 ),
               ),
               if (user.phone != null && user.phone!.isNotEmpty)
@@ -211,7 +210,7 @@ class ProfileActionsHelper {
                         await launchUrl(uri, mode: LaunchMode.externalApplication);
                       }
                     } catch (e) {
-                      debugPrint('Error: $e');
+                      print('Error: $e');
                     }
                   },
                 ),

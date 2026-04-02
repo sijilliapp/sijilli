@@ -66,9 +66,9 @@ class AuthProvider extends ChangeNotifier {
         try {
            final pb = PocketBaseClient.instance.pb;
            pb.authStore.save(_user!.token!, null); 
-           debugPrint('✅ AuthProvider: Restored local token to PocketBase AuthStore');
+           print('✅ AuthProvider: Restored local token to PocketBase AuthStore');
         } catch (e) {
-           debugPrint('⚠️ Failed to restore cloud session: $e');
+           print('⚠️ Failed to restore cloud session: $e');
         }
       }
       
@@ -91,11 +91,11 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final authData = await PocketBaseClient.instance.pb.collection('users').authRefresh();
-      final user = UserModel.fromJson(authData.record!.toJson(), token: authData.token);
+      final user = UserModel.fromJson(authData.record.toJson(), token: authData.token);
       await _updateUserLocally(user);
-      debugPrint('✅ AuthProvider: Session refreshed successfully');
+      print('✅ AuthProvider: Session refreshed successfully');
     } catch (e) {
-      debugPrint('⚠️ Session refresh failed: $e');
+      print('⚠️ Session refresh failed: $e');
       
       bool isPermanentError = false;
       if (e is ClientException) {
@@ -105,7 +105,7 @@ class AuthProvider extends ChangeNotifier {
       }
 
       if (isPermanentError) {
-         debugPrint('❌ Token invalid/expired permanently, logging out...');
+         print('❌ Token invalid/expired permanently, logging out...');
          await logout(); 
       }
     }
@@ -202,7 +202,7 @@ class AuthProvider extends ChangeNotifier {
       await prefs.remove('user_id');
       await prefs.remove('user_data');
     } catch (e) {
-      debugPrint('❌ Error clearing session: $e');
+      print('❌ Error clearing session: $e');
     }
   }
 
@@ -295,7 +295,7 @@ class AuthProvider extends ChangeNotifier {
       _recentUsernames = prefs.getStringList(keyRecentUsernames) ?? [];
       notifyListeners();
     } catch (e) {
-      debugPrint('⚠️ Error loading recent usernames: $e');
+      print('⚠️ Error loading recent usernames: $e');
     }
   }
 
@@ -311,7 +311,7 @@ class AuthProvider extends ChangeNotifier {
       _recentUsernames = current;
       notifyListeners();
     } catch (e) {
-      debugPrint('⚠️ Error saving recent username: $e');
+      print('⚠️ Error saving recent username: $e');
     }
   }
 

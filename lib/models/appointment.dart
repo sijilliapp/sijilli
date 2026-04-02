@@ -278,7 +278,8 @@ class Appointment {
   
   // ====================== البيانات الموسعة (Expand) ======================
   final UserModel? host; // بيانات المضيف الموسعة
-  final Invitation? currentUserInvitation; // نسخة/دعوة المستخدم الحالي
+  final Invitation? currentUserInvitation; // نسخة/دعوة السجل الحالي (صاحب الصفحة/السياق)
+  final Invitation? viewerInvitation; // دعوة المستخدم المشاهد (لأزرار التفاعل)
   final List<Invitation>? participants; // جميع المشاركين والدعوات
   
   // ====================== التواريخ ======================
@@ -324,6 +325,7 @@ class Appointment {
     this.sunset,
     this.host,
     this.currentUserInvitation,
+    this.viewerInvitation,
     this.participants,
     required this.createdAt,
     required this.updatedAt,
@@ -358,6 +360,11 @@ class Appointment {
     final currentUserInvitationJson = json['currentUserInvitation'] as Map<String, dynamic>?;
     Invitation? currentUserInvitation = currentUserInvitationJson != null 
         ? Invitation.fromJson(currentUserInvitationJson) 
+        : null;
+
+    final viewerInvitationJson = json['viewerInvitation'] as Map<String, dynamic>?;
+    Invitation? viewerInvitation = viewerInvitationJson != null 
+        ? Invitation.fromJson(viewerInvitationJson) 
         : null;
 
     // Handle Time Logic: Prefers 'start_at' (UTC), falls back to legacy 'date' + 'time'
@@ -451,6 +458,7 @@ class Appointment {
       sunset: json['sunset'] as String?,
       host: hostJson != null ? UserModel.fromJson(hostJson) : null,
       currentUserInvitation: currentUserInvitation,
+      viewerInvitation: viewerInvitation,
       participants: participants,
       createdAt: _parseDateTime(json['created']) ?? DateTime.now(),
       updatedAt: _parseDateTime(json['updated']) ?? DateTime.now(),
@@ -611,6 +619,7 @@ class Appointment {
     String? sunset,
     UserModel? host,
     Invitation? currentUserInvitation,
+    Invitation? viewerInvitation,
     List<Invitation>? participants,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -634,7 +643,7 @@ class Appointment {
       dateType: dateType ?? this.dateType,
       streamLink: streamLink ?? this.streamLink,
       appointmentGroupId: appointmentGroupId ?? this.appointmentGroupId,
-      isFirstComeFirstServed: isFirstComeFirstServed ?? this.isFirstComeFirstServed,
+      isFirstComeFirstServed: isFirstComeFirstServed ?? isFirstComeFirstServed,
       recurrenceType: recurrenceType ?? this.recurrenceType,
       recurrenceCount: recurrenceCount ?? this.recurrenceCount,
       recurrenceIndex: recurrenceIndex ?? this.recurrenceIndex,
@@ -643,6 +652,7 @@ class Appointment {
       sunset: sunset ?? this.sunset,
       host: host ?? this.host,
       currentUserInvitation: currentUserInvitation ?? this.currentUserInvitation,
+      viewerInvitation: viewerInvitation ?? this.viewerInvitation,
       participants: participants ?? this.participants,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

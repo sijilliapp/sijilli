@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../models/user.dart';
 import '../../settings/services/pb_user_service.dart';
 import '../../add/screens/add_event_screen.dart';
 import '../../../core/constants/app_colors.dart';
@@ -33,7 +32,7 @@ class _UserFollowButtonState extends State<UserFollowButton> {
   String _status = 'none'; // 'none', 'pending', 'accepted'
   bool _isFriend = false; // جديد: هل العلاقة متبادلة؟
   bool _isBeingFollowed = false; // هل هذا المستخدم يتابعني؟
-  bool _isActionLoading = false;
+  final bool _isActionLoading = false;
   bool _isLoading = true;
 
   @override
@@ -51,7 +50,7 @@ class _UserFollowButtonState extends State<UserFollowButton> {
     }
   }
 
-  Future<void> _checkStatus({bool silent = false}) async {
+  Future<void> _checkStatus() async {
     if (!mounted) return;
     try {
       final results = await _userService.getAccreditationStatus(widget.userId);
@@ -286,7 +285,7 @@ class _UserFollowButtonState extends State<UserFollowButton> {
               height: 14,
               child: CircularProgressIndicator(
                 strokeWidth: 2, 
-                color: textColor.withOpacity(0.5),
+                color: textColor.withValues(alpha: 0.5),
               ),
             )
           else ...[
@@ -337,7 +336,7 @@ class _UserFollowButtonState extends State<UserFollowButton> {
             border: hasBorder ? Border.all(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300) : null,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),

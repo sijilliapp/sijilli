@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hijri/hijri_calendar.dart';
 import '../constants/app_colors.dart';
-import '../../l10n/app_localizations.dart';
 import '../../core/extensions/context_l10n.dart';
 import '../utils/app_date_formatter.dart';
 
@@ -235,7 +234,7 @@ class _HijriPickerSheetState extends State<_HijriPickerSheet> {
                   height: 40,
                   margin: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: Colors.grey.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),

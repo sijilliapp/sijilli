@@ -66,17 +66,17 @@ class CustomTextField extends StatelessWidget {
         suffixIcon: suffixIcon,
         filled: true,
         fillColor: isDark ? Colors.grey.shade800 : Colors.white,
-        contentPadding: EdgeInsets.symmetric(
+        contentPadding: const EdgeInsets.symmetric(
           horizontal: AppDimens.padding,
           vertical: AppDimens.padding,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimens.radius),
-          borderSide: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+          borderSide: BorderSide(color: isDark ? Colors.grey.shade600 : Colors.grey.shade400),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimens.radius),
-          borderSide: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+          borderSide: BorderSide(color: isDark ? Colors.grey.shade600 : Colors.grey.shade400),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimens.radius),

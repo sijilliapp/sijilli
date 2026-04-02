@@ -21,7 +21,7 @@ class PocketBaseClient {
   UserModel? get currentUser {
     if (!pb.authStore.isValid) return null;
     try {
-      final record = pb.authStore.model;
+      final record = pb.authStore.record;
       if (record != null) {
         return UserModel.fromJson(record.toJson(), token: pb.authStore.token);
       }

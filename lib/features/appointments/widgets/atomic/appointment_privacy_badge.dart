@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../models/appointment.dart';
 import 'interaction_capsule.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class AppointmentPrivacyBadge extends StatelessWidget {
@@ -24,14 +23,14 @@ class AppointmentPrivacyBadge extends StatelessWidget {
 
     if (appointment.isPublic) {
       contentColor = isDark ? Colors.blue.shade300 : Colors.blue.shade700;
-      bgColor = isDark ? Colors.blue.shade900.withOpacity(0.3) : Colors.blue.shade50;
-      borderColor = isDark ? Colors.blue.shade300.withOpacity(0.5) : Colors.blue.shade300.withOpacity(0.5);
+      bgColor = isDark ? Colors.blue.shade900.withValues(alpha: 0.3) : Colors.blue.shade50;
+      borderColor = isDark ? Colors.blue.shade300.withValues(alpha: 0.5) : Colors.blue.shade300.withValues(alpha: 0.5);
       icon = Icons.public;
       label = context.l10n.privacyPublic;
     } else if (appointment.isFollowers) {
       contentColor = isDark ? Colors.orange.shade300 : Colors.orange.shade800;
-      bgColor = isDark ? Colors.orange.shade900.withOpacity(0.3) : Colors.orange.shade50; // Crisp Orange
-      borderColor = isDark ? Colors.orange.shade300.withOpacity(0.5) : Colors.orange.shade300.withOpacity(0.5);
+      bgColor = isDark ? Colors.orange.shade900.withValues(alpha: 0.3) : Colors.orange.shade50; // Crisp Orange
+      borderColor = isDark ? Colors.orange.shade300.withValues(alpha: 0.5) : Colors.orange.shade300.withValues(alpha: 0.5);
       icon = Icons.people_outline;
       label = context.l10n.privacyFollowers;
     } else {
@@ -49,7 +48,7 @@ class AppointmentPrivacyBadge extends StatelessWidget {
       backgroundColor: bgColor,
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.05),
+          color: Colors.black.withValues(alpha: 0.05),
           blurRadius: 4,
           offset: const Offset(0, 2),
         ),

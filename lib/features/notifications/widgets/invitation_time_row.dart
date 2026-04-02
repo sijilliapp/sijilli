@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../features/auth/providers/auth_provider.dart';
 import '../../../models/appointment.dart';
 import '../../../core/constants/app_dimens.dart';
 import '../../../core/utils/app_date_formatter.dart';
@@ -25,12 +23,12 @@ class InvitationTimeRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: isDark 
-            ? Colors.white.withOpacity(0.05) 
-            : (status == InvitationStatus.pending ? Colors.white.withOpacity(0.95) : Colors.grey.shade50),
+            ? Colors.white.withValues(alpha: 0.05) 
+            : (status == InvitationStatus.pending ? Colors.white.withValues(alpha: 0.95) : Colors.grey.shade50),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
             color: isDark 
-              ? Colors.white.withOpacity(0.1) 
+              ? Colors.white.withValues(alpha: 0.1) 
               : (status == InvitationStatus.pending ? Colors.transparent : Colors.grey.shade200)
         ),
       ),

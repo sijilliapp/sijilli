@@ -131,7 +131,7 @@ class _InvitationTileState extends State<InvitationTile> {
     Color backgroundColor = isDark ? Theme.of(context).cardColor : Colors.white;
     if (status == InvitationStatus.pending && !widget.appointment.isDeleted) {
        // 🟡 Waiting color (Light Alert)
-       backgroundColor = isDark ? AppColors.alert.withOpacity(0.15) : AppColors.alertLight.withOpacity(0.12);
+       backgroundColor = isDark ? AppColors.alert.withValues(alpha: 0.15) : AppColors.alertLight.withValues(alpha: 0.12);
     }
 
     return Container(
@@ -141,12 +141,12 @@ class _InvitationTileState extends State<InvitationTile> {
         color: backgroundColor,
         borderRadius: BorderRadius.circular(20), // 20px Radius
         border: status == InvitationStatus.pending && !widget.appointment.isDeleted
-            ? Border.all(color: AppColors.alert.withOpacity(0.3), width: 1)
+            ? Border.all(color: AppColors.alert.withValues(alpha: 0.3), width: 1)
             : null,
         boxShadow: [
           if (!isDark)
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

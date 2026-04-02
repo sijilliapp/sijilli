@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart'; 
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_dimens.dart';
 import '../../../../models/user.dart';
 import '../../../../core/utils/app_date_formatter.dart';
 import 'package:hijri/hijri_calendar.dart';
@@ -177,9 +176,9 @@ class _AppointmentConfirmationSheetState extends State<AppointmentConfirmationSh
                   margin: const EdgeInsets.only(bottom: 16),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                    border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
@@ -388,7 +387,7 @@ class _AppointmentConfirmationSheetState extends State<AppointmentConfirmationSh
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
+            color: Colors.black.withValues(alpha: 0.15),
             blurRadius: 8,
             offset: const Offset(2, 2),
           ),

@@ -32,7 +32,7 @@ class InteractionCapsule extends StatelessWidget {
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
-          border: Border.all(color: borderColor.withOpacity(borderOpacity), width: 1.5), // Slightly thicker/white border support
+          border: Border.all(color: borderColor.withValues(alpha: borderOpacity), width: 1.5), // Slightly thicker/white border support
           boxShadow: boxShadow,
         ),
         child: child,

@@ -96,7 +96,7 @@ class NotificationService {
     // However, to keep it clean, let's just return nothing here and let the provider call .subscribe directly
     // or wrap the subscription management here.
     // Let's go with a simple subscribe method that takes a callback.
-    return Stream.empty(); // Placeholder, actual logic in Provider likely easier to manage lifecycle.
+    return const Stream.empty(); // Placeholder, actual logic in Provider likely easier to manage lifecycle.
   }
   
   // Alternative: Expose subscribe method

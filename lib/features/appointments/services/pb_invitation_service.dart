@@ -136,7 +136,7 @@ class PbInvitationService {
              final guestName = guestUser.data['name'] ?? 'User';
              final apptTitle = appt.data['title'] ?? 'Appointment';
              
-             if (hostId != _pb.authStore.model?.id) {
+             if (hostId != _pb.authStore.record?.id) {
                await _notificationService.createNotification(
                   targetUserId: hostId,
                   title: acceptanceTitle ?? 'Invitation Accepted',
@@ -194,7 +194,7 @@ class PbInvitationService {
     }
 
     try {
-      final currentUserId = _pb.authStore.model?.id;
+      final currentUserId = _pb.authStore.record?.id;
       
       await _pb.collection(collectionInvitations).create(body: {
         'appointment': appointment.id,

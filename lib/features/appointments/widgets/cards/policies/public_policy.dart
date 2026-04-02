@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:sijilli/core/constants/app_colors.dart';
 import 'package:sijilli/models/appointment.dart';
-import 'package:sijilli/features/home/screens/public_profile_screen.dart';
 import 'package:sijilli/core/constants/app_dimens.dart';
 import 'package:sijilli/features/appointments/widgets/cards/appointment_card_policy.dart';
 import 'package:sijilli/core/widgets/pulse_avatar.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class PublicPolicy extends AppointmentCardPolicy {
@@ -73,7 +71,7 @@ class PublicPolicy extends AppointmentCardPolicy {
   @override
   Color get statusCapsuleBackgroundColor => appointment.isNow 
       ? AppColors.primary 
-      : (appointment.isUrgent ? AppColors.alert.withOpacity(0.1) : mainStatusColor.withOpacity(0.05));
+      : (appointment.isUrgent ? AppColors.alert.withValues(alpha: 0.1) : mainStatusColor.withValues(alpha: 0.05));
 
   @override
   Color get statusCapsuleTextColor => appointment.isNow ? Colors.white : (appointment.isUrgent ? AppColors.alert : mainStatusColor);

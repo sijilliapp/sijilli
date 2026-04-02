@@ -45,7 +45,7 @@ class UserStatusProvider extends ChangeNotifier {
         _statuses[userId] = newStatus;
         notifyListeners();
       } catch (e) {
-        debugPrint('Error fetching status for $userId: $e');
+        print('Error fetching status for $userId: $e');
       } finally {
         _fetchingIds.remove(userId);
       }

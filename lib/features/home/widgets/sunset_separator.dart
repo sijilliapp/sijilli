@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../core/constants/app_colors.dart';
 
 class SunsetSeparator extends StatelessWidget {
   final DateTime sunsetTime;
@@ -42,8 +41,8 @@ class SunsetSeparator extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Colors.orange.withOpacity(0.5),
-                    Colors.orange.withOpacity(0.0),
+                    Colors.orange.withValues(alpha: 0.5),
+                    Colors.orange.withValues(alpha: 0.0),
                   ],
                 ),
               ),

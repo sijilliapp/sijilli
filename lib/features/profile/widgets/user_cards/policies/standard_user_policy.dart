@@ -9,7 +9,7 @@ class StandardUserPolicy extends UserCardPolicy {
 
   @override
   Widget? buildAction() {
-    final currentUserId = PocketBaseClient.instance.pb.authStore.model?.id;
+    final currentUserId = PocketBaseClient.instance.pb.authStore.record?.id;
     if (user.id == currentUserId) return null;
 
     return UserFollowButton(

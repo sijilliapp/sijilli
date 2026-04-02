@@ -1,6 +1,4 @@
 import 'package:pocketbase/pocketbase.dart';
-import 'package:flutter/material.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 
 enum NotificationType {
   reminder,

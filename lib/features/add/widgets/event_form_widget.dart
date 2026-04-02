@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_dimens.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/services/autocomplete_service.dart';
 import 'word_river_widget.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class EventFormWidget extends StatelessWidget {
@@ -65,7 +63,7 @@ class EventFormWidget extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildPrivacyToggle(context),
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
 
         CustomTextField(
           controller: titleController,
@@ -81,7 +79,7 @@ class EventFormWidget extends StatelessWidget {
           curve: Curves.easeInOut,
           child: (isTitleFocused && suggestions.isNotEmpty && onWordSelected != null)
               ? Padding(
-                  padding: const EdgeInsets.only(top: 12),
+                  padding: const EdgeInsets.only(top: 4),
                   child: WordRiverWidget(
                     suggestions: suggestions,
                     onWordSelected: onWordSelected!,
@@ -92,7 +90,7 @@ class EventFormWidget extends StatelessWidget {
               : const SizedBox.shrink(),
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
         
         Row(
           children: [
@@ -123,7 +121,7 @@ class EventFormWidget extends StatelessWidget {
           curve: Curves.easeInOut,
           child: _shouldShowLocationSuggestions()
               ? Padding(
-                  padding: const EdgeInsets.only(top: 12),
+                  padding: const EdgeInsets.only(top: 4),
                   child: WordRiverWidget(
                     suggestions: isLocationFocused ? regionSuggestions : buildingSuggestions,
                     onWordSelected: isLocationFocused
@@ -136,9 +134,9 @@ class EventFormWidget extends StatelessWidget {
         ),
 
         if (streamLinkController != null) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
            Text(context.l10n.streamLink, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-           const SizedBox(height: 8),
+           const SizedBox(height: 4),
            Builder(
              builder: (context) {
                final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -217,7 +215,7 @@ class EventFormWidget extends StatelessWidget {
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             boxShadow: isSelected ? [
-              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2)),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2)),
             ] : null,
           ),
           child: Row(

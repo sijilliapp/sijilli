@@ -8,9 +8,6 @@ import 'package:sijilli/features/search/providers/search_provider.dart';
 import 'package:sijilli/features/profile/widgets/user_cards/user_card.dart';
 import 'package:sijilli/features/appointments/widgets/cards/base_appointment_card.dart';
 import 'package:sijilli/features/appointments/widgets/cards/policies/public_policy.dart';
-import 'package:sijilli/features/profile/providers/moderation_provider.dart';
-import 'package:sijilli/models/appointment.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -62,8 +59,8 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                AppColors.primary.withOpacity(isDark ? 0.3 : 0.8),
-                AppColors.primary.withOpacity(isDark ? 0.1 : 0.6),
+                AppColors.primary.withValues(alpha: isDark ? 0.3 : 0.8),
+                AppColors.primary.withValues(alpha: isDark ? 0.1 : 0.6),
               ],
             ),
           ),

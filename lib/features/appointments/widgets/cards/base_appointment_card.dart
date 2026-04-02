@@ -4,7 +4,6 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimens.dart';
 import '../../../../core/widgets/pulse_avatar.dart';
 import '../../../../models/appointment.dart';
-import '../../../../models/invitation.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../../profile/providers/moderation_provider.dart';
 import '../../../home/screens/public_profile_screen.dart';
@@ -14,7 +13,6 @@ import '../atomic/appointment_privacy_badge.dart';
 import '../atomic/interaction_capsule.dart';
 import '../atomic/guest_capsule.dart';
 import '../atomic/appointment_detail_item.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import 'package:sijilli/core/utils/app_date_formatter.dart';
 
@@ -37,7 +35,7 @@ class BaseAppointmentCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 0, vertical: AppDimens.spaceS),
       child: Material(
         elevation: appointment.isNow ? AppDimens.appointmentCardElevationNow : policy.elevation,
-        shadowColor: Colors.black.withOpacity(0.12),
+        shadowColor: Colors.black.withValues(alpha: 0.12),
         color: policy.cardColor,
         borderRadius: BorderRadius.circular(20),
         clipBehavior: Clip.antiAlias,
@@ -80,14 +78,14 @@ class _AppointmentCardHeader extends StatelessWidget {
         appointment.startAt.difference(DateTime.now()).inHours >= 24;
 
     Color textColor = isDark ? Colors.blue.shade300 : Colors.blue.shade700;
-    Color bgColor = isDark ? Colors.blue.shade900.withOpacity(0.3) : Colors.blue.shade50;
-    Color borderColor = isDark ? Colors.blue.shade300.withOpacity(0.5) : Colors.blue.shade300; 
+    Color bgColor = isDark ? Colors.blue.shade900.withValues(alpha: 0.3) : Colors.blue.shade50;
+    Color borderColor = isDark ? Colors.blue.shade300.withValues(alpha: 0.5) : Colors.blue.shade300; 
     FontWeight fontWeight = FontWeight.w600;
 
     if (appointment.isUrgent) {
       textColor = isDark ? Colors.orange.shade300 : Colors.orange.shade800;
-      bgColor = isDark ? Colors.orange.shade900.withOpacity(0.3) : Colors.orange.shade50;
-      borderColor = isDark ? Colors.orange.shade300.withOpacity(0.5) : Colors.orange.shade300.withOpacity(0.5);
+      bgColor = isDark ? Colors.orange.shade900.withValues(alpha: 0.3) : Colors.orange.shade50;
+      borderColor = isDark ? Colors.orange.shade300.withValues(alpha: 0.5) : Colors.orange.shade300.withValues(alpha: 0.5);
     } else if (appointment.isPast) {
       textColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
       bgColor = isDark ? Colors.grey.shade800 : Colors.grey.shade50;
@@ -114,7 +112,7 @@ class _AppointmentCardHeader extends StatelessWidget {
               backgroundColor: bgColor,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -236,15 +234,13 @@ class _AppointmentCardHeader extends StatelessWidget {
                 status: firstGuest.status,
                 extraGuests: extraCount,
                 onTap: policy.onGuestTap ?? () {
-                  if (firstGuest.userId != null) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PublicProfileScreen(usernameOrId: firstGuest.userId!),
-                      ),
-                    );
-                  }
-                },
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PublicProfileScreen(usernameOrId: firstGuest.userId),
+                    ),
+                  );
+                                },
               );
             }
           ),
@@ -273,7 +269,7 @@ class _AppointmentCardBody extends StatelessWidget {
             color: Theme.of(context).cardColor,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withValues(alpha: 0.08),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
               ),

@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
-import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/app_date_formatter.dart';
 import '../../../../models/appointment.dart';
-import '../../../../models/invitation.dart';
 import '../../../../core/widgets/pulse_avatar.dart';
-import '../../../auth/providers/auth_provider.dart';
 
 class AppointmentCardHelper {
   static String formatTimeText(Appointment appointment, BuildContext context) {

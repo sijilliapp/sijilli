@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../core/widgets/auth_wrapper.dart';
 import '../features/home/screens/public_profile_screen.dart';
 
 class AppRouter {

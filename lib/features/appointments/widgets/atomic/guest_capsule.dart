@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../models/appointment.dart';
-import '../../../../core/constants/app_dimens.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/app_date_formatter.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
@@ -45,7 +44,7 @@ class GuestCapsule extends StatelessWidget {
           InteractionCapsule(
             borderColor: AppColors.primary,
             borderOpacity: 1.0,
-            backgroundColor: AppColors.primary.withOpacity(isDark ? 0.1 : 0.05),
+            backgroundColor: AppColors.primary.withValues(alpha: isDark ? 0.1 : 0.05),
             child: Text(
               context.l10n.localeName == 'ar'
                   ? AppDateFormatter.toEasternArabicDigits(context.l10n.extraGuestsCount(extraGuests!))
@@ -67,7 +66,7 @@ class GuestCapsule extends StatelessWidget {
             backgroundColor: _getGuestBackgroundColor(status, isDark),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -112,10 +111,10 @@ class GuestCapsule extends StatelessWidget {
 
   Color _getGuestBackgroundColor(InvitationStatus status, bool isDark) {
     if (status == InvitationStatus.accepted) {
-      return isDark ? Colors.blue.shade900.withOpacity(0.3) : Colors.blue.shade50;
+      return isDark ? Colors.blue.shade900.withValues(alpha: 0.3) : Colors.blue.shade50;
     }
     if (status == InvitationStatus.deletedAfterAccept) {
-      return isDark ? Colors.red.shade900.withOpacity(0.3) : Colors.red.shade50;
+      return isDark ? Colors.red.shade900.withValues(alpha: 0.3) : Colors.red.shade50;
     }
     // Pending / Declined / Default
     return isDark ? Colors.grey.shade800 : Colors.grey.shade50;

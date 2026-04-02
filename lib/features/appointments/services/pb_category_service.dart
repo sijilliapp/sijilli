@@ -10,7 +10,7 @@ class PbCategoryService {
   /// جلب التصنيفات الخاصة بالمستخدم + التصنيفات العامة
   Future<List<AppointmentCategory>> getCategories() async {
     try {
-      final userId = _pb.authStore.model?.id;
+      final userId = _pb.authStore.record?.id;
       
       // نفلتر: إما التصنيفات العامة (user = null) أو الخاصة بالمستخد الحالي
       final filter = userId != null 
@@ -32,7 +32,7 @@ class PbCategoryService {
   /// إنشاء تصنيف جديد للمستخدم
   Future<AppointmentCategory> createCategory(String name, {String? color, String? icon}) async {
     try {
-      final userId = _pb.authStore.model?.id;
+      final userId = _pb.authStore.record?.id;
       if (userId == null) throw Exception('User not authenticated');
 
       final body = {

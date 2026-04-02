@@ -1,0 +1,260 @@
+Analyzing sijilli...                                            
+
+warning • The name debugPrint is shown, but isn't used • lib/core/local/local_db_service.dart:3:55 • unused_shown_name
+   info • Don't invoke 'print' in production code • lib/core/local/local_db_service.dart:48:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/core/providers/theme_provider.dart:61:7 • avoid_print
+warning • Unused import: 'package:flutter/foundation.dart' • lib/core/services/location_service.dart:5:8 • unused_import
+   info • Don't invoke 'print' in production code • lib/core/services/location_service.dart:72:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/core/services/location_service.dart:76:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/core/services/location_service.dart:98:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/core/services/pocketbase_client.dart:29:7 • avoid_print
+warning • Unused import: 'package:flutter/foundation.dart' • lib/core/utils/image_saver_util.dart:5:8 • unused_import
+   info • Don't invoke 'print' in production code • lib/core/utils/image_saver_util.dart:32:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/core/widgets/auth_wrapper.dart:19:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/core/widgets/editable_avatar_widget.dart:36:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/core/widgets/editable_avatar_widget.dart:88:9 • avoid_print
+warning • This default clause is covered by the previous cases • lib/core/widgets/pulse_avatar.dart:94:7 • unreachable_switch_default
+   info • Don't invoke 'print' in production code • lib/features/add/providers/add_event_provider.dart:290:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/add/providers/add_event_provider.dart:322:7 • avoid_print
+warning • The value of the local variable 'dt' isn't used • lib/features/add/providers/add_event_provider.dart:669:13 • unused_local_variable
+   info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor or activeTrackColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/features/add/widgets/add_event_widgets.dart:266:17 • deprecated_member_use
+   info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor or activeTrackColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/features/add/widgets/invitees_widget.dart:71:27 • deprecated_member_use
+warning • Dead code • lib/features/add/widgets/unified_date_picker.dart:269:135 • dead_code
+warning • Dead code • lib/features/add/widgets/unified_date_picker.dart:279:120 • dead_code
+warning • The value of the field '_browseService' isn't used • lib/features/appointments/providers/appointment_provider.dart:15:36 • unused_field
+   info • Don't invoke 'print' in production code • lib/features/appointments/providers/appointment_provider.dart:41:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/providers/appointment_provider.dart:123:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/providers/appointment_provider.dart:127:10 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/providers/appointment_provider.dart:130:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/providers/appointment_provider.dart:188:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/providers/appointment_provider.dart:204:19 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/providers/appointment_provider.dart:210:19 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/providers/appointment_provider.dart:214:16 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/providers/appointment_provider.dart:226:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/providers/appointment_provider.dart:268:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/providers/appointment_provider.dart:307:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/providers/appointment_provider.dart:403:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/providers/appointment_provider.dart:467:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/providers/appointment_provider.dart:485:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/providers/appointment_provider.dart:502:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/providers/appointment_provider.dart:592:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_browse_service.dart:44:7 • avoid_print
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/appointments/services/pb_appointment_browse_service.dart:91:33 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/appointments/services/pb_appointment_browse_service.dart:102:52 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_browse_service.dart:128:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_browse_service.dart:129:7 • avoid_print
+warning • The value of the local variable 'filterDate' isn't used • lib/features/appointments/services/pb_appointment_browse_service.dart:146:13 • unused_local_variable
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_browse_service.dart:217:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_recurrence_service.dart:13:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_recurrence_service.dart:21:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_recurrence_service.dart:23:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_recurrence_service.dart:29:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_recurrence_service.dart:55:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_recurrence_service.dart:59:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_recurrence_service.dart:81:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_service.dart:84:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_service.dart:151:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_appointment_service.dart:200:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_category_service.dart:27:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_category_service.dart:48:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_category_service.dart:58:7 • avoid_print
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/appointments/services/pb_invitation_service.dart:54:42 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_invitation_service.dart:72:13 • avoid_print
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/appointments/services/pb_invitation_service.dart:80:51 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/appointments/services/pb_invitation_service.dart:112:49 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/appointments/services/pb_invitation_service.dart:129:41 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/appointments/services/pb_invitation_service.dart:130:41 • deprecated_member_use
+warning • The value of the local variable 'apptTitle' isn't used • lib/features/appointments/services/pb_invitation_service.dart:137:20 • unused_local_variable
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_invitation_service.dart:150:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_invitation_service.dart:181:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_invitation_service.dart:216:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/services/pb_invitation_service.dart:293:7 • avoid_print
+warning • The value of the local variable 'isAr' isn't used • lib/features/appointments/widgets/atomic/guest_capsule.dart:33:11 • unused_local_variable
+   info • Don't invoke 'print' in production code • lib/features/appointments/widgets/atomic/user_invitee_sheet.dart:74:7 • avoid_print
+warning • The left operand can't be null, so the right operand is never executed • lib/features/appointments/widgets/atomic/user_invitee_sheet.dart:121:55 • dead_null_aware_expression
+   info • Don't invoke 'print' in production code • lib/features/appointments/widgets/atomic/user_invitee_sheet.dart:148:9 • avoid_print
+warning • This default clause is covered by the previous cases • lib/features/appointments/widgets/cards/appointment_card_helper.dart:103:7 • unreachable_switch_default
+warning • The value of the local variable 'categoryColor' isn't used • lib/features/appointments/widgets/cards/base_appointment_card.dart:32:11 • unused_local_variable
+warning • The value of the local variable 'isUnified' isn't used • lib/features/appointments/widgets/cards/base_appointment_card.dart:77:16 • unused_local_variable
+warning • The value of the local variable 'categoryColor' isn't used • lib/features/appointments/widgets/cards/base_appointment_card.dart:261:11 • unused_local_variable
+warning • This default clause is covered by the previous cases • lib/features/appointments/widgets/cards/policies/public_policy.dart:58:7 • unreachable_switch_default
+warning • This default clause is covered by the previous cases • lib/features/appointments/widgets/cards/policies/standard_policy.dart:82:7 • unreachable_switch_default
+warning • The left operand can't be null, so the right operand is never executed • lib/features/appointments/widgets/sheets/appointment_confirmation_sheet.dart:166:54 • dead_null_aware_expression
+warning • The left operand can't be null, so the right operand is never executed • lib/features/appointments/widgets/sheets/appointment_confirmation_sheet.dart:166:88 • dead_null_aware_expression
+   info • Don't invoke 'print' in production code • lib/features/appointments/widgets/sheets/appointment_details_sheet.dart:172:6 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/widgets/sheets/appointment_details_sheet.dart:329:33 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/widgets/sheets/appointment_details_sheet.dart:516:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/widgets/sheets/appointment_details_sheet.dart:524:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/widgets/sheets/appointment_details_sheet.dart:528:15 • avoid_print
+warning • The left operand can't be null, so the right operand is never executed • lib/features/appointments/widgets/sheets/appointment_details_sheet.dart:535:81 • dead_null_aware_expression
+   info • Don't invoke 'print' in production code • lib/features/appointments/widgets/sheets/appointment_details_sheet.dart:541:17 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/appointments/widgets/sheets/appointment_details_sheet.dart:556:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/auth/providers/auth_provider.dart:69:12 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/auth/providers/auth_provider.dart:71:12 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/auth/providers/auth_provider.dart:96:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/auth/providers/auth_provider.dart:98:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/auth/providers/auth_provider.dart:108:10 • avoid_print
+warning • The left operand can't be null, so the right operand is never executed • lib/features/auth/providers/auth_provider.dart:139:50 • dead_null_aware_expression
+warning • The left operand can't be null, so the right operand is never executed • lib/features/auth/providers/auth_provider.dart:139:64 • dead_null_aware_expression
+   info • Don't invoke 'print' in production code • lib/features/auth/providers/auth_provider.dart:205:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/auth/providers/auth_provider.dart:298:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/auth/providers/auth_provider.dart:314:7 • avoid_print
+warning • The value of the local variable 'record' isn't used • lib/features/auth/services/pb_auth_service.dart:49:11 • unused_local_variable
+   info • Don't invoke 'print' in production code • lib/features/auth/services/pb_auth_service.dart:66:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/auth/services/pb_auth_service.dart:74:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/auth/services/pb_auth_service.dart:77:7 • avoid_print
+warning • The value of the local variable 'isFriend' isn't used • lib/features/home/screens/public_profile_screen.dart:69:15 • unused_local_variable
+warning • The declaration '_showAppointmentDetails' isn't referenced • lib/features/home/tabs/appointments_tab.dart:24:8 • unused_element
+   info • Don't invoke 'print' in production code • lib/features/home/widgets/profile/profile_actions_helper.dart:213:23 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/providers/notification_provider.dart:39:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/providers/notification_provider.dart:95:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/providers/notification_provider.dart:106:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/providers/notification_provider.dart:208:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/providers/notification_provider.dart:223:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/providers/notification_provider.dart:226:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/providers/notification_provider.dart:256:15 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/providers/notification_provider.dart:266:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/providers/notification_provider.dart:267:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/providers/notification_provider.dart:271:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/providers/notification_provider.dart:285:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/providers/notification_provider.dart:301:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/providers/notification_provider.dart:311:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/providers/notification_provider.dart:346:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/providers/notification_provider.dart:348:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/services/notification_service.dart:40:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/services/notification_service.dart:41:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/services/notification_service.dart:45:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/services/notification_service.dart:48:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/services/notification_service.dart:50:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/notifications/services/notification_service.dart:81:7 • avoid_print
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/profile/providers/moderation_provider.dart:34:27 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/profile/providers/moderation_provider.dart:35:44 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/features/profile/providers/moderation_provider.dart:38:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/profile/providers/user_status_provider.dart:48:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/profile/screens/follows_screen.dart:65:7 • avoid_print
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/profile/screens/follows_screen.dart:95:39 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/profile/screens/follows_screen.dart:105:39 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/profile/screens/follows_screen.dart:184:29 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/profile/screens/follows_screen.dart:185:34 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/profile/screens/follows_screen.dart:223:30 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/profile/screens/follows_screen.dart:292:32 • deprecated_member_use
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/profile/screens/follows_screen.dart:363:32 • deprecated_member_use
+warning • This default clause is covered by the previous cases • lib/features/profile/widgets/user_cards/user_card.dart:67:7 • unreachable_switch_default
+   info • Don't invoke 'print' in production code • lib/features/search/providers/search_provider.dart:86:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/search/providers/search_provider.dart:101:7 • avoid_print
+warning • The left operand can't be null, so the right operand is never executed • lib/features/settings/screens/blocked_users_screen.dart:53:42 • dead_null_aware_expression
+warning • The left operand can't be null, so the right operand is never executed • lib/features/settings/screens/blocked_users_screen.dart:61:80 • dead_null_aware_expression
+   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:468:21 • deprecated_member_use
+   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:470:21 • deprecated_member_use
+   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:478:21 • deprecated_member_use
+   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:480:21 • deprecated_member_use
+   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:517:19 • deprecated_member_use
+   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:519:19 • deprecated_member_use
+   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:555:22 • deprecated_member_use
+   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:557:22 • deprecated_member_use
+   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:566:22 • deprecated_member_use
+   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:568:22 • deprecated_member_use
+   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:577:22 • deprecated_member_use
+   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/settings/screens/settings_screen.dart:579:22 • deprecated_member_use
+warning • The operand can't be 'null', so the condition is always 'true' • lib/features/settings/services/pb_moderation_service.dart:75:21 • unnecessary_null_comparison
+warning • Unused import: 'package:flutter/foundation.dart' • lib/features/settings/services/pb_user_service.dart:8:8 • unused_import
+   info • Don't invoke 'print' in production code • lib/features/settings/services/pb_user_service.dart:140:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/settings/services/pb_user_service.dart:145:9 • avoid_print
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/settings/services/pb_user_service.dart:166:40 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/features/settings/services/pb_user_service.dart:174:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/settings/services/pb_user_service.dart:179:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/settings/services/pb_user_service.dart:317:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/settings/services/pb_user_service.dart:366:15 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/settings/services/pb_user_service.dart:371:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/settings/services/pb_user_service.dart:410:7 • avoid_print
+   info • 'expand' is deprecated and shouldn't be used. This field is superseded by the more generic get<T>(keyPath) method.
+You can access the expanded record models and fields using dot-notation similar to the regular record fields:
+record.get<String>("expand.user.email");
+record.get<RecordModel>("expand.user");
+record.get<List<RecordModel>>("expand.products"); • lib/features/settings/services/pb_user_service.dart:469:40 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/features/settings/services/pb_user_service.dart:477:12 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/settings/services/pb_user_service.dart:482:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/settings/services/pb_user_service.dart:585:20 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/settings/services/pb_user_service.dart:600:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/settings/services/pb_user_service.dart:606:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/hijri_test.dart:6:3 • avoid_print
+   info • Don't invoke 'print' in production code • lib/hijri_test.dart:7:3 • avoid_print
+   info • Don't invoke 'print' in production code • lib/hijri_test.dart:8:3 • avoid_print
+   info • Don't invoke 'print' in production code • lib/hijri_test.dart:9:3 • avoid_print
+   info • Don't invoke 'print' in production code • lib/main.dart:60:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/main.dart:61:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/models/appointment.dart:382:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/models/appointment.dart:416:11 • avoid_print
+warning • The left operand can't be null, so the right operand is never executed • lib/models/appointment.dart:637:57 • dead_null_aware_expression
+   info • 'created' is deprecated and shouldn't be used. created is no longer mandatory field; use get<String>('created') • lib/models/notification.dart:84:38 • deprecated_member_use
+   info • 'updated' is deprecated and shouldn't be used. updated is no longer mandatory field; use get<String>('updated') • lib/models/notification.dart:85:38 • deprecated_member_use
+warning • Unused import: 'package:mocktail/mocktail.dart' • test/friendship_logic_test.dart:2:8 • unused_import
+

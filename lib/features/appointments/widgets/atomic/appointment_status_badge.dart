@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../models/appointment.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_dimens.dart';
-import 'package:sijilli/l10n/app_localizations.dart';
-import 'package:sijilli/core/extensions/context_l10n.dart';
 import 'package:sijilli/features/appointments/widgets/cards/appointment_card_helper.dart';
 
 class AppointmentStatusBadge extends StatelessWidget {
@@ -30,7 +27,7 @@ class AppointmentStatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.1),
+        color: statusColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
