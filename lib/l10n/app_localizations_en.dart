@@ -60,6 +60,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agreeToTerms => 'I agree to Terms & Conditions and Privacy Policy';
 
   @override
+  String get iAgreeToThe => 'I agree to the ';
+
+  @override
   String get alreadyHaveAccount => 'Already have an account? ';
 
   @override

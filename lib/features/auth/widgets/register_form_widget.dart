@@ -10,6 +10,7 @@ import 'auth_text_field.dart';
 import 'auth_button.dart';
 import 'password_strength_indicator.dart';
 import '../../../core/extensions/context_l10n.dart';
+import '../screens/privacy_policy_screen.dart';
 
 class RegisterFormWidget extends StatefulWidget {
   const RegisterFormWidget({super.key});
@@ -78,9 +79,7 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
     );
 
     if (success) {
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/main');
-      }
+      // AuthWrapper يتولى التنقل تلقائياً
     } else {
       if (mounted && authProvider.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -279,23 +278,58 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
 
   Widget _buildTermsCheckbox() {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Checkbox(
-          value: _acceptTerms,
-          onChanged: (value) {
-            setState(() {
-              _acceptTerms = value ?? false;
-            });
-          },
-          activeColor: AppColors.primary,
+        SizedBox(
+          width: 24,
+          height: 24,
+          child: Checkbox(
+            value: _acceptTerms,
+            onChanged: (value) {
+              setState(() {
+                _acceptTerms = value ?? false;
+              });
+            },
+            activeColor: AppColors.primary,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
+          ),
         ),
+        const SizedBox(width: 8),
         Expanded(
           child: RichText(
             text: TextSpan(
-              style: TextStyle(fontSize: 14, color: AppColors.getBackground(context) == AppColors.darkBackground ? Colors.grey.shade300 : Colors.black87, fontFamily: 'Arial'),
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.grey.shade300
+                    : Colors.black87,
+              ),
               children: [
-                TextSpan(text: context.l10n.agreeToTerms),
+                TextSpan(text: context.l10n.iAgreeToThe),
+                WidgetSpan(
+                  alignment: PlaceholderAlignment.middle,
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const PrivacyPolicyScreen(),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      context.l10n.termsAndConditions,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                        decoration: TextDecoration.underline,
+                        decorationColor: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

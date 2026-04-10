@@ -30,21 +30,20 @@ class _EditableAvatarWidgetState extends State<EditableAvatarWidget> {
     try {
       final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
       if (image != null && mounted) {
-        _cropImage(image.path);
+        _cropImage(image);
       }
     } catch (e) {
       print('Error picking image: $e');
     }
   }
 
-  Future<void> _cropImage(String sourcePath) async {
-    // Determine the locale for translated title
+  Future<void> _cropImage(XFile sourceFile) async {
     final l10nTitle = Localizations.localeOf(context).languageCode == 'ar' 
         ? 'تعديل الصورة' 
         : 'Edit Image';
 
     final croppedFile = await ImageCropper().cropImage(
-      sourcePath: sourcePath,
+      sourcePath: sourceFile.path,
       aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
       uiSettings: [
         AndroidUiSettings(

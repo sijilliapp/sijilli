@@ -17,6 +17,7 @@
   "password": "Password",
   "confirmPassword": "Confirm Password",
   "agreeToTerms": "I agree to Terms & Conditions and Privacy Policy",
+  "iAgreeToThe": "I agree to the ",
   "alreadyHaveAccount": "Already have an account? ",
   "registerAction": "Create Account",
   "or": "OR",

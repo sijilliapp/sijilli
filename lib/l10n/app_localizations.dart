@@ -200,6 +200,12 @@ abstract class AppLocalizations {
   /// **'أوافق على الشروط والأحكام وسياسة الخصوصية'**
   String get agreeToTerms;
 
+  /// No description provided for @iAgreeToThe.
+  ///
+  /// In ar, this message translates to:
+  /// **'أوافق على '**
+  String get iAgreeToThe;
+
   /// No description provided for @alreadyHaveAccount.
   ///
   /// In ar, this message translates to:

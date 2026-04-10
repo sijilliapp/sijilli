@@ -60,6 +60,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get agreeToTerms => 'أوافق على الشروط والأحكام وسياسة الخصوصية';
 
   @override
+  String get iAgreeToThe => 'أوافق على ';
+
+  @override
   String get alreadyHaveAccount => 'لديك حساب بالفعل؟ ';
 
   @override
