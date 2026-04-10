@@ -1,6 +1,7 @@
 import 'user.dart';
 import 'package:flutter/material.dart';
 import 'package:hijri/hijri_calendar.dart';
+import '../core/utils/json_utils.dart';
 
 export 'extensions/appointment_logic.dart';
 
@@ -145,42 +146,34 @@ class Invitation {
 
     // دعم التحويل التدريجي: إذا وجدنا post_status نستخدمه، وإلا نعتمد على الحقول القديمة
     PostStatus status;
-    if (json['post_status'] != null) {
-      status = PostStatus.fromString(json['post_status'] as String);
+    final postStatusStr = JsonUtils.parseString(json['post_status']);
+    if (postStatusStr != null) {
+      status = PostStatus.fromString(postStatusStr);
     } else {
       // Fallback للبيانات القديمة
-      final oldDeleted = json['is_deleted'] as bool? ?? false;
-      final oldArchived = json['is_archived'] as bool? ?? false;
+      final oldDeleted = JsonUtils.parseBool(json['is_deleted']);
+      final oldArchived = JsonUtils.parseBool(json['is_archived']);
       if (oldDeleted) status = PostStatus.trash;
       else if (oldArchived) status = PostStatus.archived;
       else status = PostStatus.published;
     }
 
     return Invitation(
-      id: json['id'] as String,
-      appointmentId: json['appointment'] as String,
-      userId: json['user'] as String,
-      status: InvitationStatus.fromString(json['status'] as String? ?? 'pending'),
+      id: JsonUtils.parseString(json['id']) ?? '',
+      appointmentId: JsonUtils.parseString(json['appointment']) ?? '',
+      userId: JsonUtils.parseString(json['user']) ?? '',
+      status: InvitationStatus.fromString(JsonUtils.parseString(json['status']) ?? 'pending'),
       postStatus: status,
-      isComplete: json['isComplete'] as bool? ?? false,
-      dateType: json['date_type'] as String?,
-      privacy: json['privacy'] as String? ?? 'private',
-      personalNote: json['personal_note'] as String?,
+      isComplete: JsonUtils.parseBool(json['isComplete']),
+      dateType: JsonUtils.parseString(json['date_type']),
+      privacy: JsonUtils.parseString(json['privacy']) ?? 'private',
+      personalNote: JsonUtils.parseString(json['personal_note']),
       user: userJson != null ? UserModel.fromJson(userJson) : null,
       categories: categoryJson != null ? AppointmentCategory.fromJson(categoryJson) : null,
-      acceptedAt: _parseDateTime(json['accepted_at']),
-      declinedAt: _parseDateTime(json['declined_at']),
-      deletedAt: _parseDateTime(json['deleted_at']),
+      acceptedAt: JsonUtils.parseDateTime(json['accepted_at']),
+      declinedAt: JsonUtils.parseDateTime(json['declined_at']),
+      deletedAt: JsonUtils.parseDateTime(json['deleted_at']),
     );
-  }
-
-  static DateTime? _parseDateTime(dynamic value) {
-    if (value == null || value.toString().isEmpty) return null;
-    try {
-      return DateTime.parse(value as String);
-    } catch (_) {
-      return null;
-    }
   }
 
   Invitation copyWith({
@@ -368,33 +361,29 @@ class Appointment {
         : null;
 
     // Handle Time Logic: Prefers 'start_at' (UTC), falls back to legacy 'date' + 'time'
-    DateTime parsedStartAt;
-    try {
-      if (json['start_at'] != null && json['start_at'].toString().isNotEmpty) {
-        parsedStartAt = DateTime.parse(json['start_at'] as String);
-      } else if (json['date'] != null && json['date'].toString().isNotEmpty) {
-        // Legacy Fallback
-        final d = DateTime.parse(json['date'] as String);
-        if (json['time'] != null && json['time'].toString().isNotEmpty) {
-          final t = (json['time'] as String).split(':');
-          parsedStartAt = DateTime(d.year, d.month, d.day, int.parse(t[0]), int.parse(t[1]));
-        } else {
-          parsedStartAt = d;
+    DateTime parsedStartAt = JsonUtils.parseDateTime(json['start_at']) ?? 
+                             JsonUtils.parseDateTime(json['date']) ?? 
+                             DateTime.now();
+    
+    if (json['start_at'] == null && json['date'] != null && json['time'] != null) {
+      // Legacy Fallback with specific time
+      try {
+        final d = parsedStartAt;
+        final tStr = JsonUtils.parseString(json['time']);
+        if (tStr != null && tStr.contains(':')) {
+           final t = tStr.split(':');
+           parsedStartAt = DateTime(d.year, d.month, d.day, int.parse(t[0]), int.parse(t[1]));
         }
-      } else {
-        // Safe default if everything else fails
-        parsedStartAt = DateTime.now();
+      } catch (e) {
+        print('⚠️ Error parsing legacy time: $e');
       }
-    } catch (e) {
-      print('⚠️ Error parsing appointment date: $e');
-      parsedStartAt = DateTime.now();
     }
 
     // --- HIJRI DYNAMIC SHIFT LOGIC ---
     // The physical Gregorian time must dynamically shift according to the current "Page Owner" 
     // adjustment, passed explicitly as `contextAdjustment`.
-    final dateType = json['date_type'] as String? ?? 'gregorian';
-    final hijriDateStr = json['hijri_date'] as String?;
+    final dateType = JsonUtils.parseString(json['date_type']) ?? 'gregorian';
+    final hijriDateStr = JsonUtils.parseString(json['hijri_date']);
     
     if (dateType == 'hijri' && hijriDateStr != null && hijriDateStr.isNotEmpty) {
       final parts = hijriDateStr.split('-');
@@ -430,50 +419,42 @@ class Appointment {
     final localDateTime = parsedStartAt.toLocal();
 
     return Appointment(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      hostId: json['host'] as String, 
+      id: JsonUtils.parseString(json['id']) ?? '',
+      title: JsonUtils.parseString(json['title']) ?? '',
+      hostId: JsonUtils.parseString(json['host']) ?? '', 
       startAt: parsedStartAt, 
-      duration: json['duration'] as int? ?? 45, // Get from JSON or default to 45
+      duration: JsonUtils.parseInt(json['duration']) ?? 45,
       date: DateTime(localDateTime.year, localDateTime.month, localDateTime.day), 
       time: '${localDateTime.hour.toString().padLeft(2, '0')}:${localDateTime.minute.toString().padLeft(2, '0')}', 
-      region: json['region'] as String?,
-      building: json['building'] as String?,
-      privacy: json['privacy'] as String? ?? 'private',
-      description: json['description'] as String?,
-      participantsCount: json['participants_count'] as int? ?? 0,
-      invitedCount: json['invited_count'] as int? ?? 0,
-      isCancelled: json['is_cancelled'] as bool? ?? false,
-      isConfirmed: json['is_confirmed'] as bool? ?? false,
-      isDeleted: json['is_deleted'] as bool? ?? false,
-      dateType: json['date_type'] as String? ?? 'gregorian',
-      streamLink: json['stream_link'] as String?,
-      appointmentGroupId: json['appointmentGroupId'] as String? ?? json['recurrence_id'] as String?,
-      isFirstComeFirstServed: json['is_first_come'] as bool? ?? false,
-      recurrenceType: json['recurrence_type'] as String?,
-      recurrenceCount: json['recurrence_count'] as int?,
-      recurrenceIndex: json['recurrence_index'] as int?,
-      hijriDate: json['hijri_date'] as String?,
-      hijriMonth: json['hijri_month'] as int?,
-      sunset: json['sunset'] as String?,
+      region: JsonUtils.parseString(json['region']),
+      building: JsonUtils.parseString(json['building']),
+      privacy: JsonUtils.parseString(json['privacy']) ?? 'private',
+      description: JsonUtils.parseString(json['description']),
+      participantsCount: JsonUtils.parseInt(json['participants_count']) ?? 0,
+      invitedCount: JsonUtils.parseInt(json['invited_count']) ?? 0,
+      isCancelled: JsonUtils.parseBool(json['is_cancelled']),
+      isConfirmed: JsonUtils.parseBool(json['is_confirmed']),
+      isDeleted: JsonUtils.parseBool(json['is_deleted']),
+      dateType: dateType,
+      streamLink: JsonUtils.parseString(json['stream_link']),
+      appointmentGroupId: JsonUtils.parseString(json['appointmentGroupId'] ?? json['recurrence_id']),
+      isFirstComeFirstServed: JsonUtils.parseBool(json['is_first_come']),
+      recurrenceType: JsonUtils.parseString(json['recurrence_type']),
+      recurrenceCount: JsonUtils.parseInt(json['recurrence_count']),
+      recurrenceIndex: JsonUtils.parseInt(json['recurrence_index']),
+      hijriDate: hijriDateStr,
+      hijriMonth: JsonUtils.parseInt(json['hijri_month']),
+      sunset: JsonUtils.parseString(json['sunset']),
       host: hostJson != null ? UserModel.fromJson(hostJson) : null,
       currentUserInvitation: currentUserInvitation,
       viewerInvitation: viewerInvitation,
       participants: participants,
-      createdAt: _parseDateTime(json['created']) ?? DateTime.now(),
-      updatedAt: _parseDateTime(json['updated']) ?? DateTime.now(),
+      createdAt: JsonUtils.parseDateTime(json['created']) ?? DateTime.now(),
+      updatedAt: JsonUtils.parseDateTime(json['updated']) ?? DateTime.now(),
       contextAdjustment: contextAdjustment,
     );
   }
 
-  static DateTime? _parseDateTime(dynamic value) {
-    if (value == null || value.toString().isEmpty) return null;
-    try {
-      return DateTime.parse(value as String);
-    } catch (_) {
-      return null;
-    }
-  }
   
   /// إنشاء موعد جديد (لإنشاء موعد)
   factory Appointment.newAppointment({

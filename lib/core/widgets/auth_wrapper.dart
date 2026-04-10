@@ -15,19 +15,17 @@ class AuthWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
-        // عرض شاشة التحميل أثناء التهيئة
-        print('🔄 AuthWrapper building with status: ${authProvider.status}');
         if (authProvider.status == AuthStatus.initial || 
             authProvider.status == AuthStatus.loading) {
           return const LoadingScreen();
         }
         
-        // توجيه حسب حالة المصادقة
         if (authProvider.isAuthenticated) {
           return const MainScreen();
-        } else {
-          return const LoginScreen();
         }
+
+        // unauthenticated أو error — كلاهما يعرض شاشة الدخول
+        return const LoginScreen();
       },
     );
   }

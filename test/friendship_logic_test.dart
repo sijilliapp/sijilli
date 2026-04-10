@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 
 // Note: This is an illustrative test structure since real PB integration needs complex mocking.
 void main() {

@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
+import 'dart:async';
 import '../../../core/services/pocketbase_client.dart';
 import '../services/pb_auth_service.dart';
 import '../../settings/services/pb_user_service.dart';
@@ -51,33 +52,31 @@ class AuthProvider extends ChangeNotifier {
     _setStatus(AuthStatus.loading);
     
     try {
-      // 1. محاولة استرجاع البيانات من قاعدة البيانات المحلية (سريع جداً)
+      // 1. استرجاع البيانات المحلية (سريع جداً)
       final localUser = await _localDb.getUser();
       if (localUser != null) {
         _user = localUser;
         _setStatus(AuthStatus.authenticated);
       }
 
-      // Load recent usernames
       await _loadRecentUsernames();
 
-      // 2. تهيئة PocketBase
+      // 2. استعادة التوكن في PocketBase AuthStore
       if (_user != null && _user!.token != null) {
         try {
-           final pb = PocketBaseClient.instance.pb;
-           pb.authStore.save(_user!.token!, null); 
-           print('✅ AuthProvider: Restored local token to PocketBase AuthStore');
-        } catch (e) {
-           print('⚠️ Failed to restore cloud session: $e');
-        }
+          PocketBaseClient.instance.pb.authStore.save(_user!.token!, null);
+        } catch (_) {}
       }
       
-      // 3. فحص الجلسة مع الخادم
+      // 3. فحص الجلسة مع الخادم (مع timeout)
       await _checkSavedSession();
       
     } catch (e) {
-      if (_user == null) {
-        _setError('خطأ في تهيئة التطبيق: $e');
+      // أي خطأ غير متوقع: لا نترك التطبيق في حالة loading
+      if (_user != null) {
+        _setStatus(AuthStatus.authenticated);
+      } else {
+        _setStatus(AuthStatus.unauthenticated);
       }
     }
   }
@@ -90,24 +89,26 @@ class AuthProvider extends ChangeNotifier {
     }
 
     try {
-      final authData = await PocketBaseClient.instance.pb.collection('users').authRefresh();
+      final authData = await PocketBaseClient.instance.pb
+          .collection('users')
+          .authRefresh()
+          .timeout(const Duration(seconds: 10));
       final user = UserModel.fromJson(authData.record.toJson(), token: authData.token);
       await _updateUserLocally(user);
-      print('✅ AuthProvider: Session refreshed successfully');
     } catch (e) {
-      print('⚠️ Session refresh failed: $e');
-      
+      // أخطاء الشبكة أو الـ timeout: نحتفظ بالجلسة المحلية
       bool isPermanentError = false;
       if (e is ClientException) {
-         if (e.statusCode == 401 || e.statusCode == 403) {
-            isPermanentError = true;
-         }
+        if (e.statusCode == 401 || e.statusCode == 403) {
+          isPermanentError = true;
+        }
       }
 
       if (isPermanentError) {
-         print('❌ Token invalid/expired permanently, logging out...');
-         await logout(); 
+        // التوكن منتهي الصلاحية نهائياً
+        await logout();
       }
+      // أخطاء الشبكة: نبقى على الحالة المحلية (authenticated إذا كان هناك مستخدم محلي)
     }
   }
   
@@ -230,6 +231,18 @@ class AuthProvider extends ChangeNotifier {
     _clearError();
     try {
       final updatedUser = await _userService.updateCurrentUser(data, avatarFile: avatarFile);
+      
+      // 🔄 Sync AuthStore with new record to prevent session mismatch (403 in Realtime)
+      final pb = PocketBaseClient.instance.pb;
+      if (pb.authStore.isValid) {
+         // This is important because updating the user model locally isn't enough,
+         // the client's internal AuthStore must also reflect the new data.
+         final Map<String, dynamic> rawJson = updatedUser.toJson();
+         rawJson['collectionId'] = '_pb_users_auth_';
+         rawJson['collectionName'] = 'users';
+         pb.authStore.save(pb.authStore.token, RecordModel.fromJson(rawJson));
+      }
+      
       await _updateUserLocally(updatedUser);
       return true;
     } catch (e) {
@@ -238,6 +251,7 @@ class AuthProvider extends ChangeNotifier {
           final authData = await PocketBaseClient.instance.pb.collection('users').authRefresh();
           final retryUserResult = await _userService.updateCurrentUser(data, avatarFile: avatarFile);
           final finalUser = retryUserResult.copyWith(token: authData.token);
+          
           await _updateUserLocally(finalUser);
           return true;
         } catch (retryError) {

@@ -487,11 +487,11 @@ class PrayerTimesRow extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (sunriseTime != null) ...[
-              const Icon(Icons.wb_sunny_outlined, size: 12, color: Colors.orange),
+              Icon(Icons.wb_sunny_outlined, size: 12, color: AppColors.getTextPrimary(context)),
               const SizedBox(width: 4),
               Text(
                 '${context.l10n.sunriseTime}: ${sunriseTime!.format(context)}',
-                style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w500),
+                style: TextStyle(fontSize: 11, color: AppColors.getTextPrimary(context), fontWeight: FontWeight.w500),
               ),
             ],
             if (sunriseTime != null && dhuhrTime != null) ...[
@@ -500,11 +500,11 @@ class PrayerTimesRow extends StatelessWidget {
               const SizedBox(width: 12),
             ],
             if (dhuhrTime != null) ...[
-              const Icon(Icons.sunny, size: 12, color: Colors.amber),
+              Icon(Icons.sunny, size: 12, color: AppColors.getTextPrimary(context)),
               const SizedBox(width: 4),
               Text(
                 '${context.l10n.dhuhrTime}: ${dhuhrTime!.format(context)}',
-                style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w500),
+                style: TextStyle(fontSize: 11, color: AppColors.getTextPrimary(context), fontWeight: FontWeight.w500),
               ),
             ],
             if ((sunriseTime != null || dhuhrTime != null) && sunsetTime != null) ...[
@@ -513,11 +513,11 @@ class PrayerTimesRow extends StatelessWidget {
               const SizedBox(width: 12),
             ],
             if (sunsetTime != null) ...[
-              const Icon(Icons.wb_twilight, size: 12, color: Colors.deepOrange),
+              Icon(Icons.wb_twilight, size: 12, color: AppColors.getTextPrimary(context)),
               const SizedBox(width: 4),
               Text(
                 '${context.l10n.sunsetTime}: ${sunsetTime!.format(context)}',
-                style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w500),
+                style: TextStyle(fontSize: 11, color: AppColors.getTextPrimary(context), fontWeight: FontWeight.w500),
               ),
             ],
           ],

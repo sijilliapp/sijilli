@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import 'dart:collection';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:pocketbase/pocketbase.dart';
 import 'package:flutter/foundation.dart';
@@ -33,13 +34,34 @@ class PbUserService {
       final List<http.MultipartFile> files = [];
 
       if (avatarFile != null) {
-        final bytes = await avatarFile.readAsBytes();
-        final file = http.MultipartFile.fromBytes(
-          'avatar',
-          bytes,
-          filename: avatarFile.name,
-        );
-        files.add(file);
+        // 📱 For Mobile/Web robustness: handle files without paths (like XFile.fromData)
+        final bool hasPath = avatarFile.path.isNotEmpty;
+        
+        // 📏 Check file size (2MB limit for PocketBase)
+        final int length = hasPath 
+            ? await File(avatarFile.path).length() // Use File on mobile for path
+            : (await avatarFile.readAsBytes()).length; // Fallback to bytes on web or in-memory
+            
+        if (length > 2 * 1024 * 1024) {
+          throw Exception('حجم الصورة كبير جداً (يجب أن يكون أقل من 2 ميجابايت)');
+        }
+
+        if (kIsWeb || !hasPath) {
+          final bytes = await avatarFile.readAsBytes();
+          final file = http.MultipartFile.fromBytes(
+            'avatar',
+            bytes,
+            filename: avatarFile.name,
+          );
+          files.add(file);
+        } else {
+          // 📱 Optimized for Mobile (APK/iOS) with real path
+          final file = await http.MultipartFile.fromPath(
+            'avatar',
+            avatarFile.path,
+          );
+          files.add(file);
+        }
       }
       
       final record = await _pb.collection(collectionUsers).update(

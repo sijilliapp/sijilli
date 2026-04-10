@@ -54,12 +54,14 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/logo/logo.png"
+  web:
+    generate: true
+    image_path: "assets/logo/apple-logo.png"
+    background_color: "#ffffff"
+    theme_color: "#ffffff"
+  image_path: "assets/logo/apple-logo.png"
   min_sdk_android: 21
   remove_alpha_ios: true
-  # إزالة adaptive icon مؤقتاً
-  # adaptive_icon_background: "#3B82F6"
-  # adaptive_icon_foreground: "assets/logo/logo.png"
 
 flutter:
   generate: true

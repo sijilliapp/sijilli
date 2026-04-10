@@ -80,7 +80,8 @@ class _EditableAvatarWidgetState extends State<EditableAvatarWidget> {
       try {
         final bytes = await croppedFile.readAsBytes();
         setState(() {
-          _selectedAvatar = XFile.fromData(bytes, name: 'crop_${DateTime.now().millisecondsSinceEpoch}.jpg');
+          // 🚀 Use the real path to avoid PathNotFoundException in the service
+          _selectedAvatar = XFile(croppedFile.path);
           _imageBytes = bytes;
         });
         widget.onImageCropped(_selectedAvatar);

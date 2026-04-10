@@ -1,6 +1,5 @@
-// 📍 lib/models/user.dart
-// 👤 نموذج بيانات المستخدم في تطبيق "سجلي" - متوافق مع PocketBase
 import 'dart:convert';
+import '../core/utils/json_utils.dart';
 
 class UserModel {
   // ====================== الحقول الأساسية ======================
@@ -64,50 +63,29 @@ class UserModel {
   /// إنشاء مستخدم من JSON (من PocketBase) - نسخة مبسطة
   factory UserModel.fromJson(Map<String, dynamic> json, {String? token}) {
     return UserModel(
-      id: json['id'] ?? '',
-      username: json['username'] ?? '',
-      email: json['email'] ?? '',
-      name: json['name'] ?? '',
-      avatar: json['avatar'],
-      token: token ?? json['token'], // Load token if available
-      bio: json['bio'],
-      socialLink: json['social_link'],
-      phone: json['phone']?.toString(),
-      hijriAdjustment: json['hijri_adjustment']?.toDouble(),
-      region: json['region'] as String?,
-      role: json['role'] ?? 'user',
-      isPublic: _parseBool(json['isPublic']),
-      verified: json['verified'] ?? false,
-      emailVisibility: json['emailVisibility'] ?? false,
-      date: _parseDate(json['date']),
-      created: _parseDate(json['created']) ?? DateTime.now(),
-      updated: _parseDate(json['updated']) ?? DateTime.now(),
-      joiningDate: _parseDate(json['joining_date']) ?? 
-                   _parseDate(json['Joining_date']) ?? 
-                   _parseDate(json['created']) ?? 
+      id: JsonUtils.parseString(json['id']) ?? '',
+      username: JsonUtils.parseString(json['username']) ?? '',
+      email: JsonUtils.parseString(json['email']) ?? '',
+      name: JsonUtils.parseString(json['name']) ?? '',
+      avatar: JsonUtils.parseString(json['avatar']),
+      token: token ?? JsonUtils.parseString(json['token']), // Load token if available
+      bio: JsonUtils.parseString(json['bio']),
+      socialLink: JsonUtils.parseString(json['social_link']),
+      phone: JsonUtils.parseString(json['phone']),
+      hijriAdjustment: JsonUtils.parseDouble(json['hijri_adjustment']),
+      region: JsonUtils.parseString(json['region']),
+      role: JsonUtils.parseString(json['role']) ?? 'user',
+      isPublic: JsonUtils.parseBool(json['isPublic']),
+      verified: JsonUtils.parseBool(json['verified']),
+      emailVisibility: JsonUtils.parseBool(json['emailVisibility']),
+      date: JsonUtils.parseDateTime(json['date']),
+      created: JsonUtils.parseDateTime(json['created']) ?? DateTime.now(),
+      updated: JsonUtils.parseDateTime(json['updated']) ?? DateTime.now(),
+      joiningDate: JsonUtils.parseDateTime(json['joining_date']) ?? 
+                   JsonUtils.parseDateTime(json['Joining_date']) ?? 
+                   JsonUtils.parseDateTime(json['created']) ?? 
                    DateTime.now(),
     );
-  }
-  
-  /// دالة مساعدة لتحليل التاريخ
-  static DateTime? _parseDate(dynamic dateValue) {
-    if (dateValue == null || dateValue == '') return null;
-    try {
-      return DateTime.parse(dateValue.toString());
-    } catch (e) {
-      return null;
-    }
-  }
-  
-  /// دالة مساعدة لتحليل القيم المنطقية
-  static bool _parseBool(dynamic value) {
-    if (value == null) return false;
-    if (value is bool) return value;
-    if (value is String) {
-      return value.toLowerCase() == 'true' || value == '1';
-    }
-    if (value is int) return value == 1;
-    return false;
   }
   
   /// إنشاء مستخدم جديد (لتسجيل مستخدم جديد)

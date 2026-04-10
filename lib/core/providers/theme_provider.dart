@@ -6,7 +6,13 @@ import 'package:adhan/adhan.dart';
 import '../services/location_service.dart';
 
 class ThemeProvider extends ChangeNotifier {
-  String _fontFamily = kIsWeb ? 'Tajawal' : 'Default';
+  // 'Default' = خط النظام الفعلي لكل منصة:
+  //   iOS/macOS Safari  → San Francisco (-apple-system)
+  //   Android Chrome    → Roboto
+  //   Windows Chrome    → Segoe UI
+  //   Flutter iOS       → San Francisco
+  //   Flutter Android   → Roboto
+  String _fontFamily = 'Default';
   static const String keyFontFamily = 'font_family';
   
   // Theme Mode
@@ -26,18 +32,17 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   final List<String> availableFonts = [
-    'Default',
+    'Default',   // خط النظام الفعلي (San Francisco / Roboto / Segoe UI)
     'Cairo',
-    'Almarai',
     'Tajawal',
+    'Almarai',
     'IBM Plex Sans Arabic',
-    'Lalezar',
     'Scheherazade New',
   ];
 
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    _fontFamily = prefs.getString(keyFontFamily) ?? (kIsWeb ? 'Tajawal' : 'Default');
+    _fontFamily = prefs.getString(keyFontFamily) ?? 'Default';
     _currentTheme = prefs.getString(keyThemeMode) ?? 'light';
     
     // Automatically check sunset if auto
@@ -137,7 +142,15 @@ class ThemeProvider extends ChangeNotifier {
           labelSmall: theme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
         );
       default:
-        // Use system default font (San Francisco on iOS, Roboto on Android)
+        // 'Default': خط النظام الفعلي لكل منصة
+        // على الويب: system-ui يجعل كل متصفح يستخدم خطه الأصلي
+        //   Safari (iOS/macOS) → San Francisco
+        //   Chrome (Android)   → Roboto
+        //   Chrome (Windows)   → Segoe UI
+        // على Flutter native: Flutter يستخدم خط النظام تلقائياً
+        if (kIsWeb) {
+          return base.apply(fontFamily: 'system-ui');
+        }
         return base;
     }
   }

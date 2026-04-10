@@ -399,21 +399,15 @@ class _LoginScreenState extends State<LoginScreen> {
       password: _passwordController.text,
     );
 
-    if (success) {
-      // الانتقال للشاشة الرئيسية
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/main');
-      }
-    } else {
-      // عرض رسالة الخطأ
-      if (mounted && authProvider.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(authProvider.errorMessage!),
-            backgroundColor: AppColors.warning,
-          ),
-        );
-      }
+    // AuthWrapper يتولى التنقل تلقائياً عند تغيير الحالة إلى authenticated.
+    // لا نحتاج Navigator هنا — التنقل المزدوج كان يسبب شاشة فارغة.
+    if (!success && mounted && authProvider.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authProvider.errorMessage!),
+          backgroundColor: AppColors.warning,
+        ),
+      );
     }
   }
 

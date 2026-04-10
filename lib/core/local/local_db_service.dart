@@ -14,55 +14,51 @@ class LocalDbService {
   
   static const String boxName = 'users';
   static const String followedBoxName = 'followed_users';
-  static const String appointmentsBoxName = 'appointments'; // New Box
+  static const String appointmentsBoxName = 'appointments';
   
-  late Future<Box<LocalUser>> box;
-  late Future<Box<LocalUser>> followedBox;
-  late Future<Box<LocalAppointment>> appointmentsBox; // New Box
+  // Future واحد يضمن التهيئة التسلسلية — حل مشكلة IDBDatabase على الويب
+  late final Future<void> _ready;
+
+  Box<LocalUser>? _box;
+  Box<LocalUser>? _followedBox;
+  Box<LocalAppointment>? _appointmentsBox;
   
   LocalDbService._() {
-    box = _initDb(boxName);
-    followedBox = _initDb(followedBoxName);
-    appointmentsBox = _initAppointmentDb(appointmentsBoxName);
-  }
-  
-  Future<Box<LocalUser>> _initDb(String name) async {
-    await _ensureHiveInitialized();
-    if (!Hive.isAdapterRegistered(0)) {
-       Hive.registerAdapter(LocalUserAdapter());
-    }
-    return await Hive.openBox<LocalUser>(name);
+    _ready = _initAll();
   }
 
-  Future<void> _ensureHiveInitialized() async {
-    if (kIsWeb) return;
-    
-    // Check if initialized by seeing if we have a path
-    try {
-      // Hive.init doesn't have a direct "isInitialized" getter that's public easily
-      // but we can just use path_provider to get the best path and call init again
-      // Hive ignores subsequent init calls if path is same, or we can guard it.
-      final directory = await getApplicationSupportDirectory();
-      Hive.init(directory.path);
-    } catch (e) {
-      print('Hive init error: $e');
+  Future<void> _initAll() async {
+    if (!kIsWeb) {
+      try {
+        final directory = await getApplicationSupportDirectory();
+        Hive.init(directory.path);
+      } catch (_) {}
     }
+
+    if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(LocalUserAdapter());
+    if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(LocalAppointmentAdapter());
+    if (!Hive.isAdapterRegistered(2)) Hive.registerAdapter(LocalInvitationAdapter());
+    if (!Hive.isAdapterRegistered(3)) Hive.registerAdapter(LocalCategoryAdapter());
+
+    // تسلسلي — IndexedDB على الويب لا يتحمل الفتح المتوازي
+    _box = await Hive.openBox<LocalUser>(boxName);
+    _followedBox = await Hive.openBox<LocalUser>(followedBoxName);
+    _appointmentsBox = await Hive.openBox<LocalAppointment>(appointmentsBoxName);
   }
 
-  // Initialize Appointment Box
-  Future<Box<LocalAppointment>> _initAppointmentDb(String name) async {
-    await _ensureHiveInitialized();
-    if (!Hive.isAdapterRegistered(1)) {
-       Hive.registerAdapter(LocalAppointmentAdapter());
-    }
-    if (!Hive.isAdapterRegistered(2)) {
-       Hive.registerAdapter(LocalInvitationAdapter());
-    }
-    if (!Hive.isAdapterRegistered(3)) {
-       Hive.registerAdapter(LocalCategoryAdapter());
-    }
-    
-    return await Hive.openBox<LocalAppointment>(name);
+  Future<Box<LocalUser>> get box async {
+    await _ready;
+    return _box!;
+  }
+
+  Future<Box<LocalUser>> get followedBox async {
+    await _ready;
+    return _followedBox!;
+  }
+
+  Future<Box<LocalAppointment>> get appointmentsBox async {
+    await _ready;
+    return _appointmentsBox!;
   }
   
   // ====================== User Operations ======================

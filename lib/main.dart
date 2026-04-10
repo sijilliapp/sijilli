@@ -8,6 +8,7 @@ import 'core/services/pocketbase_client.dart';
 import 'core/constants/app_colors.dart';
 import 'core/constants/app_dimens.dart';
 import 'core/widgets/auth_wrapper.dart';
+import 'core/local/local_db_service.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/appointments/providers/appointment_provider.dart';
 import 'features/appointments/providers/category_provider.dart';
@@ -47,6 +48,9 @@ void main() async { // Changed to async
 
   // Initialize Hive
   await Hive.initFlutter();
+  
+  // تهيئة LocalDbService مبكراً لضمان فتح IndexedDB بشكل تسلسلي قبل أي استخدام
+  await LocalDbService.instance.box;
   
   // Initialize PocketBase
   PocketBaseClient.instance.initialize();
