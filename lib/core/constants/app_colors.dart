@@ -182,6 +182,13 @@ class AppColors {
         : lightBorder;
   }
   
+  /// الحصول على لون التلميح بناءً على الثيم
+  static Color getHintColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? darkTextHint
+        : lightTextHint;
+  }
+
   // 📌 ملاحظة مهمة: لا تستخدم ألوان Hardcoded في أي مكان!
   // ❌ خطأ: Container(color: Colors.blue)
   // ❌ خطأ: Container(color: Color(0xFF000000))

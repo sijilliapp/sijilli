@@ -30,7 +30,7 @@ class NotificationItem extends StatelessWidget {
         ),
       ),
       child: ListTile(
-        onTap: onTap,
+        onTap: null, // News cards are completely inert (no actions)
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: _buildIcon(context),
         title: Text(
@@ -63,16 +63,7 @@ class NotificationItem extends StatelessWidget {
             ),
           ],
         ),
-        trailing: !notification.isRead
-            ? Container(
-                width: 10,
-                height: 10,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                ),
-              )
-            : null,
+        trailing: null, // Red dot is strictly for actionable invitations that require a response
       ),
     );
   }
@@ -125,6 +116,9 @@ class NotificationItem extends StatelessWidget {
     if (originalTitle == 'طلب اعتماد' || originalTitle.toLowerCase().contains('follow request')) {
        return context.l10n.followRequestTitle;
     }
+    if (originalTitle == 'تراجع عن الاعتماد' || originalTitle == 'إلغاء الاعتماد') {
+       return 'تراجع عن الاعتماد';
+    }
     return originalTitle;
   }
 
@@ -137,6 +131,9 @@ class NotificationItem extends StatelessWidget {
        } else {
           return context.l10n.wantsToFollowYou(namePart);
        }
+    }
+    if (originalTitle == 'تراجع عن الاعتماد' || originalTitle == 'إلغاء الاعتماد') {
+       return originalMessage; // Show full name and message directly from PocketBase
     }
     return originalMessage;
   }

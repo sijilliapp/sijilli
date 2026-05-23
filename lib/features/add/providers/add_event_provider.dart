@@ -9,8 +9,11 @@ import '../../../models/user.dart';
 import '../../appointments/providers/appointment_provider.dart';
 import '../../../core/utils/app_date_formatter.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../models/article.dart';
 
 import '../../../core/services/appointment_draft_service.dart';
+import '../../../core/utils/arabic_search.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 class AddEventProvider extends ChangeNotifier {
   final AutocompleteService _autocompleteService = AutocompleteService();
@@ -40,7 +43,8 @@ class AddEventProvider extends ChangeNotifier {
 
   // State
   bool _isSaving = false;
-  String _privacy = 'public';
+  String _privacy = 'followers';
+  String _lastSelectedPrivacy = 'followers'; // 🌟 Cached last selected privacy
   bool _isHijri = false;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
@@ -57,6 +61,12 @@ class AddEventProvider extends ChangeNotifier {
 
   // First Come First Served
   bool _isFirstComeFirstServed = false;
+
+  // Conflict Detection
+  List<Appointment> _history = [];
+  bool _hasConflict = false;
+  bool _ignoreConflictCheck = false;
+  String? _editingId;
 
   // Suggestions
   List<String> _suggestions = [];
@@ -83,6 +93,7 @@ class AddEventProvider extends ChangeNotifier {
   
   List<String> get suggestions => _suggestions;
   List<PivotMatch> get pivotSuggestions => _pivotSuggestions;
+  bool get hasConflict => _hasConflict;
 
   // Calculated Getters (Moved from UI)
   TimeOfDay? get sunsetTime {
@@ -146,7 +157,7 @@ class AddEventProvider extends ChangeNotifier {
 
     final endAt = startAt.add(Duration(minutes: _duration));
     final locale = l10n.localeName;
-    final timeStr = DateFormat('h:mm a', locale).format(endAt); 
+    final timeStr = AppDateFormatter.formatTime12h(endAt, locale); 
     
     if (_isHijri) {
       HijriCalendar.setLocal(locale);
@@ -184,6 +195,10 @@ class AddEventProvider extends ChangeNotifier {
     if (currentUser != null) {
       _hijriAdjustment = currentUser.hijriAdjustment?.toDouble() ?? 0;
     }
+
+    _history = history;
+    _editingId = initialAppointment?.id;
+    _lastSelectedPrivacy = await _loadLastPrivacy();
 
     if (initialAppointment != null) {
       _selectedDate = initialAppointment.date;
@@ -234,6 +249,9 @@ class AddEventProvider extends ChangeNotifier {
     } else {
       _selectedEndDate = _selectedDate;
       await _loadDraft();
+      if (_privacy == 'followers' && _lastSelectedPrivacy != 'followers') {
+        _privacy = _lastSelectedPrivacy;
+      }
     }
     
     _getUserLocation();
@@ -246,22 +264,49 @@ class AddEventProvider extends ChangeNotifier {
     
     // Safety check before notify
     if (!_disposed) {
+      _updateConflictStatus();
       notifyListeners();
     }
+  }
+
+  /// Re-syncs the autocomplete engine with fresh history without resetting current form state.
+  void refreshHistory(List<Appointment> history) {
+    if (history.isEmpty) return; // Wait for real data
+    
+    // Refresh Title Autocomplete
+    _autocompleteService.clearLearnedData();
+    final allTitles = history.map((e) => e.title).where((t) => t.isNotEmpty).toList();
+    _autocompleteService.learn(allTitles);
+    _autocompleteService.learnDates(history);
+    
+    // Refresh Location Autocomplete
+    initLocations(history);
+    
+    _history = history;
+    _updateConflictStatus();
+    
+    // Trigger update for currently focused field if any
+    onTitleChanged(_title);
+    updateRegionSuggestions(_location);
+    updateBuildingSuggestions(_location, _building);
   }
 
   // --- Draft Persistence ---
 
   Future<void> _loadDraft() async {
     final draft = await _draftService.loadDraft();
-    if (draft == null) return;
+    if (draft == null) {
+      _privacy = _lastSelectedPrivacy;
+      return;
+    }
 
     try {
       _title = draft['title'] ?? '';
       _location = draft['location'] ?? '';
       _building = draft['building'] ?? '';
       _streamLink = draft['streamLink'] ?? '';
-      _privacy = draft['privacy'] ?? 'public';
+      
+      _privacy = draft['privacy'] ?? _lastSelectedPrivacy;
       _isHijri = draft['isHijri'] ?? false;
       
       if (draft['selectedDate'] != null) {
@@ -329,11 +374,65 @@ class AddEventProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> _saveLastPrivacy(String value) async {
+    final box = await Hive.openBox('appointment_drafts');
+    await box.put('last_selected_privacy', value);
+  }
+
+  Future<String> _loadLastPrivacy() async {
+    final box = await Hive.openBox('appointment_drafts');
+    return box.get('last_selected_privacy', defaultValue: 'followers');
+  }
+
   // Logic Methods
   void setPrivacy(String value) {
     _privacy = value; 
+    _lastSelectedPrivacy = value;
+    _saveLastPrivacy(value);
     _saveDraft();
     notifyListeners();
+  }
+
+  void _updateConflictStatus() {
+    if (_ignoreConflictCheck || _selectedDate == null || _selectedTime == null || _duration < 0) {
+      _hasConflict = false;
+      return;
+    }
+
+    final startAt = DateTime(
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
+      _selectedTime!.hour,
+      _selectedTime!.minute,
+    ).toUtc();
+
+    final endAt = startAt.add(Duration(minutes: _duration));
+
+    final conflicts = _history.where((a) {
+      if (a.id == _editingId) return false;
+      
+      // Ignore cancelled/deleted/archived
+      if (a.isCancelled || a.isDeleted || a.isUserDeleted || a.isArchived) return false;
+      if (a.viewerRecord?.status == InvitationStatus.declined) return false;
+
+      final aStart = a.startAt;
+      
+      // All-day event check (duration 0 or >= 1440)
+      if (a.duration <= 0 || a.duration >= 1440) {
+        // If it's an all-day event, any appointment on that day is a conflict
+        final aDate = DateTime(a.fullDateTime.year, a.fullDateTime.month, a.fullDateTime.day);
+        final myDate = DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day);
+        return aDate.isAtSameMomentAs(myDate);
+      }
+
+      final aEnd = aStart.add(Duration(minutes: a.duration));
+
+      // Overlap check (UTC vs UTC)
+      return aStart.isBefore(endAt) && aEnd.isAfter(startAt);
+    });
+
+    _hasConflict = conflicts.isNotEmpty;
   }
 
 
@@ -353,12 +452,14 @@ class AddEventProvider extends ChangeNotifier {
       _selectedEndDate = date;
     }
     if (!_canRecur()) _isRecurring = false;
+    _updateConflictStatus();
     _saveDraft();
     notifyListeners();
   }
 
   void setTime(TimeOfDay time) {
     _selectedTime = time;
+    _updateConflictStatus();
     _saveDraft();
     notifyListeners();
   }
@@ -366,6 +467,7 @@ class AddEventProvider extends ChangeNotifier {
   void setDuration(int value) {
     _duration = value;
     if (!_canRecur()) _isRecurring = false;
+    _updateConflictStatus();
     _saveDraft();
     notifyListeners();
   }
@@ -373,6 +475,7 @@ class AddEventProvider extends ChangeNotifier {
   void setEndDate(DateTime date) {
     _selectedEndDate = date;
     if (!_canRecur()) _isRecurring = false;
+    _updateConflictStatus();
     _saveDraft();
     notifyListeners();
   }
@@ -420,6 +523,9 @@ class AddEventProvider extends ChangeNotifier {
 
   void removeInvitee(int index) {
     _selectedUsers.removeAt(index);
+    if (_selectedUsers.length < 2) {
+      _isFirstComeFirstServed = false;
+    }
     _saveDraft();
     notifyListeners();
   }
@@ -454,27 +560,42 @@ class AddEventProvider extends ChangeNotifier {
        targetDate = now.add(Duration(days: daysToAdd));
        isHijri = false; 
     } else {
+       // Safety: Ensure month and day are present if weekday is not
+       if (match.month == null || match.day == null) return;
+
        if (match.isHijri) {
          HijriCalendar.setLocal('ar');
          final hNow = HijriCalendar.now();
          int targetYear = hNow.hYear;
-         // Note: User requested "Current Year" strictly.
-         // We do NOT increment year even if date passed.
          
+         // If the month/day has already passed in the current Hijri year, move to next year
+         if (match.month! < hNow.hMonth || (match.month! == hNow.hMonth && match.day! < hNow.hDay)) {
+           targetYear++;
+         }
+
          final hTarget = HijriCalendar();
-         hTarget.hYear = targetYear;
-         hTarget.hMonth = match.month!;
-         hTarget.hDay = match.day!;
-         targetDate = hTarget.hijriToGregorian(targetYear, match.month!, match.day!);
+         try {
+           targetDate = hTarget.hijriToGregorian(targetYear, match.month!, match.day!);
+         } catch (e) {
+           return; // Invalid date
+         }
          
          // Fix: Inverse adjust so the Picker displays the correct Hijri date
          if (_hijriAdjustment != 0) {
             targetDate = targetDate.subtract(Duration(days: _hijriAdjustment.toInt()));
          }
        } else {
-         // Gregorian Date (Current Year)
+         // Gregorian Date
          int targetYear = now.year;
-         targetDate = DateTime(targetYear, match.month!, match.day!);
+         DateTime potentialDate = DateTime(targetYear, match.month!, match.day!);
+         
+         // If the date has already passed today, move to next year
+         final today = DateTime(now.year, now.month, now.day);
+         if (potentialDate.isBefore(today)) {
+           targetYear++;
+           potentialDate = DateTime(targetYear, match.month!, match.day!);
+         }
+         targetDate = potentialDate;
        }
     }
     
@@ -500,13 +621,22 @@ class AddEventProvider extends ChangeNotifier {
   void initLocations(List<Appointment> history) {
     _learnedLocations.clear();
     
-    // Sort logic: Just frequency for now? Or Recency?
-    // Implementing Frequency Map
     for (var appt in history) {
-      final region = appt.region?.trim() ?? '';
-      final building = appt.building?.trim() ?? '';
+      // Normalize region for better clustering while keeping original case for display
+      final rawRegion = appt.region?.trim() ?? '';
+      if (rawRegion.isEmpty) continue;
 
-      if (region.isEmpty) continue;
+      // Find if we already have this region in any case
+      String region = rawRegion;
+      final existingKey = _learnedLocations.keys.firstWhere(
+        (k) => k.toLowerCase() == rawRegion.toLowerCase(),
+        orElse: () => '',
+      );
+      if (existingKey.isNotEmpty) {
+        region = existingKey; // Use existing casing
+      }
+
+      final building = appt.building?.trim() ?? '';
 
       if (!_learnedLocations.containsKey(region)) {
         _learnedLocations[region] = {};
@@ -515,10 +645,6 @@ class AddEventProvider extends ChangeNotifier {
       if (building.isNotEmpty) {
         _learnedLocations[region]![building] = (_learnedLocations[region]![building] ?? 0) + 1;
       } else {
-        // Ensure region exists even with no building
-        // We can track region frequency by checking sum of buildings? 
-        // Or store a special key for region-only usage?
-        // Let's increment a generic counter or empty key
         _learnedLocations[region]![''] = (_learnedLocations[region]![''] ?? 0) + 1;
       }
     }
@@ -537,13 +663,13 @@ class AddEventProvider extends ChangeNotifier {
 
     final allRegions = regionCounts.keys.toList();
     
-    if (normalizedQuery.isEmpty) {
+    if (query.isEmpty) {
       // Show top 10 most frequent
       allRegions.sort((a, b) => regionCounts[b]!.compareTo(regionCounts[a]!));
       _regionSuggestions = allRegions.take(10).toList();
     } else {
-      // Filter by prefix/contains
-      final matches = allRegions.where((r) => r.toLowerCase().contains(normalizedQuery)).toList();
+      // Filter using centralized smartMatch (prefix matching on any word + normalization)
+      final matches = allRegions.where((r) => ArabicSearch.smartMatch(r, query)).toList();
       matches.sort((a, b) => regionCounts[b]!.compareTo(regionCounts[a]!));
       _regionSuggestions = matches.take(10).toList();
     }
@@ -551,19 +677,19 @@ class AddEventProvider extends ChangeNotifier {
   }
 
   void updateBuildingSuggestions(String region, String query) {
-    final targetRegion = region.trim(); // Case sensitive match usually desired for keys?
-                                      // Or find key ignoring case.
+    final targetRegion = region.trim().toLowerCase(); 
     
-    // Find exact key match for simplicity first
-    // In real world, we might iterate keys.
     Map<String, int>? buildingsMap;
     
-    // Try exact match
-    if (_learnedLocations.containsKey(targetRegion)) {
-      buildingsMap = _learnedLocations[targetRegion];
+    // Case-insensitive region lookup
+    final matchedKey = _learnedLocations.keys.firstWhere(
+      (k) => k.toLowerCase() == targetRegion,
+      orElse: () => '',
+    );
+
+    if (matchedKey.isNotEmpty) {
+      buildingsMap = _learnedLocations[matchedKey];
     } else {
-      // Try loose match if exact fails?
-      // For now strict hierarchy as per requirement.
       _buildingSuggestions = [];
       notifyListeners();
       return;
@@ -572,12 +698,13 @@ class AddEventProvider extends ChangeNotifier {
     final normalizedQuery = query.trim().toLowerCase();
     final allBuildings = buildingsMap!.keys.where((k) => k.isNotEmpty).toList();
 
-    if (normalizedQuery.isEmpty) {
+    if (query.isEmpty) {
        // Frequency Sort
        allBuildings.sort((a, b) => buildingsMap![b]!.compareTo(buildingsMap[a]!));
        _buildingSuggestions = allBuildings.take(10).toList();
     } else {
-       final matches = allBuildings.where((b) => b.toLowerCase().contains(normalizedQuery)).toList();
+       // Filter using centralized smartMatch (prefix matching on any word + normalization)
+       final matches = allBuildings.where((b) => ArabicSearch.smartMatch(b, query)).toList();
        matches.sort((a, b) => buildingsMap![b]!.compareTo(buildingsMap[a]!));
        _buildingSuggestions = matches.take(10).toList();
     }
@@ -595,12 +722,16 @@ class AddEventProvider extends ChangeNotifier {
     _selectedUsers.clear();
     _isRecurring = false;
     _isSaving = false;
-    _privacy = 'public';
+    _privacy = _lastSelectedPrivacy;
     _title = '';
     _location = '';
     _building = '';
     _streamLink = '';
+    _suggestions = [];
+    _pivotSuggestions = [];
     _draftService.clearDraft();
+    _ignoreConflictCheck = false; 
+    _hasConflict = false;
     notifyListeners();
   }
 
@@ -702,6 +833,7 @@ class AddEventProvider extends ChangeNotifier {
     if (!_disposed) notifyListeners();
 
     try {
+      _ignoreConflictCheck = true; // Set early to prevent flicker during createAppointment rebuilds
       final List<String> inviteeIds = _selectedUsers.map((u) => u.id).toList().cast<String>();
       await appointmentProvider.createAppointment(
         newAppt, 
@@ -716,16 +848,15 @@ class AddEventProvider extends ChangeNotifier {
         if (!_learnedLocations.containsKey(location)) {
            _learnedLocations[location] = {};
         }
-        if (building.isNotEmpty) {
-          _learnedLocations[location]![building] = (_learnedLocations[location]![building] ?? 0) + 1;
-        } else {
-          _learnedLocations[location]![''] = (_learnedLocations[location]![''] ?? 0) + 1;
-        }
+        _learnedLocations[location]![building] = (_learnedLocations[location]![building] ?? 0) + 1;
       }
 
       _draftService.clearDraft();
+      _ignoreConflictCheck = true;
+      _hasConflict = false;
       return null;
     } catch (e) {
+      _ignoreConflictCheck = false;
       return e.toString();
     } finally {
       if (!_disposed) {

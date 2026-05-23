@@ -11,7 +11,7 @@
   "enterPassword": "Enter your password",
   "noAccount": "Don't have an account? ",
   "createNewAccount": "Create New Account",
-  "fullName": "Full Name",
+  "fullName": "Display Name",
   "email": "Email Address",
   "username": "Username",
   "password": "Password",
@@ -24,6 +24,7 @@
   "forgotPassword": "Forgot Password?",
   "fieldRequired": "This field is required",
   "invalidEmail": "Invalid email address",
+  "invalidPhone": "Invalid phone number (8-12 digits)",
   "passwordsNotMatch": "Passwords do not match",
   "passwordMinLength": "Password must be at least 8 characters",
   "usernameTaken": "Username is taken",
@@ -91,7 +92,6 @@
   "following": "Accredited",
   "articles": "Articles",
   "contactTeam": "Contact Sijilli Team",
-  "archive": "Archive",
   "noArticlesYet": "No articles yet",
   "location": "Location",
   "time": "Time",
@@ -104,9 +104,12 @@
   "send": "Send",
   "reportSent": "Report sent successfully",
   "report": "Report",
+  "reportAndBlock": "Report and Block",
   "guest": "Guest",
   "linkCopied": "Link copied",
   "accreditations": "Accreditations",
+  "recentSearches": "Recent Searches",
+  "searchUsers": "Search for accounts...",
   "explore": "Explore",
   "news": "News",
   "follows": "Follows",
@@ -175,8 +178,8 @@
   "subjectHint": "Write the appointment subject...",
   "regionHint": "Select region...",
   "buildingHint": "Name/No",
-  "streamLink": "Stream Link (Optional)",
-  "streamLinkHint": "Example: https://zoom.us/j/123...",
+  "streamLink": "Appointment details, announcement, or stream link",
+  "streamLinkHint": "Enter details or paste a link here...",
   "appointmentPrivacy": "Appointment Privacy",
   "privacyPublic": "Public",
   "privacyFollowers": "Accredited",
@@ -187,6 +190,8 @@
   "duration1h": "1 hour",
   "duration2h": "2 hours",
   "duration3h": "3 hours",
+  "duration6h": "6 hours",
+  "duration12h": "12 hours",
   "durationAllDay": "All Day",
   "sunriseTime": "Sunrise",
   "dhuhrTime": "Dhuhr",
@@ -327,7 +332,7 @@
   "detailsMinutes": "minutes",
   "detailsHostGuests": "Host Guests..",
   "detailsAppointmentCancelled": "Appointment Cancelled",
-  "detailsDeleteTitleHost": "Cancel Appointment Permanently",
+  "detailsDeleteTitleHost": "Delete Permanently",
   "detailsDeleteTitleGuest": "Delete Appointment",
   "detailsDeleteConfirmHost": "Warning: As the host, deleting this appointment will cancel it for all invitees and move it to trash for everyone.\n\nAre you sure?",
   "detailsDeleteConfirmGuest": "Are you sure you want to delete your personal copy of this appointment?",
@@ -420,7 +425,6 @@
   "durationLessThanHour": "Less than an hour",
   "recurrenceOf": "of",
   "extraGuestsCount": "+{count}",
-
   "contactInquiry": "General Inquiry",
   "contactComplaint": "Complaint / Issue",
   "contactSuggestion": "Suggestion",
@@ -431,7 +435,6 @@
   "contactMsgTitle": "Message Title",
   "requiredField": "This field is required",
   "contactMsgDetails": "Message Details",
-
   "noBlockedUsers": "No blocked users",
   "unblockTitle": "Unblock",
   "unblockConfirm": "Do you want to unblock {name}?",
@@ -443,7 +446,6 @@
     }
   },
   "unblockConfirmAction": "Unblock",
-
   "enableNotifications": "Enable Notifications",
   "enableNotificationsDesc": "Receive all notifications and alerts",
   "customizeNotifications": "Customize Notifications",
@@ -455,11 +457,10 @@
   "notifyActiveDesc": "Alert when appointment time arrives",
   "reminderOneDayBefore": "One Day Reminder",
   "notifyOneDayBeforeDesc": "Send alert 24 hours before appointment",
-
   "privacyIntroTitle": "1. Introduction",
   "privacyIntroContent": "At \"Sijilli\" app, we are committed to protecting your personal data and clarifying how it is collected and used. This app is dedicated to social networking and appointment organization, and your privacy is our top priority.\n\nنحن في تطبيق \"سجلي\" نلتزم بحماية بياناتك الشخصية وتوضيح كيفية جمعها واستخدامها. هذا التطبيق مخصص للتواصل الاجتماعي وتنظيم المواعيد، وخصوصيتك هي أولويتنا القصوى.",
   "privacyDataTitle": "2. Information We Collect",
-  "privacyDataContent": "• Account Information: Name, email, and profile picture to identify you.\n• User-Generated Content (UGC): Appointments, comments, and photos you upload for sharing.\n• Technical Data: Device type, operating system, and IP address to ensure app stability and performance.\n\n• معلومات الحساب: مثل الاسم، البريد الإلكتروني، وصورة الملف الشخصي لتعريف هويتك.\n• المحتوى الذي تنشئه (UGC): المواعيد، التعليقات، والصور التي ترفعها لغرض المشاركة.\n• البيانات التقنية: نوع الجهاز، نظام التشغيل، وعنوان الـ IP لضمان استقرار التطبيق وتحسين الأداء.",
+  "privacyDataContent": "• Account Information: Name, email, and profile picture to identify you.\n• Contacts: We access your contacts to allow you to invite friends and sync appointments securely.\n• User-Generated Content (UGC): Appointments, comments, and photos you upload for sharing.\n• Technical Data: Device type, operating system, and IP address to ensure app stability.\n\n• معلومات الحساب: مثل الاسم، البريد الإلكتروني، وصورة الملف الشخصي.\n• جهات الاتصال: نصل لجهات الاتصال لتسهيل دعوة الأصدقاء وتنظيم المواعيد.\n• المحتوى الذي تنشئه: المواعيد، التعليقات، والصور.\n• البيانات التقنية: معلومات الجهاز وعنوان الـ IP.",
   "privacySecurityTitle": "3. Data Security",
   "privacySecurityContent": "We use advanced encryption protocols (such as SSL/TLS) to transmit data securely between your device and our servers, ensuring no unauthorized party can access your information.\n\nنحن نستخدم بروتوكولات تشفير متطورة (مثل SSL/TLS) لنقل البيانات بشكل آمن بين هاتفك وخوادمنا، لضمان عدم وصول أي طرف غير مصرح له إلى معلوماتك.",
   "privacyUsageTitle": "4. How We Use Your Information",
@@ -474,12 +475,10 @@
   "privacySharingContent": "We do not sell your personal data. We may use trusted technical services (e.g., notification services) in full compliance with global privacy standards.\n\nنحن لا نبيع بياناتك الشخصية لأي جهة. قد نستخدم خدمات تقنية موثوقة (مثل خدمات الإشعارات) مع الالتزام التام بمعايير الخصوصية العالمية.",
   "privacyContact": "Contact: sijilliapp@gmail.com",
   "privacyLastUpdate": "Last Update: Jan 2026",
-
   "noArchivedAppointments": "No archived appointments",
   "searchArchive": "Search archive...",
   "noResultsFound": "No results",
   "trashEmpty": "Trash is empty",
-
   "newFollowerTitle": "New Accreditation",
   "followRequestTitle": "Accreditation Request",
   "startedFollowingYou": "{name} accredited you",
@@ -500,13 +499,17 @@
   },
   "hijriDatePickerTitle": "Select Hijri Date",
   "removeAccreditation": "Remove Accreditation",
-  "removeAccreditationDesc": "Are you sure you want to remove the accreditation with this entity? This will block appointments dedicated to accredited users.",
+  "removeAccreditationDesc": "Warning: Terminating accreditation will require the other party's approval again to exchange appointments in the future.",
   "newAppointmentAction": "New Appointment",
   "yesRemoveAccreditation": "Yes, remove",
   "accreditedBadge": "Accredited",
   "magneticHome": "Magnetic Home",
   "magneticHomeDesc": "Auto-scroll to appointments on entry",
   "connectAction": "Connect",
+  "ghostMode": "Ghost Mode",
+  "ghostModeDesc": "Hide your profile from public search results",
+  "publicAccount": "Public Account",
+  "publicAccountDesc": "Allow others to find and follow you",
   "downloadFullImageConfirm": "Download full resolution image (certified members only)",
   "download": "Download",
   "operationFailed": "Operation failed: {error}",
@@ -516,5 +519,100 @@
         "type": "String"
       }
     }
-  }
+  },
+  "registrationClosedTitle": "Sorry, Registration is Closed",
+  "registrationClosedMessage": "The user limit has been reached, or we are making improvements to ensure the best experience.",
+  "contactUsForInvite": "You can contact us for inquiries or to request a private invite:",
+  "backToLogin": "Back to Login",
+  "whatsapp": "WhatsApp",
+  "ourEmail": "Our Email",
+  "bio": "Bio",
+  "phone": "Phone Number",
+  "socialLink": "Social Link",
+  "changePassword": "Change Password",
+  "oldPassword": "Current Password",
+  "newPassword": "New Password",
+  "confirmNewPassword": "Confirm New Password",
+  "passwordChangedSuccessfully": "Password changed successfully",
+  "oldPasswordIncorrect": "Current password is incorrect",
+  "forgotPasswordDesc": "Enter your email address to recover access to your account",
+  "emailSentSuccess": "Email sent successfully",
+  "passwordResetInstructions": "Password reset instructions have been sent to {email}",
+  "@passwordResetInstructions": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "orContactByEmail": "Or contact us via email",
+  "articleCopied": "\"{title}\" copied to clipboard",
+  "@articleCopied": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmDeleteArticle": "Confirm Delete",
+  "confirmDeleteArticleMsg": "Are you sure you want to permanently delete \"{title}\"?",
+  "@confirmDeleteArticleMsg": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "copy": "Copy",
+  "readTimeFormat": "Read time: {minutes} mins {words} words",
+  "@readTimeFormat": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "words": {
+        "type": "int"
+      }
+    }
+  },
+  "readTimeMins": "Read time: {minutes} mins",
+  "@readTimeMins": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "articleDraftRestored": "Article draft restored",
+  "publishArticle": "Publish Article",
+  "wordsCount": "Word count: {count}",
+  "@wordsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lastEdited": "Last edited: {date}",
+  "@lastEdited": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "boldTextFirst": "Please select text to bold first",
+  "selectVersesFirst": "Please select verses first",
+  "centerTextFirst": "Please select text to center first",
+  "justifyTextFirst": "Please select text to justify first",
+  "closePreview": "Close Preview",
+  "livePreview": "Live Preview",
+  "addArticleCoverOptional": "Add article cover (optional)",
+  "writeArticleHint": "Write your article or poem here...",
+  "boldTooltip": "Bold text",
+  "poemTooltip": "Format as poem",
+  "centerTooltip": "Center text",
+  "justifyTooltip": "Justify text",
+  "editArticleCover": "Edit article cover",
+  "expandImage": "Expand image"
 }

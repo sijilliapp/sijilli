@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../../../../models/user.dart';
 import '../../../../models/appointment.dart';
 import '../../settings/services/pb_user_service.dart';
 import '../../appointments/services/pb_appointment_browse_service.dart';
+import '../../settings/services/pb_moderation_service.dart';
 
 class PublicProfileProvider extends ChangeNotifier {
   final PbUserService _userService = PbUserService();
   final PbAppointmentBrowseService _appointmentBrowseService = PbAppointmentBrowseService();
+  final PbModerationService _moderationService = PbModerationService();
 
   UserModel? _user;
   List<Appointment> _appointments = [];
@@ -39,12 +42,23 @@ class PublicProfileProvider extends ChangeNotifier {
 
       _user = user;
       
+      // 1.5 Check if Viewer is Blocked BY the target user
+      if (currentUserId != null && currentUserId != user.id) {
+        final blockedByOther = await _moderationService.isBlockedBy(user.id);
+        if (blockedByOther) {
+           _error = 'BLOCK_RESTRICTED'; 
+           _isLoading = false;
+           notifyListeners();
+           return;
+        }
+      }
+
       // 2. Fetch Relationship Status and Appointments Concurrently
       final isSelf = user.id == currentUserId;
       final int hijriAdj = (user.hijriAdjustment ?? 0).toInt();
 
       Future<Map<String, dynamic>> statusFuture = isSelf || currentUserId == null 
-          ? Future.value({'status': 'none', 'isFriend': false}) 
+          ? Future.value({'status': 'none', 'isFriend': false, 'isBeingFollowed': false}) 
           : _userService.getAccreditationStatus(user.id);
           
       // Fetch both public and follower appointments. 
@@ -69,7 +83,11 @@ class PublicProfileProvider extends ChangeNotifier {
       if (user.isPublic || _isFollowing || isSelf) {
         // Filter out followers-only appointments if not a friend
         if (!_isFriend && !isSelf) {
-          appts = allAppts.where((a) => a.privacy != 'followers' || a.privacy == 'public').toList();
+          appts = allAppts.where((a) => 
+              a.effectivePrivacy == 'public' || 
+              (a.effectivePrivacy == 'followers' && _isFriend) || 
+              a.viewerInvitation != null
+          ).toList();
         } else {
           appts = allAppts;
         }
@@ -94,6 +112,30 @@ class PublicProfileProvider extends ChangeNotifier {
       });
 
       _appointments = appts;
+      
+      if (kDebugMode) {
+        print('📱 [PublicProfileProvider] Fetched ${allAppts.length} total, showing ${appts.length} after filter');
+        print('   - isSelf: $isSelf, isFriend: $_isFriend, isFollowing: $_isFollowing, currentUserId: $currentUserId');
+        print('   - User ID: ${user?.id}, Username: ${user?.username}');
+        print('   - Accreditation status data: $statusData');
+        print('   - Total appointments: ${allAppts.length}');
+        print('   - Followers appointments: ${allAppts.where((a) => a.effectivePrivacy == "followers").length}');
+        print('   - Public appointments: ${allAppts.where((a) => a.effectivePrivacy == "public").length}');
+        print('   - Private appointments: ${allAppts.where((a) => a.effectivePrivacy == "private").length}');
+        
+        for (var a in allAppts) {
+          print('   - Appt: ${a.title}, ID: ${a.id}');
+          print('     ↳ Global Privacy: ${a.privacy}, Effective: ${a.effectivePrivacy}');
+          print('     ↳ Invited: ${a.viewerInvitation != null}, Host: ${a.host?.id}');
+          if (a.effectivePrivacy == 'followers') {
+            print('     ↳ [FOLLOWERS] Should be visible only if isFriend: $_isFriend');
+            if (!_isFriend && !isSelf) {
+              print('     ↳ [FILTERED OUT] Because isFriend=$_isFriend and isSelf=$isSelf');
+            }
+          }
+        }
+      }
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {

@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.sijilli.app",
+      "sha256_cert_fingerprints": [
+        "5A:05:99:23:0F:5C:7A:FB:33:58:19:C2:73:4D:59:D8:5C:6D:31:2B:8C:88:A1:1D:1F:80:16:06:68:74:A5:E8"
+      ]
+    }
+  }
+]

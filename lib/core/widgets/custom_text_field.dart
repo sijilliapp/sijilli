@@ -20,6 +20,7 @@ class CustomTextField extends StatelessWidget {
   final FocusNode? focusNode;
   final TextDirection? textDirection;
   final List<TextInputFormatter>? inputFormatters;
+  final bool showCountdown;
 
   const CustomTextField({
     super.key,
@@ -39,6 +40,7 @@ class CustomTextField extends StatelessWidget {
     this.focusNode,
     this.textDirection,
     this.inputFormatters,
+    this.showCountdown = false,
   });
 
   @override
@@ -57,13 +59,32 @@ class CustomTextField extends StatelessWidget {
       enabled: enabled,
       focusNode: focusNode,
       inputFormatters: inputFormatters,
-      textDirection: textDirection ?? TextDirection.rtl,
+      textDirection: textDirection ?? Directionality.of(context),
+      buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
         alignLabelWithHint: maxLines > 1,
         prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: AppColors.primary) : null,
-        suffixIcon: suffixIcon,
+        suffixIcon: showCountdown && maxLength != null && controller != null
+            ? ListenableBuilder(
+                listenable: controller!,
+                builder: (context, _) {
+                  final remaining = maxLength! - controller!.text.length;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                    child: Text(
+                      remaining.toString(),
+                      style: TextStyle(
+                        color: remaining < 5 ? AppColors.error : AppColors.primary.withValues(alpha: 0.5),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  );
+                },
+              )
+            : suffixIcon,
         filled: true,
         fillColor: isDark ? Colors.grey.shade800 : Colors.white,
         contentPadding: const EdgeInsets.symmetric(

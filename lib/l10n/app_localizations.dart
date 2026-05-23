@@ -167,7 +167,7 @@ abstract class AppLocalizations {
   /// No description provided for @fullName.
   ///
   /// In ar, this message translates to:
-  /// **'الاسم الكامل'**
+  /// **'الاسم الظاهر'**
   String get fullName;
 
   /// No description provided for @email.
@@ -241,6 +241,12 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'البريد الإلكتروني غير صحيح'**
   String get invalidEmail;
+
+  /// No description provided for @invalidPhone.
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم الهاتف غير صحيح (8-12 رقماً)'**
+  String get invalidPhone;
 
   /// No description provided for @passwordsNotMatch.
   ///
@@ -716,6 +722,12 @@ abstract class AppLocalizations {
   /// **'تبليغ'**
   String get report;
 
+  /// No description provided for @reportAndBlock.
+  ///
+  /// In ar, this message translates to:
+  /// **'تبليغ وحظر'**
+  String get reportAndBlock;
+
   /// No description provided for @guest.
   ///
   /// In ar, this message translates to:
@@ -733,6 +745,18 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'الاعتمادات'**
   String get accreditations;
+
+  /// No description provided for @recentSearches.
+  ///
+  /// In ar, this message translates to:
+  /// **'البحوث الأخيرة'**
+  String get recentSearches;
+
+  /// No description provided for @searchUsers.
+  ///
+  /// In ar, this message translates to:
+  /// **'البحث عن حسابات...'**
+  String get searchUsers;
 
   /// No description provided for @explore.
   ///
@@ -1061,13 +1085,13 @@ abstract class AppLocalizations {
   /// No description provided for @streamLink.
   ///
   /// In ar, this message translates to:
-  /// **'رابط البث (اختياري)'**
+  /// **'تفاصيل الموعد أو رابط الإعلان أو البث'**
   String get streamLink;
 
   /// No description provided for @streamLinkHint.
   ///
   /// In ar, this message translates to:
-  /// **'مثال: https://zoom.us/j/123...'**
+  /// **'اكتب التفاصيل أو ضع الرابط هنا...'**
   String get streamLinkHint;
 
   /// No description provided for @appointmentPrivacy.
@@ -1130,6 +1154,18 @@ abstract class AppLocalizations {
   /// **'3 ساعات'**
   String get duration3h;
 
+  /// No description provided for @duration6h.
+  ///
+  /// In ar, this message translates to:
+  /// **'6 ساعات'**
+  String get duration6h;
+
+  /// No description provided for @duration12h.
+  ///
+  /// In ar, this message translates to:
+  /// **'12 ساعة'**
+  String get duration12h;
+
   /// No description provided for @durationAllDay.
   ///
   /// In ar, this message translates to:
@@ -1139,19 +1175,19 @@ abstract class AppLocalizations {
   /// No description provided for @sunriseTime.
   ///
   /// In ar, this message translates to:
-  /// **'الشروق'**
+  /// **'شروقًا'**
   String get sunriseTime;
 
   /// No description provided for @dhuhrTime.
   ///
   /// In ar, this message translates to:
-  /// **'الظهر'**
+  /// **'ظهرًا'**
   String get dhuhrTime;
 
   /// No description provided for @sunsetTime.
   ///
   /// In ar, this message translates to:
-  /// **'الغروب'**
+  /// **'غروبًا'**
   String get sunsetTime;
 
   /// No description provided for @createAppointment.
@@ -1475,20 +1511,32 @@ abstract class AppLocalizations {
   /// No description provided for @morning.
   ///
   /// In ar, this message translates to:
-  /// **'صباحاً'**
+  /// **'صباحًا'**
   String get morning;
 
-  /// No description provided for @night.
+  /// No description provided for @noon.
   ///
   /// In ar, this message translates to:
-  /// **'مساءً'**
-  String get night;
+  /// **'ظهرًا'**
+  String get noon;
+
+  /// No description provided for @afternoon.
+  ///
+  /// In ar, this message translates to:
+  /// **'عصرًا'**
+  String get afternoon;
 
   /// No description provided for @evening.
   ///
   /// In ar, this message translates to:
-  /// **'عصراً'**
+  /// **'مساءً'**
   String get evening;
+
+  /// No description provided for @night.
+  ///
+  /// In ar, this message translates to:
+  /// **'ليلاً'**
+  String get night;
 
   /// No description provided for @afterTomorrow.
   ///
@@ -1745,7 +1793,7 @@ abstract class AppLocalizations {
   /// No description provided for @detailsDeleteTitleHost.
   ///
   /// In ar, this message translates to:
-  /// **'إلغاء الموعد نهائياً'**
+  /// **'حذف نهائي'**
   String get detailsDeleteTitleHost;
 
   /// No description provided for @detailsDeleteTitleGuest.
@@ -1973,7 +2021,7 @@ abstract class AppLocalizations {
   /// No description provided for @detailsStayDuration.
   ///
   /// In ar, this message translates to:
-  /// **'مكث: {duration} ساعة'**
+  /// **'مكث: {duration}'**
   String detailsStayDuration(Object duration);
 
   /// No description provided for @detailsDone.
@@ -2303,7 +2351,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyDataContent.
   ///
   /// In ar, this message translates to:
-  /// **'• معلومات الحساب: مثل الاسم، البريد الإلكتروني، وصورة الملف الشخصي لتعريف هويتك.\n• المحتوى الذي تنشئه (UGC): المواعيد، التعليقات، والصور التي ترفعها لغرض المشاركة.\n• البيانات التقنية: نوع الجهاز، نظام التشغيل، وعنوان الـ IP لضمان استقرار التطبيق وتحسين الأداء.\n\n• Account Information: Name, email, and profile picture to identify you.\n• User-Generated Content (UGC): Appointments, comments, and photos you upload for sharing.\n• Technical Data: Device type, operating system, and IP address to ensure app stability and performance.'**
+  /// **'• معلومات الحساب: مثل الاسم، البريد الإلكتروني، وصورة الملف الشخصي لتعريف هويتك.\n• جهات الاتصال: نطلب الوصول لقائمة الاتصال للسماح لك بدعوة أصدقائك ومزامنة المواعيد معهم بسهولة.\n• المحتوى الذي تنشئه (UGC): المواعيد، التعليقات، والصور التي ترفعها لغرض المشاركة.\n• البيانات التقنية: نوع الجهاز، نظام التصديق، وعنوان الـ IP لضمان استقرار التطبيق.\n\n• Account Information: Name, email, and profile picture.\n• Contacts: We access your contacts to allow you to invite friends and sync appointments.\n• User-Generated Content (UGC): Appointments, comments, and photos.\n• Technical Data: Device info and IP address.'**
   String get privacyDataContent;
 
   /// No description provided for @privacySecurityTitle.
@@ -2315,7 +2363,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacySecurityContent.
   ///
   /// In ar, this message translates to:
-  /// **'نحن نستخدم بروتوكولات تشفير متطورة (مثل SSL/TLS) لنقل البيانات بشكل آمن بين هاتفك وخوادمنا، لضمان عدم وصول أي طرف غير مصرح له إلى معلوماتك.\n\nWe use advanced encryption protocols (such as SSL/TLS) to transmit data securely between your device and our servers, ensuring no unauthorized party can access your information.'**
+  /// **'نحن نستخدم بروتوكولات تشفير متطورة (مثل SSL/TLS) لنقل البيانات بشكل آمن بين هاتفك وخوادمنا، لضمان عدم وصول أي طرف غير مصرح له إلى معلوماتك.\n\nWe use advanced encryption protocols (such as SSL/TLS) لنقل البيانات بشكل آمن بين هاتفك وخوادمنا، لضمان عدم وصول أي طرف غير مصرح له إلى معلوماتك.'**
   String get privacySecurityContent;
 
   /// No description provided for @privacyUsageTitle.
@@ -2447,7 +2495,7 @@ abstract class AppLocalizations {
   /// No description provided for @removeAccreditationDesc.
   ///
   /// In ar, this message translates to:
-  /// **'هل أنت متأكد من رغبتك في إلغاء وثيقة الاعتماد مع هذه الجهة؟ سيؤدي ذلك إلى حجب المواعيد المخصصة للمعتمدين.'**
+  /// **'تنبيه: إنهاء الاعتماد سيتطلب موافقة الطرف الآخر مرة أخرى لتبادل المواعيد مستقبلاً.'**
   String get removeAccreditationDesc;
 
   /// No description provided for @newAppointmentAction.
@@ -2483,8 +2531,32 @@ abstract class AppLocalizations {
   /// No description provided for @connectAction.
   ///
   /// In ar, this message translates to:
-  /// **'تواصل'**
+  /// **'طلب اعتماد'**
   String get connectAction;
+
+  /// No description provided for @ghostMode.
+  ///
+  /// In ar, this message translates to:
+  /// **'وضع التخفي (Ghost Mode)'**
+  String get ghostMode;
+
+  /// No description provided for @ghostModeDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'منع ظهور ملفك الشخصي في نتائج البحث العامة'**
+  String get ghostModeDesc;
+
+  /// No description provided for @publicAccount.
+  ///
+  /// In ar, this message translates to:
+  /// **'حساب عام'**
+  String get publicAccount;
+
+  /// No description provided for @publicAccountDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'السماح للآخرين بالعثور عليك ومتابعتك'**
+  String get publicAccountDesc;
 
   /// No description provided for @downloadFullImageConfirm.
   ///
@@ -2503,6 +2575,288 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'فشلت العملية: {error}'**
   String operationFailed(String error);
+
+  /// No description provided for @registrationClosedTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'عذراً، التسجيل مغلق حالياً'**
+  String get registrationClosedTitle;
+
+  /// No description provided for @registrationClosedMessage.
+  ///
+  /// In ar, this message translates to:
+  /// **'لقد اكتمل النصاب الحالي للمستخدمين، أو أننا نجري بعض التحسينات لضمان أفضل تجربة لك.'**
+  String get registrationClosedMessage;
+
+  /// No description provided for @contactUsForInvite.
+  ///
+  /// In ar, this message translates to:
+  /// **'يمكنك التواصل معنا للاستفسار أو طلب دعوة خاصة:'**
+  String get contactUsForInvite;
+
+  /// No description provided for @backToLogin.
+  ///
+  /// In ar, this message translates to:
+  /// **'العودة لتسجيل الدخول'**
+  String get backToLogin;
+
+  /// No description provided for @whatsapp.
+  ///
+  /// In ar, this message translates to:
+  /// **'واتساب'**
+  String get whatsapp;
+
+  /// No description provided for @ourEmail.
+  ///
+  /// In ar, this message translates to:
+  /// **'بريدنا'**
+  String get ourEmail;
+
+  /// No description provided for @bio.
+  ///
+  /// In ar, this message translates to:
+  /// **'النبذة التعريفية'**
+  String get bio;
+
+  /// No description provided for @phone.
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم الهاتف'**
+  String get phone;
+
+  /// No description provided for @socialLink.
+  ///
+  /// In ar, this message translates to:
+  /// **'رابط خارجي'**
+  String get socialLink;
+
+  /// No description provided for @changePassword.
+  ///
+  /// In ar, this message translates to:
+  /// **'تغيير كلمة المرور'**
+  String get changePassword;
+
+  /// No description provided for @oldPassword.
+  ///
+  /// In ar, this message translates to:
+  /// **'كلمة المرور الحالية'**
+  String get oldPassword;
+
+  /// No description provided for @newPassword.
+  ///
+  /// In ar, this message translates to:
+  /// **'كلمة المرور الجديدة'**
+  String get newPassword;
+
+  /// No description provided for @confirmNewPassword.
+  ///
+  /// In ar, this message translates to:
+  /// **'تأكيد كلمة المرور الجديدة'**
+  String get confirmNewPassword;
+
+  /// No description provided for @passwordChangedSuccessfully.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم تغيير كلمة المرور بنجاح'**
+  String get passwordChangedSuccessfully;
+
+  /// No description provided for @oldPasswordIncorrect.
+  ///
+  /// In ar, this message translates to:
+  /// **'كلمة المرور الحالية غير صحيحة'**
+  String get oldPasswordIncorrect;
+
+  /// No description provided for @forgotPasswordDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'أدخل بريدك الإلكتروني لاستعادة الوصول إلى حسابك'**
+  String get forgotPasswordDesc;
+
+  /// No description provided for @emailSentSuccess.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم الإرسال بنجاح'**
+  String get emailSentSuccess;
+
+  /// No description provided for @passwordResetInstructions.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم إرسال تعليمات إعادة تعيين كلمة المرور إلى {email}'**
+  String passwordResetInstructions(String email);
+
+  /// No description provided for @orContactByEmail.
+  ///
+  /// In ar, this message translates to:
+  /// **'أو راسلنا على البريد الإلكتروني'**
+  String get orContactByEmail;
+
+  /// No description provided for @articleCopied.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم نسخ \"{title}\" إلى الحافظة'**
+  String articleCopied(String title);
+
+  /// No description provided for @confirmDeleteArticle.
+  ///
+  /// In ar, this message translates to:
+  /// **'تأكيد الحذف'**
+  String get confirmDeleteArticle;
+
+  /// No description provided for @confirmDeleteArticleMsg.
+  ///
+  /// In ar, this message translates to:
+  /// **'هل أنت متأكد أنك تريد حذف \"{title}\" نهائياً؟'**
+  String confirmDeleteArticleMsg(String title);
+
+  /// No description provided for @copy.
+  ///
+  /// In ar, this message translates to:
+  /// **'نسخ'**
+  String get copy;
+
+  /// No description provided for @readTimeFormat.
+  ///
+  /// In ar, this message translates to:
+  /// **'مدة القراءة: {minutes} دقيقة {words} كلمة'**
+  String readTimeFormat(int minutes, int words);
+
+  /// No description provided for @readTimeMins.
+  ///
+  /// In ar, this message translates to:
+  /// **'مدة القراءة: {minutes} دقيقة'**
+  String readTimeMins(int minutes);
+
+  /// No description provided for @articleDraftRestored.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم استرجاع مسودة المقال'**
+  String get articleDraftRestored;
+
+  /// No description provided for @publishArticle.
+  ///
+  /// In ar, this message translates to:
+  /// **'نشر المقال'**
+  String get publishArticle;
+
+  /// No description provided for @wordsCount.
+  ///
+  /// In ar, this message translates to:
+  /// **'عدد الكلمات: {count}'**
+  String wordsCount(int count);
+
+  /// No description provided for @lastEdited.
+  ///
+  /// In ar, this message translates to:
+  /// **'آخر تحرير: {date}'**
+  String lastEdited(String date);
+
+  /// No description provided for @boldTextFirst.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرجاء تحديد النص المراد تغميقه أولاً'**
+  String get boldTextFirst;
+
+  /// No description provided for @selectVersesFirst.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرجاء تظليل الأبيات أولاً'**
+  String get selectVersesFirst;
+
+  /// No description provided for @centerTextFirst.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرجاء تحديد النص المراد توسيطه أولاً'**
+  String get centerTextFirst;
+
+  /// No description provided for @justifyTextFirst.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرجاء تحديد النص المراد ضبطه أولاً'**
+  String get justifyTextFirst;
+
+  /// No description provided for @closePreview.
+  ///
+  /// In ar, this message translates to:
+  /// **'إغلاق المعاينة'**
+  String get closePreview;
+
+  /// No description provided for @livePreview.
+  ///
+  /// In ar, this message translates to:
+  /// **'معاينة حية'**
+  String get livePreview;
+
+  /// No description provided for @addArticleCoverOptional.
+  ///
+  /// In ar, this message translates to:
+  /// **'إضافة غلاف المقال (اختياري)'**
+  String get addArticleCoverOptional;
+
+  /// No description provided for @writeArticleHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'اكتب مقالك أو قصيدتك هنا...'**
+  String get writeArticleHint;
+
+  /// No description provided for @boldTooltip.
+  ///
+  /// In ar, this message translates to:
+  /// **'تغميق النص (عريض)'**
+  String get boldTooltip;
+
+  /// No description provided for @poemTooltip.
+  ///
+  /// In ar, this message translates to:
+  /// **'تنسيق كقصيدة'**
+  String get poemTooltip;
+
+  /// No description provided for @centerTooltip.
+  ///
+  /// In ar, this message translates to:
+  /// **'توسيط النص'**
+  String get centerTooltip;
+
+  /// No description provided for @justifyTooltip.
+  ///
+  /// In ar, this message translates to:
+  /// **'ضبط النص'**
+  String get justifyTooltip;
+
+  /// No description provided for @editArticleCover.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعديل غلاف المقال'**
+  String get editArticleCover;
+
+  /// No description provided for @expandImage.
+  ///
+  /// In ar, this message translates to:
+  /// **'توسيع الصورة'**
+  String get expandImage;
+
+  /// No description provided for @copiedToClipboard.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم نسخ {url} للحافظة'**
+  String copiedToClipboard(String url);
+
+  /// No description provided for @errorArticleNotPublished.
+  ///
+  /// In ar, this message translates to:
+  /// **'المقال غير منشور أو غير متوفر حالياً.'**
+  String get errorArticleNotPublished;
+
+  /// No description provided for @errorFetchingArticle.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذر جلب بيانات المقال. الرجاء التحقق من الرابط.'**
+  String get errorFetchingArticle;
+
+  /// No description provided for @article.
+  ///
+  /// In ar, this message translates to:
+  /// **'المقال'**
+  String get article;
 }
 
 class _AppLocalizationsDelegate

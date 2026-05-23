@@ -1,0 +1,335 @@
+// 📍 lib/features/admin/widgets/message_detail_sheet.dart
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_dimens.dart';
+import '../../../core/utils/app_date_formatter.dart';
+import '../../../core/widgets/pulse_avatar.dart';
+import '../../../models/contact_message.dart';
+import '../providers/admin_provider.dart';
+
+void showMessageDetailSheet(BuildContext context, ContactMessageModel message) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => _MessageDetailSheet(message: message),
+  );
+}
+
+class _MessageDetailSheet extends StatefulWidget {
+  final ContactMessageModel message;
+
+  const _MessageDetailSheet({required this.message});
+
+  @override
+  State<_MessageDetailSheet> createState() => _MessageDetailSheetState();
+}
+
+class _MessageDetailSheetState extends State<_MessageDetailSheet> {
+  bool _isUpdating = false;
+  late String _currentStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentStatus = widget.message.status;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasUser = widget.message.user != null;
+    final senderName = hasUser ? widget.message.user!.name : 'زائر غير مسجل';
+    final username = hasUser ? '@${widget.message.user!.username}' : 'غير معروف';
+
+    // الألوان والأيقونات الخاصة بنوع الرسالة
+    Color typeColor;
+    String typeLabel;
+    switch (widget.message.type) {
+      case 'suggestion':
+        typeColor = Colors.green;
+        typeLabel = 'اقتراح';
+        break;
+      case 'complaint':
+        typeColor = Colors.red;
+        typeLabel = 'شكوى';
+        break;
+      case 'inquiry':
+        typeColor = Colors.blue;
+        typeLabel = 'استفسار';
+        break;
+      default:
+        typeColor = Colors.orange;
+        typeLabel = 'أخرى';
+    }
+
+    final statusOptions = [
+      {'key': 'new', 'label': 'جديدة 🆕'},
+      {'key': 'read', 'label': 'مقروءة 👁️'},
+      {'key': 'replied', 'label': 'تم الرد عليها 💬'},
+      {'key': 'closed', 'label': 'مغلقة 🔒'},
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.only(
+        top: 8,
+        left: 20,
+        right: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ➖ مقبض السحب العلوي
+            Center(
+              child: Container(
+                width: 40,
+                height: 4.5,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // 🏷️ نوع الرسالة الحالي
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: typeColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: typeColor.withValues(alpha: 0.2)),
+                  ),
+                  child: Text(
+                    typeLabel,
+                    style: TextStyle(
+                      color: typeColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  AppDateFormatter.formatFullDateTime(widget.message.created, 'ar'),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // 📌 عنوان الرسالة
+            Text(
+              widget.message.title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            
+            const SizedBox(height: 12),
+            
+            // 💬 صندوق محتوى الرسالة
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.grey.shade900.withValues(alpha: 0.5) : Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                ),
+              ),
+              constraints: const BoxConstraints(maxHeight: 220),
+              child: Scrollbar(
+                thumbVisibility: true,
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    Text(
+                      widget.message.message,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: isDark ? Colors.grey.shade300 : Colors.grey.shade800,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 20),
+            
+            const Divider(height: 1),
+            
+            const SizedBox(height: 16),
+            
+            // 👤 معلومات المرسل
+            Text(
+              'مرسل الرسالة',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+              ),
+            ),
+            
+            const SizedBox(height: 8),
+            
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.grey.shade900.withValues(alpha: 0.3) : Colors.grey.shade50.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark ? Colors.grey.shade800.withValues(alpha: 0.5) : Colors.grey.shade200.withValues(alpha: 0.5),
+                ),
+              ),
+              child: Row(
+                children: [
+                  PulseAvatar(
+                    image: hasUser && widget.message.user!.getAvatarUrl('https://sijilli.pockethost.io') != null
+                        ? NetworkImage(widget.message.user!.getAvatarUrl('https://sijilli.pockethost.io')!)
+                        : null,
+                    size: 40,
+                    status: AvatarStatus.none,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          senderName,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          username,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // ⚙️ تغيير حالة الرسالة
+            Row(
+              children: [
+                const Icon(Icons.settings_outlined, size: 18, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Text(
+                  'تحديث حالة المراسلة',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.grey.shade300 : Colors.grey.shade800,
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 12),
+            
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _currentStatus,
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                        ),
+                      ),
+                      filled: true,
+                      fillColor: isDark ? Colors.grey.shade900 : Colors.grey.shade50,
+                    ),
+                    items: statusOptions.map((opt) {
+                      return DropdownMenuItem<String>(
+                        value: opt['key'],
+                        child: Text(opt['label']!),
+                      );
+                    }).toList(),
+                    onChanged: _isUpdating ? null : (val) async {
+                      if (val != null && val != _currentStatus) {
+                        setState(() {
+                          _isUpdating = true;
+                        });
+                        
+                        final success = await context.read<AdminProvider>().updateMessageStatus(
+                          widget.message.id,
+                          val,
+                        );
+                        
+                        if (mounted) {
+                          setState(() {
+                            _isUpdating = false;
+                            if (success) {
+                              _currentStatus = val;
+                            }
+                          });
+                          
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(success ? 'تم تحديث حالة الرسالة بنجاح' : 'فشل تحديث حالة الرسالة'),
+                              backgroundColor: success ? Colors.green : Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                ),
+                if (_isUpdating) ...[
+                  const SizedBox(width: 16),
+                  const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2.5),
+                  ),
+                ],
+              ],
+            ),
+            
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+}

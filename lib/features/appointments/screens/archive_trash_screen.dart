@@ -118,9 +118,9 @@ class _ArchiveTabState extends State<ArchiveTab> {
                  child: filtered.isEmpty 
                     ? Center(child: Text(context.l10n.noResultsFound))
                     : ListView.separated(
-                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                    itemCount: filtered.length,
-                   separatorBuilder: (_, __) => const SizedBox(height: 8),
+                   separatorBuilder: (_, __) => const SizedBox(height: 0),
                    itemBuilder: (context, index) {
                      final appt = filtered[index];
                      return AppointmentCard(
@@ -158,9 +158,9 @@ class TrashTab extends StatelessWidget {
           }
 
           return ListView.separated(
-             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
              itemCount: appointments.length,
-             separatorBuilder: (_, __) => const SizedBox(height: 8),
+             separatorBuilder: (_, __) => const SizedBox(height: 0),
              itemBuilder: (context, index) {
                final appt = appointments[index];
                return AppointmentCard(

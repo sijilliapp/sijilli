@@ -156,11 +156,7 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
        _datesLine = '${dateStrategy.primaryDate} - ${dateStrategy.secondaryDate}';
        if (locale == 'ar') _datesLine = AppDateFormatter.toEasternArabicDigits(_datesLine);
 
-       final dt = _appointment.fullDateTime;
-       final th = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
-       final tm = dt.minute.toString().padLeft(2, '0');
-       final tp = dt.hour >= 12 ? context.l10n.pm : context.l10n.am;
-       _timeLine = '$th:$tm $tp';
+       _timeLine = AppDateFormatter.formatTime12h(_appointment.fullDateTime, locale);
        if (locale == 'ar') _timeLine = AppDateFormatter.toEasternArabicDigits(_timeLine);
     }
   }
@@ -171,6 +167,11 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
      final isHost = _appointment.hostId == currentUserId;
      print('🔍 [_isHost Check] apptHost=${_appointment.hostId}, currentUserId=$currentUserId, result=$isHost');
      return isHost;
+  }
+
+  bool get _isAdmin {
+     final auth = Provider.of<AuthProvider>(context, listen: false);
+     return auth.user?.isAdmin ?? false;
   }
 
   @override
@@ -251,30 +252,29 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
                       },
                     ),
 
-                    const SizedBox(height: AppDimens.spaceL),
-
-                    AppointmentActionButtons(
-                      isArchived: _appointment.isArchived,
-                      onClone: () {
-                         Navigator.pop(context);
-                         Navigator.push(
-                           context, 
-                           MaterialPageRoute(builder: (_) => AddEventScreen(initialAppointment: _appointment))
-                         );
-                      },
-                      onArchive: () {
-                         final provider = context.read<AppointmentProvider>();
-                         if (_appointment.isArchived) {
-                           provider.unarchiveInvitation(_appointment.id);
-                         } else {
-                           provider.archiveInvitation(_appointment.id);
-                         }
-                         Navigator.pop(context);
-                      },
-                      onDelete: _showDeleteDialog,
-                    ),
-
-                    const SizedBox(height: AppDimens.spaceL),
+                    if (_isHost || _isAdmin || _appointment.viewerRecord != null) ...[
+                      AppointmentActionButtons(
+                        isArchived: _appointment.isArchived,
+                        onClone: () {
+                           Navigator.pop(context);
+                           Navigator.push(
+                             context, 
+                             MaterialPageRoute(builder: (_) => AddEventScreen(initialAppointment: _appointment))
+                           );
+                        },
+                        onArchive: () {
+                           final provider = context.read<AppointmentProvider>();
+                           if (_appointment.isArchived) {
+                             provider.unarchiveInvitation(_appointment.id);
+                           } else {
+                             provider.archiveInvitation(_appointment.id);
+                           }
+                           Navigator.pop(context);
+                        },
+                        onDelete: _showDeleteDialog,
+                      ),
+                      const SizedBox(height: AppDimens.spaceL),
+                    ],
                     Divider(color: AppColors.getBorder(context)),
                     const SizedBox(height: AppDimens.spaceL),
 
@@ -386,26 +386,52 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
   }
 
   void _showDeleteDialog() {
+    bool isLoading = false;
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(_isHost ? context.l10n.detailsDeleteTitleHost : context.l10n.detailsDeleteTitleGuest),
-        content: Text(_isHost 
-            ? context.l10n.detailsDeleteConfirmHost
-            : context.l10n.detailsDeleteConfirmGuest
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(context.l10n.detailsUndo)),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.warning, foregroundColor: Colors.white),
-            onPressed: () async {
-               await context.read<AppointmentProvider>().deleteInvitation(_appointment.id);
-               Navigator.pop(ctx);
-               if (mounted) Navigator.pop(context);
-            },
-            child: Text(_isHost ? context.l10n.detailsCancelAppointment : context.l10n.delete),
-          ),
-        ],
+      barrierDismissible: false, // Prevent closing while deleting
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) {
+          final isHostOrAdmin = _isHost || _isAdmin;
+          return AlertDialog(
+            title: Text(isHostOrAdmin ? context.l10n.detailsDeleteTitleHost : context.l10n.detailsDeleteTitleGuest),
+            content: Text(isHostOrAdmin 
+                ? context.l10n.detailsDeleteConfirmHost
+                : context.l10n.detailsDeleteConfirmGuest
+            ),
+            actions: [
+              TextButton(
+                onPressed: isLoading ? null : () => Navigator.pop(ctx), 
+                child: Text(context.l10n.detailsUndo),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.warning, 
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: AppColors.warning.withValues(alpha: 0.6),
+                ),
+                onPressed: isLoading ? null : () async {
+                  setState(() => isLoading = true);
+                  try {
+                    await context.read<AppointmentProvider>().deleteInvitation(_appointment.id);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                    if (mounted) Navigator.pop(context);
+                  } catch (e) {
+                    if (ctx.mounted) setState(() => isLoading = false);
+                  }
+                },
+                child: isLoading 
+                  ? const SizedBox(
+                      width: 20, 
+                      height: 20, 
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    )
+                  : Text(isHostOrAdmin ? context.l10n.detailsCancelAppointment : context.l10n.delete),
+              ),
+            ],
+          );
+        }
       ),
     );
   }
@@ -454,61 +480,100 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
     else if (field == 'personalNote') label = context.l10n.detailsPersonalNote;
     else label = context.l10n.detailsLink;
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('${context.l10n.edit} $label'),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(hintText: context.l10n.detailsEnterHere(label)),
-          maxLines: field.contains('Note') || field == 'description' ? 3 : 1,
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(context.l10n.cancel)),
-          ElevatedButton(
-            onPressed: () async {
-              final newValue = controller.text.trim();
-              if (newValue != currentValue) {
-                  try {
-                    if (field == 'personalNote') {
-                      await context.read<AppointmentProvider>().updateInvitationSettings(
-                        _appointment.id,
-                        personalNote: newValue,
-                        privacy: _selectedPrivacy, 
-                        categories: _selectedCategories,
-                      );
-                      setState(() {
-                         final updatedInv = _appointment.currentUserInvitation?.copyWith(personalNote: newValue);
-                         _appointment = _appointment.copyWith(currentUserInvitation: updatedInv);
-                      });
-                    } else {
-                      await PbAppointmentService().updateAppointment(
-                        _appointment.id, 
-                        { 
-                           if (field == 'description') 'description': newValue,
-                           if (field == 'streamLink') 'stream_link': newValue,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.getCardBackground(ctx),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${context.l10n.edit} $label',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: controller,
+                  decoration: InputDecoration(
+                    hintText: context.l10n.detailsEnterHere(label),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  maxLines: field.contains('Note') || field == 'description' ? 5 : 1,
+                  autofocus: true,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(context.l10n.cancel),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final newValue = controller.text.trim();
+                        if (newValue != currentValue) {
+                            try {
+                              if (field == 'personalNote') {
+                                await context.read<AppointmentProvider>().updateInvitationSettings(
+                                  _appointment.id,
+                                  personalNote: newValue,
+                                  privacy: _selectedPrivacy, 
+                                  categories: _selectedCategories,
+                                );
+                                setState(() {
+                                   final updatedInv = _appointment.currentUserInvitation?.copyWith(personalNote: newValue);
+                                   _appointment = _appointment.copyWith(currentUserInvitation: updatedInv);
+                                });
+                              } else {
+                                await PbAppointmentService().updateAppointment(
+                                  _appointment.id, 
+                                  { 
+                                     if (field == 'description') 'description': newValue,
+                                     if (field == 'streamLink') 'stream_link': newValue,
+                                  }
+                                );
+                                setState(() {
+                                   _appointment = _appointment.copyWith(
+                                      description: field == 'description' ? newValue : null,
+                                      streamLink: field == 'streamLink' ? newValue : null,
+                                   );
+                                });
+                              }
+                              if (mounted) Navigator.pop(ctx);
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.detailsUpdateFailed(e.toString()))));
+                            }
+                        } else {
+                           Navigator.pop(ctx);
                         }
-                      );
-                      setState(() {
-                         _appointment = _appointment.copyWith(
-                            description: field == 'description' ? newValue : null,
-                            streamLink: field == 'streamLink' ? newValue : null,
-                         );
-                      });
-                    }
-                    if (mounted) Navigator.pop(ctx);
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.detailsUpdateFailed(e.toString()))));
-                  }
-              } else {
-                 Navigator.pop(ctx);
-              }
-            },
-            child: Text(context.l10n.save),
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      ),
+                      child: Text(context.l10n.save, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

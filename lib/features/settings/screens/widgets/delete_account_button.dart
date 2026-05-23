@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/auth_wrapper.dart';
 import '../../../auth/providers/auth_provider.dart';
+import 'delete_account_progress_dialog.dart';
 
 class DeleteAccountButton extends StatelessWidget {
   const DeleteAccountButton({super.key});
@@ -56,49 +57,26 @@ class DeleteAccountButton extends StatelessWidget {
               
               final provider = Provider.of<AuthProvider>(context, listen: false); // Use Widget Context
               
-              // Show loading
-              showDialog(
-                context: context, // Use Widget Context
+              // 1. Show Progress Dialog
+              final success = await showDialog<bool>(
+                context: context,
                 barrierDismissible: false,
-                builder: (loadingContext) => const Center(child: CircularProgressIndicator()),
+                builder: (progressContext) => DeleteAccountProgressDialog(
+                  onDelete: (onStep) => provider.deleteAccount(
+                    performLogout: false, 
+                    onStepComplete: onStep,
+                  ),
+                ),
               );
               
-              // 1. Delete account
-              final success = await provider.deleteAccount(performLogout: false);
-              
-              if (context.mounted) { // Check Widget Context (Stable)
-                Navigator.of(context, rootNavigator: true).pop(); // Close Loading Dialog
+              if (context.mounted && success == true) {
+                // 2. Perform logout and navigate
+                await provider.logout();
                 
-                if (success) {
-                  // 2. Show Success Feedback
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('تم حذف الحساب بنجاح'),
-                      backgroundColor: AppColors.success,
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                  
-                  // 3. Wait for user to see message
-                  await Future.delayed(const Duration(seconds: 2));
-                  
-                  if (context.mounted) {
-                    // 4. Perform logout and navigate
-                    await provider.logout();
-                    
-                    if (context.mounted) {
-                       Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (_) => const AuthWrapper()), 
-                        (route) => false,
-                      );
-                    }
-                  }
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(provider.errorMessage ?? 'فشل حذف الحساب'),
-                      backgroundColor: AppColors.error,
-                    ),
+                if (context.mounted) {
+                   Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const AuthWrapper()), 
+                    (route) => false,
                   );
                 }
               }

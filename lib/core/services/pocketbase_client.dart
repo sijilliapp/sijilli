@@ -3,6 +3,7 @@
 
 import 'package:pocketbase/pocketbase.dart';
 import '../../models/user.dart';
+import '../local/persistent_auth_store.dart';
 
 class PocketBaseClient {
   static PocketBaseClient? _instance;
@@ -12,9 +13,12 @@ class PocketBaseClient {
   
   static const String _defaultUrl = 'https://sijilli.pockethost.io';
   late PocketBase pb;
+  late PersistentAuthStore _store;
   
-  void initialize({String? customUrl}) {
-    pb = PocketBase(customUrl ?? _defaultUrl);
+  Future<void> initialize({String? customUrl}) async {
+    _store = PersistentAuthStore();
+    await _store.load();
+    pb = PocketBase(customUrl ?? _defaultUrl, authStore: _store);
   }
 
   /// الحصول على المستخدم الحالي من الـ AuthStore
@@ -29,5 +33,15 @@ class PocketBaseClient {
       print('❌ Error parsing current user: $e');
     }
     return null;
+  }
+
+  /// قطع كافة الاتصالات اللحظية (مهم عند تسجيل الخروج لمنع أخطاء 403)
+  Future<void> disconnectRealtime() async {
+    try {
+      await pb.realtime.unsubscribe();
+      print('🔌 [PocketBaseClient] Realtime disconnected and unsubscribed from all.');
+    } catch (e) {
+      print('⚠️ [PocketBaseClient] Error during realtime disconnect: $e');
+    }
   }
 }

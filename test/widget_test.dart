@@ -12,6 +12,8 @@ import 'package:sijilli/core/providers/theme_provider.dart';
 import 'package:sijilli/core/providers/locale_provider.dart';
 import 'package:sijilli/core/providers/settings_provider.dart';
 
+import 'package:sijilli/core/providers/global_config_provider.dart';
+
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
@@ -19,6 +21,7 @@ void main() {
       themeProvider: ThemeProvider(),
       localeProvider: LocaleProvider(),
       settingsProvider: SettingsProvider(),
+      globalConfigProvider: GlobalConfigProvider(),
     ));
 
     // Verify that our counter starts at 0.

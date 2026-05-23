@@ -21,6 +21,7 @@ class PbInvitationService {
     DateTime? declinedAt,
     DateTime? deletedAt,
     DateTime? archivedAt,
+    String? linkedArticleId,
     
     // Multi-language support for system messages
     String? fcfsNote,
@@ -38,10 +39,11 @@ class PbInvitationService {
 
       if (postStatus != null) body['post_status'] = postStatus.toString();
       if (categoryId != null) body['categories'] = categoryId;
-      if (acceptedAt != null) body['accepted_at'] = acceptedAt.toIso8601String();
-      if (declinedAt != null) body['declined_at'] = declinedAt.toIso8601String();
-      if (deletedAt != null) body['deleted_at'] = deletedAt.toIso8601String();
-      if (archivedAt != null) body['archived_at'] = archivedAt.toIso8601String();
+      if (acceptedAt != null) body['accepted_at'] = acceptedAt.toUtc().toIso8601String();
+      if (declinedAt != null) body['declined_at'] = declinedAt.toUtc().toIso8601String();
+      if (deletedAt != null) body['deleted_at'] = deletedAt.toUtc().toIso8601String();
+      if (archivedAt != null) body['archived_at'] = archivedAt.toUtc().toIso8601String();
+      if (linkedArticleId != null) body['linked_article'] = linkedArticleId;
 
       await _pb.collection(collectionInvitations).update(invitationId, body: body, expand: 'categories');
 
@@ -155,18 +157,69 @@ class PbInvitationService {
     }
   }
 
+  Future<void> inviteGuestByPhone(String appointmentId, String phone, String placeholderName) async {
+    if (!_pb.authStore.isValid) {
+      throw Exception('Login required');
+    }
+
+    try {
+      final normalizedPhone = phone.replaceAll(RegExp(r'\D'), '');
+      
+      // ⚠️ Check if already invited by phone
+      final existing = await _pb.collection(collectionInvitations).getList(
+        filter: 'appointment = "$appointmentId" && invited_phone ~ "${normalizedPhone.substring(normalizedPhone.length > 9 ? normalizedPhone.length - 9 : 0)}"',
+        perPage: 1,
+      );
+
+      if (existing.items.isNotEmpty) {
+        throw 'تمت دعوة هذا الرقم مسبقاً لهذا الموعد';
+      }
+
+      final appt = await _pb.collection(collectionAppointments).getOne(appointmentId);
+      final globalPrivacy = appt.getStringValue('privacy', 'public');
+
+      await _pb.collection(collectionInvitations).create(body: {
+        'appointment': appointmentId,
+        'invited_phone': phone,
+        'invited_name': placeholderName,
+        'user': null,
+        'status': 'pending',
+        'post_status': 'published',
+        'privacy': globalPrivacy,
+      });
+      
+      await evaluateAppointmentConfirmation(appointmentId);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> inviteGuest(String appointmentId, String userId, {String? title, String? message}) async {
     if (!_pb.authStore.isValid) {
       throw Exception('Login required');
     }
 
     try {
+      // ⚠️ Check if already invited
+      final existing = await _pb.collection(collectionInvitations).getList(
+        filter: 'appointment = "$appointmentId" && user = "$userId"',
+        perPage: 1,
+      );
+
+      if (existing.items.isNotEmpty) {
+        throw 'هذا المستخدم مدعو مسبقاً لهذا الموعد';
+      }
+
+      // Fetch the appointment to get its global privacy
+      final appt = await _pb.collection(collectionAppointments).getOne(appointmentId);
+      final globalPrivacy = appt.getStringValue('privacy', 'public');
+
       await _pb.collection(collectionInvitations).create(body: {
         'appointment': appointmentId,
         'user': userId,
         'status': 'pending',
         'post_status': 'published',
-        'privacy': 'private',
+        'privacy': globalPrivacy,
       });
 
       try {
@@ -195,13 +248,14 @@ class PbInvitationService {
 
     try {
       final currentUserId = _pb.authStore.record?.id;
+      final globalPrivacy = appointment.privacy;
       
       await _pb.collection(collectionInvitations).create(body: {
         'appointment': appointment.id,
         'user': currentUserId,
         'status': 'pending',
         'post_status': 'published',
-        'privacy': 'private',
+        'privacy': globalPrivacy,
       });
 
       try {
@@ -220,6 +274,107 @@ class PbInvitationService {
       await evaluateAppointmentConfirmation(appointment.id);
     } catch (e) {
        rethrow;
+    }
+  }
+
+  Future<bool> toggleBookmark(String appointmentId, String userId) async {
+    if (!_pb.authStore.isValid) {
+      throw Exception('Login required');
+    }
+
+    try {
+      // 1. Check if already bookmarked
+      final existing = await _pb.collection(collectionInvitations).getList(
+        filter: 'appointment = "$appointmentId" && user = "$userId" && post_status = "bookmarked"',
+        perPage: 1,
+      );
+
+      final appt = await _pb.collection(collectionAppointments).getOne(appointmentId);
+      int currentSaves = appt.getIntValue('saves_count', 0);
+
+      if (existing.items.isNotEmpty) {
+        // Remove Bookmark
+        await _pb.collection(collectionInvitations).delete(existing.items.first.id);
+        
+        // Decrement counter (safety check for zero)
+        try {
+          await _pb.collection(collectionAppointments).update(appointmentId, body: {
+            'saves_count': (currentSaves > 0) ? currentSaves - 1 : 0,
+          });
+        } catch (e) {
+          print('⚠️ Note: saves_count field might be missing in DB, skipping update.');
+        }
+        
+        return false; // Un-bookmarked
+      } else {
+        // Create Shadow Record (Bookmark)
+        await _pb.collection(collectionInvitations).create(body: {
+          'appointment': appointmentId,
+          'user': userId,
+          'status': 'accepted', 
+          'post_status': 'bookmarked', 
+          'privacy': 'private', 
+          'accepted_at': DateTime.now().toUtc().toIso8601String(),
+        });
+
+        // Increment counter
+        try {
+          await _pb.collection(collectionAppointments).update(appointmentId, body: {
+            'saves_count': currentSaves + 1,
+          });
+        } catch (e) {
+          print('⚠️ Note: saves_count field might be missing in DB, skipping update.');
+        }
+
+        return true; // Bookmarked
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> syncPublicAppointment(String appointmentId, String userId) async {
+    if (!_pb.authStore.isValid) {
+      throw Exception('Login required');
+    }
+
+    try {
+      // Check if already exists (any status)
+      final existing = await _pb.collection(collectionInvitations).getList(
+        filter: 'appointment = "$appointmentId" && user = "$userId"',
+        perPage: 1,
+      );
+
+      if (existing.items.isNotEmpty) {
+        // If it exists but is trashed, we might want to "restore" it, 
+        // but for a public sync, we'll just return or update status.
+        final record = existing.items.first;
+        if (record.getStringValue('post_status') != 'published' || record.getStringValue('status') != 'accepted') {
+          await _pb.collection(collectionInvitations).update(record.id, body: {
+            'status': 'accepted',
+            'post_status': 'published',
+            'accepted_at': DateTime.now().toUtc().toIso8601String(),
+          });
+        }
+        return;
+      }
+
+      // Fetch appointment to get privacy
+      final appt = await _pb.collection(collectionAppointments).getOne(appointmentId);
+      final privacy = appt.getStringValue('privacy', 'public');
+
+      await _pb.collection(collectionInvitations).create(body: {
+        'appointment': appointmentId,
+        'user': userId,
+        'status': 'accepted',
+        'post_status': 'published',
+        'privacy': privacy,
+        'accepted_at': DateTime.now().toUtc().toIso8601String(),
+      });
+      
+      await evaluateAppointmentConfirmation(appointmentId);
+    } catch (e) {
+      rethrow;
     }
   }
 

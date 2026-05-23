@@ -281,27 +281,49 @@ class _PersonalSettingsSheetState extends State<PersonalSettingsSheet> {
   }
 
   void _showDeleteConfirmation(BuildContext context) {
+    bool isLoading = false;
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(context.l10n.detailsDeleteTitleGuest),
-        content: Text(context.l10n.detailsDeleteConfirmGuest),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(context.l10n.cancel)),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent, 
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimens.radius)),
-            ),
-            onPressed: () {
-              context.read<AppointmentProvider>().deleteInvitation(widget.appointment.id);
-              Navigator.pop(ctx); // Close dialog
-              Navigator.pop(context); // Close sheet
-            },
-            child: Text(context.l10n.delete),
-          ),
-        ],
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text(context.l10n.detailsDeleteTitleGuest),
+            content: Text(context.l10n.detailsDeleteConfirmGuest),
+            actions: [
+              TextButton(
+                onPressed: isLoading ? null : () => Navigator.pop(ctx), 
+                child: Text(context.l10n.cancel),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent, 
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: Colors.redAccent.withValues(alpha: 0.6),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimens.radius)),
+                ),
+                onPressed: isLoading ? null : () async {
+                  setState(() => isLoading = true);
+                  try {
+                    await context.read<AppointmentProvider>().deleteInvitation(widget.appointment.id);
+                    if (ctx.mounted) Navigator.pop(ctx); // Close dialog
+                    if (mounted) Navigator.pop(context); // Close sheet
+                  } catch (e) {
+                    if (ctx.mounted) setState(() => isLoading = false);
+                  }
+                },
+                child: isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    )
+                  : Text(context.l10n.delete),
+              ),
+            ],
+          );
+        }
       ),
     );
   }

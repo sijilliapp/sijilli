@@ -42,7 +42,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get createNewAccount => 'إنشاء حساب جديد';
 
   @override
-  String get fullName => 'الاسم الكامل';
+  String get fullName => 'الاسم الظاهر';
 
   @override
   String get email => 'البريد الإلكتروني';
@@ -79,6 +79,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get invalidEmail => 'البريد الإلكتروني غير صحيح';
+
+  @override
+  String get invalidPhone => 'رقم الهاتف غير صحيح (8-12 رقماً)';
 
   @override
   String get passwordsNotMatch => 'كلمات المرور غير متطابقة';
@@ -319,6 +322,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get report => 'تبليغ';
 
   @override
+  String get reportAndBlock => 'تبليغ وحظر';
+
+  @override
   String get guest => 'ضيف';
 
   @override
@@ -326,6 +332,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get accreditations => 'الاعتمادات';
+
+  @override
+  String get recentSearches => 'البحوث الأخيرة';
+
+  @override
+  String get searchUsers => 'البحث عن حسابات...';
 
   @override
   String get explore => 'استكشف';
@@ -497,10 +509,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get buildingHint => 'الاسم/الرقم';
 
   @override
-  String get streamLink => 'رابط البث (اختياري)';
+  String get streamLink => 'تفاصيل الموعد أو رابط الإعلان أو البث';
 
   @override
-  String get streamLinkHint => 'مثال: https://zoom.us/j/123...';
+  String get streamLinkHint => 'اكتب التفاصيل أو ضع الرابط هنا...';
 
   @override
   String get appointmentPrivacy => 'خصوصية الموعد';
@@ -533,16 +545,22 @@ class AppLocalizationsAr extends AppLocalizations {
   String get duration3h => '3 ساعات';
 
   @override
+  String get duration6h => '6 ساعات';
+
+  @override
+  String get duration12h => '12 ساعة';
+
+  @override
   String get durationAllDay => 'اليوم كله';
 
   @override
-  String get sunriseTime => 'الشروق';
+  String get sunriseTime => 'شروقًا';
 
   @override
-  String get dhuhrTime => 'الظهر';
+  String get dhuhrTime => 'ظهرًا';
 
   @override
-  String get sunsetTime => 'الغروب';
+  String get sunsetTime => 'غروبًا';
 
   @override
   String get createAppointment => 'إنشاء موعد';
@@ -731,13 +749,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noResultsFound => 'لا توجد نتائج';
 
   @override
-  String get morning => 'صباحاً';
+  String get morning => 'صباحًا';
 
   @override
-  String get night => 'مساءً';
+  String get noon => 'ظهرًا';
 
   @override
-  String get evening => 'عصراً';
+  String get afternoon => 'عصرًا';
+
+  @override
+  String get evening => 'مساءً';
+
+  @override
+  String get night => 'ليلاً';
 
   @override
   String get afterTomorrow => 'بعد غد';
@@ -926,7 +950,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get detailsAppointmentCancelled => 'الموعد ملغي';
 
   @override
-  String get detailsDeleteTitleHost => 'إلغاء الموعد نهائياً';
+  String get detailsDeleteTitleHost => 'حذف نهائي';
 
   @override
   String get detailsDeleteTitleGuest => 'حذف الموعد';
@@ -1055,7 +1079,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String detailsStayDuration(Object duration) {
-    return 'مكث: $duration ساعة';
+    return 'مكث: $duration';
   }
 
   @override
@@ -1289,14 +1313,14 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get privacyDataContent =>
-      '• معلومات الحساب: مثل الاسم، البريد الإلكتروني، وصورة الملف الشخصي لتعريف هويتك.\n• المحتوى الذي تنشئه (UGC): المواعيد، التعليقات، والصور التي ترفعها لغرض المشاركة.\n• البيانات التقنية: نوع الجهاز، نظام التشغيل، وعنوان الـ IP لضمان استقرار التطبيق وتحسين الأداء.\n\n• Account Information: Name, email, and profile picture to identify you.\n• User-Generated Content (UGC): Appointments, comments, and photos you upload for sharing.\n• Technical Data: Device type, operating system, and IP address to ensure app stability and performance.';
+      '• معلومات الحساب: مثل الاسم، البريد الإلكتروني، وصورة الملف الشخصي لتعريف هويتك.\n• جهات الاتصال: نطلب الوصول لقائمة الاتصال للسماح لك بدعوة أصدقائك ومزامنة المواعيد معهم بسهولة.\n• المحتوى الذي تنشئه (UGC): المواعيد، التعليقات، والصور التي ترفعها لغرض المشاركة.\n• البيانات التقنية: نوع الجهاز، نظام التصديق، وعنوان الـ IP لضمان استقرار التطبيق.\n\n• Account Information: Name, email, and profile picture.\n• Contacts: We access your contacts to allow you to invite friends and sync appointments.\n• User-Generated Content (UGC): Appointments, comments, and photos.\n• Technical Data: Device info and IP address.';
 
   @override
   String get privacySecurityTitle => '3. أمان وحماية البيانات (Data Security)';
 
   @override
   String get privacySecurityContent =>
-      'نحن نستخدم بروتوكولات تشفير متطورة (مثل SSL/TLS) لنقل البيانات بشكل آمن بين هاتفك وخوادمنا، لضمان عدم وصول أي طرف غير مصرح له إلى معلوماتك.\n\nWe use advanced encryption protocols (such as SSL/TLS) to transmit data securely between your device and our servers, ensuring no unauthorized party can access your information.';
+      'نحن نستخدم بروتوكولات تشفير متطورة (مثل SSL/TLS) لنقل البيانات بشكل آمن بين هاتفك وخوادمنا، لضمان عدم وصول أي طرف غير مصرح له إلى معلوماتك.\n\nWe use advanced encryption protocols (such as SSL/TLS) لنقل البيانات بشكل آمن بين هاتفك وخوادمنا، لضمان عدم وصول أي طرف غير مصرح له إلى معلوماتك.';
 
   @override
   String get privacyUsageTitle =>
@@ -1375,7 +1399,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get removeAccreditationDesc =>
-      'هل أنت متأكد من رغبتك في إلغاء وثيقة الاعتماد مع هذه الجهة؟ سيؤدي ذلك إلى حجب المواعيد المخصصة للمعتمدين.';
+      'تنبيه: إنهاء الاعتماد سيتطلب موافقة الطرف الآخر مرة أخرى لتبادل المواعيد مستقبلاً.';
 
   @override
   String get newAppointmentAction => 'موعد جديد';
@@ -1393,7 +1417,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get magneticHomeDesc => 'التركيز التلقائي على المواعيد عند الدخول';
 
   @override
-  String get connectAction => 'تواصل';
+  String get connectAction => 'طلب اعتماد';
+
+  @override
+  String get ghostMode => 'وضع التخفي (Ghost Mode)';
+
+  @override
+  String get ghostModeDesc => 'منع ظهور ملفك الشخصي في نتائج البحث العامة';
+
+  @override
+  String get publicAccount => 'حساب عام';
+
+  @override
+  String get publicAccountDesc => 'السماح للآخرين بالعثور عليك ومتابعتك';
 
   @override
   String get downloadFullImageConfirm =>
@@ -1406,4 +1442,166 @@ class AppLocalizationsAr extends AppLocalizations {
   String operationFailed(String error) {
     return 'فشلت العملية: $error';
   }
+
+  @override
+  String get registrationClosedTitle => 'عذراً، التسجيل مغلق حالياً';
+
+  @override
+  String get registrationClosedMessage =>
+      'لقد اكتمل النصاب الحالي للمستخدمين، أو أننا نجري بعض التحسينات لضمان أفضل تجربة لك.';
+
+  @override
+  String get contactUsForInvite =>
+      'يمكنك التواصل معنا للاستفسار أو طلب دعوة خاصة:';
+
+  @override
+  String get backToLogin => 'العودة لتسجيل الدخول';
+
+  @override
+  String get whatsapp => 'واتساب';
+
+  @override
+  String get ourEmail => 'بريدنا';
+
+  @override
+  String get bio => 'النبذة التعريفية';
+
+  @override
+  String get phone => 'رقم الهاتف';
+
+  @override
+  String get socialLink => 'رابط خارجي';
+
+  @override
+  String get changePassword => 'تغيير كلمة المرور';
+
+  @override
+  String get oldPassword => 'كلمة المرور الحالية';
+
+  @override
+  String get newPassword => 'كلمة المرور الجديدة';
+
+  @override
+  String get confirmNewPassword => 'تأكيد كلمة المرور الجديدة';
+
+  @override
+  String get passwordChangedSuccessfully => 'تم تغيير كلمة المرور بنجاح';
+
+  @override
+  String get oldPasswordIncorrect => 'كلمة المرور الحالية غير صحيحة';
+
+  @override
+  String get forgotPasswordDesc =>
+      'أدخل بريدك الإلكتروني لاستعادة الوصول إلى حسابك';
+
+  @override
+  String get emailSentSuccess => 'تم الإرسال بنجاح';
+
+  @override
+  String passwordResetInstructions(String email) {
+    return 'تم إرسال تعليمات إعادة تعيين كلمة المرور إلى $email';
+  }
+
+  @override
+  String get orContactByEmail => 'أو راسلنا على البريد الإلكتروني';
+
+  @override
+  String articleCopied(String title) {
+    return 'تم نسخ \"$title\" إلى الحافظة';
+  }
+
+  @override
+  String get confirmDeleteArticle => 'تأكيد الحذف';
+
+  @override
+  String confirmDeleteArticleMsg(String title) {
+    return 'هل أنت متأكد أنك تريد حذف \"$title\" نهائياً؟';
+  }
+
+  @override
+  String get copy => 'نسخ';
+
+  @override
+  String readTimeFormat(int minutes, int words) {
+    return 'مدة القراءة: $minutes دقيقة $words كلمة';
+  }
+
+  @override
+  String readTimeMins(int minutes) {
+    return 'مدة القراءة: $minutes دقيقة';
+  }
+
+  @override
+  String get articleDraftRestored => 'تم استرجاع مسودة المقال';
+
+  @override
+  String get publishArticle => 'نشر المقال';
+
+  @override
+  String wordsCount(int count) {
+    return 'عدد الكلمات: $count';
+  }
+
+  @override
+  String lastEdited(String date) {
+    return 'آخر تحرير: $date';
+  }
+
+  @override
+  String get boldTextFirst => 'الرجاء تحديد النص المراد تغميقه أولاً';
+
+  @override
+  String get selectVersesFirst => 'الرجاء تظليل الأبيات أولاً';
+
+  @override
+  String get centerTextFirst => 'الرجاء تحديد النص المراد توسيطه أولاً';
+
+  @override
+  String get justifyTextFirst => 'الرجاء تحديد النص المراد ضبطه أولاً';
+
+  @override
+  String get closePreview => 'إغلاق المعاينة';
+
+  @override
+  String get livePreview => 'معاينة حية';
+
+  @override
+  String get addArticleCoverOptional => 'إضافة غلاف المقال (اختياري)';
+
+  @override
+  String get writeArticleHint => 'اكتب مقالك أو قصيدتك هنا...';
+
+  @override
+  String get boldTooltip => 'تغميق النص (عريض)';
+
+  @override
+  String get poemTooltip => 'تنسيق كقصيدة';
+
+  @override
+  String get centerTooltip => 'توسيط النص';
+
+  @override
+  String get justifyTooltip => 'ضبط النص';
+
+  @override
+  String get editArticleCover => 'تعديل غلاف المقال';
+
+  @override
+  String get expandImage => 'توسيع الصورة';
+
+  @override
+  String copiedToClipboard(String url) {
+    return 'تم نسخ $url للحافظة';
+  }
+
+  @override
+  String get errorArticleNotPublished =>
+      'المقال غير منشور أو غير متوفر حالياً.';
+
+  @override
+  String get errorFetchingArticle =>
+      'تعذر جلب بيانات المقال. الرجاء التحقق من الرابط.';
+
+  @override
+  String get article => 'المقال';
 }

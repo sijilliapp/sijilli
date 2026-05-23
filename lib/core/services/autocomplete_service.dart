@@ -1,4 +1,5 @@
 import '../../models/appointment.dart';
+import '../utils/arabic_search.dart';
 
 /// Service responsible for generating smart suggestions for the "Word Buffet" (Zero Keyboard).
 /// It uses N-gram analysis and curated datasets to predict the next likely words.
@@ -11,6 +12,7 @@ class AutocompleteService {
   // Optimized static data for religious occasions (Chain of Thought map)
   // Optimized static data for religious occasions (Chain of Thought map)
   // Format: "Previous Word" -> ["Next Word 1", "Next Word 2", ...]
+  // Optimized static data - KEPT EMPTY to strictly rely on Personal History as per core requirement.
   final Map<String, List<String>> _ngramData = {
     '': [], 
   };
@@ -62,56 +64,45 @@ class AutocompleteService {
        }
     }
 
+    // Normalize for better matching
+    final normPrefix = _normalize(prefix);
+    final normContext = _normalize(contextWord);
+
     // 3. Collect Candidates
     final Set<String> candidates = {};
     
     // A. Contextual Matches (Bigram Prediction)
-    // "What typically follows [contextWord]?"
     final Set<String> bigramMatches = {};
     
-    // From Learned Data
-    if (_learnedData.containsKey(contextWord)) {
-      final map = _learnedData[contextWord]!;
-      // Sort by frequency
-      final sorted = map.keys.toList()..sort((a, b) => map[b]!.compareTo(map[a]!));
-      bigramMatches.addAll(sorted);
-    }
-    // From Static Data
-    if (_ngramData.containsKey(contextWord)) {
-      bigramMatches.addAll(_ngramData[contextWord]!);
-    }
-    
+    _learnedData.forEach((key, nextMap) {
+       if (_normalize(key) == normContext) {
+          // Sort by frequency
+          final sorted = nextMap.keys.toList()..sort((a, b) => nextMap[b]!.compareTo(nextMap[a]!));
+          bigramMatches.addAll(sorted);
+       }
+    });
+
     // Filter Bigram Matches by Prefix
-    if (prefix.isNotEmpty) {
-      candidates.addAll(bigramMatches.where((w) => w.startsWith(prefix)));
+    if (normPrefix.isNotEmpty) {
+      candidates.addAll(bigramMatches.where((w) => ArabicSearch.smartMatch(w, prefix)));
     } else {
       candidates.addAll(bigramMatches);
     }
     
-    // B. Global Vocabulary Fallback (Prefix Autocomplete)
-    // If we have a prefix, we also want to suggest words matching it even if they don't fit the bigram strictness
-    // (User might be typing a new phrase we haven't learned yet)
-    if (prefix.isNotEmpty) {
-       // Collect all known words (Static + Learned)
-       // Optimization: In a real app, cache this Set.
+    // B. Global Vocabulary Fallback
+    if (normPrefix.isNotEmpty) {
        final allWords = <String>{};
        
-       // Add Static Values
-       for (var list in _ngramData.values) {
-         allWords.addAll(list);
-       }
-       // Add Static Keys
-       allWords.addAll(_ngramData.keys.where((k) => k.isNotEmpty));
-       
-       // Add Learned Values
        for (var map in _learnedData.values) {
          allWords.addAll(map.keys);
        }
-       // Add Learned Keys
-       allWords.addAll(_learnedData.keys.where((k) => k.isNotEmpty));
+       for (var key in _learnedData.keys) {
+         if (key.isNotEmpty) allWords.add(key);
+       }
        
-       // Filter by Prefix
-       final globalMatches = allWords.where((w) => w.startsWith(prefix) && w != prefix).take(10); // Limit fallback
+       final globalMatches = allWords.where((w) {
+         return ArabicSearch.smartMatch(w, prefix) && _normalize(w) != normPrefix;
+       }).take(15); 
        
        candidates.addAll(globalMatches);
      }
@@ -184,29 +175,24 @@ class AutocompleteService {
     
     final words = trimmed.split(RegExp(r'\s+'));
     final lastWord = words.last;
+    final normLastWord = _normalize(lastWord);
     
-    if (_pivotIndex.containsKey(lastWord)) {
-      final fullTitles = _pivotIndex[lastWord]!;
-      // Suggest differentiation if we have matches
-      List<PivotMatch> results = [];
-      for (final title in fullTitles) {
-        final titleWords = title.split(' ');
-        if (titleWords.isNotEmpty) {
-           final diff = titleWords.first;
-           if (diff != lastWord) {
-             // Avoid duplicate differentiators? (e.g. "Mawlid X" and "Mawlid Y")
-             // Here we map Differentiator -> Full Title.
-             // If multiple titles have same differentiator (ambiguous?), we might need smarter logic.
-             // For V1, we just list them.
-             if (!results.any((r) => r.differentiator == diff)) {
-                results.add(PivotMatch(differentiator: diff, fullTitle: title));
-             }
-           }
+    if (normLastWord.length < 2) return [];
+
+    final List<PivotMatch> results = [];
+    
+    _pivotIndex.forEach((pivotWord, fullTitles) {
+      if (_normalize(pivotWord).startsWith(normLastWord)) {
+        for (final title in fullTitles) {
+          if (!results.any((r) => r.fullTitle == title)) {
+            // Suggest the full title as a pivot option
+            results.add(PivotMatch(differentiator: title, fullTitle: title));
+          }
         }
       }
-      return results;
-    }
-    return [];
+    });
+    
+    return results.take(15).toList();
   }
 
   // --- Semantic Deduction ---
@@ -283,13 +269,9 @@ class AutocompleteService {
     return null;
   }
 
-  // Normalization helper (Moved to class level for reuse)
+  // Normalization helper (Centralized)
   String _normalize(String input) {
-    return input.trim()
-        .replaceAll(RegExp(r'[أإآ]'), 'ا') // Unify Alefs
-        .replaceAll('ة', 'ه') // Teh Marbuta
-        .replaceAll('ى', 'ي') // Alef Maqsura
-        .replaceAll(RegExp(r'[\u064B-\u065F]'), ''); // Remove Tashkeel
+    return ArabicSearch.normalize(input);
   }
 }
 

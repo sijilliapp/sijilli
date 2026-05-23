@@ -15,8 +15,8 @@ abstract class UserCardPolicy {
 
   // --- Visuals ---
   Color get backgroundColor => Theme.of(context).cardColor;
-  double get elevation => 0;
   EdgeInsets get padding => const EdgeInsets.symmetric(horizontal: 16, vertical: 12);
+  EdgeInsets get margin => const EdgeInsets.symmetric(horizontal: 8, vertical: 4);
 
   // --- Avatar Logic ---
   /// The status of the ring around the avatar.
@@ -46,6 +46,13 @@ abstract class UserCardPolicy {
       );
 
   // --- Secondary Info (Optional) ---
+  Widget buildSecondaryText() {
+    return Text(
+      '@${user.username}',
+      style: usernameStyle,
+    );
+  }
+
   Widget? buildSubtitle() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

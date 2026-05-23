@@ -36,11 +36,11 @@ class AppointmentPrivacyToggle extends StatelessWidget {
           ),
           child: Row(
             children: [
-              _buildPrivacyOption(context, 'private', context.l10n.privacyPrivateLabel, Icons.lock),
+              _buildPrivacyOption(context, 'public', context.l10n.privacyPublicLabel, Icons.public),
               Container(width: 1, height: 40, color: AppColors.getBorder(context)),
               _buildPrivacyOption(context, 'followers', context.l10n.privacyFollowersLabel, Icons.people),
               Container(width: 1, height: 40, color: AppColors.getBorder(context)),
-              _buildPrivacyOption(context, 'public', context.l10n.privacyPublicLabel, Icons.public),
+              _buildPrivacyOption(context, 'private', context.l10n.privacyPrivateLabel, Icons.lock),
             ],
           ),
         ),

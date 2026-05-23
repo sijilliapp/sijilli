@@ -19,4 +19,7 @@ class ArchivedPolicy extends StandardPolicy {
 
   @override
   VoidCallback? get onGuestActionTap => null; // Disable tap for archived state
+
+  @override
+  EdgeInsetsGeometry get margin => const EdgeInsets.symmetric(horizontal: 0, vertical: 4.0);
 }

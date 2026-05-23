@@ -19,7 +19,9 @@ class UserModel {
   // ====================== الإعدادات ======================
   final String role; // 'user', 'approved', 'admin'
   final bool isPublic;
+  final bool hideFromSearch;
   final bool verified;
+  final bool isSuggested; // 📢 هل يتم اقتراح هذا الحساب؟
   // 🔒 Official Badge Decoupling:
   // "verified" is for Email/Phone verification (System).
   // "isOfficial" is for the Blue Badge (Visual). 
@@ -27,12 +29,14 @@ class UserModel {
   bool get isOfficial => false; 
 
   final bool emailVisibility;
+  final bool phoneVerified; // 📱 هل تم التحقق من الهاتف؟
   
   // ====================== التواريخ ======================
   final DateTime? date; // تاريخ الميلاد
   final DateTime created;
   final DateTime updated;
   final DateTime joiningDate;
+  final DateTime? lastActive;
   
   final String? token; // 🔑 Authentication Token
   
@@ -51,12 +55,16 @@ class UserModel {
     this.region,
     this.role = 'user',
     this.isPublic = false,
+    this.hideFromSearch = false,
     this.verified = false,
+    this.isSuggested = false,
     this.emailVisibility = false,
+    this.phoneVerified = false, // Default is false
     this.date,
     required this.created,
     required this.updated,
     required this.joiningDate,
+    this.lastActive,
   });
   
   // ====================== دوال المصنع ======================
@@ -76,8 +84,11 @@ class UserModel {
       region: JsonUtils.parseString(json['region']),
       role: JsonUtils.parseString(json['role']) ?? 'user',
       isPublic: JsonUtils.parseBool(json['isPublic']),
+      hideFromSearch: JsonUtils.parseBool(json['hideFromSearch']),
       verified: JsonUtils.parseBool(json['verified']),
+      isSuggested: JsonUtils.parseBool(json['is_suggested']) ?? JsonUtils.parseBool(json['isSuggested']),
       emailVisibility: JsonUtils.parseBool(json['emailVisibility']),
+      phoneVerified: JsonUtils.parseBool(json['phone_verified']) ?? JsonUtils.parseBool(json['phoneVerified']),
       date: JsonUtils.parseDateTime(json['date']),
       created: JsonUtils.parseDateTime(json['created']) ?? DateTime.now(),
       updated: JsonUtils.parseDateTime(json['updated']) ?? DateTime.now(),
@@ -85,6 +96,7 @@ class UserModel {
                    JsonUtils.parseDateTime(json['Joining_date']) ?? 
                    JsonUtils.parseDateTime(json['created']) ?? 
                    DateTime.now(),
+      lastActive: JsonUtils.parseDateTime(json['lastActive']),
     );
   }
   
@@ -105,11 +117,14 @@ class UserModel {
       phone: phone,
       role: 'user',
       isPublic: isPublic,
+      hideFromSearch: false,
       verified: false,
+      isSuggested: false,
       emailVisibility: false,
       created: now,
       updated: now,
       joiningDate: now,
+      lastActive: now,
     );
   }
   
@@ -121,9 +136,11 @@ class UserModel {
       username: 'مجهول',
       name: 'مستخدم مجهول',
       email: '',
+      isSuggested: false,
       created: now,
       updated: now,
       joiningDate: now,
+      lastActive: now,
     );
   }
   
@@ -144,12 +161,16 @@ class UserModel {
       'region': region,
       'role': role,
       'isPublic': isPublic,
+      'hideFromSearch': hideFromSearch,
       'verified': verified,
+      'is_suggested': isSuggested,
       'emailVisibility': emailVisibility,
+      'phone_verified': phoneVerified,
       'date': date?.toIso8601String(),
       'created': created.toIso8601String(),
       'updated': updated.toIso8601String(),
       'Joining_date': joiningDate.toIso8601String(),
+      if (lastActive != null) 'lastActive': lastActive?.toIso8601String(),
     };
   }
 
@@ -174,12 +195,16 @@ class UserModel {
     String? region,
     String? role,
     bool? isPublic,
+    bool? hideFromSearch,
     bool? verified,
+    bool? isSuggested,
     bool? emailVisibility,
+    bool? phoneVerified,
     DateTime? date,
     DateTime? created,
     DateTime? updated,
     DateTime? joiningDate,
+    DateTime? lastActive,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -195,12 +220,16 @@ class UserModel {
       region: region ?? this.region,
       role: role ?? this.role,
       isPublic: isPublic ?? this.isPublic,
+      hideFromSearch: hideFromSearch ?? this.hideFromSearch,
       verified: verified ?? this.verified,
+      isSuggested: isSuggested ?? this.isSuggested,
       emailVisibility: emailVisibility ?? this.emailVisibility,
+      phoneVerified: phoneVerified ?? this.phoneVerified,
       date: date ?? this.date,
       created: created ?? this.created,
       updated: updated ?? this.updated,
       joiningDate: joiningDate ?? this.joiningDate,
+      lastActive: lastActive ?? this.lastActive,
     );
   }
   

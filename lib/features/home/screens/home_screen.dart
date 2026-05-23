@@ -5,10 +5,12 @@ import '../../../core/constants/app_dimens.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../appointments/providers/appointment_provider.dart';
 import '../tabs/appointments_tab.dart';
+import '../widgets/profile_tabs/profile_articles_tab.dart';
 import '../widgets/profile_header.dart';
 import '../../../core/widgets/folder_tab_bar.dart';
 import '../../settings/screens/contact_screen.dart';
 import '../../appointments/screens/archive_trash_screen.dart';
+import '../../appointments/screens/saved_appointments_screen.dart';
 
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/extensions/context_l10n.dart';
@@ -103,6 +105,12 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
   void scrollToMagneticTop({bool force = false}) {
     if (!mounted || !_scrollController.hasClients) return;
 
+    final settings = context.read<SettingsProvider>();
+    final appointments = context.read<AppointmentProvider>().appointments;
+
+    // Logic: If disabled (or no appts), "Magnetic Top" is actually the REAL top (0)
+    final bool isEnabled = settings.isMagneticScrollEnabled && appointments.isNotEmpty;
+
     // If already animating, stop current and start new (mostly for double tap)
     if (force && _scrollController.position.isScrollingNotifier.value) {
       _scrollController.position.jumpTo(_scrollController.offset);
@@ -110,16 +118,18 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
 
     final user = context.read<AuthProvider>().user;
     final double snapOffset = (user?.hasBio ?? false) ? 310 : 280;
+    final targetOffset = isEnabled ? snapOffset : 0.0;
     final currentOffset = _scrollController.offset;
 
     if (force) {
       _scrollController.animateTo(
-        snapOffset,
+        targetOffset,
         duration: const Duration(milliseconds: 600),
         curve: Curves.fastOutSlowIn,
       ).catchError((_) {});
     } else {
-      if (currentOffset < snapOffset && !_scrollController.position.isScrollingNotifier.value) {
+      // Auto-snap only if enabled and within range
+      if (isEnabled && currentOffset < snapOffset && !_scrollController.position.isScrollingNotifier.value) {
         _scrollController.animateTo(
           snapOffset,
           duration: const Duration(milliseconds: 600),
@@ -129,10 +139,19 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     }
   }
 
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+
+  /// خاصية للتحقق إذا كان المستخدم في تبويب المقالات
+  bool get isInArticlesTab => _tabController.index == 1;
+
   @override
   void dispose() {
     _tabController.dispose();
     _scrollController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -219,7 +238,6 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
           controller: _scrollController,
           headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
-            // 1. Collapsing Profile Header
             // 1. Pinned App Bar
             SliverAppBar(
               pinned: true,
@@ -233,19 +251,55 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
               scrolledUnderElevation: 5.0,
               shadowColor: Colors.black12,
               leading: _buildMenuButton(),
+              title: _isSearching 
+                ? TextField(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      hintText: context.l10n.search,
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                      hintStyle: TextStyle(color: Colors.grey.shade400),
+                    ),
+                    style: const TextStyle(fontSize: 16),
+                    onChanged: (value) {
+                      context.read<AppointmentProvider>().filterAppointments(value);
+                    },
+                  )
+                : null,
+              actions: [
+                if (_isSearching)
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.grey),
+                    onPressed: () {
+                      setState(() {
+                        _isSearching = false;
+                        _searchController.clear();
+                        context.read<AppointmentProvider>().filterAppointments('');
+                      });
+                    },
+                  ),
+              ],
+              bottom: _isSearching 
+                ? PreferredSize(
+                    preferredSize: const Size.fromHeight(50),
+                    child: _buildSearchCapsules(),
+                  )
+                : null,
             ),
 
             // 2. Dynamic Profile Header
-            SliverToBoxAdapter(
-              child: Container(
-                color: Theme.of(context).brightness == Brightness.dark 
-                    ? Theme.of(context).scaffoldBackgroundColor 
-                    : AppColors.lightSurface,
-                child: const ProfileHeader(),
+            if (!_isSearching)
+              SliverToBoxAdapter(
+                child: Container(
+                  color: Theme.of(context).brightness == Brightness.dark 
+                      ? Theme.of(context).scaffoldBackgroundColor 
+                      : AppColors.lightSurface,
+                  child: const ProfileHeader(),
+                ),
               ),
-            ),
-
-            // 2. Removed SliverToBoxAdapter (Integrated into FlexibleSpace)
 
             // 3. Persistent TabBar (Folder Style)
             SliverPersistentHeader(
@@ -274,8 +328,11 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
               // Tab 1: Appointments
               const AppointmentsTab(),
 
-              // Tab 2: Articles (Placeholder)
-              _buildArticlesPlaceholder(),
+              // Tab 2: Articles
+              ProfileArticlesTab(
+                userId: context.read<AuthProvider>().user?.id ?? '',
+                isCurrentUser: true,
+              ),
             ],
           ),
         ),
@@ -284,35 +341,77 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
   );
 }
 
+  Widget _buildSearchCapsules() {
+    return Consumer<AppointmentProvider>(
+      builder: (context, provider, _) {
+        final keywords = provider.searchKeywords;
+        if (keywords.isEmpty) return const SizedBox.shrink();
+
+        return Container(
+          height: 50,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: keywords.length,
+            itemBuilder: (context, index) {
+              final keyword = keywords[index];
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ActionChip(
+                  label: Text(keyword, style: const TextStyle(fontSize: 12)),
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.05),
+                  side: BorderSide.none,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  onPressed: () {
+                    _searchController.text = keyword;
+                    provider.filterAppointments(keyword);
+                  },
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildMenuButton() {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.menu, color: AppColors.primary),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimens.radiusM)),
       onSelected: (value) {
-        if (value == 'archive') {
+        if (value == 'search') {
+          setState(() {
+            _isSearching = true;
+          });
+        } else if (value == 'archive') {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const ArchiveTrashScreen(initialIndex: 0)),
+          );
+        } else if (value == 'saved') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const SavedAppointmentsScreen()),
           );
         } else if (value == 'contact') {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const ContactScreen()),
           );
-        } else if (value == 'sync') {
-          _handleBatchSync();
         } else if (value == 'logout') {
           context.read<AuthProvider>().logout();
         }
       },
       itemBuilder: (BuildContext context) => [
         PopupMenuItem(
-          value: 'sync',
+          value: 'search',
           child: Row(
             children: [
-              const Icon(Icons.calendar_month_outlined, size: 20, color: Colors.blue),
+              const Icon(Icons.search, size: 20, color: AppColors.primary),
               const SizedBox(width: 8),
-              Text(context.l10n.batchSyncTitle),
+              Text(context.l10n.search),
             ],
           ),
         ),
@@ -327,6 +426,16 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
           ),
         ),
         PopupMenuItem(
+          value: 'saved',
+          child: Row(
+            children: [
+              const Icon(Icons.bookmarks_outlined, size: 20, color: AppColors.primary),
+              const SizedBox(width: 8),
+              const Text('المحفوظات'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
           value: 'contact',
           child: Row(
             children: [
@@ -336,6 +445,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
             ],
           ),
         ),
+        const PopupMenuDivider(),
         PopupMenuItem(
           value: 'logout',
           child: Row(
@@ -374,18 +484,18 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
 
 // 📌 Delegate for Folder TabBar
 class _FolderHeaderDelegate extends SliverPersistentHeaderDelegate {
-  final FolderTabBar _tabBar;
+  final Widget child;
 
-  _FolderHeaderDelegate(this._tabBar);
+  _FolderHeaderDelegate(this.child);
 
   @override
-  double get minExtent => _tabBar.preferredSize.height;
+  double get minExtent => 52.0;
   @override
-  double get maxExtent => _tabBar.preferredSize.height;
+  double get maxExtent => 52.0;
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return _tabBar;
+    return child;
   }
 
   @override

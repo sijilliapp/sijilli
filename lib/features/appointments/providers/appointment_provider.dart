@@ -9,6 +9,8 @@ import '../services/pb_appointment_service.dart';
 import '../services/pb_appointment_browse_service.dart';
 import '../services/pb_invitation_service.dart';
 import '../services/pb_appointment_recurrence_service.dart';
+import '../../../models/user.dart';
+import '../../../models/article.dart';
 
 class AppointmentProvider extends ChangeNotifier {
   final PbAppointmentService _apptService = PbAppointmentService();
@@ -20,6 +22,7 @@ class AppointmentProvider extends ChangeNotifier {
   List<Appointment> _appointments = [];
   List<Appointment> _archivedAppointments = [];
   List<Appointment> _trashedAppointments = [];
+  List<Appointment> _bookmarkedAppointments = []; // قائمة المحفوظات الخاصة
   bool _isLoading = false;
   String? _errorMessage;
   Timer? _refreshTimer;
@@ -28,24 +31,29 @@ class AppointmentProvider extends ChangeNotifier {
   String? _currentUserId;
   int? _currentHijriAdjustment;
   ModerationProvider? _moderation;
+  bool _isAdmin = false;
+
+  bool get isAdmin => _isAdmin;
 
   AppointmentProvider() {
     _startRefreshTimer();
   }
 
   /// تحديث المزود عند تغيير حالة المصادقة أو المستخدم
-  void update(String? userId, int? hijriAdjustment, ModerationProvider? moderation) {
+  void update(String? userId, int? hijriAdjustment, ModerationProvider? moderation, {bool isAdmin = false}) {
     bool changed = false;
     
-    if (userId != _currentUserId || hijriAdjustment != _currentHijriAdjustment) {
-      print('🔄 AppointmentProvider: User/Adjustment changed from $_currentUserId to $userId');
+    if (userId != _currentUserId || hijriAdjustment != _currentHijriAdjustment || isAdmin != _isAdmin) {
+      print('🔄 AppointmentProvider: User/Adjustment/Admin changed from $_currentUserId to $userId (Admin: $isAdmin)');
       _currentUserId = userId;
       _currentHijriAdjustment = hijriAdjustment;
+      _isAdmin = isAdmin;
       
       // ⚠️ Wipe local memory to avoid stale data mixing
       _appointments = [];
       _archivedAppointments = [];
       _trashedAppointments = [];
+      _bookmarkedAppointments = [];
       
       _unsubscribeInvitations?.call();
       _unsubscribeInvitations = null;
@@ -60,15 +68,103 @@ class AppointmentProvider extends ChangeNotifier {
 
     if (changed && userId != null) {
       _loadLocalAppointments(); 
+      fetchBookmarkedAppointments();
     } else if (changed && userId == null) {
       notifyListeners();
     }
   }
   
-  // Getters (Filter out blocked users)
+  String _searchQuery = '';
+
+  /// الكلمات المفتاحية والكبسولات الحاصرة لمجال البحث
+  List<String> get searchKeywords {
+    final Set<String> keywords = {'(عام)', '(خاص)', '(معتمدون)'};
+    
+    // نستخدم getter المواعيد لضمان أنها المواعيد المنشورة فقط وغير المحظورة
+    final mainAppointments = appointments.where((a) {
+      final isHostedByMe = a.hostId == _currentUserId;
+      final isAcceptedByMe = a.viewerRecord?.status == InvitationStatus.accepted;
+      return isHostedByMe || isAcceptedByMe;
+    }).toList();
+
+    for (var a in mainAppointments) {
+      // إضافة اسم المضيف
+      if (a.host?.name != null && a.host!.name.isNotEmpty) {
+        keywords.add(a.host!.name.trim());
+      }
+      // إضافة أسماء المشاركين (الذين قبلوا الدعوة)
+      if (a.participants != null) {
+        for (var p in a.participants!) {
+          if (p.user?.name != null && p.user!.name.isNotEmpty) {
+            keywords.add(p.user!.name.trim());
+          }
+        }
+      }
+    }
+    
+    final result = keywords.toList();
+    // ترتيب (نترك الكبسولات الحاصرة في البداية ثم الأسماء أبجدياً)
+    final tags = ['(عام)', '(خاص)', '(معتمدون)'];
+    final names = result.where((k) => !tags.contains(k)).toList();
+    names.sort();
+    
+    return [...tags, ...names.take(15)];
+  }
+
+  // Getters (Filter out blocked users and bookmarked items)
   List<Appointment> get appointments {
-    if (_moderation == null) return _appointments;
-    return _appointments.where((a) => !_moderation!.isUserBlocked(a.hostId)).toList();
+    List<Appointment> base;
+    if (_moderation == null) {
+      base = _appointments.where((a) => a.viewerRecord?.postStatus != PostStatus.bookmarked).toList();
+    } else {
+      base = _appointments.where((a) => 
+        !_moderation!.isUserBlocked(a.hostId) && 
+        a.viewerRecord?.postStatus != PostStatus.bookmarked
+      ).toList();
+    }
+
+    if (_searchQuery.isEmpty) return base;
+
+    final rawQuery = _searchQuery.trim().toLowerCase();
+    
+    // الفلترة بناءً على الكبسولات الحاصرة
+    if (rawQuery == '(عام)') {
+      return base.where((a) => a.privacy == 'public').toList();
+    }
+    if (rawQuery == '(خاص)') {
+      return base.where((a) => a.privacy == 'private').toList();
+    }
+    if (rawQuery == '(معتمدون)') {
+      return base.where((a) => a.host?.role == 'approved').toList();
+    }
+
+    // دالة مساعدة لتوحيد النصوص (تحويل لحروف صغيرة واستبدال الرموز بمسافات)
+    String normalize(String? text) {
+      if (text == null) return '';
+      return text.toLowerCase().replaceAll(RegExp(r'[_\-\.,/\\|]'), ' ');
+    }
+
+    final q = normalize(rawQuery);
+
+    // الفلترة بناءً على اسم المشارك أو النص الحر
+    return base.where((a) {
+      final titleMatch = normalize(a.title).contains(q);
+      final regionMatch = normalize(a.region).contains(q);
+      final buildingMatch = normalize(a.building).contains(q);
+      
+      // البحث في أسماء المضيف والمشاركين
+      final hostMatch = normalize(a.host?.name).contains(q);
+      final participantsMatch = a.participants?.any((p) => 
+        normalize(p.user?.name).contains(q)
+      ) ?? false;
+      
+      return titleMatch || regionMatch || buildingMatch || hostMatch || participantsMatch;
+    }).toList();
+  }
+
+  void filterAppointments(String query) {
+    _searchQuery = query;
+    notifyListeners();
   }
   
   List<Appointment> get archivedAppointments {
@@ -81,20 +177,39 @@ class AppointmentProvider extends ChangeNotifier {
     return _trashedAppointments.where((a) => !_moderation!.isUserBlocked(a.hostId)).toList();
   }
 
+  List<Appointment> get bookmarkedAppointments {
+    return _bookmarkedAppointments.where((a) {
+      final isBlocked = _moderation?.isUserBlocked(a.hostId) ?? false;
+      final isSourceDead = a.isCancelled || a.isDeleted;
+      return !isBlocked && !isSourceDead;
+    }).toList();
+  }
+
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
   /// عدد الدعوات المعلقة (الواردة)
   int get pendingInvitationsCount {
     if (_currentUserId == null) return 0;
-    return _appointments.where((a) => 
-      a.hostId != _currentUserId && 
-      a.viewerRecord?.status == InvitationStatus.pending &&
-      a.viewerRecord?.postStatus == PostStatus.published &&
-      !a.isPast &&
-      !a.isCancelled &&
-      !a.isDeleted
-    ).length;
+    return _appointments.where((a) {
+      // 1. Actionable for me as a GUEST (Invite received)
+      final isIncomingInvite = a.hostId != _currentUserId && 
+                               a.viewerRecord?.status == InvitationStatus.pending;
+      
+      // 2. Actionable for me as a HOST (Join request received from someone else)
+      // We check if any participant (other than me) is pending. 
+      // Note: In FCFS/Public events, status starts as pending for the requester.
+      final hasPendingRequests = a.hostId == _currentUserId && 
+                                 (a.participants?.any((p) => p.userId != _currentUserId && p.status == InvitationStatus.pending) ?? false);
+      
+      if (!(isIncomingInvite || hasPendingRequests)) return false;
+
+      // Global safety filters
+      return a.viewerRecord?.postStatus == PostStatus.published &&
+             !a.isPast &&
+             !a.isCancelled &&
+             !a.isDeleted;
+    }).length;
   }
 
   /// حالة الأفاتار بناءً على المواعيد الحالية
@@ -372,6 +487,8 @@ class AppointmentProvider extends ChangeNotifier {
     String? privacy, 
     AppointmentCategory? categories,
     String? personalNote,
+    String? linkedArticleId,
+    Article? linkedArticle,
   }) async {
     final index = _appointments.indexWhere((a) => a.id == appointmentId);
     if (index == -1) return;
@@ -385,6 +502,8 @@ class AppointmentProvider extends ChangeNotifier {
       privacy: privacy ?? originalInv.privacy,
       categories: categories ?? originalInv.categories,
       personalNote: personalNote ?? originalInv.personalNote,
+      linkedArticleId: linkedArticleId ?? originalInv.linkedArticleId,
+      linkedArticle: linkedArticle ?? originalInv.linkedArticle,
     );
     
     _appointments[index] = appointment.copyWith(
@@ -401,9 +520,16 @@ class AppointmentProvider extends ChangeNotifier {
         privacy: privacy,
         categoryId: categories?.id,
         personalNote: personalNote,
+        linkedArticleId: linkedArticleId,
       );
       
-      // 3. Update local cache after successful network request
+      // 3. If Host, ALSO update the Master Appointment Record for global consistency
+      final bool isHost = appointment.hostId == _currentUserId;
+      if (isHost && privacy != null) {
+        await _apptService.updateAppointment(appointment.id, {'privacy': privacy});
+      }
+
+      // 4. Update local cache after successful network request
       await _localDb.saveAppointments(_appointments);
     } catch (e) {
       print('❌ Failed to update settings: $e');
@@ -424,29 +550,26 @@ class AppointmentProvider extends ChangeNotifier {
 
   /// أرشفة الموعد (أرشفة النسخة الشخصية)
   Future<void> archiveInvitation(String appointmentId) async {
-    final index = _appointments.indexWhere((a) => a.id == appointmentId);
-    if (index == -1) return;
+    final indexBefore = _appointments.indexWhere((a) => a.id == appointmentId);
+    if (indexBefore == -1) return;
 
-    final appointment = _appointments[index];
+    final appointment = _appointments[indexBefore];
     final invitationId = appointment.viewerRecord?.id;
     if (invitationId == null) return;
 
     try {
+      final now = DateTime.now();
       await _invitationService.updateInvitationStatus(
         invitationId, 
         appointment.viewerRecord!.status, 
-        postStatus: PostStatus.archived
+        postStatus: PostStatus.archived,
+        archivedAt: now,
       );
       
-      final updatedInv = appointment.viewerRecord!.copyWith(postStatus: PostStatus.archived);
-      _appointments[index] = appointment.copyWith(
-        currentUserInvitation: appointment.currentUserInvitation == appointment.viewerRecord ? updatedInv : null,
-        viewerInvitation: appointment.viewerInvitation == appointment.viewerRecord ? updatedInv : null,
-      );
-      _appointments.removeAt(index);
+      // إزالة آمنة لتجنب أخطاء الفهرس (RangeError) بعد العمليات غير المتزامنة
+      _appointments.removeWhere((a) => a.id == appointmentId);
       
       notifyListeners();
-      
       fetchArchivedAppointments();
     } catch (e) {
       _errorMessage = 'Failed to archive invitation: $e';
@@ -455,10 +578,10 @@ class AppointmentProvider extends ChangeNotifier {
   }
 
   Future<void> unarchiveInvitation(String appointmentId) async {
-    final index = _archivedAppointments.indexWhere((a) => a.id == appointmentId);
-    if (index == -1) return;
+    final indexBefore = _archivedAppointments.indexWhere((a) => a.id == appointmentId);
+    if (indexBefore == -1) return;
 
-    final appointment = _archivedAppointments[index];
+    final appointment = _archivedAppointments[indexBefore];
     final invitationId = appointment.viewerRecord?.id;
     if (invitationId == null) return;
 
@@ -469,7 +592,8 @@ class AppointmentProvider extends ChangeNotifier {
         postStatus: PostStatus.published
       );
       
-      _archivedAppointments.removeAt(index);
+      // إزالة آمنة لتجنب أخطاء الفهرس
+      _archivedAppointments.removeWhere((a) => a.id == appointmentId);
       
       notifyListeners();
       
@@ -517,45 +641,52 @@ class AppointmentProvider extends ChangeNotifier {
 
   /// حذف النسخة الشخصية من الموعد (حذف بعد القبول)
   Future<void> deleteInvitation(String appointmentId) async {
-    var index = _appointments.indexWhere((a) => a.id == appointmentId);
+    var indexBefore = _appointments.indexWhere((a) => a.id == appointmentId);
     var listType = 'active';
 
-    if (index == -1) {
-      index = _archivedAppointments.indexWhere((a) => a.id == appointmentId);
-      if (index != -1) listType = 'archived';
+    if (indexBefore == -1) {
+      indexBefore = _archivedAppointments.indexWhere((a) => a.id == appointmentId);
+      if (indexBefore != -1) listType = 'archived';
     }
 
-    if (index == -1) return;
+    if (indexBefore == -1 && !_isAdmin) return;
 
-    final appointment = listType == 'active' 
-        ? _appointments[index] 
-        : _archivedAppointments[index];
-        
-    final invitationId = appointment.viewerRecord?.id;
-    if (invitationId == null) return;
-
-    final bool isHost = appointment.hostId == _currentUserId;
+    final bool isHost = indexBefore != -1 && (listType == 'active' 
+        ? _appointments[indexBefore] 
+        : _archivedAppointments[indexBefore]).hostId == _currentUserId;
 
     try {
-      if (isHost) {
-        await _apptService.updateAppointment(appointmentId, {'is_deleted': true});
-      }
-
-      var newStatus = appointment.viewerRecord!.status;
-      if (newStatus == InvitationStatus.accepted) {
-         newStatus = InvitationStatus.deletedAfterAccept; 
-      }
-
-      await _invitationService.updateInvitationStatus(
-        invitationId, 
-        newStatus, 
-        postStatus: PostStatus.trash
-      );
-      
-      if (listType == 'active') {
-        _appointments.removeAt(index);
+      if (isHost || _isAdmin) {
+        await _apptService.cancelAppointment(appointmentId);
       } else {
-        _archivedAppointments.removeAt(index);
+        if (indexBefore != -1) {
+          final appointment = listType == 'active' 
+              ? _appointments[indexBefore] 
+              : _archivedAppointments[indexBefore];
+              
+          final invitationId = appointment.viewerRecord?.id;
+          if (invitationId != null) {
+            var newStatus = appointment.viewerRecord!.status;
+            if (newStatus == InvitationStatus.accepted) {
+               newStatus = InvitationStatus.deletedAfterAccept; 
+            }
+
+            final now = DateTime.now();
+            await _invitationService.updateInvitationStatus(
+              invitationId, 
+              newStatus, 
+              postStatus: PostStatus.trash,
+              deletedAt: now,
+            );
+          }
+        }
+      }
+
+      // إزالة آمنة
+      if (listType == 'active') {
+        _appointments.removeWhere((a) => a.id == appointmentId);
+      } else {
+        _archivedAppointments.removeWhere((a) => a.id == appointmentId);
       }
       
       notifyListeners();
@@ -590,7 +721,7 @@ class AppointmentProvider extends ChangeNotifier {
     final candidates = _appointments.where((appt) {
        final isRecurring = appt.recurrenceType != null && appt.recurrenceType != 'none';
        final hasMore = (appt.recurrenceCount == null) || ((appt.recurrenceIndex ?? 1) < appt.recurrenceCount!);
-       final isEnded = appt.startAt.add(Duration(minutes: appt.duration)).isBefore(now);
+       final isEnded = appt.startAt.add(Duration(minutes: appt.duration)).isBefore(now.toUtc());
        final isHost = appt.hostId == _currentUserId;
        
        return isRecurring && hasMore && isEnded && isHost;
@@ -622,21 +753,60 @@ class AppointmentProvider extends ChangeNotifier {
   }
   /// التحقق من وجود تعارض في المواعيد
   List<Appointment> getConflictingAppointments(DateTime startAt, int durationMinutes, {String? excludeId}) {
-    final newStart = startAt;
-    final newEnd = startAt.add(Duration(minutes: durationMinutes));
+    final newStart = startAt.toUtc();
+    final newEnd = newStart.add(Duration(minutes: durationMinutes));
     
     return _appointments.where((appt) {
       if (appt.id == excludeId) return false;
       
-      if (appt.isCancelled || appt.isDeleted || appt.isUserDeleted) return false;
+      if (appt.isCancelled || appt.isDeleted || appt.isUserDeleted || appt.isArchived) return false;
       if (appt.viewerRecord?.postStatus == PostStatus.trash) return false;
-      
       if (appt.viewerRecord?.status == InvitationStatus.declined) return false;
       
-      final apptStart = appt.startAt;
+      // All-day event check (Synchronized with AddEventProvider)
+      if (appt.duration <= 0 || appt.duration >= 1440) {
+        final aDate = DateTime(appt.fullDateTime.year, appt.fullDateTime.month, appt.fullDateTime.day);
+        final myDate = DateTime(startAt.year, startAt.month, startAt.day);
+        return aDate.isAtSameMomentAs(myDate);
+      }
+
+      final apptStart = appt.startAt; // UTC
       final apptEnd = appt.startAt.add(Duration(minutes: appt.duration));
       
       return newStart.isBefore(apptEnd) && newEnd.isAfter(apptStart);
     }).toList();
+  }
+
+  /// مزامنة وحفظ مواعيد عامة في سجل المستخدم (بفلسفة الظل/البوك مارك)
+  Future<bool> toggleBookmark(Appointment appointment, UserModel user) async {
+    try {
+      final isBookmarked = await _invitationService.toggleBookmark(appointment.id, user.id);
+      
+      // Refresh local lists
+      await fetchAppointments();
+      await fetchBookmarkedAppointments();
+      
+      return isBookmarked;
+    } catch (e) {
+      print('❌ Failed to toggle bookmark: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> fetchBookmarkedAppointments() async {
+    if (_currentUserId == null) return;
+    try {
+      _bookmarkedAppointments = await _apptService.getAppointments(
+        userId: _currentUserId,
+        status: PostStatus.bookmarked,
+        includePast: true,
+        perPage: 100,
+        contextAdjustment: _currentHijriAdjustment ?? 0,
+      );
+      _bookmarkedAppointments.sort((a, b) => b.startAt.compareTo(a.startAt));
+      notifyListeners();
+    } catch (e) {
+      print('Failed to fetch bookmarked: $e');
+    }
   }
 }

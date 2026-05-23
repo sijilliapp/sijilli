@@ -2,11 +2,12 @@
 // 🔍 معالج البحث العربي - توحيد الحروف ومعالجة المختصرات
 
 class ArabicSearch {
-  /// تطبيع النص العربي (Normalization) لتحسين نتائج البحث
+  /// تطبيع النص (Normalization) لتحسين نتائج البحث (يدعم العربي والإنجليزي والرموز)
   static String normalize(String text) {
     if (text.isEmpty) return text;
 
-    String normalized = text.trim();
+    // تحويل لحروف صغيرة واستبدال الرموز بمسافات
+    String normalized = text.toLowerCase().replaceAll(RegExp(r'[_\-\.,/\\|]'), ' ').trim();
 
     // 1. إزالة التشكيل (Diacritics)
     normalized = normalized.replaceAll(RegExp(r'[\u064B-\u0652]'), '');
@@ -24,9 +25,6 @@ class ArabicSearch {
 
     // 5. توحيد التاء المربوطة والهاء (ة -> ه)
     normalized = normalized.replaceAll('ة', 'ه');
-
-    // 6. إزالة ال التعريف في بداية الكلمات (اختياري حسب سياسة البحث)
-    // normalized = normalized.split(' ').map((word) => word.startsWith('ال') ? word.substring(2) : word).join(' ');
 
     return normalized;
   }

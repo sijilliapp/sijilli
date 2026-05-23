@@ -57,4 +57,7 @@ class LocalUser extends HiveObject {
 
   @HiveField(17)
   String? token;
+
+  @HiveField(18)
+  bool phoneVerified = false;
 }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:sijilli/core/constants/app_colors.dart';
 import 'package:sijilli/core/constants/app_dimens.dart';
 import 'package:sijilli/features/settings/services/pb_user_service.dart';
 import 'package:sijilli/features/profile/screens/follows_screen.dart';
+import 'package:sijilli/features/notifications/providers/notification_provider.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class SocialStatsRow extends StatefulWidget {
@@ -49,17 +51,23 @@ class _SocialStatsRowState extends State<SocialStatsRow> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _buildStatColumn(context.l10n.followers, _followers, 0),
-        _buildDivider(),
-        _buildStatColumn(context.l10n.following, _following, 1),
-        if (widget.isPrimaryStyle) ...[
-          _buildDivider(),
-          _buildStatColumn(context.l10n.appointments, _appointments, -1),
-        ],
-      ],
+    return Consumer<NotificationProvider>(
+      builder: (context, notifProvider, _) {
+        final hasPending = notifProvider.pendingFollowsCount > 0;
+        
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildStatColumn(context.l10n.followers, _followers, 0, showBadge: hasPending),
+            _buildDivider(),
+            _buildStatColumn(context.l10n.following, _following, 1),
+            if (widget.isPrimaryStyle) ...[
+              _buildDivider(),
+              _buildStatColumn(context.l10n.appointments, _appointments, -1),
+            ],
+          ],
+        );
+      },
     );
   }
 
@@ -72,7 +80,7 @@ class _SocialStatsRowState extends State<SocialStatsRow> {
     );
   }
 
-  Widget _buildStatColumn(String label, int count, int tabIndex) {
+  Widget _buildStatColumn(String label, int count, int tabIndex, {bool showBadge = false}) {
     return InkWell(
       onTap: tabIndex == -1 ? null : () async {
         await Navigator.push(
@@ -92,35 +100,60 @@ class _SocialStatsRowState extends State<SocialStatsRow> {
           horizontal: AppDimens.spaceS, 
           vertical: AppDimens.spaceXS,
         ),
-        child: Column(
+        child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            _isLoading 
-              ? Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: SizedBox(
-                    width: 16, 
-                    height: 16, 
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2, 
-                      color: Theme.of(context).primaryColor.withValues(alpha: 0.5),
+            Column(
+              children: [
+                _isLoading 
+                  ? Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: SizedBox(
+                        width: 16, 
+                        height: 16, 
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2, 
+                          color: Theme.of(context).primaryColor.withValues(alpha: 0.5),
+                        )
+                      ),
                     )
-                  ),
-                )
-              : Text(
-                  count.toString(),
+                  : Text(
+                      count.toString(),
+                      style: TextStyle(
+                        fontSize: AppDimens.textSizeL,
+                        fontWeight: FontWeight.bold,
+                        color: widget.isPrimaryStyle ? AppColors.primary : AppColors.getTextPrimary(context),
+                      ),
+                    ),
+                Text(
+                  label,
                   style: TextStyle(
-                    fontSize: AppDimens.textSizeL,
-                    fontWeight: FontWeight.bold,
-                    color: widget.isPrimaryStyle ? AppColors.primary : AppColors.getTextPrimary(context),
+                    fontSize: AppDimens.textSizeXS,
+                    color: Colors.grey.shade600,
                   ),
                 ),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: AppDimens.textSizeXS,
-                color: Colors.grey.shade600,
-              ),
+              ],
             ),
+            if (showBadge)
+              Positioned(
+                right: -6,
+                top: -4,
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
       ),

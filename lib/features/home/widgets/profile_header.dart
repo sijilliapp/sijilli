@@ -12,6 +12,7 @@ import 'profile/social_stats_row.dart';
 import 'profile/profile_actions_helper.dart';
 import '../../profile/widgets/user_follow_button.dart';
 import 'package:sijilli/features/profile/screens/follows_screen.dart';
+import 'package:sijilli/features/notifications/providers/notification_provider.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class ProfileHeader extends StatelessWidget {
@@ -110,7 +111,7 @@ class ProfileHeader extends StatelessWidget {
                   ),
                 ),
                 
-                const SizedBox(height: AppDimens.spaceTiny),
+                const SizedBox(height: AppDimens.spaceXXS),
               
                 UserNameWithBadge(
                   name: displayUser.name,
@@ -142,9 +143,9 @@ class ProfileHeader extends StatelessWidget {
                   ),
                 ],
                 
-                const SizedBox(height: AppDimens.spaceCompact),
+                const SizedBox(height: AppDimens.spaceL), // زيادة المسافة لتوسيط الاسم بين ما قبله وما بعده
 
-                Row(
+                    Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                       if (isPublicView && displayUser.id != authProvider.user?.id) ...[
@@ -155,53 +156,85 @@ class ProfileHeader extends StatelessWidget {
                         onFollowChanged: () {},
                       ),
                     ] else ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: AppDimens.space),
-                          height: AppDimens.buttonHeightXS,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).cardColor,
-                            borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
-                            border: Border.all(color: Theme.of(context).dividerColor),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withValues(alpha: 0.05),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => FollowsScreen(userId: displayUser.id),
+                        Consumer<NotificationProvider>(
+                          builder: (context, notifProvider, _) {
+                            final hasPending = notifProvider.pendingFollowsCount > 0;
+                            
+                            return Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: AppDimens.space),
+                                  height: AppDimens.buttonHeightXS,
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).cardColor,
+                                    borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
+                                    border: Border.all(color: Theme.of(context).dividerColor),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.grey.withValues(alpha: 0.05),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
                                   ),
-                                );
-                              },
-                              borderRadius: BorderRadius.circular(22),
-                              child: Directionality(
-                                textDirection: context.l10n.localeName == 'ar' ? TextDirection.rtl : TextDirection.ltr,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(Icons.people_outline, color: AppColors.primary, size: AppDimens.iconSizeXS),
-                                    const SizedBox(width: AppDimens.spaceTiny),
-                                    Text(
-                                      context.l10n.accreditations, 
-                                      style: TextStyle(
-                                        color: Theme.of(context).textTheme.bodyMedium?.color,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: AppDimens.textSizeXS,
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => FollowsScreen(userId: displayUser.id),
+                                          ),
+                                        );
+                                      },
+                                      borderRadius: BorderRadius.circular(22),
+                                      child: Directionality(
+                                        textDirection: context.l10n.localeName == 'ar' ? TextDirection.rtl : TextDirection.ltr,
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.people_outline, color: AppColors.primary, size: AppDimens.iconSizeXS),
+                                            const SizedBox(width: AppDimens.spaceTiny),
+                                            Text(
+                                              context.l10n.accreditations, 
+                                              style: TextStyle(
+                                                color: Theme.of(context).textTheme.bodyMedium?.color,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: AppDimens.textSizeXS,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ),
+                                if (hasPending)
+                                  Positioned(
+                                    right: -2,
+                                    top: -2,
+                                    child: Container(
+                                      width: 12,
+                                      height: 12,
+                                      decoration: BoxDecoration(
+                                        color: Colors.red,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 2),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: 0.1),
+                                            blurRadius: 2,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
                         ),
                       ],
   

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -22,8 +23,12 @@ import 'features/home/providers/public_profile_provider.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/locale_provider.dart';
 import 'core/providers/settings_provider.dart';
+import 'core/providers/global_config_provider.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'routes/app_router.dart';
+import 'features/auth/services/user_activity_service.dart';
+import 'features/admin/providers/admin_provider.dart';
+import 'features/articles/providers/article_provider.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
@@ -46,63 +51,99 @@ void main() async { // Changed to async
     statusBarBrightness: Brightness.light, // لـ iOS
   ));
 
-  // Initialize Hive
-  await Hive.initFlutter();
-  
-  // تهيئة LocalDbService مبكراً لضمان فتح IndexedDB بشكل تسلسلي قبل أي استخدام
-  await LocalDbService.instance.box;
-  
-  // Initialize PocketBase
-  PocketBaseClient.instance.initialize();
-  
   // معالجة أخطاء Flutter
   FlutterError.onError = (FlutterErrorDetails details) {
-    // Prevent infinite loops on Web if the error object is a JS Proxy that crashes dumpErrorToConsole
     try {
       FlutterError.presentError(details);
     } catch (e) {
-      print('⚠️ Flutter Error (Safe Log): ${details.exception}');
-      print('Stacktrace: ${details.stack}');
+      debugPrint('⚠️ Flutter Error (Safe Log): ${details.exception}');
     }
   };
-  
-  // Initialize ThemeProvider (Pre-load settings to avoid flash)
+
+  // تهيئة PocketBase أولاً لأن الخدمات الأخرى تعتمد عليه
+  await PocketBaseClient.instance.initialize();
+
+  // تهيئة المزودات الأساسية مسبقاً
   final themeProvider = ThemeProvider();
-  await themeProvider.loadSettings();
-    // Initialize LocaleProvider
-    final localeProvider = LocaleProvider();
+  final localeProvider = LocaleProvider();
+  final settingsProvider = SettingsProvider();
+  final globalConfigProvider = GlobalConfigProvider();
+
+  try {
+    // تهيئة Hive ومعالجة التلف محلياً
+    await Hive.initFlutter();
     
-    // Initialize SettingsProvider
-    final settingsProvider = SettingsProvider();
-    await settingsProvider.loadSettings();
+    // تهيئة LocalDbService - أضفنا لها معالجة أخطاء داخلية لمنع التعليق
+    await LocalDbService.instance.box.timeout(
+      const Duration(seconds: 5),
+      onTimeout: () => throw TimeoutException('Local DB initialization timed out'),
+    );
     
-    // تشغيل التطبيق
-    runApp(SijilliApp(
-      themeProvider: themeProvider,
-      localeProvider: localeProvider,
-      settingsProvider: settingsProvider,
-    ));
+    // تحميل الإعدادات مع مهلة زمنية
+    await Future.wait([
+      themeProvider.loadSettings(),
+      settingsProvider.loadSettings(),
+      // جلب إعدادات النظام من السحابة مع مهلة 5 ثوانٍ كحد أقصى لمنع الشاشة البيضاء
+      globalConfigProvider.fetchConfig().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          debugPrint('⚠️ Global config fetch timed out, using defaults.');
+        },
+      ),
+    ]).timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        debugPrint('⚠️ General initialization timed out.');
+        return [];
+      },
+    );
+  } catch (e, stack) {
+    debugPrint('‼️ Initialization Error: $e');
+    debugPrint('Stacktrace: $stack');
+    // نستمر في التشغيل حتى لو حدث خطأ، سيعتمد التطبيق على القيم الافتراضية
+  }
+    
+  // تهيئة مراقب نشاط المستخدم (Last Seen)
+  UserActivityService.instance.initialize();
+    
+  // تشغيل التطبيق - دائماً يتم استدعاؤه لضمان عدم بقاء الشاشة بيضاء
+  runApp(SijilliApp(
+    themeProvider: themeProvider,
+    localeProvider: localeProvider,
+    settingsProvider: settingsProvider,
+    globalConfigProvider: globalConfigProvider,
+  ));
 }
 
 class SijilliApp extends StatelessWidget {
   final ThemeProvider themeProvider;
   final LocaleProvider localeProvider;
   final SettingsProvider settingsProvider;
+  final GlobalConfigProvider globalConfigProvider;
   
   const SijilliApp({
     super.key, 
     required this.themeProvider,
     required this.localeProvider,
     required this.settingsProvider,
+    required this.globalConfigProvider,
   });
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // إدارة الإعدادات العامة (يجب أن يكون في الأعلى لأنه قد يُستخدم في تهيئة مزودات أخرى)
+        ChangeNotifierProvider.value(
+          value: globalConfigProvider,
+        ),
         // إدارة حالة المصادقة
         ChangeNotifierProvider(
           create: (context) => AuthProvider()..initialize(),
+        ),
+        // إدارة صلاحيات وإعدادات المشرف العام
+        ChangeNotifierProvider(
+          create: (context) => AdminProvider(),
         ),
         // إدارة نظام الحظر والتبليغ
         ChangeNotifierProvider(
@@ -112,7 +153,12 @@ class SijilliApp extends StatelessWidget {
         ChangeNotifierProxyProvider2<AuthProvider, ModerationProvider, AppointmentProvider>(
           create: (context) => AppointmentProvider(),
           update: (context, auth, moderation, appointment) {
-            appointment?.update(auth.user?.id, (auth.user?.hijriAdjustment ?? 0).toInt(), moderation);
+            appointment?.update(
+              auth.user?.id, 
+              (auth.user?.hijriAdjustment ?? 0).toInt(), 
+              moderation,
+              isAdmin: auth.user?.isAdmin ?? false,
+            );
             return appointment ?? AppointmentProvider();
           },
         ),
@@ -132,17 +178,21 @@ class SijilliApp extends StatelessWidget {
             return notification ?? NotificationProvider();
           },
         ),
-        // إدارة حالة البحث - تعتمد على حالة المصادقة (للمنطقة والوقت)
-        ChangeNotifierProxyProvider<AuthProvider, SearchProvider>(
+        // إدارة حالة البحث - تعتمد على حالة المصادقة ونظام الحظر وإعدادات الإدارة
+        ChangeNotifierProxyProvider3<AuthProvider, ModerationProvider, GlobalConfigProvider, SearchProvider>(
           create: (context) => SearchProvider()..init(),
-          update: (context, auth, search) {
-            search?.updateContext(auth.user);
+          update: (context, auth, moderation, config, search) {
+            search?.update(auth.user, moderation, config);
             return search ?? SearchProvider();
           },
         ),
         // إدارة بيانات الملفات الشخصية العامة
         ChangeNotifierProvider(
           create: (context) => PublicProfileProvider(),
+        ),
+        // إدارة المقالات
+        ChangeNotifierProvider(
+          create: (context) => ArticleProvider(),
         ),
         // إدارة الثيم والخطوط (تم تحميلها مسبقاً)
         ChangeNotifierProvider.value(

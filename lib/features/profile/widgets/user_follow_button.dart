@@ -29,9 +29,11 @@ class UserFollowButton extends StatefulWidget {
 
 class _UserFollowButtonState extends State<UserFollowButton> {
   final PbUserService _userService = PbUserService();
-  String _status = 'none'; // 'none', 'pending', 'accepted'
-  bool _isFriend = false; // جديد: هل العلاقة متبادلة؟
-  bool _isBeingFollowed = false; // هل هذا المستخدم يتابعني؟
+  String _status = 'none'; // 'none', 'pending', 'accepted', 'blocked'
+  bool _isFriend = false;
+  bool _isBeingFollowed = false;
+  bool _isBlocked = false;
+  bool _isBlockingMe = false;
   final bool _isActionLoading = false;
   bool _isLoading = true;
 
@@ -39,15 +41,23 @@ class _UserFollowButtonState extends State<UserFollowButton> {
   void initState() {
     super.initState();
     if (widget.initialStatusData != null) {
-      _status = widget.initialStatusData!['status'] as String? ?? 'none';
-      _isFriend = widget.initialStatusData!['isFriend'] as bool? ?? false;
-      _isBeingFollowed = widget.initialStatusData!['isBeingFollowed'] as bool? ?? false;
-      _isLoading = false;
-      // We do NOT fetch silently here to avoid a race condition with the optimistic 
-      // mutation that just created this button. The parent's data is authoritative.
-    } else {
+      _applyStatusData(widget.initialStatusData!);
+    } else if (!widget.isCompact) { 
+      // Only auto-fetch if NOT in a compact list (like search results) 
+      // to avoid flooding the network.
       _checkStatus();
+    } else {
+      _isLoading = false;
     }
+  }
+
+  void _applyStatusData(Map<String, dynamic> data) {
+    _status = data['status'] as String? ?? 'none';
+    _isFriend = data['isFriend'] as bool? ?? false;
+    _isBeingFollowed = data['isBeingFollowed'] as bool? ?? false;
+    _isBlocked = data['isBlocked'] as bool? ?? false;
+    _isBlockingMe = data['isBlockingMe'] as bool? ?? false;
+    _isLoading = false;
   }
 
   Future<void> _checkStatus() async {
@@ -60,6 +70,8 @@ class _UserFollowButtonState extends State<UserFollowButton> {
           _status = results['status'] as String;
           _isFriend = results['isFriend'] as bool;
           _isBeingFollowed = results['isBeingFollowed'] as bool;
+          _isBlocked = results['isBlocked'] as bool;
+          _isBlockingMe = results['isBlockingMe'] as bool;
           _isLoading = false;
         });
       }
@@ -69,6 +81,21 @@ class _UserFollowButtonState extends State<UserFollowButton> {
   }
 
   Future<void> _toggleFollow() async {
+    if (_isBlocked) {
+      try {
+        await _userService.unfollowUser(widget.userId); // In friendship table, unblocking is setting status to none
+        _checkStatus();
+      } catch (e) {}
+      return;
+    }
+
+    if (_isBlockingMe) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا يمكنك التفاعل مع هذا الحساب')),
+      );
+      return;
+    }
+
     final oldStatus = _status;
     final isFriend = _isFriend;
 
@@ -229,6 +256,13 @@ class _UserFollowButtonState extends State<UserFollowButton> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     switch (_status) {
+      case 'blocked':
+        label = 'إلغاء الحظر';
+        color = Colors.red.shade100;
+        textColor = Colors.red;
+        icon = Icons.block;
+        hasBorder = true;
+        break;
       case 'accepted':
         if (_isFriend) {
           if (widget.isHeaderStyle) {
@@ -357,7 +391,6 @@ class _UserFollowButtonState extends State<UserFollowButton> {
           horizontal: AppDimens.spaceL, // 16px
           vertical: 6,
         ),
-        constraints: const BoxConstraints(minWidth: 90),
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(AppDimens.radiusCircle),

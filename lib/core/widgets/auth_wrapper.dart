@@ -15,19 +15,29 @@ class AuthWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
-        if (authProvider.status == AuthStatus.initial || 
-            authProvider.status == AuthStatus.loading) {
-          return const LoadingScreen();
-        }
-        
-        if (authProvider.isAuthenticated) {
-          return const MainScreen();
-        }
-
-        // unauthenticated أو error — كلاهما يعرض شاشة الدخول
-        return const LoginScreen();
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 500),
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          child: _buildCurrentScreen(authProvider),
+        );
       },
     );
+  }
+
+  Widget _buildCurrentScreen(AuthProvider authProvider) {
+    if (authProvider.status == AuthStatus.initial || 
+        authProvider.status == AuthStatus.loading) {
+      return const LoadingScreen(key: ValueKey('loading'));
+    }
+    
+    if (authProvider.isAuthenticated) {
+      return const MainScreen(key: ValueKey('main'));
+    }
+
+    // unauthenticated أو error — كلاهما يعرض شاشة الدخول
+    return const LoginScreen(key: ValueKey('login'));
   }
 }
 

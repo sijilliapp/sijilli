@@ -1,14 +1,15 @@
 // 📍 lib/features/auth/screens/forgot_password_screen.dart
-// 🔑 شاشة نسيان كلمة المرور - مؤقتة
+// 🔑 شاشة نسيان كلمة المرور المطورة
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimens.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/auth_text_field.dart';
 import '../widgets/auth_button.dart';
+import '../widgets/auth_background.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -37,7 +38,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(authProvider.errorMessage ?? context.l10n.unknownError),
-          backgroundColor: AppColors.error,
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
@@ -45,17 +47,24 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(context.l10n.forgotPassword),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        foregroundColor: isDark ? Colors.white : Colors.black87,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppDimens.spaceXL),
-        child: _isSuccess ? _buildSuccessState() : _buildFormState(),
+      extendBodyBehindAppBar: true,
+      body: AuthBackground(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: AppDimens.spaceXL),
+            child: _isSuccess ? _buildSuccessState() : _buildFormState(),
+          ),
+        ),
       ),
     );
   }
@@ -66,8 +75,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const SizedBox(height: 40),
           const Icon(
-            Icons.lock_reset,
+            Icons.lock_reset_rounded,
             size: 80,
             color: AppColors.primary,
           ),
@@ -76,16 +86,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             context.l10n.forgotPassword,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 22,
+              fontSize: 26,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 12),
           Text(
-            context.l10n.loginToContinue, // Reusing similar context if recovery text not in ARB
+            context.l10n.forgotPasswordDesc,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 15,
               color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade400 : Colors.grey.shade600,
             ),
           ),
@@ -114,28 +124,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               );
             },
           ),
-          const SizedBox(height: 24),
-          const Text(
-            'أو راسلنا على البريد الإلكتروني',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          InkWell(
-            onTap: () => launchUrl(Uri.parse('mailto:sijilliapp@gmail.com')),
-            child: const Text(
-              'sijilliapp@gmail.com',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
-                decoration: TextDecoration.underline,
-              ),
-            ),
-          ),
+          const SizedBox(height: 40),
+          _buildContactFooter(),
         ],
       ),
     );
@@ -146,15 +136,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const SizedBox(height: 40),
+        const SizedBox(height: 60),
         const Icon(
-          Icons.check_circle_outline,
+          Icons.check_circle_outline_rounded,
           size: 100,
           color: Colors.green,
         ),
         const SizedBox(height: 24),
         Text(
-          context.l10n.reportSent, // Success message reuse
+          context.l10n.emailSentSuccess,
           style: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -162,7 +152,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ),
         const SizedBox(height: 16),
         Text(
-          '${_emailController.text}',
+          context.l10n.passwordResetInstructions(_emailController.text),
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 16,
@@ -170,26 +160,28 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
         ),
         const SizedBox(height: 40),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton(
-            onPressed: () => Navigator.pop(context),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              side: const BorderSide(color: AppColors.primary),
-            ),
-            child: Text(context.l10n.login),
-          ),
+        AuthButton(
+          text: context.l10n.login,
+          onPressed: () => Navigator.pop(context),
         ),
-        const SizedBox(height: 24),
-        const Text(
-          'أو راسلنا على البريد الإلكتروني',
+        const SizedBox(height: 40),
+        _buildContactFooter(),
+      ],
+    );
+  }
+
+  Widget _buildContactFooter() {
+    return Column(
+      children: [
+        Text(
+          context.l10n.orContactByEmail,
           textAlign: TextAlign.center,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 14,
             color: AppColors.textSecondary,
           ),
         ),
+        const SizedBox(height: 8),
         InkWell(
           onTap: () => launchUrl(Uri.parse('mailto:sijilliapp@gmail.com')),
           child: const Text(
@@ -200,6 +192,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               color: AppColors.primary,
               fontWeight: FontWeight.bold,
               decoration: TextDecoration.underline,
+              decorationColor: AppColors.primary,
             ),
           ),
         ),

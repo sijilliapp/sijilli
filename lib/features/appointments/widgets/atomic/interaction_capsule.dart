@@ -27,15 +27,26 @@ class InteractionCapsule extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
       child: Container(
-        height: 28, // Unified height for all capsules
-        padding: padding ?? const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        height: 28,
+        padding: padding ?? const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
-          border: Border.all(color: borderColor.withValues(alpha: borderOpacity), width: 1.5), // Slightly thicker/white border support
+          border: Border.all(color: borderColor.withValues(alpha: borderOpacity), width: 1.5),
           boxShadow: boxShadow,
         ),
-        child: child,
+        child: Center(
+          widthFactor: 1.0,  // Prevents horizontal expansion in Row/Flexible layouts
+          heightFactor: 1.0, // Centers the child vertically inside the 28px height
+          child: DefaultTextStyle(
+            style: Theme.of(context).textTheme.bodySmall!.copyWith(
+              fontSize: 13, 
+              fontWeight: FontWeight.w600,
+              height: 1.1, // Inspired by GuestCapsule for better vertical centering
+            ),
+            child: child,
+          ),
+        ),
       ),
     );
   }

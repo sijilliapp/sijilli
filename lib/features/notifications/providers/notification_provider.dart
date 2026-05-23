@@ -10,6 +10,7 @@ import '../../../../models/notification.dart';
 import '../../../../models/appointment.dart';
 import '../services/notification_service.dart';
 import '../../appointments/services/pb_appointment_service.dart';
+import '../../../core/services/pocketbase_client.dart';
 
 class NotificationProvider extends ChangeNotifier {
   final NotificationService _service = NotificationService();
@@ -20,10 +21,13 @@ class NotificationProvider extends ChangeNotifier {
   List<NotificationModel> _notifications = [];
   bool _isLoading = false;
   UnsubscribeFunc? _unsubscribeFunc;
+  UnsubscribeFunc? _unsubscribeFriendshipFunc;
   String? _currentUserId;
+  int _pendingFollowsCount = 0;
 
   List<NotificationModel> get notifications => _notifications;
   bool get isLoading => _isLoading;
+  int get pendingFollowsCount => _pendingFollowsCount;
 
   /// Update provider state when authentication changes.
   /// This synchronously drops the realtime connection to prevent 403 mismatches
@@ -38,7 +42,12 @@ class NotificationProvider extends ChangeNotifier {
           _unsubscribeFunc = null;
           print('🔌 [NotificationProvider] Dropped realtime subscription due to auth change.');
         }
+        if (_unsubscribeFriendshipFunc != null) {
+          _unsubscribeFriendshipFunc!();
+          _unsubscribeFriendshipFunc = null;
+        }
         _notifications = [];
+        _pendingFollowsCount = 0;
         // Delay notifyListeners to avoid build phase conflicts
         Future.microtask(() => notifyListeners());
       }
@@ -112,7 +121,9 @@ class NotificationProvider extends ChangeNotifier {
     await _loadSettings();
     await _initLocalNotifications();
     await fetchNotifications(userId);
+    await fetchPendingFollowsCount(userId);
     await _subscribeToRealtime(userId);
+    await _subscribeToFriendshipRealtime(userId);
   }
 
   Future<void> _loadSettings() async {
@@ -209,6 +220,38 @@ class NotificationProvider extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> fetchPendingFollowsCount(String userId) async {
+    try {
+      final pb = PocketBaseClient.instance.pb;
+      // Broaden filter to get all participations and filter in-memory for safety
+      final results = await pb.collection('friendship').getFullList(
+        filter: 'user_a = "$userId" || user_b = "$userId"',
+      );
+      
+      int count = 0;
+      for (final f in results) {
+        final isUserA = f.data['user_a'] == userId;
+        final myStatus = isUserA ? f.data['a_status'] : f.data['b_status'];
+        final theirStatus = isUserA ? f.data['b_status'] : f.data['a_status'];
+        
+        if (myStatus == 'accepted' && theirStatus == 'accepted') {
+          // Mutual - not pending
+          continue;
+        } 
+        
+        // Match FollowsScreen logic exactly for "Incoming":
+        if (theirStatus == 'pending' || theirStatus == 'accepted') {
+          count++;
+        }
+      }
+
+      _pendingFollowsCount = count;
+      notifyListeners();
+    } catch (e) {
+      print('Error fetching pending follows count: $e');
     }
   }
 
@@ -432,14 +475,36 @@ class NotificationProvider extends ChangeNotifier {
       await _unsubscribeFunc!();
       _unsubscribeFunc = null;
     }
+    if (_unsubscribeFriendshipFunc != null) {
+      await _unsubscribeFriendshipFunc!();
+      _unsubscribeFriendshipFunc = null;
+    }
     _notifications = [];
+    _pendingFollowsCount = 0;
     notifyListeners();
+  }
+
+  Future<void> _subscribeToFriendshipRealtime(String userId) async {
+    if (_unsubscribeFriendshipFunc != null) {
+      await _unsubscribeFriendshipFunc!();
+    }
+    try {
+      final pb = PocketBaseClient.instance.pb;
+      _unsubscribeFriendshipFunc = await pb.collection('friendship').subscribe('*', (e) {
+         fetchPendingFollowsCount(userId);
+      });
+    } catch (e) {
+      print('Error subscribing to friendship realtime: $e');
+    }
   }
 
   @override
   void dispose() {
     if (_unsubscribeFunc != null) {
       _unsubscribeFunc!();
+    }
+    if (_unsubscribeFriendshipFunc != null) {
+      _unsubscribeFriendshipFunc!();
     }
     super.dispose();
   }

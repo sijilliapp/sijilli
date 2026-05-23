@@ -45,12 +45,13 @@ class GuestCapsule extends StatelessWidget {
             borderColor: AppColors.primary,
             borderOpacity: 1.0,
             backgroundColor: AppColors.primary.withValues(alpha: isDark ? 0.1 : 0.05),
+            padding: const EdgeInsets.symmetric(horizontal: 6), // 🌟 Custom horizontal padding for perfect circular aspect ratio
             child: Text(
               context.l10n.localeName == 'ar'
                   ? AppDateFormatter.toEasternArabicDigits(context.l10n.extraGuestsCount(extraGuests!))
                   : context.l10n.extraGuestsCount(extraGuests!),
               style: const TextStyle(
-                fontSize: 10,
+                fontSize: 12, // 🌟 Increased from 10 to 12 for high readability
                 color: AppColors.primary,
                 fontWeight: FontWeight.bold,
               ),
@@ -79,10 +80,10 @@ class GuestCapsule extends StatelessWidget {
                   child: Text(
                     name,
                     style: TextStyle(
-                      fontSize: 12, // Slightly larger for better visibility
+                      fontSize: 12,
                       color: statusColor,
-                      fontWeight: FontWeight.w600, // bolder
-                      height: 1.2, // Fix vertical alignment on mobile
+                      fontWeight: FontWeight.w600,
+                      height: 1.2,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

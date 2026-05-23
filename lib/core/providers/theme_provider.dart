@@ -6,17 +6,12 @@ import 'package:adhan/adhan.dart';
 import '../services/location_service.dart';
 
 class ThemeProvider extends ChangeNotifier {
-  // 'Default' = خط النظام الفعلي لكل منصة:
-  //   iOS/macOS Safari  → San Francisco (-apple-system)
-  //   Android Chrome    → Roboto
-  //   Windows Chrome    → Segoe UI
-  //   Flutter iOS       → San Francisco
-  //   Flutter Android   → Roboto
-  String _fontFamily = 'Default';
+  // 'Tajawal' = خط التجوال افتراضي للمشترك الجديد
+  String _fontFamily = 'Tajawal';
   static const String keyFontFamily = 'font_family';
   
   // Theme Mode
-  String _currentTheme = 'light'; // light, dark, auto
+  String _currentTheme = 'auto'; // Default to auto (System/Sunset)
   static const String keyThemeMode = 'theme_mode';
   bool _isNight = false; // For Auto Mode status
 
@@ -32,18 +27,23 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   final List<String> availableFonts = [
-    'Default',   // خط النظام الفعلي (San Francisco / Roboto / Segoe UI)
-    'Cairo',
+    'Default',
+    'Alyamama',
     'Tajawal',
     'Almarai',
+    'Readex Pro',
+    'Amiri',
+    'Alexandria',
+    'Vazirmatn',
+    'Noto Sans Arabic',
     'IBM Plex Sans Arabic',
     'Scheherazade New',
   ];
 
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    _fontFamily = prefs.getString(keyFontFamily) ?? 'Default';
-    _currentTheme = prefs.getString(keyThemeMode) ?? 'light';
+    _fontFamily = prefs.getString(keyFontFamily) ?? 'Tajawal';
+    _currentTheme = prefs.getString(keyThemeMode) ?? 'auto';
     
     // Automatically check sunset if auto
     if (_currentTheme == 'auto') {
@@ -112,46 +112,55 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   TextTheme getCustomTextTheme(TextTheme base) {
-    switch (_fontFamily) {
-      case 'Cairo':
-        return GoogleFonts.cairoTextTheme(base);
-      case 'Almarai':
-        return GoogleFonts.almaraiTextTheme(base);
-      case 'Tajawal':
-        return GoogleFonts.tajawalTextTheme(base);
-      case 'IBM Plex Sans Arabic':
-        return GoogleFonts.ibmPlexSansArabicTextTheme(base);
-      case 'Scheherazade New':
-        // Scheherazade New is thin by default, we apply BOLD globally for it
-        var theme = GoogleFonts.scheherazadeNewTextTheme(base);
-        return theme.copyWith(
-          displayLarge: theme.displayLarge?.copyWith(fontWeight: FontWeight.bold),
-          displayMedium: theme.displayMedium?.copyWith(fontWeight: FontWeight.bold),
-          displaySmall: theme.displaySmall?.copyWith(fontWeight: FontWeight.bold),
-          headlineLarge: theme.headlineLarge?.copyWith(fontWeight: FontWeight.bold),
-          headlineMedium: theme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-          headlineSmall: theme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-          titleLarge: theme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-          titleMedium: theme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-          titleSmall: theme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-          bodyLarge: theme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
-          bodyMedium: theme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-          bodySmall: theme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
-          labelLarge: theme.labelLarge?.copyWith(fontWeight: FontWeight.bold),
-          labelMedium: theme.labelMedium?.copyWith(fontWeight: FontWeight.bold),
-          labelSmall: theme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
-        );
-      default:
-        // 'Default': خط النظام الفعلي لكل منصة
-        // على الويب: system-ui يجعل كل متصفح يستخدم خطه الأصلي
-        //   Safari (iOS/macOS) → San Francisco
-        //   Chrome (Android)   → Roboto
-        //   Chrome (Windows)   → Segoe UI
-        // على Flutter native: Flutter يستخدم خط النظام تلقائياً
-        if (kIsWeb) {
-          return base.apply(fontFamily: 'system-ui');
-        }
-        return base;
+    try {
+      switch (_fontFamily) {
+        case 'Alyamama':
+          return GoogleFonts.readexProTextTheme(base);
+        case 'Almarai':
+          return GoogleFonts.almaraiTextTheme(base);
+        case 'Tajawal':
+          return GoogleFonts.tajawalTextTheme(base);
+        case 'IBM Plex Sans Arabic':
+          return GoogleFonts.ibmPlexSansArabicTextTheme(base);
+        case 'Scheherazade New':
+          // Scheherazade New is thin by default, we apply BOLD globally for it
+          var theme = GoogleFonts.scheherazadeNewTextTheme(base);
+          return theme.copyWith(
+            displayLarge: theme.displayLarge?.copyWith(fontWeight: FontWeight.bold),
+            displayMedium: theme.displayMedium?.copyWith(fontWeight: FontWeight.bold),
+            displaySmall: theme.displaySmall?.copyWith(fontWeight: FontWeight.bold),
+            headlineLarge: theme.headlineLarge?.copyWith(fontWeight: FontWeight.bold),
+            headlineMedium: theme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+            headlineSmall: theme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            titleLarge: theme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            titleMedium: theme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            titleSmall: theme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+            bodyLarge: theme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+            bodyMedium: theme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+            bodySmall: theme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+            labelLarge: theme.labelLarge?.copyWith(fontWeight: FontWeight.bold),
+            labelMedium: theme.labelMedium?.copyWith(fontWeight: FontWeight.bold),
+            labelSmall: theme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
+          );
+        case 'Readex Pro':
+          return GoogleFonts.readexProTextTheme(base);
+        case 'Amiri':
+          return GoogleFonts.amiriTextTheme(base);
+        case 'Alexandria':
+          return GoogleFonts.alexandriaTextTheme(base);
+        case 'Vazirmatn':
+          return GoogleFonts.vazirmatnTextTheme(base);
+        case 'Noto Sans Arabic':
+          return GoogleFonts.notoSansArabicTextTheme(base);
+        default:
+          if (kIsWeb) {
+            return base.apply(fontFamily: 'system-ui');
+          }
+          return base;
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error loading custom font: $e. Using base theme.');
+      return base;
     }
   }
 }

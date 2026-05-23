@@ -13,6 +13,7 @@ import '../../../core/constants/app_config.dart';
 import '../../../models/user.dart';
 import '../../../models/notification.dart';
 import '../../notifications/services/notification_service.dart';
+import '../../search/utils/search_filter_builder.dart';
 
 class PbUserService {
   final PocketBase _pb = PocketBaseClient.instance.pb;
@@ -24,13 +25,16 @@ class PbUserService {
   static final Map<String, DateTime> _cacheTime = {};
   static const Duration _cacheDuration = Duration(minutes: 5);
 
-  Future<UserModel> updateCurrentUser(Map<String, dynamic> data, {XFile? avatarFile}) async {
+  Future<(UserModel, RecordModel)> updateCurrentUser(Map<String, dynamic> data, {XFile? avatarFile}) async {
     try {
       if (!_pb.authStore.isValid) {
         throw Exception('يجب تسجيل الدخول أولاً');
       }
       
-      final userId = _pb.authStore.record!.id;
+      final userId = _pb.authStore.model?.id;
+      if (userId == null) {
+        throw Exception('فشل الحصول على معرف المستخدم، يرجى تسجيل الدخول مجدداً');
+      }
       final List<http.MultipartFile> files = [];
 
       if (avatarFile != null) {
@@ -62,35 +66,58 @@ class PbUserService {
         }
       }
       
-      final record = await _pb.collection(collectionUsers).update(
-        userId, 
-        body: data,
-        files: files,
-      );
+      debugPrint('📝 [UserUpdate] Attempting to update user $userId with data: $data');
       
-      return UserModel.fromJson(record.toJson());
+      RecordModel record;
+      try {
+        record = await _pb.collection(collectionUsers).update(
+          userId, 
+          body: data,
+          files: files,
+        );
+      } catch (e) {
+        if (e.toString().contains('hideFromSearch')) {
+           debugPrint('⚠️ [UserUpdate] hideFromSearch field not found in DB. Retrying without it...');
+           final safeData = Map<String, dynamic>.from(data)..remove('hideFromSearch');
+           record = await _pb.collection(collectionUsers).update(
+             userId, 
+             body: safeData,
+             files: files,
+           );
+        } else {
+          rethrow;
+        }
+      }
+      
+      debugPrint('✅ [UserUpdate] Update successful');
+      return (UserModel.fromJson(record.toJson()), record);
     } catch (e) {
+      debugPrint('❌ [UserUpdate] Error: $e');
       rethrow;
     }
   }
 
-  Future<List<UserModel>> searchUsers(String query) async {
+  Future<List<UserModel>> searchUsers(String query, {int page = 1, int perPage = 10}) async {
     try {
-      String filter = '(name ~ "$query" || username ~ "$query")';
+      final filter = SearchFilterBuilder.buildUserSearchFilter(
+        query: query,
+        showAdmins: AppConfig.showAdminsInSearch,
+      );
       
-      if (!AppConfig.showAdminsInSearch) {
-        filter += ' && role != "admin"';
-      }
-      
-      // ملاحظة: إذا كانت الأدوار تدار بشكل مختلف في PocketBase، يمكن تعديل هذا الفلتر
+      debugPrint('🔍 [Search] Page: $page, PerPage: $perPage');
+      debugPrint('🔍 [Search] URL-encoded Filter: ${Uri.encodeComponent(filter)}');
+      debugPrint('🔍 [Search] Raw Filter: $filter');
       
       final resultList = await _pb.collection(collectionUsers).getList(
         filter: filter,
-        page: 1,
-        perPage: 20,
+        page: page,
+        perPage: perPage,
       );
+      
+      debugPrint('✅ [Search] Found ${resultList.items.length} users');
       return resultList.items.map((record) => UserModel.fromJson(record.toJson())).toList();
     } catch (e) {
+      debugPrint('❌ [Search] Error: $e');
       rethrow;
     }
   }
@@ -169,101 +196,43 @@ class PbUserService {
     return null;
   }
 
-  /// جلب المتابَعين (الأشخاص الذين يتابعهم المستخدم)
-  Future<List<UserModel>> getFollowedUsers({String? userId}) async {
-    try {
-      final targetId = userId ?? _pb.authStore.record?.id;
-      if (targetId == null) return [];
-      
-      // Use getFullList to fetch ALL records, not just first page (default 30)
-      final resultList = await _pb.collection('follows').getFullList(
-        filter: 'follower = "$targetId" && status = "accepted"',
-        expand: 'following',
-      );
-
-      return resultList.map((record) {
-        try {
-          final followingList = record.expand['following'];
-          final followedUserJson = (followingList != null && followingList.isNotEmpty) 
-              ? followingList.first.toJson() 
-              : null;
-          
-          if (followedUserJson == null) return null;
-          return UserModel.fromJson(followedUserJson);
-        } catch (e) {
-          print('⚠️ Error parsing followed user record ${record.id}: $e');
-          return null; // Skip bad record
-        }
-      }).whereType<UserModel>().toList();
-    } catch (e) {
-      print('⚠️ Failed to fetch followed users: $e');
-      return [];
-    }
-  }
-
-  /// التحقق من حالة المتابعة (قبول، انتظار، أو لا يوجد)
-  Future<String> getFollowStatus(String targetUserId) async {
-    try {
-      if (!_pb.authStore.isValid) return 'none';
-      final userId = _pb.authStore.record!.id;
-      
-      final result = await _pb.collection('follows').getList(
-        filter: 'follower = "$userId" && following = "$targetUserId"',
-        page: 1,
-        perPage: 1,
-      );
-      
-      if (result.items.isEmpty) return 'none';
-      return result.items.first.getStringValue('status'); // 'pending' or 'accepted'
-    } catch (e) {
-      return 'none';
-    }
-  }
-
   /// التحقق من متابعة مستخدم معين (مقبول فقط)
   Future<bool> isFollowing(String targetUserId) async {
-    final status = await getFollowStatus(targetUserId);
-    return status == 'accepted';
+    final status = await getAccreditationStatus(targetUserId);
+    return status['status'] == 'accepted';
   }
 
   /// التحقق من وجود علاقة صداقة متبادلة (كلاهما يتابع الآخر بحالة مقبول)
   Future<bool> isFriend(String targetUserId) async {
-    try {
-      if (!_pb.authStore.isValid) return false;
-      final userId = _pb.authStore.record!.id;
-      
-      // فحص المتابعة من طرفي
-      final myFollowStatus = await getFollowStatus(targetUserId);
-      if (myFollowStatus != 'accepted') return false;
-
-      // فحص المتابعة من الطرف الآخر
-      final result = await _pb.collection('follows').getList(
-        filter: 'follower = "$targetUserId" && following = "$userId" && status = "accepted"',
-        page: 1,
-        perPage: 1,
-      );
-      
-      return result.items.isNotEmpty;
-    } catch (e) {
-      return false;
-    }
+    final status = await getAccreditationStatus(targetUserId);
+    return status['isFriend'] == true;
   }
 
   /// التحقق مما إذا كان مستخدم معين يتابعني (بحالة انتظار أو مقبول)
   Future<bool> isUserFollowingMe(String targetUserId) async {
+    final status = await getAccreditationStatus(targetUserId);
+    return status['isBeingFollowed'] == true;
+  }
+
+  /// حذف متابع (إجبار شخص على إلغاء متابعتي)
+  Future<void> removeFollower(String targetUserId) async {
+    if (!_pb.authStore.isValid) return;
+    final userId = _pb.authStore.record!.id;
+    final pair = _getPair(userId, targetUserId);
+    final isUserA = pair['a'] == userId;
+
     try {
-      if (!_pb.authStore.isValid) return false;
-      final userId = _pb.authStore.record!.id;
-      
-      final result = await _pb.collection('follows').getList(
-        filter: 'follower = "$targetUserId" && following = "$userId"', // Removed status = "pending" to check for any follow
-        page: 1,
-        perPage: 1,
+      final record = await _pb.collection('friendship').getFirstListItem(
+        'user_a = "${pair['a']}" && user_b = "${pair['b']}"',
       );
       
-      return result.items.isNotEmpty;
+      await _pb.collection('friendship').update(record.id, body: {
+        'a_status': 'none',
+        'b_status': 'none',
+        'last_action_by': userId,
+      });
     } catch (e) {
-      return false;
+      // Record not found
     }
   }
 
@@ -271,269 +240,309 @@ class PbUserService {
   static final Queue<MapEntry<String, Completer<Map<String, dynamic>>>> _accreditationQueue = Queue();
   static bool _isProcessingAccreditation = false;
 
-  /// جلب حالة الاعتماد الموحدة في طلب واحد لتحسين الأداء
-  Future<Map<String, dynamic>> getAccreditationStatus(String targetUserId) {
-    if (!_pb.authStore.isValid) {
-      return Future.value({'status': 'none', 'isFriend': false, 'isBeingFollowed': false});
+  /// مساعد لترتيب أزواج المستخدمين لضمان سجل واحد في جدول friendship
+  Map<String, String> _getPair(String id1, String id2) {
+    if (id1.compareTo(id2) < 0) {
+      return {'a': id1, 'b': id2};
+    } else {
+      return {'a': id2, 'b': id1};
     }
-
-    final completer = Completer<Map<String, dynamic>>();
-    _accreditationQueue.add(MapEntry(targetUserId, completer));
-    _processAccreditationQueue();
-    
-    return completer.future;
   }
 
-  Future<void> _processAccreditationQueue() async {
-    if (_isProcessingAccreditation) return;
-    _isProcessingAccreditation = true;
+  /// جلب حالة الاعتماد الموحدة من جدول friendship
+  Future<Map<String, dynamic>> getAccreditationStatus(String targetUserId) async {
+    if (!_pb.authStore.isValid) {
+      return {'status': 'none', 'isFriend': false, 'isBeingFollowed': false, 'isBlocked': false, 'isBlockingMe': false};
+    }
 
-    while (_accreditationQueue.isNotEmpty) {
-      final entry = _accreditationQueue.removeFirst();
-      final targetUserId = entry.key;
-      final completer = entry.value;
+    try {
+      final userId = _pb.authStore.record!.id;
+      if (userId == targetUserId) return {'status': 'none', 'isFriend': true, 'isBeingFollowed': false, 'isBlocked': false, 'isBlockingMe': false};
 
+      final pair = _getPair(userId, targetUserId);
+      
+      RecordModel? record;
       try {
-        if (!_pb.authStore.isValid) {
-           completer.complete({'status': 'none', 'isFriend': false, 'isBeingFollowed': false});
-           continue;
-        }
-        
-        final userId = _pb.authStore.record!.id;
-
-        // جلب السجلات المتعلقة بالطرفين (أنا أتابعه أو هو يتابعني)
-        final records = await _pb.collection('follows').getList(
-          filter: '(follower = "$userId" && following = "$targetUserId") || (follower = "$targetUserId" && following = "$userId")',
-          page: 1,
-          perPage: 2,
+        record = await _pb.collection('friendship').getFirstListItem(
+          'user_a = "${pair['a']}" && user_b = "${pair['b']}"',
         );
-
-        String status = 'none';
-        bool isBeingFollowed = false;
-        bool isFollowingMeBack = false;
-
-        for (var item in records.items) {
-          final follower = item.getStringValue('follower');
-          final itemStatus = item.getStringValue('status');
-
-          if (follower == userId) {
-            status = itemStatus;
-          } else {
-            isBeingFollowed = true;
-            if (itemStatus == 'accepted') {
-              isFollowingMeBack = true;
-            }
-          }
-        }
-
-        if (!completer.isCompleted) {
-            completer.complete({
-              'status': status,
-              'isFriend': status == 'accepted' && isFollowingMeBack,
-              'isBeingFollowed': isBeingFollowed,
-            });
-        }
       } catch (e) {
-        print('⚠️ Error getting accreditation status for $targetUserId: $e');
-        if (!completer.isCompleted) {
-            completer.complete({'status': 'none', 'isFriend': false, 'isBeingFollowed': false});
-        }
+        // Record not found is fine
       }
 
-      // Small delay to prevent API rate limits on PocketHost
-      await Future.delayed(const Duration(milliseconds: 150));
-    }
+      if (record == null) {
+        return {'status': 'none', 'isFriend': false, 'isBeingFollowed': false, 'isBlocked': false, 'isBlockingMe': false};
+      }
 
-    _isProcessingAccreditation = false;
+      final isUserA = record.getStringValue('user_a') == userId;
+      final myStatus = record.getStringValue(isUserA ? 'a_status' : 'b_status');
+      final theirStatus = record.getStringValue(isUserA ? 'b_status' : 'a_status');
+
+      return {
+        'status': myStatus,
+        'isFriend': myStatus == 'accepted' && theirStatus == 'accepted',
+        'isBeingFollowed': theirStatus == 'accepted' || theirStatus == 'pending',
+        'isBlocked': myStatus == 'blocked',
+        'isBlockingMe': theirStatus == 'blocked',
+      };
+    } catch (e) {
+      if (kDebugMode) print('❌ Error fetching friendship status: $e');
+      return {'status': 'none', 'isFriend': false, 'isBeingFollowed': false, 'isBlocked': false, 'isBlockingMe': false};
+    }
   }
 
-  /// اعتماد مستخدم (قبول طلبه ومتابعته بالمقابل)
+  /// جلب حالات الاعتماد لمجموعة من المستخدمين دفعة واحدة
+  Future<List<RecordModel>> fetchFriendships(List<String> targetUserIds) async {
+    if (!_pb.authStore.isValid || targetUserIds.isEmpty) return [];
+    final userId = _pb.authStore.record!.id;
+    
+    // بناء فلتر يبحث عن أي علاقة بين المستخدم الحالي وأي من المستخدمين في القائمة
+    final idFilter = targetUserIds.map((id) => '(user_a = "$id" || user_b = "$id")').join(' || ');
+    final filter = '("$userId" = user_a || "$userId" = user_b) && ($idFilter)';
+    
+    try {
+      return await _pb.collection('friendship').getFullList(filter: filter);
+    } catch (e) {
+      debugPrint('⚠️ Error fetching batch friendships: $e');
+      return [];
+    }
+  }
   Future<void> accreditUser(String targetUserId) async {
     try {
-      if (!_pb.authStore.isValid) return;
+      if (!_pb.authStore.isValid || _pb.authStore.record == null) {
+        throw Exception('الجلسة منتهية، يرجى إعادة تسجيل الدخول');
+      }
+      
       final userId = _pb.authStore.record!.id;
+      if (userId == targetUserId) return; // منع اعتماد النفس
 
-      // 1. البحث عن طلب وارد معلق
-      final result = await _pb.collection('follows').getList(
-        filter: 'follower = "$targetUserId" && following = "$userId" && status = "pending"',
-        page: 1,
-        perPage: 1,
-      );
+      final pair = _getPair(userId, targetUserId);
 
-      if (result.items.isNotEmpty) {
-        // إذا وجدنا طلباً معلقاً، نقبله (وهذا سيقوم بالمتابعة العكسية كـ accepted)
-        await respondToFollowRequest(result.items.first.id, true);
+      // البحث عن أي سجل موجود مسبقاً (سواء كان معلقاً أو محظوراً أو غيره)
+      RecordModel? record;
+      try {
+        final records = await _pb.collection('friendship').getFullList(
+          filter: 'user_a = "${pair['a']}" && user_b = "${pair['b']}"',
+        );
+        if (records.isNotEmpty) record = records.first;
+      } catch (e) {
+        debugPrint('⚠️ Error checking existing friendship: $e');
+      }
+
+      final body = {
+        'user_a': pair['a'],
+        'user_b': pair['b'],
+        'a_status': 'accepted',
+        'b_status': 'accepted',
+        'last_action_by': userId,
+      };
+
+      if (record == null) {
+        debugPrint('🆕 [Accredit] Creating new mutual friendship record...');
+        await _pb.collection('friendship').create(body: body);
+        debugPrint('✅ [Accredit] Created successfully');
       } else {
-        // إذا لم نجد طلباً معلقاً (مقبول أصلاً)، نقوم بمتابعته مباشرة لتحقيق التبادلية كـ accepted
-        final status = await getFollowStatus(targetUserId);
-        if (status == 'none') {
-            await _pb.collection('follows').create(body: {
-              'follower': userId,
-              'following': targetUserId,
-              'status': 'accepted', // Always accepted during accreditation
-            });
-            // 🔔 Trigger Notification
-            final followerName = _pb.authStore.record?.data['name'] ?? 'مستخدم';
-            try {
-              await _notificationService.createNotification(
-                targetUserId: targetUserId,
-                title: 'اعتماد جديد',
-                message: '$followerName بدأ باعتمادك المتبادل',
-                type: NotificationType.follow,
-                relatedId: userId,
-              );
-            } catch (e) {
-              print('⚠️ Failed to send notification: $e');
-            }
-        }
+        debugPrint('📝 [Accredit] Updating existing record (${record.id}) to mutual accepted...');
+        await _pb.collection('friendship').update(record.id, body: body);
+        debugPrint('✅ [Accredit] Updated successfully');
+      }
+
+      // 🔔 Trigger Notification
+      final myName = _pb.authStore.record?.data['name'] ?? 'مستخدم';
+      try {
+        await _notificationService.createNotification(
+          targetUserId: targetUserId,
+          title: 'اعتماد متبادل',
+          message: '$myName قام باعتمادك المتبادل',
+          type: NotificationType.follow,
+          relatedId: userId,
+        );
+      } catch (e) {
+        debugPrint('⚠️ Failed to send notification: $e');
       }
     } catch (e) {
-      print('🚨 Error in accreditUser: $e');
+      debugPrint('🚨 Error in accreditUser: $e');
       rethrow;
     }
   }
 
+  /// التحقق من حالة المتابعة (للتوافق مع الكود القديم)
+  Future<String> getFollowStatus(String targetUserId) async {
+    final status = await getAccreditationStatus(targetUserId);
+    return status['status'] as String;
+  }
+
+  /// طلب متابعة أو اتصال
   Future<void> followUser(String targetUserId) async {
     if (!_pb.authStore.isValid) {
-      throw Exception('يجب تسجيل الدخول أولاً للمتابعة');
+      throw Exception('يجب تسجيل الدخول أولاً');
     }
     
     final userId = _pb.authStore.record!.id;
     if (userId == targetUserId) return; 
     
     try {
-      final status = await getFollowStatus(targetUserId);
-      if (status != 'none') return;
-
       final targetUser = await getPublicProfile(targetUserId);
       if (targetUser == null) throw Exception('المستخدم غير موجود');
 
       final initialStatus = targetUser.isPublic ? 'accepted' : 'pending';
+      final pair = _getPair(userId, targetUserId);
+      final isUserA = pair['a'] == userId;
 
-      await _pb.collection('follows').create(body: {
-        'follower': userId,
-        'following': targetUserId,
-        'status': initialStatus,
-      });
+      RecordModel? record;
+      try {
+        record = await _pb.collection('friendship').getFirstListItem(
+          'user_a = "${pair['a']}" && user_b = "${pair['b']}"',
+        );
+      } catch (_) {}
+
+      if (record == null) {
+        await _pb.collection('friendship').create(body: {
+          'user_a': pair['a'],
+          'user_b': pair['b'],
+          isUserA ? 'a_status' : 'b_status': initialStatus,
+          'last_action_by': userId,
+        });
+      } else {
+        // إذا كان الشخص محظوراً، لا يمكن المتابعة
+        final theirStatus = record.getStringValue(isUserA ? 'b_status' : 'a_status');
+        if (theirStatus == 'blocked') throw Exception('لا يمكنك متابعة هذا المستخدم');
+
+        await _pb.collection('friendship').update(record.id, body: {
+          isUserA ? 'a_status' : 'b_status': initialStatus,
+          'last_action_by': userId,
+        });
+      }
 
       // 🔔 Trigger Notification
-    final followerName = _pb.authStore.record?.data['name'] ?? 'مستخدم';
-    try {
-      await _notificationService.createNotification(
-        targetUserId: targetUserId,
-        title: initialStatus == 'accepted' ? 'اعتماد جديد' : 'طلب اعتماد',
-        message: '$followerName ${initialStatus == 'accepted' ? 'بدأ باعتمادك' : 'يريد اعتمادك'}',
-        type: initialStatus == 'accepted' ? NotificationType.follow : NotificationType.approvalRequest,
-        relatedId: userId,
-      );
-    } catch (e) {
-      print('⚠️ Failed to send notification: $e');
-    }
+      final myName = _pb.authStore.record?.data['name'] ?? 'مستخدم';
+      try {
+        await _notificationService.createNotification(
+          targetUserId: targetUserId,
+          title: initialStatus == 'accepted' ? 'اعتماد جديد' : 'طلب اعتماد',
+          message: '$myName ${initialStatus == 'accepted' ? 'بدأ باعتمادك' : 'يريد اعتمادك'}',
+          type: initialStatus == 'accepted' ? NotificationType.follow : NotificationType.approvalRequest,
+          relatedId: userId,
+        );
+      } catch (e) {
+        print('⚠️ Failed to send notification: $e');
+      }
     } catch (e) {
       rethrow;
     }
   }
 
-  /// إلغاء متابعة مستخدم
+  /// إلغاء الاتصال أو المتابعة (كسر الاعتماد المتبادل)
   Future<void> unfollowUser(String targetUserId) async {
+    if (!_pb.authStore.isValid) return;
     final userId = _pb.authStore.record!.id;
-    
+    final pair = _getPair(userId, targetUserId);
+
     try {
-      final result = await _pb.collection('follows').getList(
-        filter: 'follower = "$userId" && following = "$targetUserId"',
-        page: 1,
-        perPage: 1,
+      final record = await _pb.collection('friendship').getFirstListItem(
+        'user_a = "${pair['a']}" && user_b = "${pair['b']}"',
       );
       
-      if (result.items.isNotEmpty) {
-        await _pb.collection('follows').delete(result.items.first.id);
+      debugPrint('🔄 [Friendship] Breaking mutual bond for record: ${record.id}');
+      
+      // كسر الاعتماد من الطرفين تماماً لضمان عدم العودة إلا بموافقة جديدة
+      await _pb.collection('friendship').update(record.id, body: {
+        'a_status': 'none',
+        'b_status': 'none',
+        'last_action_by': userId,
+      });
+      debugPrint('✅ [Friendship] Bond broken successfully');
+
+      // 🔔 Trigger Notification to target user that I withdrew/cancelled my accreditation/relationship
+      final myName = _pb.authStore.record?.data['name'] ?? 'مستخدم';
+      try {
+        await _notificationService.createNotification(
+          targetUserId: targetUserId,
+          title: 'تراجع عن الاعتماد',
+          message: '$myName تراجع عن اعتمادك أو طلب اعتمادك',
+          type: NotificationType.cancel,
+          relatedId: userId,
+        );
+      } catch (err) {
+        debugPrint('⚠️ Failed to send cancel/withdraw notification: $err');
+      }
+    } catch (e) {
+      debugPrint('⚠️ [Friendship] Failed to break bond: $e');
+    }
+  }
+
+  /// حظر مستخدم
+  Future<void> blockUser(String targetUserId) async {
+    if (!_pb.authStore.isValid) return;
+    final userId = _pb.authStore.record!.id;
+    final pair = _getPair(userId, targetUserId);
+    final isUserA = pair['a'] == userId;
+
+    try {
+      RecordModel? record;
+      try {
+        record = await _pb.collection('friendship').getFirstListItem(
+          'user_a = "${pair['a']}" && user_b = "${pair['b']}"',
+        );
+      } catch (_) {}
+
+      if (record == null) {
+        await _pb.collection('friendship').create(body: {
+          'user_a': pair['a'],
+          'user_b': pair['b'],
+          isUserA ? 'a_status' : 'b_status': 'blocked',
+          isUserA ? 'b_status' : 'a_status': 'none', // مسح أي علاقة سابقة
+          'last_action_by': userId,
+        });
+      } else {
+        await _pb.collection('friendship').update(record.id, body: {
+          isUserA ? 'a_status' : 'b_status': 'blocked',
+          isUserA ? 'b_status' : 'a_status': 'none', // مسح أي علاقة سابقة
+          'last_action_by': userId,
+        });
       }
     } catch (e) {
       rethrow;
     }
   }
 
-  /// حذف متابع (إجبار شخص على إلغاء متابعتي)
-  Future<void> removeFollower(String targetUserId) async {
-    final userId = _pb.authStore.record!.id;
-    
+  /// جلب المتابَعين (الأشخاص الذين أتابعهم بحالة مقبول)
+  Future<List<UserModel>> getFollowedUsers({String? userId}) async {
     try {
-      final result = await _pb.collection('follows').getList(
-        filter: 'follower = "$targetUserId" && following = "$userId"',
-        page: 1,
-        perPage: 1,
-      );
+      final targetId = userId ?? _pb.authStore.record?.id;
+      if (targetId == null) return [];
       
-      if (result.items.isNotEmpty) {
-        await _pb.collection('follows').delete(result.items.first.id);
-      }
+      final records = await _pb.collection('friendship').getFullList(
+        filter: '(user_a = "$targetId" && a_status = "accepted") || (user_b = "$targetId" && b_status = "accepted")',
+        expand: 'user_a,user_b',
+      );
+
+      return records.map((record) {
+        final isUserA = record.getStringValue('user_a') == targetId;
+        final targetUserJson = record.expand[isUserA ? 'user_b' : 'user_a']?.first.toJson();
+        return targetUserJson != null ? UserModel.fromJson(targetUserJson) : null;
+      }).whereType<UserModel>().toList();
     } catch (e) {
-      rethrow;
+      return [];
     }
   }
 
-  /// جلب المتابِعين (الأشخاص الذين يتابعون المستخدم الحالي أو مستخدم آخر)
+  /// جلب المتابِعين (الأشخاص الذين يتابعونني بحالة مقبول)
   Future<List<UserModel>> getFollowers({String? userId}) async {
     try {
       final targetId = userId ?? _pb.authStore.record?.id;
       if (targetId == null) return [];
       
-      // Use getFullList instead of getList to correct pagination issues
-      final resultList = await _pb.collection('follows').getFullList(
-        filter: 'following = "$targetId" && status = "accepted"',
-        expand: 'follower',
+      final records = await _pb.collection('friendship').getFullList(
+        filter: '(user_a = "$targetId" && b_status = "accepted") || (user_b = "$targetId" && a_status = "accepted")',
+        expand: 'user_a,user_b',
       );
 
-      return resultList.map((record) {
-        try {
-           final followerList = record.expand['follower'];
-           final followerJson = (followerList != null && followerList.isNotEmpty) 
-              ? followerList.first.toJson() 
-              : null;
-           
-           if (followerJson == null) return null;
-           return UserModel.fromJson(followerJson);
-        } catch (e) {
-           print('⚠️ Error parsing follower record ${record.id}: $e');
-           return null;
-        }
+      return records.map((record) {
+        final isUserA = record.getStringValue('user_a') == targetId;
+        final targetUserJson = record.expand[isUserA ? 'user_b' : 'user_a']?.first.toJson();
+        return targetUserJson != null ? UserModel.fromJson(targetUserJson) : null;
       }).whereType<UserModel>().toList();
-    } catch (e) {
-      print('⚠️ Failed to fetch followers: $e');
-      return [];
-    }
-  }
-
-  /// جلب طلبات المتابعة الواردة (للمستخدم الحالي فقط)
-  Future<List<RecordModel>> getIncomingFollowRequests() async {
-    try {
-      if (!_pb.authStore.isValid) return [];
-      final userId = _pb.authStore.record!.id;
-      
-      // Use getFullList
-      final resultList = await _pb.collection('follows').getFullList(
-        filter: 'following = "$userId" && status = "pending"',
-        expand: 'follower',
-      );
-      
-      return resultList;
-    } catch (e) {
-      return [];
-    }
-  }
-
-  /// جلب طلبات المتابعة الصادرة (التي أرسلها المستخدم الحالي وينتظر قبولها)
-  Future<List<RecordModel>> getOutgoingFollowRequests() async {
-    try {
-      if (!_pb.authStore.isValid) return [];
-      final userId = _pb.authStore.record!.id;
-      
-      final resultList = await _pb.collection('follows').getFullList(
-        filter: 'follower = "$userId" && status = "pending"',
-        expand: 'following',
-      );
-      
-      return resultList;
     } catch (e) {
       return [];
     }
@@ -543,20 +552,17 @@ class PbUserService {
   Future<Map<String, int>> getFollowCounts(String userId) async {
     try {
       final results = await Future.wait([
-        _pb.collection('follows').getList(
-          filter: 'following = "$userId" && status = "accepted"',
-          page: 1,
-          perPage: 1,
+        _pb.collection('friendship').getList(
+          filter: '(user_a = "$userId" && b_status = "accepted") || (user_b = "$userId" && a_status = "accepted")',
+          page: 1, perPage: 1,
         ),
-        _pb.collection('follows').getList(
-          filter: 'follower = "$userId" && status = "accepted"',
-          page: 1,
-          perPage: 1,
+        _pb.collection('friendship').getList(
+          filter: '(user_a = "$userId" && a_status = "accepted") || (user_b = "$userId" && b_status = "accepted")',
+          page: 1, perPage: 1,
         ),
         _pb.collection('invitations').getList(
           filter: 'user = "$userId" && post_status = "published" && status = "accepted"',
-          page: 1,
-          perPage: 1,
+          page: 1, perPage: 1,
         ),
       ]);
 
@@ -570,61 +576,42 @@ class PbUserService {
     }
   }
 
-  /// قبول أو رفض طلب متابعة
-  Future<void> respondToFollowRequest(String requestId, bool accept) async {
+  /// الرد على طلب المتابعة
+  Future<void> respondToFollowRequest(String friendshipId, bool accept) async {
+    if (!_pb.authStore.isValid) return;
+    final userId = _pb.authStore.record!.id;
+
     try {
+      final record = await _pb.collection('friendship').getOne(friendshipId);
+      final isUserA = record.getStringValue('user_a') == userId;
+
       if (accept) {
-        // 1. قبول الطلب الوارد
-        final record = await _pb.collection('follows').update(requestId, body: {'status': 'accepted'});
+        await _pb.collection('friendship').update(friendshipId, body: {
+          isUserA ? 'a_status' : 'b_status': 'accepted',
+          'last_action_by': userId,
+        });
         
-        // 2. المتابعة المتبادلة تلقائياً (Reciprocal Follow)
+        // 🔔 Trigger Notification
+        final requesterId = record.getStringValue(isUserA ? 'user_b' : 'user_a');
+        final myName = _pb.authStore.record?.data['name'] ?? 'مستخدم';
         try {
-          final requesterId = record.getStringValue('follower');
-          final currentUserId = record.getStringValue('following');
-          
-          if (requesterId.isNotEmpty && currentUserId.isNotEmpty) {
-             final status = await getFollowStatus(requesterId);
-             if (status == 'none') {
-                 await _pb.collection('follows').create(body: {
-                   'follower': currentUserId,
-                   'following': requesterId,
-                   'status': 'accepted', // Always accepted for mutual accreditation
-                 });
-                 
-                 // 🔔 Trigger Notification
-                 final followerName = _pb.authStore.record?.data['name'] ?? 'مستخدم';
-                 try {
-                   await _notificationService.createNotification(
-                     targetUserId: requesterId,
-                     title: 'اعتماد متبادل',
-                     message: '$followerName قَبِل طلبك وبادلك الاعتماد',
-                     type: NotificationType.follow,
-                     relatedId: currentUserId,
-                   );
-                 } catch (e) {
-                   print('⚠️ Failed to send notification: $e');
-                 }
-             } else if (status == 'pending') {
-                 // إذا كان يوجد طلب صادر منا معلق، نقبله فوراً (تحصيل حاصل)
-                 final myPendingList = await _pb.collection('follows').getList(
-                   filter: 'follower = "$currentUserId" && following = "$requesterId"',
-                   page: 1,
-                   perPage: 1,
-                 );
-                 if (myPendingList.items.isNotEmpty) {
-                   await _pb.collection('follows').update(myPendingList.items.first.id, body: {'status': 'accepted'});
-                 }
-             }
-          }
-        } catch (e) {
-          print('⚠️ Reciprocal follow partially failed but main request accepted: $e');
-        }
+          await _notificationService.createNotification(
+            targetUserId: requesterId,
+            title: 'تم قبول الطلب',
+            message: '$myName قَبِل طلب اعتمادك',
+            type: NotificationType.follow,
+            relatedId: userId,
+          );
+        } catch (_) {}
       } else {
-        await _pb.collection('follows').delete(requestId);
+        await _pb.collection('friendship').update(friendshipId, body: {
+          isUserA ? 'a_status' : 'b_status': 'none',
+          'last_action_by': userId,
+        });
       }
     } catch (e) {
-      print('🚨 Error in respondToFollowRequest: $e');
       rethrow;
     }
   }
+
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../features/home/screens/public_profile_screen.dart';
+import '../features/articles/screens/public_article_screen.dart';
 
 class AppRouter {
   static const String root = '/';
@@ -34,17 +35,31 @@ class AppRouter {
       );
     }
 
-    // 3. Catch-all: أي مسار آخر يعتبر اسم مستخدم (مثل /hussain)
-    // نتأكد أنه يبدأ بـ / ولا يحتوي على مسارات فرعية معقدة حالياً
-    if (name.startsWith('/') && name.length > 1) {
-      final usernameOrId = name.substring(1);
-      
-      // إذا كان يحتوي على / إضافية، قد يكون مسار فرعي غير مدعوم حالياً
-      if (usernameOrId.contains('/')) return null;
+    // 3. Catch-all: أي مسار آخر يعتبر إما اسم مستخدم أو مسار لمقال
+    // تنظيف المسار من الاستعلامات والشرطات الزائدة
+    final cleanPath = name.split('?').first.replaceAll(RegExp(r'^/|/$'), '');
+    
+    if (cleanPath.isNotEmpty && !reservedRoutes.contains('/$cleanPath')) {
+      // إذا كان يحتوي على مسار فرعي (مثل hussain/articleId)
+      if (cleanPath.contains('/')) {
+        final parts = cleanPath.split('/');
+        if (parts.length >= 2) {
+          final username = parts[0];
+          final articleId = parts[1];
+          return MaterialPageRoute(
+            settings: settings,
+            builder: (context) => PublicArticleScreen(
+              username: username,
+              articleId: articleId,
+            ),
+          );
+        }
+      }
 
+      // مسار اسم مستخدم فقط (مثل hussain)
       return MaterialPageRoute(
         settings: settings,
-        builder: (context) => PublicProfileScreen(usernameOrId: usernameOrId),
+        builder: (context) => PublicProfileScreen(usernameOrId: cleanPath),
       );
     }
 

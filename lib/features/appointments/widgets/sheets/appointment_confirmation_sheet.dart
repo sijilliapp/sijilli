@@ -17,6 +17,7 @@ class AppointmentConfirmationSheet extends StatefulWidget {
   final String region;
   final String building;
   final bool hasConflict;
+  final String privacy;
   
   const AppointmentConfirmationSheet({
     super.key,
@@ -30,6 +31,7 @@ class AppointmentConfirmationSheet extends StatefulWidget {
     required this.region,
     required this.building,
     this.hasConflict = false,
+    required this.privacy,
   });
 
   @override
@@ -218,10 +220,59 @@ class _AppointmentConfirmationSheetState extends State<AppointmentConfirmationSh
                       widget.title,
                       style: const TextStyle(
                          fontWeight: FontWeight.bold,
-                         fontSize: 16,
+                         fontSize: 18,
                          color: AppColors.primary,
                       ),
                       textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    // 🌟 Premium, High-Contrast Privacy Status Indicator
+                    Builder(
+                      builder: (context) {
+                        IconData privacyIcon;
+                        Color privacyColor;
+                        String privacyLabel;
+
+                        if (widget.privacy == 'public') {
+                         privacyIcon = Icons.public;
+                         privacyColor = isDark ? Colors.blue.shade300 : Colors.blue.shade700;
+                         privacyLabel = locale == 'ar' ? 'موعد عام للجميع' : 'Public for All';
+                        } else if (widget.privacy == 'followers') {
+                         privacyIcon = Icons.people_outline;
+                         privacyColor = isDark ? Colors.orange.shade300 : Colors.orange.shade800;
+                         privacyLabel = locale == 'ar' ? 'للمعتمدين فقط' : 'Accredited Only';
+                        } else {
+                         privacyIcon = Icons.lock_outline;
+                         privacyColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
+                         privacyLabel = locale == 'ar' ? 'موعد خاص' : 'Private Appointment';
+                        }
+
+                        return Container(
+                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                         decoration: BoxDecoration(
+                           color: privacyColor.withValues(alpha: isDark ? 0.15 : 0.08),
+                           borderRadius: BorderRadius.circular(20),
+                           border: Border.all(color: privacyColor.withValues(alpha: 0.3), width: 1.2),
+                         ),
+                         child: Row(
+                           mainAxisSize: MainAxisSize.min,
+                           mainAxisAlignment: MainAxisAlignment.center,
+                           children: [
+                             Icon(privacyIcon, size: 14, color: privacyColor),
+                             const SizedBox(width: 6),
+                             Text(
+                               privacyLabel,
+                               style: TextStyle(
+                                 fontWeight: FontWeight.bold,
+                                 fontSize: 12,
+                                 color: privacyColor,
+                               ),
+                             ),
+                           ],
+                         ),
+                        );
+                      }
                     ),
                     const SizedBox(height: 16),
                     
@@ -290,9 +341,17 @@ class _AppointmentConfirmationSheetState extends State<AppointmentConfirmationSh
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            side: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+                            backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.02),
+                            side: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300, width: 1.5),
                           ),
-                          child: Text(context.l10n.review, style: TextStyle(color: isDark ? Colors.grey.shade300 : Colors.grey.shade700, fontWeight: FontWeight.bold)),
+                          child: Text(
+                            context.l10n.review, 
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black87, 
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
                        ),
                     ),
                     const SizedBox(width: 16),
@@ -304,8 +363,16 @@ class _AppointmentConfirmationSheetState extends State<AppointmentConfirmationSh
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             elevation: 0,
+                            shadowColor: AppColors.primary.withValues(alpha: 0.3),
                           ),
-                          child: Text(context.l10n.confirm, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          child: Text(
+                            context.l10n.confirm, 
+                            style: const TextStyle(
+                              color: Colors.white, 
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
                        ),
                     ),
                  ],

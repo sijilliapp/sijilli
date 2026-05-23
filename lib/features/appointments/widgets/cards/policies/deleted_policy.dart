@@ -38,4 +38,7 @@ class DeletedPolicy extends StandardPolicy {
     }
     return super.hostName;
   }
+
+  @override
+  EdgeInsetsGeometry get margin => const EdgeInsets.symmetric(horizontal: 0, vertical: 4.0);
 }

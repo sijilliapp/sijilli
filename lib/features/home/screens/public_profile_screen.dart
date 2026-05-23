@@ -96,7 +96,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> with SingleTi
                           ),
                           const SizedBox(height: AppDimens.spaceL),
                           Text(
-                            error,
+                            error == 'BLOCK_RESTRICTED' 
+                                ? 'هذا الحساب غير متاح حالياً' 
+                                : error,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: isDark ? Colors.white70 : Colors.grey.shade600, 
@@ -106,7 +108,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> with SingleTi
                           ),
                           const SizedBox(height: AppDimens.space),
                           Text(
-                            context.l10n.verifyUsernameOrNetwork,
+                            error == 'BLOCK_RESTRICTED'
+                                ? 'لقد تم تقييد الوصول لهذا الملف الشخصي أو أن الحساب لم يعد متاحاً.'
+                                : context.l10n.verifyUsernameOrNetwork,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Colors.grey.shade500, 
@@ -114,17 +118,18 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> with SingleTi
                             ),
                           ),
                           const SizedBox(height: AppDimens.spaceXL),
-                          ElevatedButton.icon(
-                            onPressed: _handleRefresh,
-                            icon: const Icon(Icons.refresh),
-                            label: Text(context.l10n.retry),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimens.radiusRound)),
+                          if (error != 'BLOCK_RESTRICTED')
+                            ElevatedButton.icon(
+                              onPressed: _handleRefresh,
+                              icon: const Icon(Icons.refresh),
+                              label: Text(context.l10n. retry),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimens.radiusRound)),
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -269,7 +274,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> with SingleTi
                               onRefresh: _handleRefresh,
                             )
                           : const ProfileEmptyState(),
-                        canView ? const ProfileArticlesTab() : const ProfileEmptyState(),
+                        canView ? ProfileArticlesTab(
+                                userId: user?.id ?? '',
+                                isCurrentUser: isMe,
+                              ) : const ProfileEmptyState(),
                       ],
                     ),
                   ),

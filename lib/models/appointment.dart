@@ -1,7 +1,9 @@
 import 'user.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hijri/hijri_calendar.dart';
 import '../core/utils/json_utils.dart';
+import 'article.dart';
 
 export 'extensions/appointment_logic.dart';
 
@@ -85,12 +87,15 @@ enum PostStatus {
   /// مؤرشف (في الأرشيف)
   archived,
   /// في المحذوفات
-  trash;
+  trash,
+  /// محفوظ (في قائمة المحفوظات الخاصة)
+  bookmarked;
 
   static PostStatus fromString(String status) {
     switch (status) {
       case 'archived': return PostStatus.archived;
       case 'trash': return PostStatus.trash;
+      case 'bookmarked': return PostStatus.bookmarked;
       default: return PostStatus.published;
     }
   }
@@ -112,6 +117,8 @@ class Invitation {
   final AppointmentCategory? categories; // التصنيف الشخصي للموعد (تم تغيير المسمى للجمع ليتوافق مع PB)
   final bool isComplete; // جديد من PB
   final String? dateType; // جديد من PB
+  final String? invitedPhone; // جديد لنظام الاستضافة عبر الهاتف
+  final String? invitedName; // جديد لنظام الاستضافة عبر الهاتف
   
   // Getters للتوافق مع الكود القديم والـ DNA
   bool get isDeleted => postStatus == PostStatus.trash;
@@ -121,6 +128,8 @@ class Invitation {
   final DateTime? acceptedAt;
   final DateTime? declinedAt;
   final DateTime? deletedAt;
+  final String? linkedArticleId;
+  final Article? linkedArticle;
 
   Invitation({
     required this.id,
@@ -134,15 +143,31 @@ class Invitation {
     this.categories,
     this.isComplete = false,
     this.dateType,
+    this.invitedPhone,
+    this.invitedName,
     this.acceptedAt,
     this.declinedAt,
     this.deletedAt,
+    this.linkedArticleId,
+    this.linkedArticle,
   });
 
   factory Invitation.fromJson(Map<String, dynamic> json) {
     final expand = json['expand'] as Map<String, dynamic>?;
-    final userJson = expand?['user'] as Map<String, dynamic>?;
-    final categoryJson = expand?['categories'] as Map<String, dynamic>?;
+    
+    var userData = expand?['user'];
+    if (userData is List && userData.isNotEmpty) userData = userData.first;
+    final Map<String, dynamic>? userJson = userData is Map<String, dynamic> ? userData : null;
+
+    var apptData = expand?['appointment'];
+    if (apptData is List && apptData.isNotEmpty) apptData = apptData.first;
+    final Map<String, dynamic>? apptJson = apptData is Map<String, dynamic> ? apptData : null;
+
+    var categoryData = expand?['categories'];
+    if (categoryData is List && categoryData.isNotEmpty) categoryData = categoryData.first;
+    final Map<String, dynamic>? categoryJson = categoryData is Map<String, dynamic> ? categoryData : null;
+
+
 
     // دعم التحويل التدريجي: إذا وجدنا post_status نستخدمه، وإلا نعتمد على الحقول القديمة
     PostStatus status;
@@ -170,9 +195,15 @@ class Invitation {
       personalNote: JsonUtils.parseString(json['personal_note']),
       user: userJson != null ? UserModel.fromJson(userJson) : null,
       categories: categoryJson != null ? AppointmentCategory.fromJson(categoryJson) : null,
+      invitedPhone: JsonUtils.parseString(json['invited_phone']),
+      invitedName: JsonUtils.parseString(json['invited_name']),
       acceptedAt: JsonUtils.parseDateTime(json['accepted_at']),
       declinedAt: JsonUtils.parseDateTime(json['declined_at']),
       deletedAt: JsonUtils.parseDateTime(json['deleted_at']),
+      linkedArticleId: JsonUtils.parseString(json['linked_article']),
+      linkedArticle: json['expand'] != null && json['expand']['linked_article'] != null
+          ? Article.fromJson(json['expand']['linked_article'])
+          : null,
     );
   }
 
@@ -184,9 +215,13 @@ class Invitation {
      AppointmentCategory? categories,
      bool? isComplete,
      String? dateType,
+     String? invitedPhone,
+     String? invitedName,
      DateTime? acceptedAt,
      DateTime? declinedAt,
      DateTime? deletedAt,
+     String? linkedArticleId,
+     Article? linkedArticle,
   }) {
     return Invitation(
       id: id,
@@ -200,9 +235,13 @@ class Invitation {
       categories: categories ?? this.categories,
       isComplete: isComplete ?? this.isComplete,
       dateType: dateType ?? this.dateType,
+      invitedPhone: invitedPhone ?? this.invitedPhone,
+      invitedName: invitedName ?? this.invitedName,
       acceptedAt: acceptedAt ?? this.acceptedAt,
       declinedAt: declinedAt ?? this.declinedAt,
       deletedAt: deletedAt ?? this.deletedAt,
+      linkedArticleId: linkedArticleId ?? this.linkedArticleId,
+      linkedArticle: linkedArticle ?? this.linkedArticle,
     );
   }
 
@@ -216,9 +255,12 @@ class Invitation {
     'date_type': dateType,
     'privacy': privacy,
     'personal_note': personalNote,
+    'invited_phone': invitedPhone,
+    'invited_name': invitedName,
     'accepted_at': acceptedAt?.toIso8601String(),
     'declined_at': declinedAt?.toIso8601String(),
     'deleted_at': deletedAt?.toIso8601String(),
+    'linked_article': linkedArticleId,
   };
 }
 
@@ -258,6 +300,7 @@ class Appointment {
   final String? streamLink; // رابط البث (جديد من PB)
   final String? appointmentGroupId; // معرف مجموعة المواعيد (لالتكرار أو غيره)
   final bool isFirstComeFirstServed; // خاصية الأسبقية
+  final int savesCount; // عدد الذين حفظوا الموعد
   
   // ====================== التكرار (Recurrence) ======================
   final String? recurrenceType; // 'none', 'daily', 'weekly', 'annual'
@@ -316,6 +359,7 @@ class Appointment {
     this.hijriDate,
     this.hijriMonth, // جديد
     this.sunset,
+    this.savesCount = 0,
     this.host,
     this.currentUserInvitation,
     this.viewerInvitation,
@@ -341,7 +385,12 @@ class Appointment {
     // (unlikely if getAppointments is used correctly but good for robustness)
     if (hostJson == null && json['currentUserInvitation'] != null) {
       final invExpand = (json['currentUserInvitation'] as Map<String, dynamic>)['expand'] as Map<String, dynamic>?;
-      hostJson = invExpand?['appointment']?['expand']?['host'] as Map<String, dynamic>?;
+      var apptDataNested = invExpand?['appointment'];
+      if (apptDataNested is List && apptDataNested.isNotEmpty) apptDataNested = apptDataNested.first;
+      
+      var hostDataNested = (apptDataNested as Map<String, dynamic>?)?['expand']?['host'];
+      if (hostDataNested is List && hostDataNested.isNotEmpty) hostDataNested = hostDataNested.first;
+      hostJson = hostDataNested is Map<String, dynamic> ? hostDataNested : null;
     }
     
     // جلب المشاركين (دعم أكثر من مفتاح للتوسع)
@@ -360,28 +409,32 @@ class Appointment {
         ? Invitation.fromJson(viewerInvitationJson) 
         : null;
 
-    // Handle Time Logic: Prefers 'start_at' (UTC), falls back to legacy 'date' + 'time'
-    DateTime parsedStartAt = JsonUtils.parseDateTime(json['start_at']) ?? 
-                             JsonUtils.parseDateTime(json['date']) ?? 
-                             DateTime.now();
-    
-    if (json['start_at'] == null && json['date'] != null && json['time'] != null) {
-      // Legacy Fallback with specific time
-      try {
-        final d = parsedStartAt;
-        final tStr = JsonUtils.parseString(json['time']);
-        if (tStr != null && tStr.contains(':')) {
-           final t = tStr.split(':');
-           parsedStartAt = DateTime(d.year, d.month, d.day, int.parse(t[0]), int.parse(t[1]));
-        }
-      } catch (e) {
-        print('⚠️ Error parsing legacy time: $e');
+    // --- TIME TRUTH LOGIC ---
+    // Rule: start_at (UTC) is the ONLY source of truth.
+    // 1. Try to get start_at from JSON
+    DateTime parsedStartAt;
+    final startAtStr = JsonUtils.parseString(json['start_at']);
+    if (startAtStr != null && startAtStr.isNotEmpty) {
+      parsedStartAt = DateTime.parse(startAtStr);
+      // Ensure it's treated as UTC if it ends with Z or comes from PB
+      if (!parsedStartAt.isUtc && startAtStr.endsWith('Z')) {
+        parsedStartAt = parsedStartAt.toUtc();
+      }
+    } else {
+      // Fallback for legacy records
+      parsedStartAt = JsonUtils.parseDateTime(json['date']) ?? DateTime.now();
+      final tStr = JsonUtils.parseString(json['time']);
+      if (tStr != null && tStr.contains(':')) {
+        try {
+          final t = tStr.split(':');
+          // For legacy, we assume the stored time was local to the creator.
+          // This is the best we can do for migration.
+          parsedStartAt = DateTime(parsedStartAt.year, parsedStartAt.month, parsedStartAt.day, int.parse(t[0]), int.parse(t[1]));
+        } catch (_) {}
       }
     }
 
     // --- HIJRI DYNAMIC SHIFT LOGIC ---
-    // The physical Gregorian time must dynamically shift according to the current "Page Owner" 
-    // adjustment, passed explicitly as `contextAdjustment`.
     final dateType = JsonUtils.parseString(json['date_type']) ?? 'gregorian';
     final hijriDateStr = JsonUtils.parseString(json['hijri_date']);
     
@@ -397,10 +450,8 @@ class Appointment {
           final baseGregorian = hijriCal.hijriToGregorian(hYear, hMonth, hDay);
           
           final effectiveGregorian = baseGregorian.subtract(Duration(days: contextAdjustment));
-          
           final localOriginal = parsedStartAt.toLocal();
           
-          // Overwrite the physical timestamp
           parsedStartAt = DateTime(
             effectiveGregorian.year,
             effectiveGregorian.month,
@@ -408,14 +459,10 @@ class Appointment {
             localOriginal.hour,
             localOriginal.minute,
           ).toUtc();
-        } catch (e) {
-          print('⚠️ Error shifting Hijri physical time: $e');
-        }
+        } catch (_) {}
       }
     }
 
-    // Prepare display helpers from the truth source (Local Time for display)
-    // parsedStartAt from DB (UTC) -> toLocal() for display fields
     final localDateTime = parsedStartAt.toLocal();
 
     return Appointment(
@@ -424,6 +471,7 @@ class Appointment {
       hostId: JsonUtils.parseString(json['host']) ?? '', 
       startAt: parsedStartAt, 
       duration: JsonUtils.parseInt(json['duration']) ?? 45,
+      // Derive display fields from local time
       date: DateTime(localDateTime.year, localDateTime.month, localDateTime.day), 
       time: '${localDateTime.hour.toString().padLeft(2, '0')}:${localDateTime.minute.toString().padLeft(2, '0')}', 
       region: JsonUtils.parseString(json['region']),
@@ -445,6 +493,7 @@ class Appointment {
       hijriDate: hijriDateStr,
       hijriMonth: JsonUtils.parseInt(json['hijri_month']),
       sunset: JsonUtils.parseString(json['sunset']),
+      savesCount: JsonUtils.parseInt(json['saves_count']) ?? 0,
       host: hostJson != null ? UserModel.fromJson(hostJson) : null,
       currentUserInvitation: currentUserInvitation,
       viewerInvitation: viewerInvitation,
@@ -477,6 +526,7 @@ class Appointment {
     bool isFirstComeFirstServed = false,
     String? streamLink,
     String? sunset,
+    int savesCount = 0,
   }) {
     final now = DateTime.now();
     
@@ -515,6 +565,7 @@ class Appointment {
       hijriDate: hijriDate,
       hijriMonth: hijriMonth,
       sunset: sunset,
+      savesCount: savesCount,
       createdAt: now,
       updatedAt: now,
     );
@@ -523,14 +574,14 @@ class Appointment {
   // ====================== التحويل لـ JSON ======================
   /// تحويل الموعد لـ JSON (لإرساله لـ PocketBase)
   Map<String, dynamic> toJson() {
+    final utc = startAt.toUtc();
     return {
       'id': id,
       'title': title,
       'host': hostId,
-      'start_at': startAt.toUtc().toIso8601String(),
+      'start_at': utc.toIso8601String(),
       'duration': duration,
-      'date': date.toIso8601String().split('T')[0],
-      'time': time,
+      // REMOVED: 'date' and 'time' strings. Let DB generate them from start_at.
       'region': region,
       'building': building,
       'privacy': privacy,
@@ -551,18 +602,20 @@ class Appointment {
       'hijri_date': hijriDate,
       'hijri_month': hijriMonth,
       'sunset': sunset,
-      'created': createdAt.toIso8601String(),
-      'updated': updatedAt.toIso8601String(),
+      'saves_count': savesCount,
+      'created': createdAt.toUtc().toIso8601String(),
+      'updated': updatedAt.toUtc().toIso8601String(),
     };
   }
   
   /// تحويل لـ JSON للعرض (بدون الحقول الداخلية)
   Map<String, dynamic> toJsonForDisplay() {
+    final local = startAt.toLocal();
     return {
       'id': id,
       'title': title,
-      'date': date.toIso8601String().split('T')[0],
-      'time': time,
+      'date': local.toIso8601String().split('T')[0],
+      'time': '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}',
       'region': region,
       'building': building,
       'privacy': privacy,
@@ -598,6 +651,7 @@ class Appointment {
     String? hijriDate,
     int? hijriMonth,
     String? sunset,
+    int? savesCount,
     UserModel? host,
     Invitation? currentUserInvitation,
     Invitation? viewerInvitation,
@@ -631,6 +685,7 @@ class Appointment {
       hijriDate: hijriDate ?? this.hijriDate,
       hijriMonth: hijriMonth ?? this.hijriMonth,
       sunset: sunset ?? this.sunset,
+      savesCount: savesCount ?? this.savesCount,
       host: host ?? this.host,
       currentUserInvitation: currentUserInvitation ?? this.currentUserInvitation,
       viewerInvitation: viewerInvitation ?? this.viewerInvitation,

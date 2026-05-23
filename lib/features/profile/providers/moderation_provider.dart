@@ -8,10 +8,12 @@ class ModerationProvider with ChangeNotifier {
   final PbModerationService _service = PbModerationService();
   
   List<UserModel> _blockedUsers = [];
+  List<String> _idsBlockingMe = [];
   bool _isLoading = false;
 
   List<UserModel> get blockedUsers => _blockedUsers;
   List<String> get blockedUserIds => _blockedUsers.map((u) => u.id).toList();
+  List<String> get idsBlockingMe => _idsBlockingMe;
   bool get isLoading => _isLoading;
 
   ModerationProvider() {
@@ -23,17 +25,21 @@ class ModerationProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // We need to fetch the actual user models or at least their basic info
-      // Let's modify the service or fetch them here
-      final records = await PocketBaseClient.instance.pb.collection('blocks').getFullList(
-        filter: 'user = "${PocketBaseClient.instance.pb.authStore.record?.id}"',
-        expand: 'blocked_user',
+      final currentUserId = PocketBaseClient.instance.pb.authStore.record?.id;
+      if (currentUserId == null) return;
+
+      final records = await PocketBaseClient.instance.pb.collection('friendship').getFullList(
+        filter: '(user_a = "$currentUserId" && a_status = "blocked") || (user_b = "$currentUserId" && b_status = "blocked")',
+        expand: 'user_a,user_b',
       );
       
-      _blockedUsers = records
-          .where((r) => r.expand['blocked_user'] != null)
-          .map((r) => UserModel.fromJson(r.expand['blocked_user']!.first.toJson()))
-          .toList();
+      _blockedUsers = records.map((r) {
+        final isUserA = r.getStringValue('user_a') == currentUserId;
+        final targetUserJson = r.expand[isUserA ? 'user_b' : 'user_a']?.first.toJson();
+        return targetUserJson != null ? UserModel.fromJson(targetUserJson) : null;
+      }).whereType<UserModel>().toList();
+
+      _idsBlockingMe = await _service.getUsersBlockingMe();
     } catch (e) {
       print('Error fetching blocked users: $e');
     } finally {
@@ -46,7 +52,7 @@ class ModerationProvider with ChangeNotifier {
     try {
       // 1. Unfollow both ways
       final userService = PbUserService();
-      await Future.wait([
+      await Future.wait<dynamic>([
         userService.unfollowUser(user.id).catchError((_) {}), // Ignore errors if not following
         userService.removeFollower(user.id).catchError((_) {}), // Ignore errors if not followed
       ]);
@@ -86,7 +92,7 @@ class ModerationProvider with ChangeNotifier {
   }
 
   bool isUserBlocked(String userId) {
-    return blockedUserIds.contains(userId);
+    return blockedUserIds.contains(userId) || idsBlockingMe.contains(userId);
   }
   
   /// Helper to filter a list of items that have a userId or hostId

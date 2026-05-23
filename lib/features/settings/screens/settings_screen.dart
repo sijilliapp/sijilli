@@ -11,9 +11,14 @@ import 'profile_screen.dart';
 import 'blocked_users_screen.dart';
 import '../../auth/screens/privacy_policy_screen.dart';
 import 'notification_settings_screen.dart';
+import 'privacy_settings_screen.dart';
+import '../../admin/screens/super_admin_screen.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/providers/settings_provider.dart';
+import '../../auth/screens/change_password_screen.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
+
+import 'package:sijilli/features/appointments/screens/saved_appointments_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -30,8 +35,96 @@ class SettingsScreen extends StatelessWidget {
         foregroundColor: isDark ? null : Colors.white,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(8),
         children: [
+          // لوحة تحكم المشرف العام (تظهر فقط للمشرف)
+          Consumer<AuthProvider>(
+            builder: (context, auth, _) {
+              if (auth.user?.role != 'admin') return const SizedBox.shrink();
+              final isAmberDark = Theme.of(context).brightness == Brightness.dark;
+              return Column(
+                children: [
+                  Card(
+                    margin: EdgeInsets.zero,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(
+                        color: Colors.amber.shade800.withValues(alpha: 0.2),
+                        width: 1.5,
+                      ),
+                    ),
+                    color: isAmberDark 
+                        ? Colors.amber.shade900.withValues(alpha: 0.1) 
+                        : Colors.amber.shade50.withValues(alpha: 0.3),
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const SuperAdminScreen()),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.amber.shade800.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: Colors.amber.shade800.withValues(alpha: 0.05),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Icon(Icons.admin_panel_settings_rounded, color: Colors.amber.shade800, size: 24),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'لوحة تحكم المشرف العام',
+                                    style: TextStyle(
+                                      color: isAmberDark ? Colors.amber.shade300 : Colors.amber.shade900,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 17,
+                                      letterSpacing: -0.5,
+                                      height: 1.2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'إدارة وتخصيص إعدادات النظام والتسجيل',
+                                    style: TextStyle(
+                                      color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                                      fontSize: 12,
+                                      height: 1.2,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Icon(
+                              Icons.arrow_forward_ios, 
+                              size: 14, 
+                              color: Colors.amber.shade800,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              );
+            },
+          ),
           // تعديل البروفايل
           _buildSettingsCard(
             context,
@@ -45,7 +138,22 @@ class SettingsScreen extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
+
+          // الخصوصية والأمان
+          _buildSettingsCard(
+            context,
+            icon: Icons.privacy_tip_outlined,
+            title: context.l10n.privacyAndSecurity,
+            subtitle: context.l10n.privacyAndSecurity,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const PrivacySettingsScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
 
           // تخصيص المظهر (الوضع الليلي)
           Consumer<ThemeProvider>(
@@ -65,7 +173,7 @@ class SettingsScreen extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           // تخصيص المظهر (الخطوط)
           Consumer<ThemeProvider>(
@@ -81,7 +189,7 @@ class SettingsScreen extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           
           // الرئيسية المغناطيسية
           Consumer<SettingsProvider>(
@@ -96,7 +204,7 @@ class SettingsScreen extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           // لغة التطبيق
           Consumer<LocaleProvider>(
@@ -110,10 +218,13 @@ class SettingsScreen extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
+          
+          const SizedBox(height: 8),
           
           // المحذوفات والأرشيف
           Card(
+            margin: EdgeInsets.zero,
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
@@ -123,62 +234,82 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
             color: isDark ? AppColors.error.withValues(alpha: 0.05) : Colors.red.shade50.withValues(alpha: 0.3),
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              leading: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.error.withValues(alpha: 0.15),
-                      AppColors.error.withValues(alpha: 0.05),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: AppColors.error.withValues(alpha: 0.1),
-                    width: 1,
-                  ),
-                ),
-                child: const Icon(
-                  Icons.delete_sweep_rounded, 
-                  color: AppColors.error,
-                  size: 26,
-                ),
-              ),
-              title: Text(
-                context.l10n.trash,
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.error,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              subtitle: Text(
-                context.l10n.manageArchiveTrash,
-                style: TextStyle(
-                  color: AppColors.error.withValues(alpha: 0.7),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              trailing: Icon(
-                Icons.arrow_forward_ios, 
-                size: 16, 
-                color: Theme.of(context).dividerColor,
-              ),
+            child: InkWell(
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const ArchiveTrashScreen(initialIndex: 1)),
                 );
               },
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.error.withValues(alpha: 0.15),
+                            AppColors.error.withValues(alpha: 0.05),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: AppColors.error.withValues(alpha: 0.1),
+                          width: 1,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.delete_sweep_rounded, 
+                        color: AppColors.error,
+                        size: 26,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            context.l10n.trash,
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.error,
+                              letterSpacing: -0.5,
+                              height: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            context.l10n.manageArchiveTrash,
+                            style: TextStyle(
+                              color: AppColors.error.withValues(alpha: 0.7),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              height: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Icon(
+                      Icons.arrow_forward_ios, 
+                      size: 16, 
+                      color: Theme.of(context).dividerColor,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           
           // الإشعارات
           _buildSettingsCard(
@@ -193,24 +324,7 @@ class SettingsScreen extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 12),
-          
-          // الخصوصية
-          _buildSettingsCard(
-            context,
-            icon: Icons.privacy_tip_outlined,
-            title: context.l10n.privacyAndSecurity,
-            subtitle: context.l10n.privacyAndSecurity,
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Working on it...'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           // قائمة الحظر
           _buildSettingsCard(
@@ -225,7 +339,7 @@ class SettingsScreen extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           
           // حول التطبيق
           _buildSettingsCard(
@@ -237,7 +351,7 @@ class SettingsScreen extends StatelessWidget {
               _showAboutDialog(context);
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           // الشروط والأحكام
           _buildSettingsCard(
@@ -270,47 +384,68 @@ class SettingsScreen extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return Card(
+      margin: EdgeInsets.zero,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
       ),
       color: Theme.of(context).cardColor, 
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.05),
-              width: 1,
-            ),
-          ),
-          child: Icon(icon, color: AppColors.primary, size: 24),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.w900,
-            fontSize: 17,
-            letterSpacing: -0.5,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(
-            color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
-            fontSize: 12,
-          ),
-        ),
-        trailing: Icon(
-          Icons.arrow_forward_ios, 
-          size: 14, 
-          color: Theme.of(context).dividerColor,
-        ),
+      child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.05),
+                    width: 1,
+                  ),
+                ),
+                child: Icon(icon, color: AppColors.primary, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 17,
+                        letterSpacing: -0.5,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                        fontSize: 12,
+                        height: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Icon(
+                Icons.arrow_forward_ios, 
+                size: 14, 
+                color: Theme.of(context).dividerColor,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -324,87 +459,131 @@ class SettingsScreen extends StatelessWidget {
     required ValueChanged<bool> onChanged,
   }) {
     return Card(
+      margin: EdgeInsets.zero,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
       ),
       color: Theme.of(context).cardColor, 
-      child: SwitchListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        secondary: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.05),
-              width: 1,
-            ),
+      child: InkWell(
+        onTap: () => onChanged(!value),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.05),
+                    width: 1,
+                  ),
+                ),
+                child: Icon(icon, color: AppColors.primary, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 17,
+                        letterSpacing: -0.5,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                        fontSize: 12,
+                        height: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Switch(
+                value: value,
+                onChanged: onChanged,
+                activeColor: AppColors.primary,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ],
           ),
-          child: Icon(icon, color: AppColors.primary, size: 24),
         ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.w900,
-            fontSize: 17,
-            letterSpacing: -0.5,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(
-            color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
-            fontSize: 12,
-          ),
-        ),
-        value: value,
-        onChanged: onChanged,
-        activeThumbColor: AppColors.primary,
       ),
     );
   }
 
   Widget _buildLogoutButton(BuildContext context) {
     return Card(
+      margin: EdgeInsets.zero,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
       ),
       color: Theme.of(context).cardColor, 
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.warning.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: AppColors.warning.withValues(alpha: 0.05),
-              width: 1,
-            ),
-          ),
-          child: const Icon(Icons.logout_rounded, color: AppColors.warning, size: 24),
-        ),
-        title: Text(
-          context.l10n.logout,
-          style: const TextStyle(
-            color: AppColors.warning,
-            fontWeight: FontWeight.w900,
-            fontSize: 17,
-            letterSpacing: -0.5,
-          ),
-        ),
-        trailing: Icon(
-          Icons.arrow_forward_ios, 
-          size: 14, 
-          color: Theme.of(context).dividerColor,
-        ),
+      child: InkWell(
         onTap: () {
           _showLogoutDialog(context);
         },
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.warning.withValues(alpha: 0.05),
+                    width: 1,
+                  ),
+                ),
+                child: const Icon(Icons.logout_rounded, color: AppColors.warning, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      context.l10n.logout,
+                      style: const TextStyle(
+                        color: AppColors.warning,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 17,
+                        letterSpacing: -0.5,
+                        height: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Icon(
+                Icons.arrow_forward_ios, 
+                size: 14, 
+                color: Theme.of(context).dividerColor,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

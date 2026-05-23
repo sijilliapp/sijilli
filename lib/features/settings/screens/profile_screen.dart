@@ -34,7 +34,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController _emailController;
   int _hijriAdjustment = 0;
   
-  bool _isPublic = false;
   XFile? _selectedAvatarFile;
 
   @override
@@ -49,7 +48,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _socialLinkController = TextEditingController(text: user?.socialLink ?? '');
     _emailController = TextEditingController(text: user?.email ?? '');
     _hijriAdjustment = (user?.hijriAdjustment ?? 0).toInt();
-    _isPublic = user?.isPublic ?? false;
+    _hijriAdjustment = (user?.hijriAdjustment ?? 0).toInt();
   }
 
   @override
@@ -71,7 +70,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final provider = context.read<AuthProvider>();
     
-    final newUsername = _usernameController.text.trim();
+    final newUsername = _usernameController.text.trim().toLowerCase();
 
     // Security Refactor: 
     // We no longer pre-check availability via public endpoints to prevent data leakage.
@@ -83,7 +82,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       'bio': _bioController.text.trim(),
       'social_link': _socialLinkController.text.trim(),
       'hijri_adjustment': _hijriAdjustment,
-      'isPublic': _isPublic,
     };
 
     final phoneText = _phoneController.text.trim();
@@ -275,16 +273,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   
                   CustomTextField(
                     controller: _bioController,
-                    label: 'Bio', // Should add to ARB if needed, or use existing
+                    label: context.l10n.bio,
                     prefixIcon: Icons.info_outline,
                     maxLines: 3,
                     maxLength: 150, 
+                    showCountdown: true,
                   ),
                   const SizedBox(height: AppDimens.spaceS),
  
                   CustomTextField(
                     controller: _phoneController,
-                    label: 'Phone',
+                    label: context.l10n.phone,
                     prefixIcon: Icons.phone_outlined,
                     keyboardType: TextInputType.phone,
                     maxLength: 15,
@@ -299,7 +298,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
  
                   CustomTextField(
                     controller: _socialLinkController,
-                    label: 'Social Link',
+                    label: context.l10n.socialLink,
                     prefixIcon: Icons.link,
                     keyboardType: TextInputType.url,
                     maxLength: 100,
@@ -349,53 +348,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: AppDimens.spaceL),
  
-                  // Public Switch
-                  Container(
-                    padding: const EdgeInsets.all(AppDimens.padding),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor,
-                      borderRadius: BorderRadius.circular(AppDimens.radius),
-                      border: Border.all(color: Theme.of(context).dividerColor),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.public, color: AppColors.primary),
-                        const SizedBox(width: AppDimens.spaceM),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'حساب عام',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              Text(
-                                'السماح للآخرين برؤية ملفك الشخصي',
-                                style: TextStyle(
-                                  color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade400 : Colors.grey.shade600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Switch(
-                          value: _isPublic, 
-                          onChanged: (val) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('هذه الميزة قيد التدشين حالياً (الحساب عام افتراضياً)'),
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
                   const SizedBox(height: 40),
                   const DeleteAccountButton(),
                   const SizedBox(height: 40),

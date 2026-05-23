@@ -5,6 +5,7 @@ import 'package:sijilli/core/extensions/context_l10n.dart';
 import 'package:sijilli/models/appointment.dart';
 import 'package:sijilli/core/widgets/pulse_avatar.dart';
 import 'package:sijilli/core/utils/app_date_formatter.dart';
+import 'package:sijilli/features/articles/screens/article_details_screen.dart';
 
 class AppointmentParticipantsList extends StatelessWidget {
   final String? hostId;
@@ -55,56 +56,92 @@ class AppointmentParticipantsList extends StatelessWidget {
         const SizedBox(height: AppDimens.space),
         
         // 1. Host (Organizer)
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: PulseAvatar(
-            imageUrl: hostAvatar != null && hostAvatar!.isNotEmpty ? hostAvatar : null,
-            size: 40,
-            status: hostStatus, 
-            showGlow: false,
-            ringThickness: 2,
-          ),
-          title: Row(
-            children: [
-              Flexible(
-                child: Text(
-                  hostName ?? context.l10n.detailsHost, 
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 14),
-                  overflow: TextOverflow.ellipsis,
+        Builder(
+          builder: (context) {
+            final hostP = participants?.firstWhere(
+              (p) => p.userId == hostId, 
+              orElse: () => Invitation(id: '', appointmentId: '', userId: '', status: InvitationStatus.accepted)
+            );
+            
+            AvatarStatus hostAvatarStatus = AvatarStatus.upcoming;
+            if (hostP?.status == InvitationStatus.deletedAfterAccept) {
+              hostAvatarStatus = viewerStatus == InvitationStatus.accepted ? AvatarStatus.deleted : AvatarStatus.none;
+            }
+
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: PulseAvatar(
+                imageUrl: hostAvatar != null && hostAvatar!.isNotEmpty ? hostAvatar : null,
+                size: 40,
+                status: hostAvatarStatus, 
+                showGlow: false,
+                ringThickness: 2,
+              ),
+              title: Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      hostName ?? context.l10n.detailsHost, 
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 14),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.5), width: 0.5),
+                    ),
+                    child: Text(
+                      context.l10n.detailsOrganizer,
+                      style: const TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (createdAt != null)
+                      Text(
+                        context.l10n.detailsCreatedBy(_formatTimelineDate(createdAt!.toLocal(), context)),
+                        style: TextStyle(color: AppColors.getTextSecondary(context), fontSize: 11, height: 1.4),
+                      ),
+                    if (hostP?.deletedAt != null)
+                      Text(
+                        context.l10n.detailsDeletedAt(_formatTimelineDate(hostP!.deletedAt!.toLocal(), context)),
+                        style: const TextStyle(color: Colors.red, fontSize: 11, height: 1.4, fontWeight: FontWeight.bold),
+                      ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 8),
-              // Organizer Badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.5), width: 0.5),
-                ),
-                child: Text(
-                  context.l10n.detailsOrganizer,
-                  style: const TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          subtitle: createdAt != null ? Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              context.l10n.detailsCreatedBy(_formatTimelineDate(createdAt!.toLocal(), context)),
-              style: TextStyle(color: AppColors.getTextSecondary(context), fontSize: 11, height: 1.4),
-            ),
-          ) : null,
+              trailing: (hostP?.linkedArticle != null && hostP!.linkedArticle!.isPublished)
+                  ? IconButton(
+                      icon: const Icon(Icons.article_rounded, color: AppColors.primary),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ArticleDetailsScreen(article: hostP.linkedArticle!),
+                          ),
+                        );
+                      },
+                    )
+                  : null,
+            );
+          },
         ),
 
         // 2. Guests
         if (guests.isNotEmpty) ...[
           ...guests.map((p) {
-             // Determine Status
-             AvatarStatus status = AvatarStatus.none; // Default Grey
-             if (p.status == InvitationStatus.accepted) status = AvatarStatus.upcoming; // Blue
-             else if (p.status == InvitationStatus.declined) status = AvatarStatus.deleted; // Red
+             AvatarStatus status = AvatarStatus.none;
+             if (p.status == InvitationStatus.accepted) status = AvatarStatus.upcoming;
+             else if (p.status == InvitationStatus.declined || p.status == InvitationStatus.deletedAfterAccept) status = AvatarStatus.deleted;
              
              return ListTile(
               contentPadding: EdgeInsets.zero,
@@ -116,16 +153,26 @@ class AppointmentParticipantsList extends StatelessWidget {
                 ringThickness: 2,
               ),
               title: Text(
-                p.user?.name ?? context.l10n.detailsGuest,
+                p.user?.name ?? p.invitedName ?? context.l10n.detailsGuest,
                 style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 14),
               ),
               subtitle: Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  _getStatusText(p, context),
-                  style: TextStyle(color: AppColors.getTextSecondary(context), fontSize: 11, height: 1.4),
-                ),
+                child: _buildGuestStatusTimeline(p, context),
               ),
+              trailing: (p.linkedArticle != null && p.linkedArticle!.isPublished)
+                  ? IconButton(
+                      icon: const Icon(Icons.article_rounded, color: AppColors.primary),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ArticleDetailsScreen(article: p.linkedArticle!),
+                          ),
+                        );
+                      },
+                    )
+                  : null,
             );
           }).toList(),
         ],
@@ -133,46 +180,50 @@ class AppointmentParticipantsList extends StatelessWidget {
     );
   }
 
-  String _getStatusText(Invitation invitation, BuildContext context) {
-    if (invitation.status == InvitationStatus.pending) {
-      return context.l10n.detailsPending;
-    }
-
-    final StringBuffer buffer = StringBuffer();
+  Widget _buildGuestStatusTimeline(Invitation invitation, BuildContext context) {
     final acceptedAt = invitation.acceptedAt?.toLocal();
     final deletedAt = invitation.deletedAt?.toLocal() ?? invitation.declinedAt?.toLocal();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (invitation.status == InvitationStatus.pending)
+          Text(context.l10n.detailsPending, style: TextStyle(color: AppColors.getTextSecondary(context), fontSize: 11)),
+        
+        if (acceptedAt != null)
+          Text(
+            context.l10n.detailsAcceptedAt(_formatTimelineDate(acceptedAt, context)),
+            style: TextStyle(color: AppColors.getTextSecondary(context), fontSize: 11),
+          ),
+          
+        if (deletedAt != null)
+          Row(
+            children: [
+              Text(
+                context.l10n.detailsDeletedAt(_formatTimelineDate(deletedAt, context)),
+                style: const TextStyle(color: Colors.red, fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+              if (acceptedAt != null) ...[
+                const SizedBox(width: 8),
+                Builder(
+                  builder: (context) {
+                    final duration = deletedAt.difference(acceptedAt);
+                    if (duration.inMinutes <= 0) return const SizedBox.shrink();
+                    final durationStr = AppDateFormatter.formatDuration(duration, context.l10n.localeName, context.l10n);
+                    return Text(
+                      context.l10n.detailsStayDuration(durationStr),
+                      style: TextStyle(color: AppColors.getTextSecondary(context).withValues(alpha: 0.7), fontSize: 10),
+                    );
+                  }
+                ),
+              ],
+            ],
+          ),
 
-    // 1. Accepted Time
-    if (acceptedAt != null) {
-      buffer.write(context.l10n.detailsAcceptedAt(_formatTimelineDate(acceptedAt, context)));
-    }
-
-    // 2. Deleted/Declined Time
-    if (deletedAt != null) {
-      if (buffer.isNotEmpty) buffer.write('   ');
-      buffer.write(context.l10n.detailsDeletedAt(_formatTimelineDate(deletedAt, context)));
-
-      // 3. Duration (Stayed)
-      if (acceptedAt != null) {
-         final duration = deletedAt.difference(acceptedAt);
-         if (duration.inMinutes > 0) {
-            final durationStr = AppDateFormatter.formatDuration(duration, context.l10n.localeName, context.l10n);
-
-            if (buffer.isNotEmpty) buffer.write('  ');
-            buffer.write(context.l10n.detailsStayDuration(durationStr));
-         }
-      }
-    } 
-    // 4. Completed (Accepted + Past + Not Deleted)
-    else if (invitation.status == InvitationStatus.accepted && isPast) {
-       if (buffer.isNotEmpty) {
-          buffer.write('                                     ${context.l10n.detailsDone}'); 
-       } else {
-         buffer.write(context.l10n.detailsDone);
-       }
-    }
-
-    return buffer.toString();
+        if (invitation.status == InvitationStatus.accepted && isPast && deletedAt == null)
+          Text(context.l10n.detailsDone, style: const TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold)),
+      ],
+    );
   }
 
   String _formatTimelineDate(DateTime date, BuildContext context) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hijri/hijri_calendar.dart';
 import '../../../../core/constants/app_colors.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
+import '../../../../core/utils/app_date_formatter.dart';
 
 class DateTimeSection extends StatelessWidget {
   final bool isHijri;
@@ -72,7 +73,7 @@ class DateTimeSection extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            duration == 0 ? context.l10n.durationAllDay : (selectedTime != null ? selectedTime!.format(context) : context.l10n.selectTime),
+                            duration == 0 ? context.l10n.durationAllDay : (selectedTime != null ? AppDateFormatter.formatTime12hFromValues(selectedTime!.hour, selectedTime!.minute, Localizations.localeOf(context).languageCode) : context.l10n.selectTime),
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -490,7 +491,7 @@ class PrayerTimesRow extends StatelessWidget {
               Icon(Icons.wb_sunny_outlined, size: 12, color: AppColors.getTextPrimary(context)),
               const SizedBox(width: 4),
               Text(
-                '${context.l10n.sunriseTime}: ${sunriseTime!.format(context)}',
+                '${context.l10n.sunriseTime}: ${AppDateFormatter.formatTime12hFromValues(sunriseTime!.hour, sunriseTime!.minute, Localizations.localeOf(context).languageCode)}',
                 style: TextStyle(fontSize: 11, color: AppColors.getTextPrimary(context), fontWeight: FontWeight.w500),
               ),
             ],
@@ -503,7 +504,7 @@ class PrayerTimesRow extends StatelessWidget {
               Icon(Icons.sunny, size: 12, color: AppColors.getTextPrimary(context)),
               const SizedBox(width: 4),
               Text(
-                '${context.l10n.dhuhrTime}: ${dhuhrTime!.format(context)}',
+                '${context.l10n.dhuhrTime}: ${AppDateFormatter.formatTime12hFromValues(dhuhrTime!.hour, dhuhrTime!.minute, Localizations.localeOf(context).languageCode)}',
                 style: TextStyle(fontSize: 11, color: AppColors.getTextPrimary(context), fontWeight: FontWeight.w500),
               ),
             ],
@@ -516,7 +517,7 @@ class PrayerTimesRow extends StatelessWidget {
               Icon(Icons.wb_twilight, size: 12, color: AppColors.getTextPrimary(context)),
               const SizedBox(width: 4),
               Text(
-                '${context.l10n.sunsetTime}: ${sunsetTime!.format(context)}',
+                '${context.l10n.sunsetTime}: ${AppDateFormatter.formatTime12hFromValues(sunsetTime!.hour, sunsetTime!.minute, Localizations.localeOf(context).languageCode)}',
                 style: TextStyle(fontSize: 11, color: AppColors.getTextPrimary(context), fontWeight: FontWeight.w500),
               ),
             ],

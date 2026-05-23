@@ -26,6 +26,8 @@ class UserCard extends StatelessWidget {
   
   // FollowList specific
   final Widget? actionWidget;
+  final VoidCallback? onTap;
+  final Map<String, dynamic>? initialStatusData;
 
   const UserCard({
     super.key,
@@ -37,6 +39,8 @@ class UserCard extends StatelessWidget {
     this.isFollowed = false,
     this.onSelected,
     this.actionWidget,
+    this.onTap,
+    this.initialStatusData,
   });
 
   @override
@@ -61,6 +65,7 @@ class UserCard extends StatelessWidget {
           context,
           actionWidget: actionWidget,
           overrideStatus: overrideStatus,
+          onTap: onTap,
         );
         break;
       case UserCardMode.standard:
@@ -69,6 +74,8 @@ class UserCard extends StatelessWidget {
           user,
           context,
           overrideStatus: overrideStatus,
+          onTap: onTap,
+          initialStatusData: initialStatusData,
         );
         break;
     }

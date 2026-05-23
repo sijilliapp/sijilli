@@ -34,13 +34,14 @@ class LocalUserAdapter extends TypeAdapter<LocalUser> {
       ..created = fields[14] as DateTime
       ..updated = fields[15] as DateTime
       ..joiningDate = fields[16] as DateTime
-      ..token = fields[17] as String?;
+      ..token = fields[17] as String?
+      ..phoneVerified = fields[18] as bool;
   }
 
   @override
   void write(BinaryWriter writer, LocalUser obj) {
     writer
-      ..writeByte(18)
+      ..writeByte(19)
       ..writeByte(0)
       ..write(obj.userId)
       ..writeByte(1)
@@ -76,7 +77,9 @@ class LocalUserAdapter extends TypeAdapter<LocalUser> {
       ..writeByte(16)
       ..write(obj.joiningDate)
       ..writeByte(17)
-      ..write(obj.token);
+      ..write(obj.token)
+      ..writeByte(18)
+      ..write(obj.phoneVerified);
   }
 
   @override

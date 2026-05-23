@@ -9,6 +9,8 @@ import 'package:sijilli/features/auth/providers/auth_provider.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import 'package:sijilli/core/services/pocketbase_client.dart';
+import 'package:sijilli/features/home/screens/public_profile_screen.dart';
+import 'package:sijilli/core/local/local_db_service.dart';
 
 class FollowsScreen extends StatefulWidget {
   final String userId;
@@ -24,15 +26,31 @@ class FollowsScreen extends StatefulWidget {
   State<FollowsScreen> createState() => _FollowsScreenState();
 }
 
+class UserRequest {
+  final UserModel user;
+  final String requestId;
+  UserRequest(this.user, this.requestId);
+}
+
 class _FollowsScreenState extends State<FollowsScreen> {
   final PbUserService _userService = PbUserService();
 
   List<UserModel> _accredited = [];
-  List<RecordModel> _incomingRequests = [];
-  List<RecordModel> _outgoingRequests = [];
+  List<UserRequest> _incomingRequests = [];
+  List<UserRequest> _outgoingRequests = [];
   List<UserModel> _unansweredFollowers = [];
+  List<UserModel> _recentSearches = [];
+  List<UserModel> _filteredAccredited = [];
+  List<UserRequest> _filteredIncoming = [];
+  List<UserRequest> _filteredOutgoing = [];
+  List<UserModel> _suggestedUsers = [];
+  final Set<String> _dismissedSuggestedIds = {};
+  
   bool _isLoading = true;
   bool _isCurrentUser = false;
+  bool _isSearchActive = false;
+  bool _showAllAccredited = false;
+  final TextEditingController _searchController = TextEditingController();
 
   UnsubscribeFunc? _unsubscribeFunc;
 
@@ -42,118 +60,159 @@ class _FollowsScreenState extends State<FollowsScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     _isCurrentUser = widget.userId == authProvider.user?.id;
     _fetchAll();
+    _loadRecentSearches();
     if (_isCurrentUser) {
       _subscribeToRealtime();
     }
   }
 
+  Future<void> _loadRecentSearches() async {
+    final recent = await LocalDbService.instance.getRecentSearches();
+    if (mounted) setState(() => _recentSearches = recent);
+  }
+
+  Future<void> _saveRecentSearch(UserModel user) async {
+    await LocalDbService.instance.saveRecentSearch(user);
+    _loadRecentSearches();
+  }
+
   Future<void> _subscribeToRealtime() async {
     try {
       final pb = PocketBaseClient.instance.pb;
-      _unsubscribeFunc = await pb.collection('follows').subscribe('*', (e) {
-        // Only refresh if the event involves the current user
+      _unsubscribeFunc = await pb.collection('friendship').subscribe('*', (e) {
         final record = e.record;
         if (record != null) {
-          final follower = record.getStringValue('follower');
-          final following = record.getStringValue('following');
-          if (follower == widget.userId || following == widget.userId) {
+          final userA = record.getStringValue('user_a');
+          final userB = record.getStringValue('user_b');
+          if (userA == widget.userId || userB == widget.userId) {
             _fetchAll(silent: true);
           }
         }
       });
     } catch (e) {
-      print('Error subscribing to follows realtime: $e');
+      debugPrint('Error subscribing to friendship realtime: $e');
     }
   }
 
   Future<void> _fetchAll({bool silent = false}) async {
     if (!silent) setState(() => _isLoading = true);
+    if (mounted) {
+      setState(() {
+        _showAllAccredited = false;
+      });
+    }
     try {
       final pb = PocketBaseClient.instance.pb;
       
-      // Fetch all records where the user is involved
-      final allFollows = await pb.collection('follows').getFullList(
-        filter: 'follower = "${widget.userId}" || following = "${widget.userId}"',
-        expand: 'follower,following',
+      final allFriendships = await pb.collection('friendship').getFullList(
+        filter: 'user_a = "${widget.userId}" || user_b = "${widget.userId}"',
+        expand: 'user_a,user_b',
       );
 
-      final incomingList = <RecordModel>[]; // Pending requests TO me
-      final outgoingList = <RecordModel>[]; // Pending requests FROM me
-      final iFollowAcc = <UserModel>[]; // Ones I follow (accepted)
-      final followsMeAcc = <UserModel>[]; // Ones following me (accepted)
+      final accreditedList = <UserModel>[];
+      final incomingList = <UserRequest>[];
+      final outgoingList = <UserRequest>[];
 
-      for (var record in allFollows) {
-        final followerId = record.getStringValue('follower');
-        final followingId = record.getStringValue('following');
-        final status = record.getStringValue('status');
-
-        if (followerId == widget.userId) {
-          // I am the follower
-          if (status == 'pending') {
-            outgoingList.add(record);
-          } else if (status == 'accepted') {
-            final targetJson = record.expand['following']?.first.toJson();
-            if (targetJson != null) iFollowAcc.add(UserModel.fromJson(targetJson));
-          }
-        } 
+      for (var record in allFriendships) {
+        final userAId = record.getStringValue('user_a');
+        final isUserA = userAId == widget.userId;
         
-        if (followingId == widget.userId) {
-          // I am the followed
-          if (status == 'pending') {
-            incomingList.add(record);
-          } else if (status == 'accepted') {
-            final sourceJson = record.expand['follower']?.first.toJson();
-            if (sourceJson != null) followsMeAcc.add(UserModel.fromJson(sourceJson));
-          }
+        final myStatus = record.getStringValue(isUserA ? 'a_status' : 'b_status');
+        final theirStatus = record.getStringValue(isUserA ? 'b_status' : 'a_status');
+        
+        if (myStatus == 'blocked' || theirStatus == 'blocked') continue;
+
+        final targetUserJson = record.expand[isUserA ? 'user_b' : 'user_a']?.first.toJson();
+        if (targetUserJson == null) continue;
+        final targetUser = UserModel.fromJson(targetUserJson);
+
+        if (myStatus == 'accepted' && theirStatus == 'accepted') {
+          accreditedList.add(targetUser);
+        } else if (theirStatus == 'pending' || theirStatus == 'accepted') {
+          // طلبات واردة: الطرف الآخر طلب التواصل أو يتابعني بالفعل
+          incomingList.add(UserRequest(targetUser, record.id));
+        } else if (myStatus == 'pending' || myStatus == 'accepted') {
+          // طلبات صادرة: أنا طلبت التواصل أو أتابعهم
+          outgoingList.add(UserRequest(targetUser, record.id));
         }
       }
 
-      if (_isCurrentUser) {
-        final followingIds = iFollowAcc.map((u) => u.id).toSet();
-        
-        final accredited = followsMeAcc.where((u) => followingIds.contains(u.id)).toList();
-        final unanswered = followsMeAcc.where((u) => !followingIds.contains(u.id)).toList();
-        
-        // Find people I follow who don't follow me back yet
-        final followsMeIds = followsMeAcc.map((u) => u.id).toSet();
-        final waitingForThemAcc = iFollowAcc.where((u) => !followsMeIds.contains(u.id)).toList();
+      // جلب الحسابات المقترحة المعلمة كاقتراح (is_suggested = true)
+      List<UserModel> suggestions = [];
+      try {
+        final currentUserId = pb.authStore.record?.id;
+        if (currentUserId != null) {
+          final records = await pb.collection('users').getFullList(
+            filter: 'is_suggested = true && id != "$currentUserId"',
+          );
+          final allApproved = records.map((r) => UserModel.fromJson(r.toJson())).toList();
 
-        if (mounted) {
-          setState(() {
-            _incomingRequests = incomingList;
-            _outgoingRequests = outgoingList;
-            // Also add the 'accepted but not mutual' to outgoing if we want them to show in waiting
-            // but let's just keep _accredited clean
-            _accredited = accredited;
-            _unansweredFollowers = unanswered;
-            
-            // For those I follow who are accepted but don't follow me back yet,
-            // they should appear in the "Waiting Their Accreditation" section.
-            // But we need a custom list for them since they are UserModels, not RecordModels.
-            // Actually, we can just fetch the record for them from allFollows!
-            for (var u in waitingForThemAcc) {
-               final rec = allFollows.firstWhere((r) => r.getStringValue('follower') == widget.userId && r.getStringValue('following') == u.id);
-               _outgoingRequests.add(rec);
-            }
+          // تحميل المعرفات المحذوفة محلياً من قاعدة البيانات Hive لضمان استمراريتها
+          final localDismissed = await LocalDbService.instance.getDismissedSuggestionIds();
+          _dismissedSuggestedIds.addAll(localDismissed);
 
-            _isLoading = false;
-          });
+          // فلترة المعتمدين والطلبات الحالية لمنع تكرارهم في الاقتراحات
+          final existingIds = <String>{};
+          for (var u in accreditedList) {
+            existingIds.add(u.id);
+          }
+          for (var r in incomingList) {
+            existingIds.add(r.user.id);
+          }
+          for (var r in outgoingList) {
+            existingIds.add(r.user.id);
+          }
+
+          suggestions = allApproved.where((u) => !existingIds.contains(u.id) && !_dismissedSuggestedIds.contains(u.id)).toList();
         }
-      } else {
-        // If not current user, maybe just show who they are accredited with (mutual)
-        final followingIds = iFollowAcc.map((u) => u.id).toSet();
-        final accredited = followsMeAcc.where((u) => followingIds.contains(u.id)).toList();
-        
-        if (mounted) {
-          setState(() {
-            _accredited = accredited;
-            _isLoading = false;
-          });
-        }
+      } catch (e) {
+        debugPrint('Error fetching suggested users: $e');
+      }
+
+      if (mounted) {
+        setState(() {
+          _accredited = accreditedList;
+          _incomingRequests = incomingList;
+          _outgoingRequests = outgoingList;
+          _suggestedUsers = suggestions;
+          _isLoading = false;
+        });
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _onSearchChanged(String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) {
+      setState(() {
+        _filteredAccredited = [];
+        _filteredIncoming = [];
+        _filteredOutgoing = [];
+      });
+      return;
+    }
+    
+    setState(() {
+      _filteredAccredited = _accredited.where((u) {
+        final name = u.name.toLowerCase();
+        final username = u.username.toLowerCase();
+        return name.contains(q) || username.contains(q);
+      }).toList();
+
+      _filteredIncoming = _incomingRequests.where((r) {
+        final name = r.user.name.toLowerCase();
+        final username = r.user.username.toLowerCase();
+        return name.contains(q) || username.contains(q);
+      }).toList();
+
+      _filteredOutgoing = _outgoingRequests.where((r) {
+        final name = r.user.name.toLowerCase();
+        final username = r.user.username.toLowerCase();
+        return name.contains(q) || username.contains(q);
+      }).toList();
+    });
   }
 
   Future<void> _respondToRequest(String requestId, bool accept) async {
@@ -176,25 +235,16 @@ class _FollowsScreenState extends State<FollowsScreen> {
         if (confirm != true) return;
       }
 
-      // ⚡ Optimistic UI Update
+      // Optimistic Update
       setState(() {
-        final index = _incomingRequests.indexWhere((r) => r.id == requestId);
-        if (index != -1) {
-          final req = _incomingRequests.removeAt(index);
-          if (accept && req.expand['follower']?.isNotEmpty == true) {
-            final userJson = req.expand['follower']?.first.toJson();
-            if (userJson != null) {
-              _accredited.insert(0, UserModel.fromJson(userJson));
-            }
-          }
-        }
+        _incomingRequests.removeWhere((r) => r.requestId == requestId);
       });
 
       await _userService.respondToFollowRequest(requestId, accept);
       _fetchAll(silent: true);
     } catch (e) {
       if (mounted) {
-        _fetchAll(silent: true); // Revert on failure
+        _fetchAll(silent: true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.l10n.errorProcessingRequest)),
         );
@@ -202,7 +252,7 @@ class _FollowsScreenState extends State<FollowsScreen> {
     }
   }
 
-  Future<void> _cancelRequest(String requestId) async {
+  Future<void> _cancelRequest(String targetUserId) async {
     try {
        final confirm = await showDialog<bool>(
           context: context,
@@ -217,20 +267,14 @@ class _FollowsScreenState extends State<FollowsScreen> {
         );
         if (confirm != true) return;
 
-      // ⚡ Optimistic UI Update
       setState(() {
-        _outgoingRequests.removeWhere((r) {
-          final userJson = r.expand['following']?.first.toJson();
-          if (userJson == null) return false;
-          final user = UserModel.fromJson(userJson);
-          return user.id == requestId;
-        });
+        _outgoingRequests.removeWhere((r) => r.user.id == targetUserId);
       });
 
-      await _userService.unfollowUser(requestId);
+      await _userService.unfollowUser(targetUserId);
       _fetchAll(silent: true);
     } catch (e) {
-      if (mounted) _fetchAll(silent: true); // Revert
+      if (mounted) _fetchAll(silent: true);
     }
   }
 
@@ -239,64 +283,345 @@ class _FollowsScreenState extends State<FollowsScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(context.l10n.accreditations),
+        title: _isSearchActive 
+          ? TextField(
+              controller: _searchController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: context.l10n.searchUsers,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                filled: false,
+              ),
+              style: const TextStyle(fontSize: 16),
+              onChanged: _onSearchChanged,
+            )
+          : Text(context.l10n.accreditations),
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         foregroundColor: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.primary,
         elevation: 0,
-        centerTitle: true,
+        centerTitle: !_isSearchActive,
+        actions: [
+          IconButton(
+            icon: Icon(_isSearchActive ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() {
+                if (_isSearchActive) {
+                  _searchController.clear();
+                  _filteredAccredited = [];
+                  _filteredIncoming = [];
+                  _filteredOutgoing = [];
+                }
+                _isSearchActive = !_isSearchActive;
+              });
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _fetchAll,
-              child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                children: [
-                  if (_incomingRequests.isNotEmpty || _unansweredFollowers.isNotEmpty) ...[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: Text(context.l10n.waitingYourAccreditation, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-                    ),
-                    ..._buildIncomingItems(),
-                    ..._buildUnansweredItems(),
-                  ],
-                  if (_outgoingRequests.isNotEmpty) ...[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: Text(context.l10n.waitingTheirAccreditation, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-                    ),
-                    ..._buildOutgoingItems(),
-                  ],
-                  if (_accredited.isNotEmpty) ...[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: Text(context.l10n.accreditedEntities, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-                    ),
-                    ..._buildAccreditedItems(),
-                  ],
-                  if (_incomingRequests.isEmpty && _outgoingRequests.isEmpty && _accredited.isEmpty)
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(32.0),
-                        child: Text(context.l10n.noContactsYet),
-                      ),
-                    ),
-                ],
-              ),
+              child: _isSearchActive ? _buildSearchResults() : _buildMainList(),
             ),
     );
   }
 
+  Widget _buildSearchResults() {
+    final query = _searchController.text.trim();
+    
+    if (query.isEmpty) {
+      if (_recentSearches.isEmpty) {
+        return Center(child: Text(context.l10n.searchUsers));
+      }
+      return ListView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(context.l10n.recentSearches, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+          ),
+          ..._recentSearches.map((u) => _buildUserSearchCard(u)),
+        ],
+      );
+    }
+
+    if (_filteredAccredited.isEmpty && _filteredIncoming.isEmpty && _filteredOutgoing.isEmpty) {
+      return Center(child: Text(context.l10n.noResults));
+    }
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      children: [
+        if (_filteredIncoming.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(context.l10n.waitingYourAccreditation, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+          ),
+          ..._filteredIncoming.map((r) => _buildIncomingSearchCard(r)),
+        ],
+        if (_filteredAccredited.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(context.l10n.accreditedEntities, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+          ),
+          ..._filteredAccredited.map((u) => _buildUserSearchCard(u)),
+        ],
+        if (_filteredOutgoing.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(context.l10n.waitingTheirAccreditation, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+          ),
+          ..._filteredOutgoing.map((r) => _buildOutgoingSearchCard(r)),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildIncomingSearchCard(UserRequest request) {
+    return UserCard(
+      user: request.user,
+      mode: UserCardMode.followList,
+      actionWidget: ElevatedButton(
+        onPressed: () => _respondToRequest(request.requestId, true),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          minimumSize: const Size(80, 32),
+        ),
+        child: Text(context.l10n.accreditAction),
+      ),
+    );
+  }
+
+  Widget _buildOutgoingSearchCard(UserRequest request) {
+    return UserCard(
+      user: request.user,
+      mode: UserCardMode.followList,
+      actionWidget: OutlinedButton(
+        onPressed: () => _cancelRequest(request.user.id),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          minimumSize: const Size(80, 32),
+        ),
+        child: Text(context.l10n.waitingAction),
+      ),
+    );
+  }
+
+  Widget _buildUserSearchCard(UserModel user) {
+    return UserCard(
+      user: user,
+      mode: UserCardMode.followList,
+      onTap: () {
+        _saveRecentSearch(user);
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => PublicProfileScreen(usernameOrId: user.id)),
+        );
+      },
+    );
+  }
+
+  Widget _buildMainList() {
+    final bool isEmpty = _incomingRequests.isEmpty && _outgoingRequests.isEmpty && _accredited.isEmpty;
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      children: [
+        if (_incomingRequests.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(context.l10n.waitingYourAccreditation, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+          ),
+          ..._buildIncomingItems(),
+        ],
+        if (_accredited.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(context.l10n.accreditedEntities, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+          ),
+          if (_accredited.length <= 15 || _showAllAccredited) ...[
+            ..._buildAccreditedItems(),
+          ] else ...[
+            ..._buildAccreditedItems().take(15),
+            Center(
+              child: TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _showAllAccredited = true;
+                  });
+                },
+                icon: const Icon(Icons.expand_more, size: 18),
+                label: Text(
+                  context.l10n.localeName == 'ar' ? 'المزيد..' : 'more..',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
+        ],
+        if (_outgoingRequests.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(context.l10n.waitingTheirAccreditation, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+          ),
+          ..._buildOutgoingItems(),
+        ],
+
+        if (isEmpty) ...[
+          const SizedBox(height: 48),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.people_outline_rounded,
+                  size: 64,
+                  color: Colors.grey,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  context.l10n.localeName == 'ar'
+                      ? 'لا يوجد جهات اتصال معتمدة لديك.'
+                      : 'You have no accredited contacts.',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          
+          // تباعد يعادل نصف الصفحة لوضع قسم الاقتراحات في النصف السفلي
+          const SizedBox(height: 140),
+        ] else ...[
+          // إذا لم تكن القائمة فارغة، نضع فاصلاً لطيفاً قبل قسم الاقتراحات
+          if (_suggestedUsers.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            Divider(height: 1, thickness: 0.5, color: Colors.grey.withOpacity(0.3), indent: 16, endIndent: 16),
+            const SizedBox(height: 16),
+          ],
+        ],
+
+        if (_suggestedUsers.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              context.l10n.localeName == 'ar' ? 'حسابات مقترحة لك..' : 'Suggested accounts for you..',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+          ..._buildSuggestedItems(),
+        ],
+      ],
+    );
+  }
+
+  List<Widget> _buildSuggestedItems() {
+    return _suggestedUsers.map((user) {
+      bool isAccrediting = false;
+      return StatefulBuilder(
+        builder: (context, setCardState) {
+          return UserCard(
+            user: user,
+            mode: UserCardMode.followList,
+            actionWidget: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                isAccrediting
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : ElevatedButton(
+                        onPressed: () async {
+                          setCardState(() {
+                            isAccrediting = true;
+                          });
+                          try {
+                            await _userService.accreditUser(user.id);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('تم اعتماد الحساب بنجاح! 🎉'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                              _fetchAll(silent: true);
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('فشل الاعتماد: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          } finally {
+                            if (mounted) {
+                              setCardState(() {
+                                isAccrediting = false;
+                              });
+                            }
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          minimumSize: const Size(80, 32),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(context.l10n.localeName == 'ar' ? 'اعتماد' : 'Accredit'),
+                      ),
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 18, color: Colors.grey),
+                  onPressed: () async {
+                    setState(() {
+                      _dismissedSuggestedIds.add(user.id);
+                      _suggestedUsers.removeWhere((u) => u.id == user.id);
+                    });
+                    // حفظ عملية الحذف محلياً في Hive لكي لا يتم عرض هذا الحساب مجدداً نهائياً
+                    await LocalDbService.instance.saveDismissedSuggestionId(user.id);
+                  },
+                  style: IconButton.styleFrom(
+                    padding: const EdgeInsets.all(4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }).toList();
+  }
+
   List<Widget> _buildIncomingItems() {
     return _incomingRequests.map((request) {
-      final userJson = request.expand['follower']?.first.toJson();
-      if (userJson == null) return const SizedBox();
-      final user = UserModel.fromJson(userJson);
       return UserCard(
-        user: user,
+        user: request.user,
         mode: UserCardMode.followList,
         actionWidget: ElevatedButton(
-          onPressed: () => _respondToRequest(request.id, true),
+          onPressed: () => _respondToRequest(request.requestId, true),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
@@ -307,67 +632,15 @@ class _FollowsScreenState extends State<FollowsScreen> {
         ),
       );
     }).toList();
-  }
-
-  List<Widget> _buildUnansweredItems() {
-    return _unansweredFollowers.map((user) {
-      return UserCard(
-        user: user,
-        mode: UserCardMode.followList,
-        actionWidget: ElevatedButton(
-          onPressed: () => _accreditUnanswered(user),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            minimumSize: const Size(80, 32),
-          ),
-          child: Text(context.l10n.accreditAction),
-        ),
-      );
-    }).toList();
-  }
-
-  Future<void> _accreditUnanswered(UserModel user) async {
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(context.l10n.accreditEntity),
-          content: Text(
-            context.l10n.accreditDesc,
-            style: const TextStyle(fontSize: 14),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.l10n.close)),
-            TextButton(onPressed: () => Navigator.pop(context, true), child: Text(context.l10n.confirm)),
-          ],
-        ),
-      );
-      if (confirm != true) return;
-
-      // ⚡ Optimistic UI Update
-      setState(() {
-        _unansweredFollowers.removeWhere((u) => u.id == user.id);
-        _accredited.insert(0, user);
-      });
-      try {
-         await _userService.accreditUser(user.id);
-         _fetchAll(silent: true);
-      } catch(e) {
-         if (mounted) _fetchAll(silent: true); // revert on failure
-      }
   }
 
   List<Widget> _buildOutgoingItems() {
     return _outgoingRequests.map((request) {
-      final userJson = request.expand['following']?.first.toJson();
-      if (userJson == null) return const SizedBox();
-      final user = UserModel.fromJson(userJson);
       return UserCard(
-        user: user,
+        user: request.user,
         mode: UserCardMode.followList,
         actionWidget: OutlinedButton(
-          onPressed: () => _cancelRequest(user.id),
+          onPressed: () => _cancelRequest(request.user.id),
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             minimumSize: const Size(80, 32),

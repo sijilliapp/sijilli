@@ -14,7 +14,7 @@
   "enterPassword": "أدخل كلمة المرور",
   "noAccount": "ليس لديك حساب؟ ",
   "createNewAccount": "إنشاء حساب جديد",
-  "fullName": "الاسم الكامل",
+  "fullName": "الاسم الظاهر",
   "email": "البريد الإلكتروني",
   "username": "اسم المستخدم",
   "password": "كلمة المرور",
@@ -27,6 +27,7 @@
   "forgotPassword": "نسيت كلمة المرور؟",
   "fieldRequired": "هذا الحقل مطلوب",
   "invalidEmail": "البريد الإلكتروني غير صحيح",
+  "invalidPhone": "رقم الهاتف غير صحيح (8-12 رقماً)",
   "passwordsNotMatch": "كلمات المرور غير متطابقة",
   "passwordMinLength": "كلمة المرور يجب أن تكون 8 أحرف على الأقل",
   "usernameTaken": "اسم المستخدم غير متوفر",
@@ -94,7 +95,6 @@
   "following": "جهات اعتمدتُها",
   "articles": "المقالات",
   "contactTeam": "مراسلة فريق \"سجلي\"",
-  "archive": "الأرشيف",
   "noArticlesYet": "لا توجد مقالات بعد",
   "location": "الموقع",
   "time": "الوقت",
@@ -107,9 +107,12 @@
   "send": "إرسال",
   "reportSent": "تم إرسال التبليغ",
   "report": "تبليغ",
+  "reportAndBlock": "تبليغ وحظر",
   "guest": "ضيف",
   "linkCopied": "تم نسخ الرابط",
   "accreditations": "الاعتمادات",
+  "recentSearches": "البحوث الأخيرة",
+  "searchUsers": "البحث عن حسابات...",
   "explore": "استكشف",
   "news": "الأخبار",
   "follows": "المتابعات",
@@ -178,8 +181,8 @@
   "subjectHint": "اكتب موضوع الموعد...",
   "regionHint": "اختر المنطقة...",
   "buildingHint": "الاسم/الرقم",
-  "streamLink": "رابط البث (اختياري)",
-  "streamLinkHint": "مثال: https://zoom.us/j/123...",
+  "streamLink": "تفاصيل الموعد أو رابط الإعلان أو البث",
+  "streamLinkHint": "اكتب التفاصيل أو ضع الرابط هنا...",
   "appointmentPrivacy": "خصوصية الموعد",
   "privacyPublic": "عام",
   "privacyFollowers": "معتمَدون",
@@ -190,10 +193,12 @@
   "duration1h": "ساعة",
   "duration2h": "ساعتان",
   "duration3h": "3 ساعات",
+  "duration6h": "6 ساعات",
+  "duration12h": "12 ساعة",
   "durationAllDay": "اليوم كله",
-  "sunriseTime": "الشروق",
-  "dhuhrTime": "الظهر",
-  "sunsetTime": "الغروب",
+  "sunriseTime": "شروقًا",
+  "dhuhrTime": "ظهرًا",
+  "sunsetTime": "غروبًا",
   "createAppointment": "إنشاء موعد",
   "editAppointment": "تعديل الموعد",
   "clear": "مسح",
@@ -264,9 +269,11 @@
   "searchUserHint": "البحث بالاسم أو اسم المستخدم...",
   "invitationSentSuccessfully": "تم إرسال الدعوة بنجاح",
   "noResultsFound": "لا توجد نتائج",
-  "morning": "صباحاً",
-  "night": "مساءً",
-  "evening": "عصراً",
+  "morning": "صباحًا",
+  "noon": "ظهرًا",
+  "afternoon": "عصرًا",
+  "evening": "مساءً",
+  "night": "ليلاً",
   "afterTomorrow": "بعد غد",
   "afterDays": "{count} أيام متبقية",
   "@afterDays": {
@@ -330,7 +337,7 @@
   "detailsMinutes": "دقيقة",
   "detailsHostGuests": "استضافة ضيوف..",
   "detailsAppointmentCancelled": "الموعد ملغي",
-  "detailsDeleteTitleHost": "إلغاء الموعد نهائياً",
+  "detailsDeleteTitleHost": "حذف نهائي",
   "detailsDeleteTitleGuest": "حذف الموعد",
   "detailsDeleteConfirmHost": "تنبيه: بصفتك المضيف، حذف الموعد سيؤدي إلى إلغائه لجميع المدعوين ونقله إلى سلة المحذوفات للجميع.\n\nهل أنت متأكد؟",
   "detailsDeleteConfirmGuest": "هل أنت متأكد من حذف نسختك الشخصية من هذا الموعد؟",
@@ -387,10 +394,30 @@
   "detailsGuest": "ضيف",
   "detailsPending": "معلق..",
   "detailsAcceptedAt": "وافق: {date}",
+  "@detailsAcceptedAt": {
+    "placeholders": {
+      "date": {}
+    }
+  },
   "detailsDeletedAt": "حذف: {date}",
-  "detailsStayDuration": "مكث: {duration} ساعة",
+  "@detailsDeletedAt": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "detailsStayDuration": "مكث: {duration}",
+  "@detailsStayDuration": {
+    "placeholders": {
+      "duration": {}
+    }
+  },
   "detailsDone": "أنجز",
   "detailsCreatedBy": "أنشأ الموعد: {date}",
+  "@detailsCreatedBy": {
+    "placeholders": {
+      "date": {}
+    }
+  },
   "detailsPersonalCategory": "التصنيف الشخصي",
   "detailsNoCategory": "بدون تصنيف",
   "detailsAddNew": "إضافة جديد",
@@ -423,7 +450,6 @@
   "durationLessThanHour": "أقل من ساعة",
   "recurrenceOf": "من",
   "extraGuestsCount": "+{count}",
-
   "contactInquiry": "استفسار عام",
   "contactComplaint": "شكوى / مشكلة",
   "contactSuggestion": "اقتراح",
@@ -434,7 +460,6 @@
   "contactMsgTitle": "عنوان الرسالة",
   "requiredField": "هذا الحقل مطلوب",
   "contactMsgDetails": "تفاصيل الرسالة",
-
   "noBlockedUsers": "لا يوجد مستخدمون محظورون",
   "unblockTitle": "إلغاء الحظر",
   "unblockConfirm": "هل تريد إلغاء حظر {name}؟",
@@ -446,7 +471,6 @@
     }
   },
   "unblockConfirmAction": "إلغاء الحظر",
-  
   "enableNotifications": "تفعيل الإشعارات",
   "enableNotificationsDesc": "استقبال جميع الإشعارات والتنبيهات",
   "customizeNotifications": "تخصيص الإشعارات",
@@ -458,13 +482,12 @@
   "notifyActiveDesc": "التنبيه عند حلول وقت الموعد",
   "reminderOneDayBefore": "تذكير قبل يوم",
   "notifyOneDayBeforeDesc": "إرسال تنبيه قبل الموعد بـ 24 ساعة",
-
   "privacyIntroTitle": "1. مقدمة (Introduction)",
   "privacyIntroContent": "نحن في تطبيق \"سجلي\" نلتزم بحماية بياناتك الشخصية وتوضيح كيفية جمعها واستخدامها. هذا التطبيق مخصص للتواصل الاجتماعي وتنظيم المواعيد، وخصوصيتك هي أولويتنا القصوى.\n\nAt \"Sijilli\" app, we are committed to protecting your personal data and clarifying how it is collected and used. This app is dedicated to social networking and appointment organization, and your privacy is our top priority.",
   "privacyDataTitle": "2. البيانات التي نجمعها (Information We Collect)",
-  "privacyDataContent": "• معلومات الحساب: مثل الاسم، البريد الإلكتروني، وصورة الملف الشخصي لتعريف هويتك.\n• المحتوى الذي تنشئه (UGC): المواعيد، التعليقات، والصور التي ترفعها لغرض المشاركة.\n• البيانات التقنية: نوع الجهاز، نظام التشغيل، وعنوان الـ IP لضمان استقرار التطبيق وتحسين الأداء.\n\n• Account Information: Name, email, and profile picture to identify you.\n• User-Generated Content (UGC): Appointments, comments, and photos you upload for sharing.\n• Technical Data: Device type, operating system, and IP address to ensure app stability and performance.",
+  "privacyDataContent": "• معلومات الحساب: مثل الاسم، البريد الإلكتروني، وصورة الملف الشخصي لتعريف هويتك.\n• جهات الاتصال: نطلب الوصول لقائمة الاتصال للسماح لك بدعوة أصدقائك ومزامنة المواعيد معهم بسهولة.\n• المحتوى الذي تنشئه (UGC): المواعيد، التعليقات، والصور التي ترفعها لغرض المشاركة.\n• البيانات التقنية: نوع الجهاز، نظام التصديق، وعنوان الـ IP لضمان استقرار التطبيق.\n\n• Account Information: Name, email, and profile picture.\n• Contacts: We access your contacts to allow you to invite friends and sync appointments.\n• User-Generated Content (UGC): Appointments, comments, and photos.\n• Technical Data: Device info and IP address.",
   "privacySecurityTitle": "3. أمان وحماية البيانات (Data Security)",
-  "privacySecurityContent": "نحن نستخدم بروتوكولات تشفير متطورة (مثل SSL/TLS) لنقل البيانات بشكل آمن بين هاتفك وخوادمنا، لضمان عدم وصول أي طرف غير مصرح له إلى معلوماتك.\n\nWe use advanced encryption protocols (such as SSL/TLS) to transmit data securely between your device and our servers, ensuring no unauthorized party can access your information.",
+  "privacySecurityContent": "نحن نستخدم بروتوكولات تشفير متطورة (مثل SSL/TLS) لنقل البيانات بشكل آمن بين هاتفك وخوادمنا، لضمان عدم وصول أي طرف غير مصرح له إلى معلوماتك.\n\nWe use advanced encryption protocols (such as SSL/TLS) لنقل البيانات بشكل آمن بين هاتفك وخوادمنا، لضمان عدم وصول أي طرف غير مصرح له إلى معلوماتك.",
   "privacyUsageTitle": "4. كيفية استخدام البيانات (How We Use Your Information)",
   "privacyUsageContent": "• توفير ميزات التواصل الاجتماعي ومتابعة المستخدمين الآخرين وتنظيم المواعيد.\n• تحسين تجربة المستخدم ومنع أي عمليات احتيال أو إساءة استخدام.\n• إرسال التنبيهات الضرورية المتعلقة بمواعيدك وتفاعلات الآخرين معك.\n\n• Providing social networking, following features, and appointment organization.\n• Enhancing user experience and preventing fraud or misuse.\n• Sending necessary notifications regarding appointments and user interactions.",
   "privacyUGCTitle": "5. سياسة المحتوى (User-Generated Content - UGC Policy)",
@@ -477,12 +500,10 @@
   "privacySharingContent": "نحن لا نبيع بياناتك الشخصية لأي جهة. قد نستخدم خدمات تقنية موثوقة (مثل خدمات الإشعارات) مع الالتزام التام بمعايير الخصوصية العالمية.\n\nWe do not sell your personal data. We may use trusted technical services (e.g., notification services) in full compliance with global privacy standards.",
   "privacyContact": "للتواصل: sijilliapp@gmail.com",
   "privacyLastUpdate": "آخر تحديث: يناير 2026",
-
   "noArchivedAppointments": "لا توجد مواعيد مؤرشفة",
   "searchArchive": "بحث في الأرشيف...",
   "noResultsFound": "لا توجد نتائج",
   "trashEmpty": "سلة المحذوفات فارغة",
-
   "newFollowerTitle": "اعتماد جديد",
   "followRequestTitle": "طلب اعتماد",
   "startedFollowingYou": "بدأ {name} باعتمادك",
@@ -503,13 +524,17 @@
   },
   "hijriDatePickerTitle": "اختر التاريخ الهجري",
   "removeAccreditation": "إلغاء الاعتماد",
-  "removeAccreditationDesc": "هل أنت متأكد من رغبتك في إلغاء وثيقة الاعتماد مع هذه الجهة؟ سيؤدي ذلك إلى حجب المواعيد المخصصة للمعتمدين.",
+  "removeAccreditationDesc": "تنبيه: إنهاء الاعتماد سيتطلب موافقة الطرف الآخر مرة أخرى لتبادل المواعيد مستقبلاً.",
   "newAppointmentAction": "موعد جديد",
   "yesRemoveAccreditation": "نعم، إزالة",
   "accreditedBadge": "معتمَد",
   "magneticHome": "الرئيسية المغناطيسية",
   "magneticHomeDesc": "التركيز التلقائي على المواعيد عند الدخول",
-  "connectAction": "تواصل",
+  "connectAction": "طلب اعتماد",
+  "ghostMode": "وضع التخفي (Ghost Mode)",
+  "ghostModeDesc": "منع ظهور ملفك الشخصي في نتائج البحث العامة",
+  "publicAccount": "حساب عام",
+  "publicAccountDesc": "السماح للآخرين بالعثور عليك ومتابعتك",
   "downloadFullImageConfirm": "تنزيل الصورة بكامل دقتها فقط بين المعتمدين",
   "download": "تنزيل",
   "operationFailed": "فشلت العملية: {error}",
@@ -519,5 +544,111 @@
         "type": "String"
       }
     }
-  }
+  },
+  "registrationClosedTitle": "عذراً، التسجيل مغلق حالياً",
+  "registrationClosedMessage": "لقد اكتمل النصاب الحالي للمستخدمين، أو أننا نجري بعض التحسينات لضمان أفضل تجربة لك.",
+  "contactUsForInvite": "يمكنك التواصل معنا للاستفسار أو طلب دعوة خاصة:",
+  "backToLogin": "العودة لتسجيل الدخول",
+  "whatsapp": "واتساب",
+  "ourEmail": "بريدنا",
+  "bio": "النبذة التعريفية",
+  "phone": "رقم الهاتف",
+  "socialLink": "رابط خارجي",
+  "changePassword": "تغيير كلمة المرور",
+  "oldPassword": "كلمة المرور الحالية",
+  "newPassword": "كلمة المرور الجديدة",
+  "confirmNewPassword": "تأكيد كلمة المرور الجديدة",
+  "passwordChangedSuccessfully": "تم تغيير كلمة المرور بنجاح",
+  "oldPasswordIncorrect": "كلمة المرور الحالية غير صحيحة",
+  "forgotPasswordDesc": "أدخل بريدك الإلكتروني لاستعادة الوصول إلى حسابك",
+  "emailSentSuccess": "تم الإرسال بنجاح",
+  "passwordResetInstructions": "تم إرسال تعليمات إعادة تعيين كلمة المرور إلى {email}",
+  "@passwordResetInstructions": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "orContactByEmail": "أو راسلنا على البريد الإلكتروني",
+  "articleCopied": "تم نسخ \"{title}\" إلى الحافظة",
+  "@articleCopied": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmDeleteArticle": "تأكيد الحذف",
+  "confirmDeleteArticleMsg": "هل أنت متأكد أنك تريد حذف \"{title}\" نهائياً؟",
+  "@confirmDeleteArticleMsg": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "copy": "نسخ",
+  "readTimeFormat": "مدة القراءة: {minutes} دقيقة {words} كلمة",
+  "@readTimeFormat": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "words": {
+        "type": "int"
+      }
+    }
+  },
+  "readTimeMins": "مدة القراءة: {minutes} دقيقة",
+  "@readTimeMins": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "articleDraftRestored": "تم استرجاع مسودة المقال",
+  "publishArticle": "نشر المقال",
+  "wordsCount": "عدد الكلمات: {count}",
+  "@wordsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lastEdited": "آخر تحرير: {date}",
+  "@lastEdited": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "boldTextFirst": "الرجاء تحديد النص المراد تغميقه أولاً",
+  "selectVersesFirst": "الرجاء تظليل الأبيات أولاً",
+  "centerTextFirst": "الرجاء تحديد النص المراد توسيطه أولاً",
+  "justifyTextFirst": "الرجاء تحديد النص المراد ضبطه أولاً",
+  "closePreview": "إغلاق المعاينة",
+  "livePreview": "معاينة حية",
+  "addArticleCoverOptional": "إضافة غلاف المقال (اختياري)",
+  "writeArticleHint": "اكتب مقالك أو قصيدتك هنا...",
+  "boldTooltip": "تغميق النص (عريض)",
+  "poemTooltip": "تنسيق كقصيدة",
+  "centerTooltip": "توسيط النص",
+  "justifyTooltip": "ضبط النص",
+  "editArticleCover": "تعديل غلاف المقال",
+  "expandImage": "توسيع الصورة",
+  "copiedToClipboard": "تم نسخ {url} للحافظة",
+  "@copiedToClipboard": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "errorArticleNotPublished": "المقال غير منشور أو غير متوفر حالياً.",
+  "errorFetchingArticle": "تعذر جلب بيانات المقال. الرجاء التحقق من الرابط.",
+  "article": "المقال"
 }

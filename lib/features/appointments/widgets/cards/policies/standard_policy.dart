@@ -10,6 +10,7 @@ import 'package:sijilli/features/appointments/widgets/cards/appointment_card_pol
 import 'package:sijilli/core/widgets/pulse_avatar.dart';
 import 'package:sijilli/features/appointments/widgets/sheets/appointment_details_sheet.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
+import 'package:sijilli/features/profile/providers/moderation_provider.dart';
 
 class StandardPolicy extends AppointmentCardPolicy {
   StandardPolicy(super.appointment, super.context, {super.customOnTap});
@@ -117,6 +118,13 @@ class StandardPolicy extends AppointmentCardPolicy {
 
   @override
   VoidCallback? get onHostTap => () {
+    final moderation = context.read<ModerationProvider>();
+    if (moderation.isUserBlocked(appointment.hostId)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('هذا الحساب غير متاح حالياً')),
+      );
+      return;
+    }
     Navigator.push(context, MaterialPageRoute(builder: (context) => PublicProfileScreen(usernameOrId: appointment.hostId)));
   };
 
@@ -158,4 +166,7 @@ class StandardPolicy extends AppointmentCardPolicy {
     // *viewer's* currentUserInvitation is pending.
     return AvatarStatus.upcoming;
   }
+  
+  @override
+  bool get canReport => false;
 }

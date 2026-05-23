@@ -34,7 +34,7 @@ class PbAppointmentService {
         perPage: perPage,
         filter: filter,
         sort: '+appointment.start_at', 
-        expand: 'appointment,appointment.host,appointment.invitations_via_appointment.user,appointment.invitations_via_appointment.categories,categories',
+        expand: 'appointment,appointment.host,appointment.invitations_via_appointment.user,appointment.invitations_via_appointment.categories,categories,appointment.invitations_via_appointment.linked_article',
       );
 
       final appointments = resultList.items.map((record) {
@@ -117,7 +117,7 @@ class PbAppointmentService {
         'status': 'accepted',
         'post_status': 'published',
         'privacy': appointment.privacy,
-        'accepted_at': DateTime.now().toIso8601String(),
+        'accepted_at': DateTime.now().toUtc().toIso8601String(),
       }, expand: 'appointment,appointment.host,categories');
 
       if (inviteeIds != null) {

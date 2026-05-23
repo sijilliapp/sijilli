@@ -1,4 +1,5 @@
 import 'package:pocketbase/pocketbase.dart';
+import 'package:flutter/foundation.dart';
 import '../../../core/services/pocketbase_client.dart';
 import '../../../models/appointment.dart';
 
@@ -8,7 +9,7 @@ class PbAppointmentBrowseService {
   static const String collectionInvitations = 'invitations';
 
   /// جلب مواعيد الحسابات المعتمدة (تبويب الأخبار)
-  /// الشروط: عام، منشور، مؤكد، من حساب معتمد/مشرف، مستقبلي أو جاري (آخر ساعتين)
+  /// الشروط: عام، منشور، مؤكد، من حساب معتمد، مستقبلي أو جاري (آخر ساعتين)
   Future<List<Appointment>> getExploreAppointments({String? userRegion, int page = 1, int perPage = 50, int contextAdjustment = 0}) async {
     try {
       // السماح بظهور المواعيد التي بدأت خلال آخر ساعتين (جارية)
@@ -21,14 +22,14 @@ class PbAppointmentBrowseService {
       // 3. المضيف خصوصية حسابه عام (isPublic)
       // 4. الموعد مستقبلي أو جاري (start_at > threshold)
       // 5. غير ملغى وغير محذوف
-      // 6. الأولوية (أو): مضيف معتمد/مشرف OR الموعد في نفس منطقة المستخدم
+      // 6. الأولوية (أو): مضيف معتمد OR الموعد في نفس منطقة المستخدم
       
       String filter = 'privacy = "public" && is_confirmed = true && host.isPublic = true && start_at > "$ongoingThreshold" && is_cancelled = false && is_deleted = false';
       
       if (userRegion != null && userRegion.isNotEmpty) {
-        filter += ' && (host.role = "approved" || host.role = "admin" || region = "$userRegion")';
+        filter += ' && (host.role = "approved" || region = "$userRegion")';
       } else {
-        filter += ' && (host.role = "approved" || host.role = "admin")';
+        filter += ' && (host.role = "approved")';
       }
 
       final resultList = await _pb.collection(collectionAppointments).getList(
@@ -36,7 +37,7 @@ class PbAppointmentBrowseService {
         perPage: perPage,
         filter: filter,
         sort: '+start_at',
-        expand: 'host,invitations_via_appointment.user',
+        expand: 'host,invitations_via_appointment.user,invitations_via_appointment.linked_article',
       );
 
       return resultList.items.map((record) => Appointment.fromJson(record.toJson(), contextAdjustment: contextAdjustment)).toList();
@@ -56,32 +57,27 @@ class PbAppointmentBrowseService {
       final now = DateTime.now().toUtc();
       final ongoingThreshold = now.subtract(const Duration(hours: 2)).toIso8601String();
 
-      // 1. جلب المتابعين والمتابَعين للتحقق من التبادلية (الصداقة)
-      final results = await Future.wait([
-        _pb.collection('follows').getFullList(
-          filter: 'follower = "$currentUserId" && status = "accepted"',
-        ),
-        _pb.collection('follows').getFullList(
-          filter: 'following = "$currentUserId" && status = "accepted"',
-        ),
-      ]);
+      // 1. جلب الأشخاص الذين أتابعهم (حتى لو لم يبادلوني المتابعة)
+      final friendshipRecords = await _pb.collection('friendship').getFullList(
+        filter: '(user_a = "$currentUserId" && a_status = "accepted") || (user_b = "$currentUserId" && b_status = "accepted")',
+      );
 
-      final iFollow = results[0].map((r) => r.getStringValue('following')).toSet();
-      final followMe = results[1].map((r) => r.getStringValue('follower')).toSet();
-
-      // الأصدقاء هم من اتابعهم ويتابعونني (التبادلية)
-      final friendIds = iFollow.intersection(followMe).where((id) => id.isNotEmpty).toList();
+      final friendIds = friendshipRecords.map((record) {
+        final isUserA = record.getStringValue('user_a') == currentUserId;
+        return record.getStringValue(isUserA ? 'user_b' : 'user_a');
+      }).where((id) => id.isNotEmpty).toList();
       
       if (friendIds.isEmpty) return [];
       
       // 2. البحث في جدول الدعوات
       final userIdsFilter = friendIds.map((id) => 'user = "$id"').join(' || ');
       
-      final filter = '($userIdsFilter) && user.role = "user" && status = "accepted" && post_status = "published" && (appointment.privacy = "public" || appointment.privacy = "followers") && appointment.is_confirmed = true && appointment.start_at > "$ongoingThreshold" && appointment.is_cancelled = false && appointment.is_deleted = false';
+      // الشروط: المواعيد العامة (Public) أو للمتابعين (followers) لمنع تسرب الخصوصية في حالة المتابعة من طرف واحد
+      final filter = '($userIdsFilter) && status = "accepted" && post_status = "published" && (appointment.privacy = "public" || appointment.privacy = "followers") && appointment.is_confirmed = true && appointment.start_at > "$ongoingThreshold" && appointment.is_cancelled = false && appointment.is_deleted = false';
       
       final records = await _pb.collection(collectionInvitations).getFullList(
         filter: filter,
-        expand: 'appointment,appointment.host,appointment.invitations_via_appointment.user',
+        expand: 'appointment,appointment.host,appointment.invitations_via_appointment.user,appointment.invitations_via_appointment.linked_article',
       );
 
       final List<Appointment> appointments = [];
@@ -155,23 +151,40 @@ class PbAppointmentBrowseService {
       String privacyFilter = '($visibilityCriteria)';
       
       if (viewerId != null) {
-         // Check if Viewer is Host OR Viewer is in invitations
-         privacyFilter += ' || appointment.host = "$viewerId" || appointment.invitations_via_appointment.user ?= "$viewerId"';
+         // If viewer is specifically invited, they see it regardless of privacy
+         privacyFilter += ' || appointment.invitations_via_appointment.user ?= "$viewerId"';
       }
       
       filter += ' && ($privacyFilter)';
 
+      if (kDebugMode) {
+        print('🔍 [PbAppointmentBrowseService] Fetching with filter: $filter');
+      }
+
       final resultList = await _pb.collection(collectionInvitations).getList(
         filter: filter,
         sort: '+appointment.start_at',
-        expand: 'appointment,appointment.host,appointment.invitations_via_appointment.user,categories',
+        expand: 'appointment,appointment.host,appointment.invitations_via_appointment.user,appointment.invitations_via_appointment.linked_article,categories',
       );
+
+      if (kDebugMode) {
+        print('🌐 [PbAppointmentBrowseService] Found ${resultList.items.length} invitations for $targetUserId');
+        for (var item in resultList.items) {
+           final appt = item.expand['appointment']?[0];
+           print('   - Inv ID: ${item.id}, Privacy: ${item.getStringValue('privacy')}, Appt Title: ${appt?.getStringValue('title')}');
+        }
+      }
 
       final List<Appointment> appointments = [];
 
       for (final record in resultList.items) {
         final invJson = record.toJson();
-        final apptJson = invJson['expand']?['appointment'] as Map<String, dynamic>?;
+        
+        // PB 0.22+ expand is always a list
+        final expandedAppt = invJson['expand']?['appointment'];
+        Map<String, dynamic>? apptJson = (expandedAppt is List && expandedAppt.isNotEmpty)
+            ? expandedAppt[0] as Map<String, dynamic>?
+            : (expandedAppt is Map<String, dynamic> ? expandedAppt : null);
         
         if (apptJson == null) continue;
 

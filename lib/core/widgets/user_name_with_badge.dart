@@ -19,37 +19,30 @@ class UserNameWithBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // تحديد اتجاه النص بناءً على الحرف الأول من الاسم
-    final isArabic = RegExp(r'^[\u0600-\u06FF]').hasMatch(name.trim());
-    final textDirection = isArabic ? TextDirection.rtl : TextDirection.ltr;
-
-    return Directionality(
-      textDirection: textDirection,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start, // محاذاة للأعلى
-        children: [
-          Flexible(
-            child: Text(
-              name,
-              style: style,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Flexible(
+          child: Text(
+            name,
+            style: style,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (isVerified) ...[
+          const SizedBox(width: 4),
+          Padding(
+            padding: const EdgeInsets.only(top: 4.0),
+            child: Icon(
+              Icons.verified,
+              size: badgeSize,
+              color: badgeColor ?? AppColors.primary,
             ),
           ),
-          if (isVerified) ...[
-            const SizedBox(width: 4),
-            Padding(
-              padding: const EdgeInsets.only(top: 4.0), // ضبط المحاذاة مع النص
-              child: Icon(
-                Icons.verified,
-                size: badgeSize,
-                color: badgeColor ?? AppColors.primary,
-              ),
-            ),
-          ],
         ],
-      ),
+      ],
     );
   }
 }

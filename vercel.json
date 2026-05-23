@@ -1,7 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/((?!api/|icons/|assets/|favicon.png|manifest.json|flutter_service_worker.js|version.json|index.html|canvaskit/).*)",
+      "source": "/((?!api/|icons/|assets/|favicon.png|manifest.json|flutter_service_worker.js|version.json|index.html|canvaskit/|.well-known/).*)",
       "destination": "/index.html"
     }
   ]

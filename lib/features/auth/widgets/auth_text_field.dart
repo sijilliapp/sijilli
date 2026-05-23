@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../core/widgets/custom_text_field.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_dimens.dart';
 
 class AuthTextField extends StatelessWidget {
   final TextEditingController controller;
@@ -38,21 +39,83 @@ class AuthTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomTextField(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return TextFormField(
       controller: controller,
       focusNode: focusNode,
-      label: label,
-      hint: hint,
-      prefixIcon: prefixIcon,
-      suffixIcon: suffixIcon,
       obscureText: obscureText,
       keyboardType: keyboardType,
       textInputAction: textInputAction,
       onFieldSubmitted: onFieldSubmitted,
       validator: validator,
+      onChanged: onChanged,
       enabled: enabled,
       inputFormatters: inputFormatters,
-      textDirection: TextDirection.ltr,
+      style: TextStyle(
+        color: isDark ? Colors.white : Colors.black87,
+        fontSize: AppDimens.textSize,
+      ),
+      decoration: InputDecoration(
+        labelText: label, // 📍 الوسم الذي يقفز لللاين
+        hintText: hint,
+        hintStyle: TextStyle(
+          color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
+          fontSize: AppDimens.textSizeS,
+        ),
+        prefixIcon: prefixIcon != null
+            ? Icon(prefixIcon, color: AppColors.primary.withValues(alpha: 0.7), size: 22)
+            : null,
+        suffixIcon: suffixIcon,
+        filled: true,
+        fillColor: isDark ? AppColors.darkSurface : Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        
+        // 🎨 Borders and Shapes
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(
+            color: AppColors.primary,
+            width: 2,
+          ),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(
+            color: Colors.redAccent,
+            width: 1.5,
+          ),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(
+            color: Colors.redAccent,
+            width: 2,
+          ),
+        ),
+
+        // 🏷️ Label Styling (Floating behavior)
+        labelStyle: TextStyle(
+          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+          fontSize: AppDimens.textSizeS,
+        ),
+        floatingLabelStyle: const TextStyle(
+          color: AppColors.primary,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }

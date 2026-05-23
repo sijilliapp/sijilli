@@ -23,20 +23,44 @@ class AuthButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return Container(
       width: double.infinity,
       height: AppDimens.buttonHeightL, // 56.0
+      decoration: !isSecondary && !isLoading && onPressed != null
+          ? BoxDecoration(
+              borderRadius: BorderRadius.circular(AppDimens.radiusM),
+              gradient: const LinearGradient(
+                colors: [
+                  AppColors.primary,
+                  Color(0xFF4A90E2),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            )
+          : null,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: isSecondary ? Colors.white : AppColors.primary,
+          backgroundColor: isSecondary 
+              ? (isDark ? AppColors.darkSurface : Colors.white) 
+              : (onPressed == null || isLoading ? Colors.grey.shade300 : Colors.transparent),
           foregroundColor: isSecondary ? AppColors.primary : Colors.white,
-          elevation: isSecondary ? 0 : 2,
-          shadowColor: AppColors.primary.withValues(alpha: 0.3),
+          elevation: 0,
+          shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDimens.radiusM), // 12
+            borderRadius: BorderRadius.circular(AppDimens.radiusM),
             side: isSecondary 
-                ? const BorderSide(color: AppColors.primary)
+                ? BorderSide(color: AppColors.primary.withValues(alpha: 0.5))
                 : BorderSide.none,
           ),
           disabledBackgroundColor: Colors.grey.shade300,
@@ -44,10 +68,10 @@ class AuthButton extends StatelessWidget {
         ),
         child: isLoading
             ? const SizedBox(
-                width: AppDimens.iconSize, // 24
-                height: AppDimens.iconSize, // 24
+                width: 24,
+                height: 24,
                 child: CircularProgressIndicator(
-                  strokeWidth: AppDimens.tabIndicatorHeight, // 2.0
+                  strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
@@ -55,14 +79,15 @@ class AuthButton extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (icon != null) ...[
-                    Icon(icon, size: AppDimens.iconSizeS), // 20
-                    const SizedBox(width: AppDimens.paddingSmall), // 8.0
+                    Icon(icon, size: 20),
+                    const SizedBox(width: 8),
                   ],
                   Text(
                     text,
                     style: const TextStyle(
-                      fontSize: AppDimens.textSize, // 16
-                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ],

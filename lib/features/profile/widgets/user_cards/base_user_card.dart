@@ -28,10 +28,7 @@ class BaseUserCard extends StatelessWidget {
         }
 
         return Container(
-          margin: const EdgeInsets.symmetric(
-            horizontal: AppDimens.spaceS, 
-            vertical: AppDimens.spaceXS,
-          ),
+          margin: policy.margin,
           decoration: BoxDecoration(
             color: policy.backgroundColor,
             borderRadius: BorderRadius.circular(AppDimens.radiusL),
@@ -89,10 +86,7 @@ class BaseUserCard extends StatelessWidget {
                                   policy.buildBadges()!,
                               ],
                             ),
-                            Text(
-                              '@${policy.user.username}',
-                              style: policy.usernameStyle,
-                            ),
+                            policy.buildSecondaryText(),
                             if (policy.buildSubtitle() != null) ...[
                               const SizedBox(height: AppDimens.spaceXXS),
                               policy.buildSubtitle()!,

@@ -63,34 +63,44 @@ class EventFormWidget extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildPrivacyToggle(context),
-        const SizedBox(height: 10),
+        const SizedBox(height: 6),
 
         CustomTextField(
           controller: titleController,
           focusNode: titleFocusNode,
           label: context.l10n.subject,
           hint: context.l10n.subjectHint,
-          maxLength: 50, 
+          maxLength: 50,
+          showCountdown: true,
           validator: titleValidator,
         ),
         
-        AnimatedSize(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          child: (isTitleFocused && suggestions.isNotEmpty && onWordSelected != null)
-              ? Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: WordRiverWidget(
-                    suggestions: suggestions,
-                    onWordSelected: onWordSelected!,
-                    pivotSuggestions: pivotSuggestions,
-                    onPivotSelected: onPivotSelected,
-                  ),
-                )
-              : const SizedBox.shrink(),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final showTitleSuggestions = isTitleFocused && (suggestions.isNotEmpty || pivotSuggestions.isNotEmpty);
+            
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: showTitleSuggestions
+                  ? Container(
+                      key: const ValueKey('title_suggestions'),
+                      decoration: const BoxDecoration(
+                        color: Colors.transparent, // Making it "free"
+                      ),
+                      width: MediaQuery.of(context).size.width,
+                      child: WordRiverWidget(
+                        suggestions: suggestions,
+                        onWordSelected: onWordSelected!,
+                        pivotSuggestions: pivotSuggestions,
+                        onPivotSelected: onPivotSelected,
+                      ),
+                    )
+                  : const SizedBox.shrink(key: ValueKey('no_title_suggestions')),
+            );
+          },
         ),
 
-        const SizedBox(height: 10),
+        const SizedBox(height: 6),
         
         Row(
           children: [
@@ -116,12 +126,15 @@ class EventFormWidget extends StatelessWidget {
           ],
         ),
         
-        AnimatedSize(
+        AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
           child: _shouldShowLocationSuggestions()
-              ? Padding(
-                  padding: const EdgeInsets.only(top: 4),
+              ? Container(
+                  key: const ValueKey('location_suggestions'),
+                  decoration: const BoxDecoration(
+                    color: Colors.transparent,
+                  ),
+                  width: MediaQuery.of(context).size.width,
                   child: WordRiverWidget(
                     suggestions: isLocationFocused ? regionSuggestions : buildingSuggestions,
                     onWordSelected: isLocationFocused
@@ -130,13 +143,13 @@ class EventFormWidget extends StatelessWidget {
                     pivotSuggestions: const [],
                   ),
                 )
-              : const SizedBox.shrink(),
+              : const SizedBox.shrink(key: ValueKey('no_location_suggestions')),
         ),
 
         if (streamLinkController != null) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
            Text(context.l10n.streamLink, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-           const SizedBox(height: 4),
+           const SizedBox(height: 2),
            Builder(
              builder: (context) {
                final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -177,11 +190,10 @@ class EventFormWidget extends StatelessWidget {
           context.l10n.appointmentPrivacy,
           style: TextStyle(
             fontSize: 14, 
-            fontWeight: FontWeight.bold, 
             color: isDark ? Colors.white : Colors.black87
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
@@ -208,7 +220,8 @@ class EventFormWidget extends StatelessWidget {
       child: GestureDetector(
         onTap: () => onPrivacyChanged(value),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          height: 44,
+          margin: EdgeInsets.zero,
           decoration: BoxDecoration(
             color: isSelected 
                 ? (isDark ? Colors.grey.shade700 : Colors.white) 

@@ -4,6 +4,7 @@ import 'package:sijilli/core/constants/app_colors.dart';
 class FolderTabBar extends StatelessWidget implements PreferredSizeWidget {
   final TabController tabController;
   final List<String> tabTitles;
+  final List<Widget?>? tabActions; // New parameter for icons/widgets next to titles
   final VoidCallback? onMenuPressed;
   final Color backgroundColor;
 
@@ -11,6 +12,7 @@ class FolderTabBar extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     required this.tabController,
     required this.tabTitles,
+    this.tabActions,
     this.onMenuPressed,
     this.backgroundColor = const Color(0xFFF3F4F6), // lightSurface
     this.activeTabShadowColor,
@@ -81,8 +83,10 @@ class FolderTabBar extends StatelessWidget implements PreferredSizeWidget {
                           return Expanded(
                             child: GestureDetector(
                               onTap: () => tabController.animateTo(index),
+                              behavior: HitTestBehavior.opaque,
                               child: Container(
                                 height: 44, // Tab Height
+                                color: Colors.transparent, // Ensures hit testing works on the whole area
                                 child: Stack(
                                   children: [
                                     if (isSelected)
@@ -100,13 +104,22 @@ class FolderTabBar extends StatelessWidget implements PreferredSizeWidget {
                                       ),
                                     Align(
                                       alignment: Alignment.center,
-                                      child: Text(
-                                        tabTitles[index],
-                                        style: TextStyle(
-                                          color: isSelected ? AppColors.primary : Theme.of(context).disabledColor,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 14,
-                                        ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (tabActions != null && index < tabActions!.length && tabActions![index] != null) ...[
+                                            tabActions![index]!,
+                                            const SizedBox(width: 8),
+                                          ],
+                                          Text(
+                                            tabTitles[index],
+                                            style: TextStyle(
+                                              color: isSelected ? AppColors.primary : Theme.of(context).disabledColor,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],

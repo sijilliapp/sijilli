@@ -21,6 +21,38 @@ class AppDateFormatter {
   // Prevent instantiation
   AppDateFormatter._();
 
+  static String? formatLastSeen(DateTime? lastActive, [String locale = 'ar']) {
+    if (lastActive == null) return null;
+    
+    final difference = DateTime.now().difference(lastActive);
+    
+    if (locale == 'ar') {
+      if (difference.inMinutes < 60) {
+        return 'نشط للتو';
+      } else if (difference.inHours < 24) {
+        return 'نشط اليوم';
+      } else if (difference.inDays < 3) {
+        return 'نشط أمس';
+      } else if (difference.inDays < 7) {
+        return 'نشط هذا الأسبوع';
+      } else {
+        return null;
+      }
+    } else {
+      if (difference.inMinutes < 60) {
+        return 'Active recently';
+      } else if (difference.inHours < 24) {
+        return 'Active today';
+      } else if (difference.inDays < 3) {
+        return 'Active yesterday';
+      } else if (difference.inDays < 7) {
+        return 'Active this week';
+      } else {
+        return null;
+      }
+    }
+  }
+
   /// Format: 08 Jan 2026
   static String formatMediumDate(DateTime date, [String locale = 'ar']) {
     return DateFormat('dd MMM yyyy', locale).format(date);
@@ -36,10 +68,34 @@ class AppDateFormatter {
     return DateFormat('h:mm a', locale).format(date);
   }
 
-  /// Format: 10:30 ص (Arabic)
+  /// Format: 10:30 مساءً (Arabic) or 10:30 AM (English)
   static String formatTime12h(DateTime date, [String locale = 'ar']) {
-    // Ensuring Arabic AM/PM
+    if (locale == 'ar') {
+      final time = DateFormat('h:mm', locale).format(date);
+      final hour = date.hour;
+      String period;
+      
+      if (hour >= 0 && hour < 4) {
+        period = 'ليلاً';
+      } else if (hour >= 4 && hour < 12) {
+        period = 'صباحًا';
+      } else if (hour >= 12 && hour < 15) {
+        period = 'ظهرًا';
+      } else if (hour >= 15 && hour < 18) {
+        period = 'عصرًا';
+      } else {
+        period = 'مساءً';
+      }
+      
+      return '$time $period';
+    }
     return DateFormat('h:mm a', locale).format(date);
+  }
+
+  /// Format hour/minute to: 10:30 مساءً (Arabic) or 10:30 AM (English)
+  static String formatTime12hFromValues(int hour, int minute, [String locale = 'ar']) {
+    final date = DateTime(2026, 1, 1, hour, minute);
+    return formatTime12h(date, locale);
   }
 
   /// Format: Thursday, 08 Jan
@@ -59,8 +115,8 @@ class AppDateFormatter {
 
   /// Relative time (e.g., "منذ ساعة", "منذ يومين")
   static String timeAgo(DateTime date, String locale, [AppLocalizations? l10n]) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
+    final now = DateTime.now().toUtc();
+    final diff = now.difference(date.toUtc());
 
     // 1. Use Localized Strings if Provided
     if (l10n != null) {
@@ -115,56 +171,68 @@ class AppDateFormatter {
     return locale == 'ar' ? toEasternArabicDigits(result) : result;
   }
 
-  /// Calculate difference compatible with timeline requirements
+  /// Calculate duration with exact units (days, hours, minutes)
+  /// If multiple units exist: uses shorthand (d, h, m / ي، س، د)
+  /// If single unit exists: uses full words (minutes, hours, days / دقيقة، ساعة، يوم)
   static String formatDuration(Duration duration, String locale, [AppLocalizations? l10n]) {
-    if (l10n == null) {
-      final days = duration.inDays;
-      if (locale != 'ar') {
-        if (days > 0) return '$days days';
-        final hours = duration.inHours;
-        if (hours > 0) return '$hours hours';
-        return 'less than an hour';
-      }
+    final int days = duration.inDays;
+    final int hours = duration.inHours % 24;
+    final int minutes = duration.inMinutes % 60;
 
-      String result;
-      if (days > 0) {
-        result = days == 1 
-            ? 'يوم واحد' 
-            : days == 2 
-              ? 'يومين'
-              : days <= 10 
-                ? '$days أيام' 
-                : '$days يوماً';
+    final List<String> parts = [];
+    final bool isAr = locale == 'ar';
+
+    int unitCount = 0;
+    if (days > 0) unitCount++;
+    if (hours > 0) unitCount++;
+    if (minutes > 0) unitCount++;
+
+    if (unitCount == 0) {
+      return isAr ? 'أقل من دقيقة' : 'Less than a minute';
+    }
+
+    if (unitCount > 1) {
+      // SHORTHAND MODE (e.g. 3h 45m / ٣ س ٤٥ د)
+      if (isAr) {
+        if (days > 0) parts.add('$days ي');
+        if (hours > 0) parts.add('$hours س');
+        if (minutes > 0) parts.add('$minutes د');
+        return toEasternArabicDigits(parts.join(' '));
       } else {
-        final hours = duration.inHours;
-        if (hours > 0) {
-          result = hours == 1
-              ? 'ساعة واحدة'
-              : hours == 2
-                ? 'ساعتين'
-                : hours <= 10
-                  ? '$hours ساعات'
-                  : '$hours ساعة';
-        } else {
-          result = 'أقل من ساعة';
-        }
+        if (days > 0) parts.add('${days}d');
+        if (hours > 0) parts.add('${hours}h');
+        if (minutes > 0) parts.add('${minutes}m');
+        return parts.join(' ');
       }
-      return locale == 'ar' ? toEasternArabicDigits(result) : result;
-    }
-
-    final days = duration.inDays;
-    final hours = duration.inHours;
-
-    String result;
-    if (days > 0) {
-      result = l10n.durationDays(days);
-    } else if (hours > 0) {
-      result = l10n.durationHours(hours);
     } else {
-      result = l10n.durationLessThanHour;
+      // SINGLE UNIT MODE (Full Words)
+      if (isAr) {
+        if (days > 0) {
+          if (days == 1) return 'يوم واحد';
+          if (days == 2) return 'يومين';
+          if (days <= 10) return toEasternArabicDigits('$days أيام');
+          return toEasternArabicDigits('$days يوماً');
+        }
+        if (hours > 0) {
+          if (hours == 1) return 'ساعة واحدة';
+          if (hours == 2) return 'ساعتين';
+          if (hours <= 10) return toEasternArabicDigits('$hours ساعات');
+          return toEasternArabicDigits('$hours ساعة');
+        }
+        if (minutes > 0) {
+          if (minutes == 1) return 'دقيقة واحدة';
+          if (minutes == 2) return 'دقيقتين';
+          if (minutes <= 10) return toEasternArabicDigits('$minutes دقائق');
+          return toEasternArabicDigits('$minutes دقيقة');
+        }
+      } else {
+        if (days > 0) return days == 1 ? '1 day' : '$days days';
+        if (hours > 0) return hours == 1 ? '1 hour' : '$hours hours';
+        if (minutes > 0) return minutes == 1 ? '1 minute' : '$minutes minutes';
+      }
     }
 
-    return locale == 'ar' ? toEasternArabicDigits(result) : result;
+    return '';
   }
 
   /// Converts English digits to Eastern Arabic Digits (Hindi numerals)

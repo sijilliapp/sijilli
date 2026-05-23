@@ -17,8 +17,10 @@ import '../../../models/user.dart';
 import '../../../core/constants/app_dimens.dart';
 import '../widgets/add_event_widgets.dart';
 import '../../appointments/widgets/sheets/appointment_confirmation_sheet.dart';
+import '../../main/screens/main_screen.dart';
 import '../../../core/utils/app_pickers.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
+import '../../../core/services/autocomplete_service.dart';
 
 class AddEventScreen extends StatelessWidget {
   final Appointment? initialAppointment;
@@ -45,6 +47,7 @@ class _AddEventScreenContent extends StatefulWidget {
 
 class _AddEventScreenContentState extends State<_AddEventScreenContent> {
   final _formKey = GlobalKey<FormState>();
+  late final ScrollController _scrollController;
   late final TextEditingController _titleController;
   late final TextEditingController _locationController;
   late final TextEditingController _buildingController;
@@ -63,6 +66,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
     _titleFocusNode.addListener(_onTitleFocusChanged);
     _locationFocusNode.addListener(_onLocationFocusChanged);
     _buildingFocusNode.addListener(_onBuildingFocusChanged);
@@ -160,6 +164,16 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
     context.read<AddEventProvider>().checkDateMatch(newText.trim());
   }
 
+  void _onPivotSelected(PivotMatch match) {
+    _titleController.value = TextEditingValue(
+      text: match.fullTitle,
+      selection: TextSelection.collapsed(offset: match.fullTitle.length),
+    );
+    _titleFocusNode.requestFocus();
+    context.read<AddEventProvider>().onTitleChanged(match.fullTitle);
+    context.read<AddEventProvider>().checkDateMatch(match.fullTitle);
+  }
+
   void _onLocationFocusChanged() {
     if (_locationFocusNode.hasFocus) {
       setState(() => _isLocationFocused = true);
@@ -226,12 +240,29 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
     _locationController.dispose();
     _buildingController.dispose();
     _streamLinkController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
+
+  int _lastHistoryCount = -1;
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AddEventProvider>();
+    
+    // Listen for history changes to keep the "Personal Autocomplete" engine synced
+    final apptProvider = context.watch<AppointmentProvider>();
+    final history = [...apptProvider.appointments, ...apptProvider.archivedAppointments];
+    
+    // Safety sync: Ensure provider has latest history if it was initialized empty or changed
+    if (history.length != _lastHistoryCount) {
+      _lastHistoryCount = history.length;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          provider.refreshHistory(history);
+        }
+      });
+    }
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -281,6 +312,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
   }
 
   Widget _buildBody(AddEventProvider provider) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final durationOptions = [
       {'label': context.l10n.duration15m, 'value': 15},
       {'label': context.l10n.duration30m, 'value': 30},
@@ -288,6 +320,8 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
       {'label': context.l10n.duration1h, 'value': 60},
       {'label': context.l10n.duration2h, 'value': 120},
       {'label': context.l10n.duration3h, 'value': 180},
+      {'label': context.l10n.duration6h, 'value': 360},
+      {'label': context.l10n.duration12h, 'value': 720},
       {'label': context.l10n.durationAllDay, 'value': 0},
     ];
 
@@ -301,7 +335,8 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
     return Form(
       key: _formKey,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppDimens.space),
+        controller: _scrollController,
+        padding: const EdgeInsets.symmetric(horizontal: AppDimens.space, vertical: AppDimens.spaceXS),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -337,6 +372,8 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
                 titleValidator: (val) => val == null || val.trim().isEmpty ? context.l10n.fieldRequired : null,
                 suggestions: provider.suggestions,
                 onWordSelected: _onWordSelected,
+                pivotSuggestions: provider.pivotSuggestions,
+                onPivotSelected: _onPivotSelected,
                 
                 // Location Props
                 locationFocusNode: _locationFocusNode,
@@ -348,8 +385,8 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
                 onRegionSelected: _onRegionSelected,
                 onBuildingSelected: _onBuildingSelected,
               ), 
-              
-            const SizedBox(height: AppDimens.spaceTiny),
+            
+            const SizedBox(height: AppDimens.spaceXXS),
             
             Consumer<AuthProvider>(
               builder: (context, auth, _) {
@@ -372,7 +409,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
               },
             ),
             
-            const SizedBox(height: AppDimens.spaceXS),
+            const SizedBox(height: AppDimens.spaceXXS),
 
             DateTimeSection(
               isHijri: provider.isHijri,
@@ -385,17 +422,22 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
               onSelectEndDate: () => _selectEndDate(provider),
             ),
             
-            const SizedBox(height: AppDimens.spaceCompact),
+            if (provider.hasConflict) ...[
+              const SizedBox(height: AppDimens.spaceXXS),
+              _buildConflictAlert(),
+            ],
+            
+            const SizedBox(height: AppDimens.spaceXS),
             
             InviteesWidget(
-              invitees: provider.selectedUsers.map((u) => u.name.isNotEmpty ? u.name : u.username).toList(),
+              invitees: provider.selectedUsers,
               onAddInvitees: () => _openInviteesSelector(provider),
               isFirstComeFirstServed: provider.isFirstComeFirstServed,
               onFirstComeChanged: provider.toggleFirstComeFirstServed,
               onRemoveInvitee: provider.removeInvitee,
             ),
 
-            const SizedBox(height: AppDimens.spaceCompact),
+            const SizedBox(height: AppDimens.spaceXS),
 
             // Recurrence
             if (provider.duration < 1440) 
@@ -409,7 +451,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
               onCountChanged: provider.setRecurrenceCount,
             ),
             
-            const SizedBox(height: AppDimens.spaceCompact),
+            const SizedBox(height: AppDimens.spaceXS),
             
             // Link Field (Moved to Bottom)
             // Import CustomTextField if not available in this file scope (It might come from imports or EventFormWidget exports)
@@ -424,7 +466,60 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
              // رابط البث
             // Link Field Moved to EventFormWidget
 
-            
+            const SizedBox(height: AppDimens.spaceXS),
+
+            // Save and Clear Buttons stacked vertically at the bottom of the page
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ElevatedButton(
+                  onPressed: provider.isSaving ? null : _saveEvent,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: provider.isSaving
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                      : Text(
+                          context.l10n.save,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: provider.isSaving ? null : _clearForm,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.02),
+                    side: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    context.l10n.clear,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: isDark ? Colors.white : Colors.black87,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
             const SizedBox(height: 32), // Bottom padding
           ],
         ),
@@ -468,6 +563,13 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
       duration: provider.duration,
       date: provider.selectedDate ?? DateTime.now(),
       time: '${provider.selectedTime?.hour}:${provider.selectedTime?.minute}',
+      participants: provider.selectedUsers.map((u) => Invitation(
+        id: '', 
+        appointmentId: '', 
+        userId: u.id, 
+        status: InvitationStatus.pending,
+        user: u
+      )).toList(),
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -499,101 +601,121 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
     // 1. Explicit Check for Required Attributes (beyond Form fields)
     final provider = context.read<AddEventProvider>();
     
-    // Check Time (Critical)
-    // Assuming 'All Day' (duration 0) might not need specific time, but usually we need at least a date.
+    // Check Date
     if (provider.selectedDate == null) {
        ScaffoldMessenger.of(context).showSnackBar(
          SnackBar(content: Text(context.l10n.pleaseSelectDate), backgroundColor: AppColors.error));
+       _scrollController.animateTo(
+         180.0,
+         duration: const Duration(milliseconds: 300),
+         curve: Curves.easeOut,
+       );
        return;
     }
     
-    // If not 'All Day', we typically need a specific time.
-    // If selectedTime is null, prompt user.
+    // Check Time
     if (provider.selectedTime == null && provider.duration != 0) {
        ScaffoldMessenger.of(context).showSnackBar(
          SnackBar(content: Text(context.l10n.pleaseSelectTime), backgroundColor: AppColors.error));
+       _scrollController.animateTo(
+         240.0,
+         duration: const Duration(milliseconds: 300),
+         curve: Curves.easeOut,
+       );
        return;
     }
 
-    if (_formKey.currentState?.validate() ?? false) {
-       final auth = context.read<AuthProvider>();
-       final apptProvider = context.read<AppointmentProvider>();
-       
-       if (auth.user == null) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.pleaseLoginFirst)));
-          return;
-       }
-
-       final host = auth.user;
-       
-       DateTime startAt;
-       if (provider.selectedTime != null) {
-         startAt = DateTime(
-            provider.selectedDate!.year,
-            provider.selectedDate!.month,
-            provider.selectedDate!.day,
-            provider.selectedTime!.hour,
-            provider.selectedTime!.minute,
+    // Validate form fields, and scroll to title if empty
+    if (!(_formKey.currentState?.validate() ?? false)) {
+       if (_titleController.text.trim().isEmpty) {
+         _titleFocusNode.requestFocus();
+         _scrollController.animateTo(
+           0,
+           duration: const Duration(milliseconds: 300),
+           curve: Curves.easeOut,
          );
-       } else {
-         startAt = provider.selectedDate ?? DateTime.now();
        }
+       return;
+    }
 
-       // 1.5 Check for Conflicts
-       bool hasConflict = false;
-       if (provider.duration > 0) {
-           final conflicts = apptProvider.getConflictingAppointments(
-             startAt, 
-             provider.duration,
-             excludeId: widget.initialAppointment?.id // Don't conflict with self
-           );
-           hasConflict = conflicts.isNotEmpty;
-       }
+    final auth = context.read<AuthProvider>();
+    final apptProvider = context.read<AppointmentProvider>();
+    
+    if (auth.user == null) {
+       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.pleaseLoginFirst)));
+       return;
+    }
 
-       // 2. Show Confirmation Sheet
-        final bool confirmed = await showModalBottomSheet<bool>(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) => AppointmentConfirmationSheet(
-            host: host,
-            invitees: provider.selectedUsers,
-            title: _titleController.text,
-            startAt: startAt,
-            duration: provider.duration,
-            isHijri: provider.isHijri,
-            hijriAdjustment: provider.hijriAdjustment.toInt(),
-            region: _locationController.text,
-            building: _buildingController.text,
-            hasConflict: hasConflict,
-          ),
-        ) ?? false;
+    final host = auth.user;
+    
+    DateTime startAt;
+    if (provider.selectedTime != null) {
+      startAt = DateTime(
+         provider.selectedDate!.year,
+         provider.selectedDate!.month,
+         provider.selectedDate!.day,
+         provider.selectedTime!.hour,
+         provider.selectedTime!.minute,
+      );
+    } else {
+      startAt = provider.selectedDate ?? DateTime.now();
+    }
 
-       if (!confirmed) return;
+    // 1.5 Check for Conflicts
+    bool hasConflict = false;
+    if (provider.duration > 0) {
+        final conflicts = apptProvider.getConflictingAppointments(
+          startAt, 
+          provider.duration,
+          excludeId: widget.initialAppointment?.id // Don't conflict with self
+        );
+        hasConflict = conflicts.isNotEmpty;
+    }
 
-       // 3. Proceed to Save
-       final error = await provider.saveEvent(
+    // 2. Show Confirmation Sheet
+     final bool confirmed = await showModalBottomSheet<bool>(
+       context: context,
+       isScrollControlled: true,
+       backgroundColor: Colors.transparent,
+       builder: (context) => AppointmentConfirmationSheet(
+         host: host,
+         invitees: provider.selectedUsers,
          title: _titleController.text,
-         location: _locationController.text,
+         startAt: startAt,
+         duration: provider.duration,
+         isHijri: provider.isHijri,
+         hijriAdjustment: provider.hijriAdjustment.toInt(),
+         region: _locationController.text,
          building: _buildingController.text,
-         streamLink: _streamLinkController.text,
-         currentUser: auth.user!,
-         appointmentProvider: apptProvider,
-         locale: context.l10n.localeName,
-         inviteTitle: context.l10n.newInvitation,
-         inviteMessage: context.l10n.invitedYouTo(
-           auth.user?.name ?? auth.user?.username ?? context.l10n.user,
-           _titleController.text
-         ),
-       );
-       
-       if (error != null) {
-          if (mounted) {
-             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: AppColors.error));
-          }
-       } else {
-         if (mounted) _showSuccessMessage();
+         hasConflict: hasConflict,
+         privacy: provider.privacy,
+       ),
+     ) ?? false;
+
+    if (!confirmed) return;
+
+    // 3. Proceed to Save
+    final error = await provider.saveEvent(
+      title: _titleController.text,
+      location: _locationController.text,
+      building: _buildingController.text,
+      streamLink: _streamLinkController.text,
+      currentUser: auth.user!,
+      appointmentProvider: apptProvider,
+      locale: context.l10n.localeName,
+      inviteTitle: context.l10n.newInvitation,
+      inviteMessage: context.l10n.invitedYouTo(
+        auth.user?.name ?? auth.user?.username ?? context.l10n.user,
+        _titleController.text
+      ),
+    );
+    
+    if (error != null) {
+       if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: AppColors.error));
        }
+    } else {
+      if (mounted) _showSuccessMessage();
     }
   }
 
@@ -604,6 +726,8 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
       });
     } else {
       _performClearSilent();
+      // After save is complete, navigate user to MainScreen home tab (index 0) programmatically
+      context.findAncestorStateOfType<MainScreenState>()?.setIndex(0);
     }
   }
 
@@ -652,5 +776,45 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
     _buildingController.clear();
     _streamLinkController.clear();
     context.read<AddEventProvider>().clearForm();
+  }
+
+  Widget _buildConflictAlert() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.l10n.conflictAlert,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Colors.orange,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  context.l10n.conflictMessage,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark ? Colors.orange.shade200 : Colors.orange.shade800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

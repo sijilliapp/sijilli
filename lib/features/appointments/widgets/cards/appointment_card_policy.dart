@@ -44,4 +44,8 @@ abstract class AppointmentCardPolicy {
   // --- Flags ---
   bool get isFeatured => false;
   bool get showPrivacyCapsule => true;
+  bool get canReport;
+
+  // --- Layout ---
+  EdgeInsetsGeometry get margin => const EdgeInsets.symmetric(horizontal: 0, vertical: 8.0); // Default spaceS
 }

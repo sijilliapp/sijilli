@@ -31,6 +31,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       // 🔔 Mark all notifications as read when screen is opened
       final userId = context.read<AuthProvider>().user?.id;
       if (userId != null) {
+        context.read<NotificationProvider>().fetchNotifications(userId);
         context.read<NotificationProvider>().markAllAsRead(userId);
       }
     });
@@ -81,82 +82,59 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           
           if (userId == null) return const SizedBox.shrink();
 
-          // 1. Invitations (Rich Tiles)
+          // 1. Invitations (Where I am a GUEST)
           final receivedInvitations = apptProvider.appointments.where((a) {
             final isNotHost = a.hostId != userId;
             final hasInvitation = a.currentUserInvitation != null;
             return isNotHost && hasInvitation;
           }).toList();
 
-          // 2. Notifications (Simple Items) - Filter out 'invites' as they are shown above
-          // Also filter out 'cancel' notifications as per user request (ambiguous/useless).
-          final otherNotifications = notifProvider.notifications.where((n) {
-             return n.type != NotificationType.invite && n.type != NotificationType.cancel;
+          // 2. Join Requests (Where I am a HOST)
+          // Any appointment where I am the host and there's a pending participant (not me)
+          final joinRequests = apptProvider.appointments.where((a) {
+            final isHost = a.hostId == userId;
+            final hasPending = a.participants?.any((p) => p.userId != userId && p.status == InvitationStatus.pending) ?? false;
+            return isHost && hasPending;
           }).toList();
 
-          // Combined List Item Wrapper
-          // We need a way to sort them together.
-          // Let's create a wrapper class or use a list of abstract items.
-          final List<dynamic> combinedList = [
+          // Combined List
+          final List<Appointment> combinedList = [
             ...receivedInvitations,
-            ...otherNotifications
+            ...joinRequests,
           ];
 
           // Sort by date desc
           combinedList.sort((a, b) {
-            DateTime dateA;
-            if (a is Appointment) {
-               // For appointments, we use createdAt of the invitation or appointment?
-               // Usually notification lists show when the *event* happened (invite received).
-               // Appt createdAt might be old, but invite is new?
-               // Use updated?
-               dateA = a.createdAt; 
-            } else if (a is NotificationModel) {
-               dateA = a.created;
-            } else {
-               dateA = DateTime(2000);
-            }
-
-            DateTime dateB; 
-            if (b is Appointment) {
-               dateB = b.createdAt;
-            } else if (b is NotificationModel) {
-               dateB = b.created;
-            } else {
-               dateB = DateTime(2000);
-            }
-            
-            return dateB.compareTo(dateA);
+            return b.createdAt.compareTo(a.createdAt);
           });
 
 
-          // Filter Hide Answered
-          // For Appointments: Pending + Future/Present (Not Past)
-          // For Notifications: Unread? Or just show all history? 
-          // "Hide Answered" usually implies "Hide Actioned/Done".
-          // For notifications, maybe "Hide Read"?
-          // Let's stick to the current logic for Appointments, and maybe hide Read notifications if toggle is on?
-          
           List<dynamic> filteredList = combinedList;
           
           if (_hideAnswered) {
              filteredList = combinedList.where((item) {
-                if (item is Appointment) {
-                   final isPending = item.currentUserInvitation?.status == InvitationStatus.pending;
-                   final isNotPast = !item.isPast;
-                   return isPending && isNotPast;
-                } else if (item is NotificationModel) {
-                   return !item.isRead; // Only show unread notifications
-                }
-                return true;
-             }).toList();
+                 if (item is Appointment) {
+                    final isPending = item.currentUserInvitation?.status == InvitationStatus.pending;
+                    final isNotPast = !item.isPast;
+                    return isPending && isNotPast;
+                 }
+                 return true;
+              }).toList();
           }
 
-          if ((apptProvider.isLoading || notifProvider.isLoading) && filteredList.isEmpty) {
+          // General notifications from provider (exclusively unfollow cancellations and guest acceptance news)
+          final List<NotificationModel> generalNotifications = notifProvider.notifications.where((item) {
+            final isCancel = item.type == NotificationType.cancel;
+            final isAcceptance = item.type == NotificationType.invite && 
+                (item.title.toLowerCase().contains('accept') || item.title.contains('قبول') || item.title.contains('قبل'));
+            return isCancel || isAcceptance;
+          }).toList();
+
+          if ((apptProvider.isLoading || notifProvider.isLoading) && filteredList.isEmpty && generalNotifications.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (filteredList.isEmpty) {
+          if (filteredList.isEmpty && generalNotifications.isEmpty) {
             return RefreshIndicator(
               onRefresh: () async {
                  await apptProvider.fetchAllInvitations();
@@ -177,29 +155,50 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                await apptProvider.fetchAllInvitations();
                await notifProvider.fetchNotifications(userId);
             },
-            child: ListView.builder(
+            child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: filteredList.length,
-              itemBuilder: (context, index) {
-                final item = filteredList[index];
+              children: [
+                if (filteredList.isNotEmpty) ...[
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Text(
+                      'دعوات بانتظار ردك 📥',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                  ...filteredList.map((item) {
+                    if (item is Appointment) {
+                      return InvitationTile(appointment: item);
+                    }
+                    return const SizedBox.shrink();
+                  }),
+                  const SizedBox(height: 16),
+                ],
                 
-                if (item is Appointment) {
-                   return InvitationTile(appointment: item);
-                } else if (item is NotificationModel) {
-                   return NotificationItem(
-                     notification: item,
-                     onTap: () {
-                        // Mark as read
-                        if (!item.isRead) {
-                           notifProvider.markAsRead(item.id);
-                        }
-                        // Handle navigation if needed (e.g. to appointment details if relatedId exists)
-                     },
-                   );
-                }
-                
-                return const SizedBox.shrink();
-              },
+                if (generalNotifications.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Text(
+                      'صندوق الإشعارات والأنشطة 🔔',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                      ),
+                    ),
+                  ),
+                  ...generalNotifications.map((item) => NotificationItem(
+                    notification: item,
+                    onTap: () {
+                      notifProvider.markAsRead(item.id);
+                    },
+                  )),
+                ],
+              ],
             ),
           );
         },
