@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import '../../../models/article.dart';
+import '../../../models/user.dart';
 import '../services/pb_article_service.dart';
+import '../../settings/services/pb_user_service.dart';
 import '../widgets/article_content_renderer.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/pocketbase_client.dart';
@@ -22,7 +24,10 @@ class PublicArticleScreen extends StatefulWidget {
 
 class _PublicArticleScreenState extends State<PublicArticleScreen> {
   final _articleService = PbArticleService();
+  final _userService = PbUserService();
+  
   Article? _article;
+  UserModel? _authorProfile;
   bool _isLoading = true;
   String? _error;
 
@@ -46,8 +51,17 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
         throw Exception(context.l10n.errorArticleNotPublished);
       }
       
+      // محاولة جلب ملف الكاتب العام للحصول على الصورة بدقة في حال لم يتوسع (expand)
+      UserModel? profile = article.author;
+      if (profile == null || profile.avatar == null) {
+        try {
+          profile = await _userService.getPublicProfile(widget.username);
+        } catch (_) {}
+      }
+      
       setState(() {
         _article = article;
+        _authorProfile = profile;
         _isLoading = false;
       });
     } catch (e) {
@@ -107,10 +121,10 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
           Row(
             children: [
               CircleAvatar(
-                backgroundImage: _article!.author?.getAvatarUrl(PocketBaseClient.instance.pb.baseUrl) != null
-                    ? NetworkImage(_article!.author!.getAvatarUrl(PocketBaseClient.instance.pb.baseUrl)!)
+                backgroundImage: _authorProfile?.getAvatarUrl(PocketBaseClient.instance.pb.baseUrl) != null
+                    ? NetworkImage(_authorProfile!.getAvatarUrl(PocketBaseClient.instance.pb.baseUrl)!)
                     : null,
-                child: _article!.author?.getAvatarUrl(PocketBaseClient.instance.pb.baseUrl) == null
+                child: _authorProfile?.getAvatarUrl(PocketBaseClient.instance.pb.baseUrl) == null
                     ? const Icon(Icons.person)
                     : null,
               ),
@@ -120,7 +134,7 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _article!.author?.name ?? widget.username,
+                      _authorProfile?.name ?? widget.username,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
