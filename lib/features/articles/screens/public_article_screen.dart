@@ -76,11 +76,45 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          _article?.title ?? context.l10n.article,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
+        title: _isLoading || _article == null
+            ? Text(context.l10n.article, style: const TextStyle(fontWeight: FontWeight.bold))
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                textDirection: TextDirection.ltr,
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundImage: _authorProfile?.getAvatarUrl(PocketBaseClient.instance.pb.baseUrl) != null
+                        ? NetworkImage(_authorProfile!.getAvatarUrl(PocketBaseClient.instance.pb.baseUrl)!)
+                        : null,
+                    child: _authorProfile?.getAvatarUrl(PocketBaseClient.instance.pb.baseUrl) == null
+                        ? const Icon(Icons.person, size: 18)
+                        : null,
+                  ),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _authorProfile?.name ?? widget.username,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      Text(
+                        '@${widget.username}',
+                        style: TextStyle(
+                          color: AppColors.getHintColor(context),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+        centerTitle: false,
       ),
       body: _buildBody(),
     );
@@ -117,42 +151,6 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // معلومات الكاتب والوقت
-          Row(
-            children: [
-              CircleAvatar(
-                backgroundImage: _authorProfile?.getAvatarUrl(PocketBaseClient.instance.pb.baseUrl) != null
-                    ? NetworkImage(_authorProfile!.getAvatarUrl(PocketBaseClient.instance.pb.baseUrl)!)
-                    : null,
-                child: _authorProfile?.getAvatarUrl(PocketBaseClient.instance.pb.baseUrl) == null
-                    ? const Icon(Icons.person)
-                    : null,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _authorProfile?.name ?? widget.username,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    Text(
-                      '@${widget.username}',
-                      style: TextStyle(
-                        color: AppColors.getHintColor(context),
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
           // محتوى المقال
           ArticleContentRenderer(text: _article!.text),
           const SizedBox(height: 40),

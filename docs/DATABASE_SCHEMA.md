@@ -106,22 +106,22 @@ CREATE INDEX idx_appointments_host ON appointments(host);
 CREATE INDEX idx_appointments_date ON appointments(date);
 CREATE INDEX idx_appointments_privacy ON appointments(privacy);
 CREATE INDEX idx_appointments_region ON appointments(region);
-👥 جدول event_participants (Many-to-Many)
-sql
-CREATE TABLE event_participants (
+👥 جدول `invitations` (علاقة Many-to-Many وتحكم بالدعوات)
+```sql
+CREATE TABLE invitations (
     -- المعرف
     id TEXT PRIMARY KEY,
     
     -- العلاقات
-    event_id TEXT NOT NULL REFERENCES appointments(id) ON DELETE CASCADE,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    appointment TEXT NOT NULL REFERENCES appointments(id) ON DELETE CASCADE,
+    user TEXT REFERENCES users(id) ON DELETE SET NULL, -- Nullable لدعم دعوات المجهول
+    
+    -- بيانات دعوة المجهول
+    invited_phone TEXT, -- رقم الهاتف إذا كان الشخص غير مسجل
+    invited_name TEXT,  -- اسم الشخص كما ظهر في قائمة جهات الاتصال
     
     -- الحالة
-    status TEXT DEFAULT 'pending',
-    is_host BOOLEAN DEFAULT FALSE,
-    
-    -- خصوصية النسخة
-    privacy TEXT DEFAULT 'private',
+    status TEXT DEFAULT 'pending', -- accepted, pending, declined
     
     -- الأوقات
     invited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -129,17 +129,15 @@ CREATE TABLE event_participants (
     deleted_at TIMESTAMP,
     
     -- بيانات إضافية
-    notes TEXT,
-    
-    -- فريد لمنع التكرار
-    UNIQUE(event_id, user_id)
+    personal_note TEXT
 );
+```
 الفهارس:
-
-sql
-CREATE INDEX idx_participants_user ON event_participants(user_id, status);
-CREATE INDEX idx_participants_event ON event_participants(event_id, status);
-CREATE INDEX idx_participants_invited ON event_participants(invited_at);
+```sql
+CREATE INDEX idx_invitations_user ON invitations(user, status);
+CREATE INDEX idx_invitations_phone ON invitations(invited_phone);
+CREATE INDEX idx_invitations_appointment ON invitations(appointment, status);
+```
 📝 جدول event_private_notes
 sql
 CREATE TABLE event_private_notes (

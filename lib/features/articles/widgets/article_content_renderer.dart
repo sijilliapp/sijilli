@@ -61,8 +61,9 @@ class ArticleContentRenderer extends StatelessWidget {
       
       TextAlign textAlign = TextAlign.start;
       String cleanLine = line.trim();
+      final cleanLineUpper = cleanLine.toUpperCase();
       
-      if ((cleanLine.startsWith('[CENTER]') && cleanLine.endsWith('[/CENTER]')) ||
+      if ((cleanLineUpper.startsWith('[CENTER]') && cleanLineUpper.endsWith('[/CENTER]')) ||
           (cleanLine.startsWith('=') && cleanLine.endsWith('=') && cleanLine.length > 1)) {
         textAlign = TextAlign.center;
         if (cleanLine.startsWith('=')) {
@@ -70,7 +71,7 @@ class ArticleContentRenderer extends StatelessWidget {
         } else {
           cleanLine = cleanLine.substring('[CENTER]'.length, cleanLine.length - '[/CENTER]'.length).trim();
         }
-      } else if ((cleanLine.startsWith('[JUSTIFY]') && cleanLine.endsWith('[/JUSTIFY]')) ||
+      } else if ((cleanLineUpper.startsWith('[JUSTIFY]') && cleanLineUpper.endsWith('[/JUSTIFY]')) ||
                  (cleanLine.startsWith('~') && cleanLine.endsWith('~') && cleanLine.length > 1)) {
         textAlign = TextAlign.justify;
         if (cleanLine.startsWith('~')) {
@@ -78,7 +79,7 @@ class ArticleContentRenderer extends StatelessWidget {
         } else {
           cleanLine = cleanLine.substring('[JUSTIFY]'.length, cleanLine.length - '[/JUSTIFY]'.length).trim();
         }
-      } else if ((cleanLine.startsWith('[LEFT]') && cleanLine.endsWith('[/LEFT]')) ||
+      } else if ((cleanLineUpper.startsWith('[LEFT]') && cleanLineUpper.endsWith('[/LEFT]')) ||
                  (cleanLine.startsWith('--') && cleanLine.endsWith('--') && cleanLine.length > 3)) {
         textAlign = TextAlign.left;
         if (cleanLine.startsWith('-')) {
@@ -86,7 +87,7 @@ class ArticleContentRenderer extends StatelessWidget {
         } else {
           cleanLine = cleanLine.substring('[LEFT]'.length, cleanLine.length - '[/LEFT]'.length).trim();
         }
-      } else if ((cleanLine.startsWith('[RIGHT]') && cleanLine.endsWith('[/RIGHT]')) ||
+      } else if ((cleanLineUpper.startsWith('[RIGHT]') && cleanLineUpper.endsWith('[/RIGHT]')) ||
                  (cleanLine.startsWith('++') && cleanLine.endsWith('++') && cleanLine.length > 3)) {
         textAlign = TextAlign.right;
         if (cleanLine.startsWith('+')) {
@@ -115,7 +116,7 @@ class ArticleContentRenderer extends StatelessWidget {
     }
 
     final List<Widget> widgets = [];
-    final poemPattern = RegExp(r'\[POEM\](.*?)\[/POEM\]', dotAll: true);
+    final poemPattern = RegExp(r'\[POEM\](.*?)\[/POEM\]', dotAll: true, caseSensitive: false);
     
     int lastMatchEnd = 0;
     

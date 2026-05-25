@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/((?!api|icons|assets|favicon|manifest|flutter_service_worker|version|index|canvaskit|.well-known).+)/:articleId",
+      "destination": "/api/share?username=$1&articleId=:articleId"
+    },
+    {
       "source": "/((?!api/|icons/|assets/|favicon.png|manifest.json|flutter_service_worker.js|version.json|index.html|canvaskit/|.well-known/).*)",
       "destination": "/index.html"
     }

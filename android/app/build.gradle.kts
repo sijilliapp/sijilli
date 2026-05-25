@@ -33,8 +33,8 @@ android {
         applicationId = "com.sijilli.app"
         minSdk = flutter.minSdkVersion  // Android 5.0 - أكثر أماناً
         targetSdk = 35  // إصدار مستقر
-        versionCode = 2
-        versionName = "1.0.1"
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
         
         // إعدادات إضافية للأمان
         multiDexEnabled = true

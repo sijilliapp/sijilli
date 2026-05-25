@@ -149,7 +149,19 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                 children: [
 
                   // Text Content
-                  ArticleContentRenderer(text: updatedArticle.text),
+                  isAuthor
+                      ? GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => AddArticleScreen(article: updatedArticle),
+                              ),
+                            );
+                          },
+                          child: ArticleContentRenderer(text: updatedArticle.text),
+                        )
+                      : ArticleContentRenderer(text: updatedArticle.text),
                   
                   // Metadata Block at the bottom
                   const SizedBox(height: 48),

@@ -1,8 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
+import 'package:sijilli/core/services/pocketbase_client.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimens.dart';
 import '../../../models/article.dart';
@@ -247,16 +251,59 @@ class ArticleCard extends StatelessWidget {
                               children: [
                                 // Share Button
                                 InkWell(
-                                  onTap: () {
+                                  onTap: () async {
                                     final username = article.author?.username ?? 'user';
                                     final url = 'https://sijilli.com/$username/${article.id}';
+                                    
+                                    final authorName = article.author?.name ?? article.author?.username ?? 'مستخدم';
+                                    final plainText = article.plainText.trim();
+                                    String snippet = '';
+                                    if (plainText.isNotEmpty) {
+                                      final cleanSingleLine = plainText.replaceAll(RegExp(r'\s+'), ' ');
+                                      if (cleanSingleLine.length > 120) {
+                                        snippet = '${cleanSingleLine.substring(0, 120)}...';
+                                      } else {
+                                        snippet = cleanSingleLine;
+                                      }
+                                    }
+                                    
+                                    final shareText = 'كتب $authorName: $snippet\n\n$url';
+                                    
                                     if (kIsWeb) {
-                                      Clipboard.setData(ClipboardData(text: url));
+                                      Clipboard.setData(ClipboardData(text: shareText));
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text(context.l10n.copiedToClipboard(url))),
+                                        SnackBar(content: Text(context.l10n.copiedToClipboard(shareText))),
                                       );
                                     } else {
-                                      Share.share(url, subject: article.title);
+                                      String? localImagePath;
+                                      if (article.author != null && article.author!.hasAvatar) {
+                                        try {
+                                          final avatarUrl = article.author!.getAvatarUrl(PocketBaseClient.instance.pb.baseURL);
+                                          if (avatarUrl != null) {
+                                            final response = await http.get(Uri.parse(avatarUrl)).timeout(const Duration(seconds: 3));
+                                            if (response.statusCode == 200) {
+                                              final tempDir = await getTemporaryDirectory();
+                                              final file = File('${tempDir.path}/avatar_${article.author!.id}.png');
+                                              await file.writeAsBytes(response.bodyBytes);
+                                              localImagePath = file.path;
+                                            }
+                                          }
+                                        } catch (e) {
+                                          debugPrint('Error downloading avatar: $e');
+                                        }
+                                      }
+                                      
+                                      if (localImagePath != null) {
+                                        // ignore: deprecated_member_use
+                                        await Share.shareXFiles(
+                                          [XFile(localImagePath)],
+                                          text: shareText,
+                                          subject: article.title,
+                                        );
+                                      } else {
+                                        // ignore: deprecated_member_use
+                                        await Share.share(shareText, subject: article.title);
+                                      }
                                     }
                                   },
                                   borderRadius: BorderRadius.circular(12),

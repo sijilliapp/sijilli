@@ -70,7 +70,23 @@ class PoemView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: List.generate(lines.length, (index) {
-            final line = lines[index].trim();
+            String line = lines[index].trim();
+            // إزالة أي وسوم محاذاة أو تنسيق فقرات قد تتداخل داخل أسطر القصيدة
+            if ((line.startsWith('=') && line.endsWith('=')) ||
+                (line.startsWith('~') && line.endsWith('~'))) {
+              if (line.length > 1) line = line.substring(1, line.length - 1).trim();
+            } else if ((line.startsWith('--') && line.endsWith('--')) ||
+                       (line.startsWith('++') && line.endsWith('++'))) {
+              if (line.length > 3) line = line.substring(2, line.length - 2).trim();
+            } else if (line.toUpperCase().startsWith('[CENTER]') && line.toUpperCase().endsWith('[/CENTER]')) {
+              line = line.substring(8, line.length - 9).trim();
+            } else if (line.toUpperCase().startsWith('[JUSTIFY]') && line.toUpperCase().endsWith('[/JUSTIFY]')) {
+              line = line.substring(9, line.length - 10).trim();
+            } else if (line.toUpperCase().startsWith('[LEFT]') && line.toUpperCase().endsWith('[/LEFT]')) {
+              line = line.substring(6, line.length - 7).trim();
+            } else if (line.toUpperCase().startsWith('[RIGHT]') && line.toUpperCase().endsWith('[/RIGHT]')) {
+              line = line.substring(7, line.length - 8).trim();
+            }
             final isSadr = index % 2 == 0;
             final targetWidth = isSadr ? finalSadrWidth : finalAjezWidth;
             

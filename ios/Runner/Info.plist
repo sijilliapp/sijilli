@@ -45,5 +45,15 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSContactsUsageDescription</key>
+	<string>نحتاج للوصول لجهات الاتصال لتتمكن من دعوة أصدقائك للمواعيد بسهولة.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>نحتاج للوصول للكاميرا لتتمكن من التقاط صورة شخصية وتخصيص ملفك الشخصي.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>نحتاج للوصول لمكتبة الصور لتتمكن من اختيار وحفظ صور المواعيد والملف الشخصي.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>نحتاج للوصول لموقعك الجغرافي لتحديد مكان المواعيد وتوفير اتجاهات دقيقة.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>نحتاج للوصول للتقويم لمزامنة مواعيدك في "سجلي" مع تقويم جهازك وتذكيرك بها.</string>
 </dict>
 </plist>
