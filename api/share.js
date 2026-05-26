@@ -62,6 +62,7 @@ module.exports = async (req, res) => {
   try {
     const htmlPath = path.join(process.cwd(), 'web', 'index.html');
     htmlContent = fs.readFileSync(htmlPath, 'utf8');
+    htmlContent = htmlContent.replace('<base href="$FLUTTER_BASE_HREF">', '<base href="/">');
   } catch (err) {
     return res.status(500).send('Error loading template');
   }

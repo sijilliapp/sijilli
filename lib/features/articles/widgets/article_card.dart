@@ -1,12 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:path_provider/path_provider.dart';
-import 'package:http/http.dart' as http;
-import 'package:sijilli/core/services/pocketbase_client.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimens.dart';
 import '../../../models/article.dart';
@@ -51,6 +47,34 @@ class ArticleCard extends StatelessWidget {
               AppActionSheet.show(
                 context,
                 actions: [
+                  AppActionItem(
+                    label: 'مشاركة',
+                    icon: Icons.share,
+                    onTap: () async {
+                      final username = article.author?.username ?? 'user';
+                      final url = 'https://sijilli.com/$username/${article.id}';
+                      
+                      // Auto-publish if not already published
+                      if (!article.isPublished) {
+                        context.read<ArticleProvider>().togglePublishStatus(article.id, true);
+                      }
+
+                      if (kIsWeb) {
+                        await Clipboard.setData(ClipboardData(text: url));
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('تم نسخ رابط المقال إلى الحافظة ونشره تلقائياً 🚀'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      } else {
+                        // ignore: deprecated_member_use
+                        await Share.share(url, subject: article.title);
+                      }
+                    },
+                  ),
                   AppActionItem(
                     label: context.l10n.copy,
                     icon: Icons.copy,
@@ -249,92 +273,6 @@ class ArticleCard extends StatelessWidget {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                // Share Button
-                                InkWell(
-                                  onTap: () async {
-                                    final username = article.author?.username ?? 'user';
-                                    final url = 'https://sijilli.com/$username/${article.id}';
-                                    
-                                    final authorName = article.author?.name ?? article.author?.username ?? 'مستخدم';
-                                    final plainText = article.plainText.trim();
-                                    String snippet = '';
-                                    if (plainText.isNotEmpty) {
-                                      final cleanSingleLine = plainText.replaceAll(RegExp(r'\s+'), ' ');
-                                      if (cleanSingleLine.length > 120) {
-                                        snippet = '${cleanSingleLine.substring(0, 120)}...';
-                                      } else {
-                                        snippet = cleanSingleLine;
-                                      }
-                                    }
-                                    
-                                    final shareText = 'كتب $authorName: $snippet\n\n$url';
-                                    
-                                    if (kIsWeb) {
-                                      Clipboard.setData(ClipboardData(text: shareText));
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text(context.l10n.copiedToClipboard(shareText))),
-                                      );
-                                    } else {
-                                      String? localImagePath;
-                                      final hasArticleImage = article.image != null && article.image!.isNotEmpty;
-                                      if (hasArticleImage) {
-                                        try {
-                                          final imageUrl = _getImageUrl(article);
-                                          final response = await http.get(Uri.parse(imageUrl)).timeout(const Duration(seconds: 3));
-                                          if (response.statusCode == 200) {
-                                            final tempDir = await getTemporaryDirectory();
-                                            final file = File('${tempDir.path}/article_${article.id}.png');
-                                            await file.writeAsBytes(response.bodyBytes);
-                                            localImagePath = file.path;
-                                          }
-                                        } catch (e) {
-                                          debugPrint('Error downloading article image: $e');
-                                        }
-                                      }
-                                      if (localImagePath == null && article.author != null && article.author!.hasAvatar) {
-                                        try {
-                                          final avatarUrl = article.author!.getAvatarUrl(
-                                            PocketBaseClient.instance.pb.baseURL,
-                                            thumb: '100x100',
-                                          );
-                                          if (avatarUrl != null) {
-                                            final response = await http.get(Uri.parse(avatarUrl)).timeout(const Duration(seconds: 3));
-                                            if (response.statusCode == 200) {
-                                              final tempDir = await getTemporaryDirectory();
-                                              final file = File('${tempDir.path}/avatar_${article.author!.id}_thumb.png');
-                                              await file.writeAsBytes(response.bodyBytes);
-                                              localImagePath = file.path;
-                                            }
-                                          }
-                                        } catch (e) {
-                                          debugPrint('Error downloading avatar: $e');
-                                        }
-                                      }
-                                      
-                                      if (localImagePath != null) {
-                                        // ignore: deprecated_member_use
-                                        await Share.shareXFiles(
-                                          [XFile(localImagePath)],
-                                          text: shareText,
-                                          subject: article.title,
-                                        );
-                                      } else {
-                                        // ignore: deprecated_member_use
-                                        await Share.share(shareText, subject: article.title);
-                                      }
-                                    }
-                                  },
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(4.0),
-                                    child: Icon(
-                                      Icons.ios_share,
-                                      size: 16,
-                                      color: AppColors.getTextSecondary(context),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
                                 const SizedBox(width: 5), // Nudge away from the edge to align with Switch
                                 Icon(
                                   article.likes.contains(currentUserId) ? Icons.favorite : Icons.favorite_border,

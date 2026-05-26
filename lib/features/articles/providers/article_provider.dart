@@ -232,6 +232,7 @@ class ArticleProvider extends ChangeNotifier {
     bool? isPublished,
     bool? isDraft,
     File? imageFile,
+    bool removeImage = false,
     bool silent = false,
   }) async {
     if (!silent) {
@@ -252,6 +253,7 @@ class ArticleProvider extends ChangeNotifier {
         isPublished: isPublished,
         isDraft: isDraft,
         imageFile: multipartFile,
+        removeImage: removeImage,
       );
 
       final index = _articles.indexWhere((a) => a.id == id);

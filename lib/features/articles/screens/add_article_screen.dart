@@ -29,6 +29,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
   late final FormattingTextEditingController _textController;
   final FocusNode _textFocusNode = FocusNode();
   File? _selectedImage;
+  bool _deleteExistingImage = false;
   bool _isPublished = false;
   bool _isLoading = false;
   bool _isPreviewMode = false;
@@ -440,6 +441,66 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
   }
 
 
+  void _confirmDeleteImage() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('إزالة الصورة'),
+        content: const Text('هل أنت متأكد من رغبتك في إزالة صورة غلاف المقال؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(context.l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() {
+                _selectedImage = null;
+                if (widget.article?.image != null) {
+                  _deleteExistingImage = true;
+                }
+              });
+            },
+            child: const Text('إزالة', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pasteFromClipboard() async {
+    final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (data != null && data.text != null && data.text!.isNotEmpty) {
+      final textToPaste = data.text!;
+      final text = _textController.text;
+      final selection = _textController.selection;
+      
+      String newText;
+      int newCursorPosition;
+      
+      if (selection.isValid) {
+        newText = text.replaceRange(selection.start, selection.end, textToPaste);
+        newCursorPosition = selection.start + textToPaste.length;
+      } else {
+        newText = text + textToPaste;
+        newCursorPosition = newText.length;
+      }
+      
+      setState(() {
+        _textController.value = TextEditingValue(
+          text: newText,
+          selection: TextSelection.collapsed(offset: newCursorPosition),
+        );
+      });
+      _textFocusNode.requestFocus();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('الحافظة فارغة أو لا تحتوي على نص.')),
+      );
+    }
+  }
+
   Future<void> _pickImage() async {
     try {
       final ImagePicker picker = ImagePicker();
@@ -492,6 +553,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
         isPublished: _isPublished,
         isDraft: false,
         imageFile: _selectedImage,
+        removeImage: _deleteExistingImage,
       );
     } else {
       resultArticle = await provider.addArticle(
@@ -599,52 +661,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                         scrollDirection: Axis.horizontal,
                         child: Row(
                           children: [
-                            // ---- التعريض: الكلمة الحالية ----
-                            ListenableBuilder(
-                              listenable: _textController,
-                              builder: (context, _) => IconButton(
-                                tooltip: context.l10n.boldTooltip,
-                                icon: const Icon(Icons.format_bold),
-                                color: AppColors.primary,
-                                onPressed: () {
-                                  _textController.toggleBoldAtCursor();
-                                  _textFocusNode.requestFocus();
-                                },
-                              ),
-                            ),
-                            // ---- القصيدة: الفقرة الحالية ----
-                            ListenableBuilder(
-                              listenable: _textController,
-                              builder: (context, _) {
-                                final active = _textController.currentParagraphFormat == ParagraphFormat.poem;
-                                return IconButton(
-                                  tooltip: context.l10n.poemTooltip,
-                                  icon: const Icon(Icons.menu_book),
-                                  color: active ? AppColors.error : AppColors.primary,
-                                  onPressed: () {
-                                    _textController.toggleParagraphFormat(ParagraphFormat.poem);
-                                    _textFocusNode.requestFocus();
-                                  },
-                                );
-                              },
-                            ),
-                            // ---- التوسيط: الفقرة الحالية ----
-                            ListenableBuilder(
-                              listenable: _textController,
-                              builder: (context, _) {
-                                final active = _textController.currentParagraphFormat == ParagraphFormat.center;
-                                return IconButton(
-                                  tooltip: context.l10n.centerTooltip,
-                                  icon: const Icon(Icons.format_align_center),
-                                  color: active ? AppColors.error : AppColors.primary,
-                                  onPressed: () {
-                                    _textController.toggleParagraphFormat(ParagraphFormat.center);
-                                    _textFocusNode.requestFocus();
-                                  },
-                                );
-                              },
-                            ),
-                            // ---- الضبط: الفقرة الحالية ----
+                            // 1. الضبط: الفقرة الحالية
                             ListenableBuilder(
                               listenable: _textController,
                               builder: (context, _) {
@@ -660,13 +677,29 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                                 );
                               },
                             ),
-                            // ---- محاذاة يسار: الفقرة الحالية ----
+                            // 2. التوسيط: الفقرة الحالية
+                            ListenableBuilder(
+                              listenable: _textController,
+                              builder: (context, _) {
+                                final active = _textController.currentParagraphFormat == ParagraphFormat.center;
+                                return IconButton(
+                                  tooltip: context.l10n.centerTooltip,
+                                  icon: const Icon(Icons.format_align_center),
+                                  color: active ? AppColors.error : AppColors.primary,
+                                  onPressed: () {
+                                    _textController.toggleParagraphFormat(ParagraphFormat.center);
+                                    _textFocusNode.requestFocus();
+                                  },
+                                );
+                              },
+                            ),
+                            // 3. محاذاة يسار / تغيير الاتجاه: الفقرة الحالية
                             ListenableBuilder(
                               listenable: _textController,
                               builder: (context, _) {
                                 final active = _textController.currentParagraphFormat == ParagraphFormat.left;
                                 return IconButton(
-                                  tooltip: 'محاذاة لليسار',
+                                  tooltip: 'محاذاة لليسار (تغيير الاتجاه)',
                                   icon: const Icon(Icons.format_align_left),
                                   color: active ? AppColors.error : AppColors.primary,
                                   onPressed: () {
@@ -676,21 +709,50 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                                 );
                               },
                             ),
-                            // ---- التنسيق السحري ----
+                            // 4. تنسيق الشعر: الفقرة الحالية (مع استخدام رمز أسطر متداخلة)
+                            ListenableBuilder(
+                              listenable: _textController,
+                              builder: (context, _) {
+                                final active = _textController.currentParagraphFormat == ParagraphFormat.poem;
+                                return IconButton(
+                                  tooltip: context.l10n.poemTooltip,
+                                  icon: const Icon(Icons.notes),
+                                  color: active ? AppColors.error : AppColors.primary,
+                                  onPressed: () {
+                                    _textController.toggleParagraphFormat(ParagraphFormat.poem);
+                                    _textFocusNode.requestFocus();
+                                  },
+                                );
+                              },
+                            ),
+                            // 5. تعريض الخط: الجزء المحدد
+                            ListenableBuilder(
+                              listenable: _textController,
+                              builder: (context, _) => IconButton(
+                                tooltip: context.l10n.boldTooltip,
+                                icon: const Icon(Icons.format_bold),
+                                color: AppColors.primary,
+                                onPressed: () {
+                                  _textController.toggleBoldAtCursor();
+                                  _textFocusNode.requestFocus();
+                                },
+                              ),
+                            ),
+                            // 6. تصحيح وتنسيق سحري
                             IconButton(
-                              tooltip: 'تنسيق سحري',
+                              tooltip: 'تنسيق سحري وتصحيح',
                               icon: const Icon(Icons.auto_fix_high),
                               color: AppColors.primary,
                               onPressed: _applyMagicFormatting,
                             ),
-                            // ---- مسح التنسيقات ----
+                            // 7. إلغاء التنسيق
                             IconButton(
                               tooltip: 'مسح التنسيقات',
                               icon: const Icon(Icons.format_clear),
                               color: AppColors.error,
                               onPressed: _clearFormatting,
                             ),
-                            // ---- بحث واستبدال ----
+                            // 8. بحث واستبدال
                             IconButton(
                               tooltip: 'بحث واستبدال',
                               icon: const Icon(Icons.find_replace),
@@ -706,125 +768,118 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
               ],
             ),
           ),
-          // الشريط المرئي لتنسيق الفقرة الحالية + أدوات المؤشر والعرض
+          // السطر الثاني للأزرار (مرتب من اليسار إلى اليمين LTR)
           Container(
             color: AppColors.getCardBackground(context),
-            child: Row(
-              children: [
-                // مؤشر تنسيق الفقرة الحالية
-                ListenableBuilder(
-                  listenable: _textController,
-                  builder: (context, _) {
-                    final fmt = _textController.currentParagraphFormat;
-                    String label = '';
-                    IconData? icon;
-                    switch (fmt) {
-                      case ParagraphFormat.center: label = 'توسيط'; icon = Icons.format_align_center; break;
-                      case ParagraphFormat.justify: label = 'ضبط'; icon = Icons.format_align_justify; break;
-                      case ParagraphFormat.left: label = 'يسار'; icon = Icons.format_align_left; break;
-                      case ParagraphFormat.right: label = 'يمين'; icon = Icons.format_align_right; break;
-                      case ParagraphFormat.poem: label = 'قصيدة'; icon = Icons.menu_book; break;
-                      case ParagraphFormat.none: break;
-                    }
-                    if (icon == null) return const SizedBox(width: 8);
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(icon, size: 14, color: AppColors.primary),
-                          const SizedBox(width: 4),
-                          Text(label, style: TextStyle(fontSize: 11, color: AppColors.primary)),
-                        ],
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // من اليسار: زر الصورة (إضافة أو إزالة مع صندوق تأكيد)
+                  Builder(
+                    builder: (context) {
+                      final hasImage = _selectedImage != null || (widget.article?.image != null && !_deleteExistingImage);
+                      return IconButton(
+                        tooltip: hasImage ? 'إزالة الصورة' : 'إضافة صورة غلاف',
+                        icon: Icon(
+                          hasImage ? Icons.no_photography : Icons.add_photo_alternate_outlined,
+                          color: hasImage ? AppColors.error : AppColors.primary,
+                        ),
+                        onPressed: hasImage ? _confirmDeleteImage : _pickImage,
+                      );
+                    },
+                  ),
+                  // بالوسط: أدوات تحريك المؤشر والتظليل
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        tooltip: 'تحريك المؤشر لليمين',
+                        icon: const Icon(Icons.arrow_back, size: 20),
+                        color: AppColors.primary,
+                        onPressed: () {
+                          final selection = _textController.selection;
+                          if (selection.isValid) {
+                            setState(() {
+                              final currentExtent = selection.extentOffset;
+                              final newOffset = currentExtent > 0 ? currentExtent - 1 : 0;
+                              if (_isSelecting && _selectionAnchor != null) {
+                                _textController.selection = TextSelection(baseOffset: _selectionAnchor!, extentOffset: newOffset);
+                              } else {
+                                _textController.selection = TextSelection.collapsed(offset: newOffset);
+                              }
+                            });
+                            _textFocusNode.requestFocus();
+                          }
+                        },
                       ),
-                    );
-                  },
-                ),
-                const Spacer(),
-                // أدوات التحديد والمؤشر
-                IconButton(
-                  tooltip: 'تحريك المؤشر لليمين',
-                  icon: const Directionality(
-                    textDirection: TextDirection.ltr,
-                    child: Icon(Icons.arrow_back_ios, size: 16),
+                      IconButton(
+                        tooltip: _isSelecting ? 'إلغاء التظليل' : 'بدء التظليل',
+                        icon: Icon(_isSelecting ? Icons.highlight_remove : Icons.highlight, size: 20),
+                        color: _isSelecting ? AppColors.error : AppColors.primary,
+                        onPressed: () {
+                          setState(() {
+                            _isSelecting = !_isSelecting;
+                            if (_isSelecting) {
+                              _selectionAnchor = _textController.selection.isValid ? _textController.selection.extentOffset : 0;
+                            } else {
+                              _selectionAnchor = null;
+                            }
+                          });
+                          _textFocusNode.requestFocus();
+                        },
+                      ),
+                      IconButton(
+                        tooltip: 'تحريك المؤشر لليسار',
+                        icon: const Icon(Icons.arrow_forward, size: 20),
+                        color: AppColors.primary,
+                        onPressed: () {
+                          final text = _textController.text;
+                          final selection = _textController.selection;
+                          if (selection.isValid) {
+                            setState(() {
+                              final currentExtent = selection.extentOffset;
+                              final newOffset = currentExtent < text.length ? currentExtent + 1 : text.length;
+                              if (_isSelecting && _selectionAnchor != null) {
+                                _textController.selection = TextSelection(baseOffset: _selectionAnchor!, extentOffset: newOffset);
+                              } else {
+                                _textController.selection = TextSelection.collapsed(offset: newOffset);
+                              }
+                            });
+                            _textFocusNode.requestFocus();
+                          }
+                        },
+                      ),
+                    ],
                   ),
-                  color: AppColors.primary,
-                  onPressed: () {
-                    final selection = _textController.selection;
-                    if (selection.isValid) {
-                      setState(() {
-                        final currentExtent = selection.extentOffset;
-                        final newOffset = currentExtent > 0 ? currentExtent - 1 : 0;
-                        if (_isSelecting && _selectionAnchor != null) {
-                          _textController.selection = TextSelection(baseOffset: _selectionAnchor!, extentOffset: newOffset);
-                        } else {
-                          _textController.selection = TextSelection.collapsed(offset: newOffset);
-                        }
-                      });
-                      _textFocusNode.requestFocus();
-                    }
-                  },
-                ),
-                IconButton(
-                  tooltip: _isSelecting ? 'إلغاء التظليل' : 'بدء التظليل',
-                  icon: Icon(_isSelecting ? Icons.highlight_remove : Icons.highlight, size: 18),
-                  color: _isSelecting ? AppColors.error : AppColors.primary,
-                  onPressed: () {
-                    setState(() {
-                      _isSelecting = !_isSelecting;
-                      if (_isSelecting) {
-                        _selectionAnchor = _textController.selection.isValid ? _textController.selection.extentOffset : 0;
-                      } else {
-                        _selectionAnchor = null;
-                      }
-                    });
-                    _textFocusNode.requestFocus();
-                  },
-                ),
-                IconButton(
-                  tooltip: 'تحريك المؤشر لليسار',
-                  icon: const Directionality(
-                    textDirection: TextDirection.ltr,
-                    child: Icon(Icons.arrow_forward_ios, size: 16),
+                  // باليمين: زر اللصق من الحافظة + زر المعاينة
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        tooltip: 'لصق من الحافظة',
+                        icon: const Icon(Icons.content_paste),
+                        color: AppColors.primary,
+                        onPressed: _pasteFromClipboard,
+                      ),
+                      IconButton(
+                        tooltip: _isPreviewMode ? context.l10n.closePreview : context.l10n.livePreview,
+                        icon: Icon(
+                          _isPreviewMode ? Icons.visibility_off : Icons.visibility,
+                          color: _isPreviewMode ? AppColors.error : AppColors.primary,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isPreviewMode = !_isPreviewMode;
+                          });
+                        },
+                      ),
+                    ],
                   ),
-                  color: AppColors.primary,
-                  onPressed: () {
-                    final text = _textController.text;
-                    final selection = _textController.selection;
-                    if (selection.isValid) {
-                      setState(() {
-                        final currentExtent = selection.extentOffset;
-                        final newOffset = currentExtent < text.length ? currentExtent + 1 : text.length;
-                        if (_isSelecting && _selectionAnchor != null) {
-                          _textController.selection = TextSelection(baseOffset: _selectionAnchor!, extentOffset: newOffset);
-                        } else {
-                          _textController.selection = TextSelection.collapsed(offset: newOffset);
-                        }
-                      });
-                      _textFocusNode.requestFocus();
-                    }
-                  },
-                ),
-                // المعاينة والصورة
-                IconButton(
-                  tooltip: _isPreviewMode ? context.l10n.closePreview : context.l10n.livePreview,
-                  icon: Icon(
-                    _isPreviewMode ? Icons.visibility_off : Icons.visibility,
-                    color: _isPreviewMode ? AppColors.error : AppColors.primary,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _isPreviewMode = !_isPreviewMode;
-                    });
-                  },
-                ),
-                IconButton(
-                  tooltip: context.l10n.addArticleCoverOptional,
-                  icon: const Icon(Icons.add_photo_alternate_outlined),
-                  color: AppColors.primary,
-                  onPressed: _pickImage,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           
@@ -842,6 +897,30 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                   fit: StackFit.expand,
                   children: [
                     Image.file(_selectedImage!, fit: BoxFit.cover),
+                    Container(color: Colors.black26),
+                    const Center(
+                      child: Icon(Icons.edit, color: Colors.white, size: 32),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const Divider(height: 1),
+          ] else if (widget.article?.image != null && !_deleteExistingImage) ...[
+            GestureDetector(
+              onTap: _pickImage,
+              child: Container(
+                height: 200,
+                width: double.infinity,
+                color: AppColors.getCardBackground(context),
+                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      'https://sijilli.pockethost.io/api/files/articles/${widget.article!.id}/${widget.article!.image}',
+                      fit: BoxFit.cover,
+                    ),
                     Container(color: Colors.black26),
                     const Center(
                       child: Icon(Icons.edit, color: Colors.white, size: 32),
