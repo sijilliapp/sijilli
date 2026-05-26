@@ -780,7 +780,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                   // من اليسار: زر الصورة (إضافة أو إزالة مع صندوق تأكيد)
                   Builder(
                     builder: (context) {
-                      final hasImage = _selectedImage != null || (widget.article?.image != null && !_deleteExistingImage);
+                      final hasImage = _selectedImage != null || (widget.article?.image != null && widget.article!.image!.isNotEmpty && !_deleteExistingImage);
                       return IconButton(
                         tooltip: hasImage ? 'إزالة الصورة' : 'إضافة صورة غلاف',
                         icon: Icon(
@@ -906,7 +906,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
               ),
             ),
             const Divider(height: 1),
-          ] else if (widget.article?.image != null && !_deleteExistingImage) ...[
+          ] else if (widget.article?.image != null && widget.article!.image!.isNotEmpty && !_deleteExistingImage) ...[
             GestureDetector(
               onTap: _pickImage,
               child: Container(
