@@ -90,6 +90,40 @@ class AdminProvider extends ChangeNotifier {
     }
   }
 
+  /// تحديث قيمة إعداد نصي (مثل قاموس الأخطاء الشائعة)
+  Future<bool> updateConfigString(String key, String value, GlobalConfigProvider configProvider) async {
+    _isLoading = true;
+    notifyListeners();
+    
+    try {
+      final pb = PocketBaseClient.instance.pb;
+      
+      try {
+        final result = await pb.collection('app_config').getFirstListItem('key="$key"');
+        await pb.collection('app_config').update(result.id, body: {
+          'value_string': value,
+        });
+      } catch (e) {
+        // If not found, create it
+        await pb.collection('app_config').create(body: {
+          'key': key,
+          'value_string': value,
+        });
+      }
+
+      await configProvider.fetchConfig();
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('❌ Error updating config $key: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// جلب كافة رسائل التواصل الواردة
   Future<void> fetchContactMessages() async {
     _isFetchingMessages = true;

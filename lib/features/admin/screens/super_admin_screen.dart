@@ -7,6 +7,7 @@ import '../../../core/providers/global_config_provider.dart';
 import '../providers/admin_provider.dart';
 import 'admin_messages_screen.dart';
 import 'admin_users_screen.dart';
+import 'admin_article_prefs_screen.dart';
 
 class SuperAdminScreen extends StatefulWidget {
   const SuperAdminScreen({super.key});
@@ -122,29 +123,17 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
               ),
             ),
 
-            Consumer2<GlobalConfigProvider, AdminProvider>(
-              builder: (context, config, admin, _) {
-                return _buildNumberCard(
+            _buildClickableCard(
+              context,
+              isDark: isDark,
+              icon: Icons.article_outlined,
+              title: 'تفضيلات المقالات الإدارية',
+              subtitle: 'الحد الأقصى لحروف المقالات وإدارة قاموس الأخطاء الشائعة المخصص',
+              badgeCount: 0,
+              onTap: () {
+                Navigator.push(
                   context,
-                  isDark: isDark,
-                  icon: Icons.article_outlined,
-                  title: 'الحد الأقصى لحروف المقال',
-                  subtitle: 'عدد الحروف الأقصى المسموح للمقال الواحد',
-                  value: config.articleMaxChars,
-                  isLoading: admin.isLoading,
-                  activeColor: AppColors.primary,
-                  onChanged: (val) async {
-                    if (val == config.articleMaxChars) return;
-                    final success = await admin.updateConfigNumber('article_max_chars', val.toDouble(), config);
-                    if (success && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('تم تحديث الحد الأقصى للمقالات بنجاح'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    }
-                  },
+                  MaterialPageRoute(builder: (context) => const AdminArticlePrefsScreen()),
                 );
               },
             ),
@@ -362,132 +351,6 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNumberCard(
-    BuildContext context, {
-    required bool isDark,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required int value,
-    required ValueChanged<int> onChanged,
-    required bool isLoading,
-    Color activeColor = AppColors.primary,
-  }) {
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-          width: 1,
-        ),
-      ),
-      color: isDark ? AppColors.darkSurface : Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: activeColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: activeColor, size: 24),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).brightness == Brightness.dark 
-                          ? Colors.grey.shade400 
-                          : Colors.grey.shade600,
-                      height: 1.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            if (isLoading)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
-            else
-              Row(
-                children: [
-                  Text(
-                    '$value',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    icon: const Icon(Icons.edit, size: 20),
-                    color: AppColors.primary,
-                    onPressed: () async {
-                      final controller = TextEditingController(text: value.toString());
-                      final result = await showDialog<int>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: Text(title),
-                          content: TextField(
-                            controller: controller,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              hintText: 'أدخل العدد...',
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('إلغاء'),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                final val = int.tryParse(controller.text);
-                                if (val != null) {
-                                  Navigator.pop(context, val);
-                                }
-                              },
-                              child: const Text('حفظ'),
-                            ),
-                          ],
-                        ),
-                      );
-                      
-                      if (result != null) {
-                        onChanged(result);
-                      }
-                    },
-                  ),
-                ],
-              ),
-          ],
         ),
       ),
     );

@@ -158,7 +158,10 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
       'جزاكي': 'جزاكِ',
     };
 
-    spellingFixes.forEach((wrong, correct) {
+    final dynamicFixes = context.read<GlobalConfigProvider>().spellingFixes;
+    final mergedFixes = {...spellingFixes, ...dynamicFixes};
+
+    mergedFixes.forEach((wrong, correct) {
       // نستخدم حدود الكلمة العربية لتجنب تغيير أجزاء من كلمات أخرى (مثل: هلاكن -> هلكن)
       // الحروف العربية تقع في النطاق \u0600-\u06FF
       final baseWrong = wrong.replaceAll(RegExp(r'[\u064B-\u0652]'), '');

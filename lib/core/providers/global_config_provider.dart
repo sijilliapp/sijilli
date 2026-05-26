@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:pocketbase/pocketbase.dart';
 import '../services/pb_system_config_service.dart';
@@ -60,5 +61,19 @@ class GlobalConfigProvider extends ChangeNotifier {
   /// الحصول على نص من الإعدادات
   String getString(String key, {String defaultValue = ''}) {
     return _configService.getString(_configs, key) ?? defaultValue;
+  }
+
+  /// الحصول على القاموس الديناميكي لتصحيح الأخطاء الشائعة
+  Map<String, String> get spellingFixes {
+    final rawJson = getString('spelling_fixes', defaultValue: '{}');
+    try {
+      final decoded = json.decode(rawJson);
+      if (decoded is Map) {
+        return decoded.map((key, value) => MapEntry(key.toString(), value.toString()));
+      }
+    } catch (e) {
+      debugPrint('❌ Error parsing spelling_fixes config: $e');
+    }
+    return {};
   }
 }
