@@ -854,16 +854,10 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                       ),
                     ],
                   ),
-                  // باليمين: زر اللصق من الحافظة + زر المعاينة
+                  // باليمين: زر المعاينة + زر اللصق من الحافظة
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      IconButton(
-                        tooltip: 'لصق من الحافظة',
-                        icon: const Icon(Icons.content_paste),
-                        color: AppColors.primary,
-                        onPressed: _pasteFromClipboard,
-                      ),
                       IconButton(
                         tooltip: _isPreviewMode ? context.l10n.closePreview : context.l10n.livePreview,
                         icon: Icon(
@@ -875,6 +869,12 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                             _isPreviewMode = !_isPreviewMode;
                           });
                         },
+                      ),
+                      IconButton(
+                        tooltip: 'لصق من الحافظة',
+                        icon: const Icon(Icons.content_paste),
+                        color: AppColors.primary,
+                        onPressed: _pasteFromClipboard,
                       ),
                     ],
                   ),
