@@ -276,14 +276,32 @@ class ArticleCard extends StatelessWidget {
                                       );
                                     } else {
                                       String? localImagePath;
-                                      if (article.author != null && article.author!.hasAvatar) {
+                                      final hasArticleImage = article.image != null && article.image!.isNotEmpty;
+                                      if (hasArticleImage) {
                                         try {
-                                          final avatarUrl = article.author!.getAvatarUrl(PocketBaseClient.instance.pb.baseURL);
+                                          final imageUrl = _getImageUrl(article);
+                                          final response = await http.get(Uri.parse(imageUrl)).timeout(const Duration(seconds: 3));
+                                          if (response.statusCode == 200) {
+                                            final tempDir = await getTemporaryDirectory();
+                                            final file = File('${tempDir.path}/article_${article.id}.png');
+                                            await file.writeAsBytes(response.bodyBytes);
+                                            localImagePath = file.path;
+                                          }
+                                        } catch (e) {
+                                          debugPrint('Error downloading article image: $e');
+                                        }
+                                      }
+                                      if (localImagePath == null && article.author != null && article.author!.hasAvatar) {
+                                        try {
+                                          final avatarUrl = article.author!.getAvatarUrl(
+                                            PocketBaseClient.instance.pb.baseURL,
+                                            thumb: '100x100',
+                                          );
                                           if (avatarUrl != null) {
                                             final response = await http.get(Uri.parse(avatarUrl)).timeout(const Duration(seconds: 3));
                                             if (response.statusCode == 200) {
                                               final tempDir = await getTemporaryDirectory();
-                                              final file = File('${tempDir.path}/avatar_${article.author!.id}.png');
+                                              final file = File('${tempDir.path}/avatar_${article.author!.id}_thumb.png');
                                               await file.writeAsBytes(response.bodyBytes);
                                               localImagePath = file.path;
                                             }
