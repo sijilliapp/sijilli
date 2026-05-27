@@ -15,15 +15,90 @@ enum ParagraphFormat {
   poem,
 }
 
-// ============================================================
-// FormattingTextEditingController
-// ============================================================
-
-/// `TextEditingController` مخصص يعمل بنظام التحرير المباشر مع التنسيق البصري للوسوم.
-/// يتم تخزين النص مع وسومه في الـ `text` مباشرة لتفادي أي مشاكل إزاحة أو مزامنة.
 class FormattingTextEditingController extends TextEditingController {
   bool _internalUpdate = false;
   String? _highlightQuery;
+
+  // ============================================================
+  // FormattingTextEditingController
+  // ============================================================
+
+  /// `TextEditingController` مخصص يعمل بنظام التحرير المباشر مع التنسيق البصري للوسوم.
+  /// يتم تخزين النص مع وسومه في الـ `text` مباشرة لتفادي أي مشاكل إزاحة أو مزامنة.
+  List<(int start, int end)> _getTagRangesOfText(String content) {
+    final pattern = RegExp(
+      r'\[/?(?:POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT)\]',
+      caseSensitive: false,
+    );
+    final List<(int start, int end)> ranges = [];
+    for (final match in pattern.allMatches(content)) {
+      ranges.add((match.start, match.end));
+    }
+    return ranges;
+  }
+
+  @override
+  set value(TextEditingValue newValue) {
+    if (_internalUpdate) {
+      super.value = newValue;
+      return;
+    }
+
+    final oldSel = value.selection;
+    final newSel = newValue.selection;
+
+    // 1. الحظر والمغنطة (Cursor Snap) لمنع المؤشر من الوقوف داخل الوسوم
+    if (newSel.isValid && newSel != oldSel) {
+      final textContent = newValue.text;
+      final ranges = _getTagRangesOfText(textContent);
+      
+      int newBase = newSel.baseOffset;
+      int newExtent = newSel.extentOffset;
+      
+      int snapOffset(int offset) {
+        for (final range in ranges) {
+          if (offset > range.$1 && offset < range.$2) {
+            final distToStart = (offset - range.$1).abs();
+            final distToEnd = (offset - range.$2).abs();
+            return distToStart < distToEnd ? range.$1 : range.$2;
+          }
+        }
+        return offset;
+      }
+
+      final snappedBase = snapOffset(newBase);
+      final snappedExtent = snapOffset(newExtent);
+      
+      if (snappedBase != newBase || snappedExtent != newExtent) {
+        newValue = newValue.copyWith(
+          selection: TextSelection(
+            baseOffset: snappedBase,
+            extentOffset: snappedExtent,
+          ),
+        );
+      }
+    }
+
+    // 2. الحذف الذري (Atomic Deletion) لحذف الوسم بالكامل عند الضغط على Backspace
+    if (newValue.text.length < value.text.length && oldSel.isCollapsed && oldSel.start > 0) {
+      final oldText = value.text;
+      final deletedIndex = oldSel.start - 1;
+      
+      final ranges = _getTagRangesOfText(oldText);
+      for (final range in ranges) {
+        if (deletedIndex >= range.$1 && deletedIndex < range.$2) {
+          final fullNewText = oldText.replaceRange(range.$1, range.$2, '');
+          newValue = TextEditingValue(
+            text: fullNewText,
+            selection: TextSelection.collapsed(offset: range.$1),
+          );
+          break;
+        }
+      }
+    }
+
+    super.value = newValue;
+  }
 
   FormattingTextEditingController({String rawText = ''}) {
     text = rawText;
@@ -47,7 +122,7 @@ class FormattingTextEditingController extends TextEditingController {
   /// النص النظيف الحالي (ما يراه المستخدم بدون وسوم)
   String get cleanText {
     return text
-        .replaceAll(RegExp(r'\[/?(POEM|CENTER|JUSTIFY|LEFT|RIGHT|B)\]', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\[/?(POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT)\]', caseSensitive: false), '')
         .replaceAll(RegExp(r'[=~]'), '')
         .replaceAll(RegExp(r'\*'), '')
         .replaceAll(RegExp(r'\+\+'), '')
@@ -224,12 +299,74 @@ class FormattingTextEditingController extends TextEditingController {
     if (selectedText.trim().isEmpty) return;
 
     String newText;
-    if (selectedText.startsWith('*') && selectedText.endsWith('*') && selectedText.length > 1) {
-      // إزالة النجمة
-      newText = selectedText.substring(1, selectedText.length - 1);
+    final trimmedSelected = selectedText.trim();
+    final bool startsWithTag = trimmedSelected.toUpperCase().startsWith('[BOLD]') || trimmedSelected.toUpperCase().startsWith('[B]');
+    final bool endsWithTag = trimmedSelected.toUpperCase().endsWith('[/BOLD]') || trimmedSelected.toUpperCase().endsWith('[/B]');
+
+    if (startsWithTag && endsWithTag) {
+      // إزالة التنسيق
+      String clean = selectedText;
+      if (clean.toUpperCase().contains('[BOLD]')) {
+        clean = clean.replaceFirst(RegExp(r'\[BOLD\]', caseSensitive: false), '');
+        clean = clean.replaceFirst(RegExp(r'\[/BOLD\]', caseSensitive: false), '');
+      } else {
+        clean = clean.replaceFirst(RegExp(r'\[B\]', caseSensitive: false), '');
+        clean = clean.replaceFirst(RegExp(r'\[/B\]', caseSensitive: false), '');
+      }
+      newText = clean;
     } else {
-      // إضافة النجمة
-      newText = '*$selectedText*';
+      // إضافة التنسيق
+      newText = '[BOLD]$selectedText[/BOLD]';
+    }
+
+    final fullNewText = content.replaceRange(bStart, bEnd, newText);
+    _internalUpdate = true;
+    value = value.copyWith(
+      text: fullNewText,
+      selection: TextSelection(baseOffset: bStart, extentOffset: bStart + newText.length),
+    );
+    _internalUpdate = false;
+    notifyListeners();
+  }
+
+  /// يُطبِّق/يُزيل التمييز (Highlight) على الكلمة أو الجزء المحدد
+  void toggleHighlightAtCursor() {
+    final currentSel = selection;
+    if (!currentSel.isValid) return;
+
+    final content = text;
+    int bStart = currentSel.start;
+    int bEnd = currentSel.end;
+
+    if (currentSel.isCollapsed) {
+      // إيجاد حدود الكلمة
+      while (bStart > 0 && !_isWordBoundary(content[bStart - 1])) {
+        bStart--;
+      }
+      while (bEnd < content.length && !_isWordBoundary(content[bEnd])) {
+        bEnd++;
+      }
+    }
+
+    if (bStart >= bEnd) return;
+
+    final selectedText = content.substring(bStart, bEnd);
+    if (selectedText.trim().isEmpty) return;
+
+    String newText;
+    final trimmedSelected = selectedText.trim();
+    final bool startsWithTag = trimmedSelected.toUpperCase().startsWith('[HIGHLIGHT]');
+    final bool endsWithTag = trimmedSelected.toUpperCase().endsWith('[/HIGHLIGHT]');
+
+    if (startsWithTag && endsWithTag) {
+      // إزالة التنسيق
+      String clean = selectedText;
+      clean = clean.replaceFirst(RegExp(r'\[HIGHLIGHT\]', caseSensitive: false), '');
+      clean = clean.replaceFirst(RegExp(r'\[/HIGHLIGHT\]', caseSensitive: false), '');
+      newText = clean;
+    } else {
+      // إضافة التنسيق
+      newText = '[HIGHLIGHT]$selectedText[/HIGHLIGHT]';
     }
 
     final fullNewText = content.replaceRange(bStart, bEnd, newText);
@@ -293,19 +430,21 @@ class FormattingTextEditingController extends TextEditingController {
   }
 
   String _applyFormatToLine(String cleanLine, ParagraphFormat format) {
+    final trimmed = cleanLine.trim();
+    if (trimmed.isEmpty) return cleanLine;
     switch (format) {
       case ParagraphFormat.none:
-        return cleanLine;
+        return trimmed;
       case ParagraphFormat.center:
-        return '=$cleanLine=';
+        return '[CENTER]$trimmed[/CENTER]';
       case ParagraphFormat.justify:
-        return '~$cleanLine~';
+        return '[JUSTIFY]$trimmed[/JUSTIFY]';
       case ParagraphFormat.left:
-        return '--$cleanLine--';
+        return '[LEFT]$trimmed[/LEFT]';
       case ParagraphFormat.right:
-        return '++$cleanLine++';
+        return '[RIGHT]$trimmed[/RIGHT]';
       case ParagraphFormat.poem:
-        return '[POEM]\n$cleanLine\n[/POEM]';
+        return '[POEM]\n$trimmed\n[/POEM]';
     }
   }
 
@@ -358,6 +497,49 @@ class FormattingTextEditingController extends TextEditingController {
     return spans;
   }
 
+  TextStyle _getTagChipStyle(String tag, BuildContext context, TextStyle defaultStyle) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cleanTag = tag.toUpperCase().replaceAll('[', '').replaceAll(']', '').replaceAll('/', '');
+    
+    Color bg;
+    Color fg;
+    
+    switch (cleanTag) {
+      case 'POEM':
+        bg = isDark ? const Color(0xFF4C1D95) : const Color(0xFFF3E8FF); // Purple
+        fg = isDark ? const Color(0xFFDDD6FE) : const Color(0xFF7C3AED);
+        break;
+      case 'BOLD':
+      case 'B':
+        bg = isDark ? const Color(0xFF1E3A8A) : const Color(0xFFDBEAFE); // Blue
+        fg = isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8);
+        break;
+      case 'HIGHLIGHT':
+        bg = isDark ? const Color(0xFF78350F) : const Color(0xFFFEF08A); // Amber/Yellow
+        fg = isDark ? const Color(0xFFFDE68A) : const Color(0xFFB45309);
+        break;
+      case 'CENTER':
+      case 'JUSTIFY':
+      case 'LEFT':
+      case 'RIGHT':
+        bg = isDark ? const Color(0xFF064E3B) : const Color(0xFFD1FAE5); // Emerald/Green
+        fg = isDark ? const Color(0xFF6EE7B7) : const Color(0xFF047857);
+        break;
+      default:
+        bg = isDark ? const Color(0xFF374151) : const Color(0xFFF3F4F6); // Grey
+        fg = isDark ? const Color(0xFFD1D5DB) : const Color(0xFF4B5563);
+        break;
+    }
+    
+    return defaultStyle.copyWith(
+      backgroundColor: bg,
+      color: fg,
+      fontSize: 13,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.5,
+    );
+  }
+
   @override
   TextSpan buildTextSpan({
     required BuildContext context,
@@ -371,7 +553,7 @@ class FormattingTextEditingController extends TextEditingController {
 
     final defaultStyle = style ?? const TextStyle();
     
-    // وسوم رمادية خفيفة
+    // وسوم رمادية خفيفة (للقديمة غير المطورة)
     final tagStyle = defaultStyle.copyWith(
       color: AppColors.getTextPrimary(context).withValues(alpha: 0.35),
       fontSize: 14,
@@ -379,10 +561,18 @@ class FormattingTextEditingController extends TextEditingController {
     );
 
     final List<InlineSpan> children = [];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // التعبيرات المنتظمة لالتقاط الكتل والوسوم
     final pattern = RegExp(
       r'(\[POEM\][\s\S]*?\[/POEM\])'
+      r'|(\[BOLD\][\s\S]*?\[/BOLD\])'
+      r'|(\[B\][\s\S]*?\[/B\])'
+      r'|(\[HIGHLIGHT\][\s\S]*?\[/HIGHLIGHT\])'
+      r'|(\[CENTER\][\s\S]*?\[/CENTER\])'
+      r'|(\[JUSTIFY\][\s\S]*?\[/JUSTIFY\])'
+      r'|(\[LEFT\][\s\S]*?\[/LEFT\])'
+      r'|(\[RIGHT\][\s\S]*?\[/RIGHT\])'
       r'|(\*.*?\*)'
       r'|(=.*?=)'
       r'|(~.*?~)'
@@ -404,10 +594,12 @@ class FormattingTextEditingController extends TextEditingController {
       }
 
       final matchedText = match.group(0)!;
+      final matchedUpper = matchedText.toUpperCase();
 
-      if (matchedText.startsWith('[POEM]') || matchedText.startsWith('[poem]')) {
-        final innerText = matchedText.substring(6, matchedText.length - 7);
-        children.add(TextSpan(text: '[POEM]', style: tagStyle));
+      if (matchedUpper.startsWith('[POEM]')) {
+        final tagLength = '[POEM]'.length;
+        final innerText = matchedText.substring(tagLength, matchedText.length - (tagLength + 1));
+        children.add(TextSpan(text: '[POEM]', style: _getTagChipStyle('[POEM]', context, defaultStyle)));
         children.addAll(_buildHighlightedSpans(
           innerText,
           defaultStyle.copyWith(
@@ -417,7 +609,83 @@ class FormattingTextEditingController extends TextEditingController {
           ),
           context,
         ));
-        children.add(TextSpan(text: '[/POEM]', style: tagStyle));
+        children.add(TextSpan(text: '[/POEM]', style: _getTagChipStyle('[/POEM]', context, defaultStyle)));
+      } else if (matchedUpper.startsWith('[BOLD]')) {
+        final tagLength = '[BOLD]'.length;
+        final innerText = matchedText.substring(tagLength, matchedText.length - (tagLength + 1));
+        children.add(TextSpan(text: '[BOLD]', style: _getTagChipStyle('[BOLD]', context, defaultStyle)));
+        children.addAll(_buildHighlightedSpans(
+          innerText,
+          defaultStyle.copyWith(fontWeight: FontWeight.w900),
+          context,
+        ));
+        children.add(TextSpan(text: '[/BOLD]', style: _getTagChipStyle('[/BOLD]', context, defaultStyle)));
+      } else if (matchedUpper.startsWith('[HIGHLIGHT]')) {
+        final tagLength = '[HIGHLIGHT]'.length;
+        final innerText = matchedText.substring(tagLength, matchedText.length - (tagLength + 1));
+        children.add(TextSpan(text: '[HIGHLIGHT]', style: _getTagChipStyle('[HIGHLIGHT]', context, defaultStyle)));
+        children.addAll(_buildHighlightedSpans(
+          innerText,
+          defaultStyle.copyWith(
+            backgroundColor: isDark ? const Color(0xFF78350F).withValues(alpha: 0.5) : const Color(0xFFFEF08A),
+            color: isDark ? const Color(0xFFFFFBEB) : const Color(0xFF1E293B),
+          ),
+          context,
+        ));
+        children.add(TextSpan(text: '[/HIGHLIGHT]', style: _getTagChipStyle('[/HIGHLIGHT]', context, defaultStyle)));
+      } else if (matchedUpper.startsWith('[B]')) {
+        final tagLength = '[B]'.length;
+        final innerText = matchedText.substring(tagLength, matchedText.length - (tagLength + 1));
+        children.add(TextSpan(text: '[B]', style: _getTagChipStyle('[B]', context, defaultStyle)));
+        children.addAll(_buildHighlightedSpans(
+          innerText,
+          defaultStyle.copyWith(fontWeight: FontWeight.w900),
+          context,
+        ));
+        children.add(TextSpan(text: '[/B]', style: _getTagChipStyle('[/B]', context, defaultStyle)));
+      } else if (matchedUpper.startsWith('[CENTER]')) {
+        final tagLength = '[CENTER]'.length;
+        final innerText = matchedText.substring(tagLength, matchedText.length - (tagLength + 1));
+        children.add(TextSpan(text: '[CENTER]', style: _getTagChipStyle('[CENTER]', context, defaultStyle)));
+        children.addAll(_buildHighlightedSpans(
+          innerText,
+          defaultStyle.copyWith(
+            color: AppColors.primary,
+            decoration: TextDecoration.underline,
+          ),
+          context,
+        ));
+        children.add(TextSpan(text: '[/CENTER]', style: _getTagChipStyle('[/CENTER]', context, defaultStyle)));
+      } else if (matchedUpper.startsWith('[JUSTIFY]')) {
+        final tagLength = '[JUSTIFY]'.length;
+        final innerText = matchedText.substring(tagLength, matchedText.length - (tagLength + 1));
+        children.add(TextSpan(text: '[JUSTIFY]', style: _getTagChipStyle('[JUSTIFY]', context, defaultStyle)));
+        children.addAll(_buildHighlightedSpans(
+          innerText,
+          defaultStyle.copyWith(decoration: TextDecoration.underline),
+          context,
+        ));
+        children.add(TextSpan(text: '[/JUSTIFY]', style: _getTagChipStyle('[/JUSTIFY]', context, defaultStyle)));
+      } else if (matchedUpper.startsWith('[LEFT]')) {
+        final tagLength = '[LEFT]'.length;
+        final innerText = matchedText.substring(tagLength, matchedText.length - (tagLength + 1));
+        children.add(TextSpan(text: '[LEFT]', style: _getTagChipStyle('[LEFT]', context, defaultStyle)));
+        children.addAll(_buildHighlightedSpans(
+          innerText,
+          defaultStyle.copyWith(fontStyle: FontStyle.italic),
+          context,
+        ));
+        children.add(TextSpan(text: '[/LEFT]', style: _getTagChipStyle('[/LEFT]', context, defaultStyle)));
+      } else if (matchedUpper.startsWith('[RIGHT]')) {
+        final tagLength = '[RIGHT]'.length;
+        final innerText = matchedText.substring(tagLength, matchedText.length - (tagLength + 1));
+        children.add(TextSpan(text: '[RIGHT]', style: _getTagChipStyle('[RIGHT]', context, defaultStyle)));
+        children.addAll(_buildHighlightedSpans(
+          innerText,
+          defaultStyle.copyWith(fontWeight: FontWeight.w500),
+          context,
+        ));
+        children.add(TextSpan(text: '[/RIGHT]', style: _getTagChipStyle('[/RIGHT]', context, defaultStyle)));
       } else if (matchedText.startsWith('*')) {
         final innerText = matchedText.substring(1, matchedText.length - 1);
         children.add(TextSpan(text: '*', style: tagStyle));

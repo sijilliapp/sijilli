@@ -741,6 +741,19 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                                 },
                               ),
                             ),
+                            // 5.5. تمييز النص (هايلايتر)
+                            ListenableBuilder(
+                              listenable: _textController,
+                              builder: (context, _) => IconButton(
+                                tooltip: 'تمييز النص (هايلايتر)',
+                                icon: const Icon(Icons.border_color),
+                                color: AppColors.primary,
+                                onPressed: () {
+                                  _textController.toggleHighlightAtCursor();
+                                  _textFocusNode.requestFocus();
+                                },
+                              ),
+                            ),
                             // 6. تصحيح وتنسيق سحري
                             IconButton(
                               tooltip: 'تنسيق سحري وتصحيح',

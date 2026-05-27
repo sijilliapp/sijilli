@@ -47,34 +47,77 @@ class ArticleCard extends StatelessWidget {
               AppActionSheet.show(
                 context,
                 actions: [
-                  AppActionItem(
-                    label: 'مشاركة',
-                    icon: Icons.share,
-                    onTap: () async {
-                      final username = article.author?.username ?? 'user';
-                      final url = 'https://sijilli.com/$username/${article.id}';
-                      
-                      // Auto-publish if not already published
-                      if (!article.isPublished) {
-                        context.read<ArticleProvider>().togglePublishStatus(article.id, true);
-                      }
+                  if (isAuthor)
+                    if (article.isPublished)
+                      AppActionItem(
+                        label: 'إلغاء المشاركة',
+                        icon: Icons.unpublished_outlined,
+                        isDestructive: true,
+                        onTap: () async {
+                          context.read<ArticleProvider>().togglePublishStatus(article.id, false);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('تم إلغاء نشر المقال وإيقاف المشاركة 🛑'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
+                      )
+                    else
+                      AppActionItem(
+                        label: 'مشاركة ونشر المقال',
+                        icon: Icons.share,
+                        onTap: () async {
+                          final username = article.author?.username ?? 'user';
+                          final url = 'https://sijilli.com/$username/${article.id}';
+                          
+                          // Auto-publish if not already published
+                          if (!article.isPublished) {
+                            context.read<ArticleProvider>().togglePublishStatus(article.id, true);
+                          }
 
-                      if (kIsWeb) {
-                        await Clipboard.setData(ClipboardData(text: url));
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('تم نسخ رابط المقال إلى الحافظة ونشره تلقائياً 🚀'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
+                          if (kIsWeb) {
+                            await Clipboard.setData(ClipboardData(text: url));
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('تم نسخ رابط المقال إلى الحافظة ونشره تلقائياً 🚀'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          } else {
+                            // ignore: deprecated_member_use
+                            await Share.share(url, subject: article.title);
+                          }
+                        },
+                      )
+                  else if (article.isPublished)
+                    AppActionItem(
+                      label: 'مشاركة المقال',
+                      icon: Icons.share,
+                      onTap: () async {
+                        final username = article.author?.username ?? 'user';
+                        final url = 'https://sijilli.com/$username/${article.id}';
+
+                        if (kIsWeb) {
+                          await Clipboard.setData(ClipboardData(text: url));
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('تم نسخ رابط المشاركة إلى الحافظة 🔗'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        } else {
+                          // ignore: deprecated_member_use
+                          await Share.share(url, subject: article.title);
                         }
-                      } else {
-                        // ignore: deprecated_member_use
-                        await Share.share(url, subject: article.title);
-                      }
-                    },
-                  ),
+                      },
+                    ),
                   AppActionItem(
                     label: context.l10n.copy,
                     icon: Icons.copy,
@@ -214,24 +257,21 @@ class ArticleCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          if (isAuthor) ...[
+                          if (isAuthor && article.isPublished) ...[
                             const SizedBox(width: 8),
-                            if (article.isPublished)
-                              Text('منشور', style: TextStyle(fontSize: 12, color: AppColors.getTextSecondary(context), fontWeight: FontWeight.bold)),
-                            Directionality(
-                              textDirection: TextDirection.rtl,
-                              child: Transform.scale(
-                                scale: 0.8,
-                                alignment: Alignment.centerLeft,
-                                child: SizedBox(
-                                  height: 32, // Reduce height footprint of the switch
-                                  child: Switch(
-                                    value: article.isPublished,
-                                    activeColor: AppColors.primary,
-                                    onChanged: (value) {
-                                      context.read<ArticleProvider>().togglePublishStatus(article.id, value);
-                                    },
-                                  ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
+                              decoration: BoxDecoration(
+                                color: AppColors.success.withValues(alpha: 0.15),
+                                border: Border.all(color: AppColors.success, width: 1),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Text(
+                                'منشور',
+                                style: TextStyle(
+                                  color: AppColors.success,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),

@@ -10,6 +10,7 @@ import '../widgets/article_content_renderer.dart';
 import 'add_article_screen.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import '../../../core/providers/settings_provider.dart';
 class ArticleDetailsScreen extends StatefulWidget {
   final Article article;
 
@@ -28,6 +29,10 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<ArticleProvider>(context);
+    final settingsProvider = Provider.of<SettingsProvider>(context);
+    final useTraditionalArabic = settingsProvider.useTraditionalArabic;
+    final fontFamily = useTraditionalArabic ? 'Traditional_Arabic' : null;
+
     final updatedArticle = provider.articles.firstWhere(
       (a) => a.id == widget.article.id,
       orElse: () => widget.article,
@@ -53,13 +58,37 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
             foregroundColor: AppColors.getTextPrimary(context),
             actions: [
               IconButton(
-                tooltip: 'نسخ النص',
-                icon: const Icon(Icons.copy),
-                onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: updatedArticle.plainText));
+                tooltip: 'تغيير خط القراءة (Traditional Arabic)',
+                icon: Icon(
+                  useTraditionalArabic ? Icons.font_download : Icons.font_download_outlined,
+                  color: useTraditionalArabic ? AppColors.primary : null,
+                ),
+                onPressed: () {
+                  settingsProvider.setUseTraditionalArabic(!useTraditionalArabic);
+                },
+              ),
+              if (isAuthor || updatedArticle.isPublished)
+                IconButton(
+                  tooltip: 'نسخ رابط المشاركة',
+                  icon: const Icon(Icons.link),
+                  onPressed: () async {
+                  final username = updatedArticle.author?.username ?? 'user';
+                  final url = 'https://sijilli.com/$username/${updatedArticle.id}';
+                  
+                  // Auto-publish if author and not already published
+                  if (isAuthor && !updatedArticle.isPublished) {
+                    await context.read<ArticleProvider>().togglePublishStatus(updatedArticle.id, true);
+                  }
+
+                  await Clipboard.setData(ClipboardData(text: url));
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(context.l10n.articleCopied(updatedArticle.title))),
+                      SnackBar(
+                        content: Text(isAuthor && !updatedArticle.isPublished 
+                            ? 'تم نسخ رابط المقال إلى الحافظة ونشره تلقائياً 🚀'
+                            : 'تم نسخ رابط المشاركة إلى الحافظة 🔗'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
                     );
                   }
                 },
@@ -159,9 +188,15 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                               ),
                             );
                           },
-                          child: ArticleContentRenderer(text: updatedArticle.text),
+                          child: ArticleContentRenderer(
+                            text: updatedArticle.text,
+                            fontFamily: fontFamily,
+                          ),
                         )
-                      : ArticleContentRenderer(text: updatedArticle.text),
+                      : ArticleContentRenderer(
+                          text: updatedArticle.text,
+                          fontFamily: fontFamily,
+                        ),
                   
                   // Metadata Block at the bottom
                   const SizedBox(height: 48),

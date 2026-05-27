@@ -44,7 +44,7 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
     normalized = normalized.replaceAll('\u0640', ''); // إزالة التطويل (الكشيدة)
     
     // إزالة رموز التنسيق والأسطر الجديدة واستبدالها بمسافات لكي لا تقطع تسلسل الكلمات
-    normalized = normalized.replaceAll(RegExp(r'\[/?(POEM|CENTER|JUSTIFY|B)\]', caseSensitive: false), ' ');
+    normalized = normalized.replaceAll(RegExp(r'\[/?(POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT)\]', caseSensitive: false), ' ');
     normalized = normalized.replaceAll(RegExp(r'[=~*\n\r]'), ' ');
     
     normalized = normalized.replaceAll(RegExp(r'[أإآ]'), 'ا'); // توحيد الألف

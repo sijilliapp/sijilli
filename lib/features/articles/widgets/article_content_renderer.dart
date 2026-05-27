@@ -5,20 +5,38 @@ import 'poetry/poem_view.dart';
 
 class ArticleContentRenderer extends StatelessWidget {
   final String text;
+  final String? fontFamily;
 
-  const ArticleContentRenderer({super.key, required this.text});
+  const ArticleContentRenderer({super.key, required this.text, this.fontFamily});
 
   TextSpan _parseInlineFormatting(String text, BuildContext context) {
+    final isTraditionalArabic = fontFamily == 'Traditional_Arabic';
+    final double fontSize = isTraditionalArabic
+        ? AppDimens.textSizeM * 1.5
+        : AppDimens.textSizeM;
+    final double lineHeight = isTraditionalArabic ? 1.3 : 1.8;
+    final FontWeight? fontWeight = isTraditionalArabic ? FontWeight.bold : null;
+
     final defaultStyle = TextStyle(
-      fontSize: AppDimens.textSizeM,
-      height: 1.8,
+      fontSize: fontSize,
+      height: lineHeight,
       color: AppColors.getTextPrimary(context),
+      fontFamily: fontFamily,
+      fontWeight: fontWeight,
     );
 
     final List<TextSpan> spans = [];
-    final pattern = RegExp(r'\[B\](.*?)\[/B\]|\*(.*?)\*', caseSensitive: false, dotAll: true);
+    final pattern = RegExp(
+      r'\[BOLD\](.*?)\[/BOLD\]'
+      r'|\[B\](.*?)\[/B\]'
+      r'|\*(.*?)\*'
+      r'|\[HIGHLIGHT\](.*?)\[/HIGHLIGHT\]',
+      caseSensitive: false,
+      dotAll: true,
+    );
     
     int lastMatchEnd = 0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     
     for (final match in pattern.allMatches(text)) {
       final preText = text.substring(lastMatchEnd, match.start);
@@ -26,11 +44,22 @@ class ArticleContentRenderer extends StatelessWidget {
         spans.add(TextSpan(text: preText, style: defaultStyle));
       }
       
-      final boldText = match.group(1) ?? match.group(2) ?? '';
-      if (boldText.isNotEmpty) {
+      final isBold = match.group(1) != null || match.group(2) != null || match.group(3) != null;
+      final isHighlight = match.group(4) != null;
+      final formattedText = match.group(1) ?? match.group(2) ?? match.group(3) ?? match.group(4) ?? '';
+      
+      if (formattedText.isNotEmpty) {
         spans.add(TextSpan(
-          text: boldText,
-          style: defaultStyle.copyWith(fontWeight: FontWeight.w900),
+          text: formattedText,
+          style: defaultStyle.copyWith(
+            fontWeight: isBold ? FontWeight.w900 : null,
+            backgroundColor: isHighlight 
+                ? (isDark ? const Color(0xFF78350F).withValues(alpha: 0.5) : const Color(0xFFFEF08A))
+                : null,
+            color: isHighlight
+                ? (isDark ? const Color(0xFFFFFBEB) : const Color(0xFF1E293B))
+                : null,
+          ),
         ));
       }
       lastMatchEnd = match.end;
@@ -136,7 +165,7 @@ class ArticleContentRenderer extends StatelessWidget {
       // Add PoemView
       final poemContent = match.group(1)?.trim() ?? '';
       if (poemContent.isNotEmpty) {
-        widgets.add(PoemView(poemText: poemContent));
+        widgets.add(PoemView(poemText: poemContent, fontFamily: fontFamily));
       }
       
       lastMatchEnd = match.end;

@@ -71,7 +71,7 @@ class Article {
     if (input.isEmpty) return '';
     
     // إزالة وسوم التنسيق المباشرة
-    String cleanText = input.replaceAll(RegExp(r'\[/?(POEM|CENTER|JUSTIFY|LEFT|RIGHT|B)\]', caseSensitive: false), '');
+    String cleanText = input.replaceAll(RegExp(r'\[/?(POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT)\]', caseSensitive: false), '');
     // إزالة النجمات (للبنط العريض) وعلامات التنسيق المزدوجة القديمة
     cleanText = cleanText.replaceAll(RegExp(r'==|~~|--|\+\+|\*'), '');
     

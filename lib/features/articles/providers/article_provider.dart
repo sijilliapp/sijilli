@@ -31,7 +31,7 @@ class ArticleProvider extends ChangeNotifier {
   }
 
   void _sortArticles() {
-    _articles.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    _articles.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
   }
 
   List<Article> get articles => _articles;

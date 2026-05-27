@@ -30,7 +30,7 @@ class PbArticleService {
         page: page,
         perPage: perPage,
         filter: filter,
-        sort: '-created', // الأحدث أولاً
+        sort: '-updated', // الأكثر تحديثاً أولاً
         expand: 'author',
       );
 
