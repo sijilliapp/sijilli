@@ -93,11 +93,11 @@ class Article {
     return cleanedLines.join('\n').trim();
   }
 
-  /// مدة القراءة المقدرة (استناداً إلى 140 كلمة في الدقيقة كمتوسط)
+  /// مدة القراءة المقدرة (استناداً إلى 100 كلمة في الدقيقة كمتوسط)
   int get estimatedReadingTimeMinutes {
     final count = wordCount;
     if (count == 0) return 1;
-    final minutes = (count / 140).ceil();
+    final minutes = (count / 100).ceil();
     return minutes == 0 ? 1 : minutes;
   }
 
