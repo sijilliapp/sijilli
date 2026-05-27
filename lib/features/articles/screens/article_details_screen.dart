@@ -11,6 +11,7 @@ import 'add_article_screen.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../../core/providers/settings_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 class ArticleDetailsScreen extends StatefulWidget {
   final Article article;
 
@@ -25,6 +26,56 @@ class ArticleDetailsScreen extends StatefulWidget {
 
 class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
   bool _isImageExpanded = false;
+  late ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_saveScrollPosition);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _restoreScrollPosition();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_saveScrollPosition);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _saveScrollPosition() async {
+    final provider = Provider.of<ArticleProvider>(context, listen: false);
+    final updatedArticle = provider.articles.firstWhere(
+      (a) => a.id == widget.article.id,
+      orElse: () => widget.article,
+    );
+    if (updatedArticle.wordCount > 400 && _scrollController.hasClients) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble('article_scroll_pos_${widget.article.id}', _scrollController.offset);
+    }
+  }
+
+  void _restoreScrollPosition() async {
+    final provider = Provider.of<ArticleProvider>(context, listen: false);
+    final updatedArticle = provider.articles.firstWhere(
+      (a) => a.id == widget.article.id,
+      orElse: () => widget.article,
+    );
+    if (updatedArticle.wordCount > 400) {
+      final prefs = await SharedPreferences.getInstance();
+      final double? offset = prefs.getDouble('article_scroll_pos_${widget.article.id}');
+      if (offset != null && offset > 0 && _scrollController.hasClients) {
+        await Future.delayed(const Duration(milliseconds: 150));
+        if (_scrollController.hasClients) {
+          final maxScroll = _scrollController.position.maxScrollExtent;
+          final targetOffset = offset.clamp(0.0, maxScroll);
+          _scrollController.jumpTo(targetOffset);
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +98,7 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
       body: SafeArea(
         bottom: false,
         child: CustomScrollView(
+        controller: _scrollController,
         slivers: [
           // AppBar & Image Header
           SliverAppBar(
