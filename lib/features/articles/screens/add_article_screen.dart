@@ -14,6 +14,7 @@ import '../widgets/formatting_text_controller.dart';
 import '../widgets/article_content_renderer.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import '../../../core/providers/global_config_provider.dart';
+import '../services/quran_service.dart';
 
 class AddArticleScreen extends StatefulWidget {
   final Article? article;
@@ -210,6 +211,34 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _formatQuranVerse() async {
+    final selection = _textController.selection;
+    if (selection.isCollapsed || selection.start < 0 || selection.end < 0) {
+      return;
+    }
+
+    final String selectedText = _textController.text.substring(selection.start, selection.end).trim();
+    if (selectedText.isEmpty) return;
+
+    final QuranMatch? match = await QuranService.searchAndFormatVerse(selectedText);
+    
+    if (match != null) {
+      final String formattedNum = QuranService.toEasternNumerals(match.verseNumber.toString());
+      final String formattedText = '[BOLD]﴿ ${match.uthmaniText} ﴾[/BOLD] [${match.surahName}: $formattedNum]';
+      
+      final String currentText = _textController.text;
+      final String newText = currentText.replaceRange(selection.start, selection.end, formattedText);
+      
+      setState(() {
+        _textController.value = TextEditingValue(
+          text: newText,
+          selection: TextSelection.collapsed(offset: selection.start + formattedText.length),
+        );
+      });
+      _textFocusNode.requestFocus();
+    }
   }
 
   void _clearFormatting() {
@@ -753,6 +782,19 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                                   _textFocusNode.requestFocus();
                                 },
                               ),
+                            ),
+                            // 5.7. تنسيق آية قرآنية
+                            IconButton(
+                              tooltip: 'تنسيق آية قرآنية',
+                              icon: Text(
+                                '﴿آية﴾',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                              onPressed: _formatQuranVerse,
                             ),
                             // 6. تصحيح وتنسيق سحري
                             IconButton(

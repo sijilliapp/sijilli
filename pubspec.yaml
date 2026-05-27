@@ -72,6 +72,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/logo/
+    - assets/quran/quran.json
   fonts:
     - family: Traditional_Arabic
       fonts:
