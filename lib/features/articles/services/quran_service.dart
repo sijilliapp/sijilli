@@ -29,8 +29,10 @@ class QuranService {
   }
 
   static String cleanText(String text) {
+    // Normalize Alif Wasla to normal Alif first to prevent it from being stripped
+    String cleaned = text.replaceAll('ٱ', 'ا');
     // Remove diacritics and non-Arabic letter characters
-    String cleaned = text.replaceAll(RegExp(r'[^\u0621-\u064a\s]'), '');
+    cleaned = cleaned.replaceAll(RegExp(r'[^\u0621-\u064a\s]'), '');
     // Normalize Alif
     cleaned = cleaned.replaceAll(RegExp(r'[أإآ]'), 'ا');
     // Normalize Ya / Alif Maqsura
