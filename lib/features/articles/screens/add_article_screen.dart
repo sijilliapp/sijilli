@@ -226,7 +226,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
     
     if (match != null) {
       final String formattedNum = QuranService.toEasternNumerals(match.verseNumber.toString());
-      final String formattedText = '[BOLD]﴿ ${match.uthmaniText} ﴾[/BOLD] [${match.surahName}: $formattedNum]';
+      final String formattedText = '[BOLD]﴿${match.uthmaniText}﴾[/BOLD] [${match.surahName}: $formattedNum]';
       
       final String currentText = _textController.text;
       final String newText = currentText.replaceRange(selection.start, selection.end, formattedText);
