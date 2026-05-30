@@ -474,56 +474,71 @@ class PrayerTimesRow extends StatelessWidget {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      margin: const EdgeInsets.only(top: 4.0, bottom: 0.0),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Directionality(
-        textDirection: TextDirection.ltr,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (sunriseTime != null) ...[
-              Icon(Icons.wb_sunny_outlined, size: 12, color: AppColors.getTextPrimary(context)),
-              const SizedBox(width: 4),
-              Text(
-                '${context.l10n.sunriseTime}: ${AppDateFormatter.formatTime12hFromValues(sunriseTime!.hour, sunriseTime!.minute, Localizations.localeOf(context).languageCode)}',
-                style: TextStyle(fontSize: 11, color: AppColors.getTextPrimary(context), fontWeight: FontWeight.w500),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: constraints.maxWidth,
+            ),
+            child: Center(
+              child: Container(
+                margin: const EdgeInsets.only(top: 4.0, bottom: 0.0),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (sunriseTime != null) ...[
+                        Icon(Icons.wb_sunny_outlined, size: 12, color: AppColors.getTextPrimary(context)),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${context.l10n.sunriseTime}: ${AppDateFormatter.formatTime12hFromValues(sunriseTime!.hour, sunriseTime!.minute, Localizations.localeOf(context).languageCode)}',
+                          style: TextStyle(fontSize: 11, color: AppColors.getTextPrimary(context), fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                      if (sunriseTime != null && dhuhrTime != null) ...[
+                        const SizedBox(width: 12),
+                        Container(width: 1, height: 12, color: Colors.grey.shade400),
+                        const SizedBox(width: 12),
+                      ],
+                      if (dhuhrTime != null) ...[
+                        Icon(Icons.sunny, size: 12, color: AppColors.getTextPrimary(context)),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${context.l10n.dhuhrTime}: ${AppDateFormatter.formatTime12hFromValues(dhuhrTime!.hour, dhuhrTime!.minute, Localizations.localeOf(context).languageCode)}',
+                          style: TextStyle(fontSize: 11, color: AppColors.getTextPrimary(context), fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                      if ((sunriseTime != null || dhuhrTime != null) && sunsetTime != null) ...[
+                        const SizedBox(width: 12),
+                        Container(width: 1, height: 12, color: Colors.grey.shade400),
+                        const SizedBox(width: 12),
+                      ],
+                      if (sunsetTime != null) ...[
+                        Icon(Icons.wb_twilight, size: 12, color: AppColors.getTextPrimary(context)),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${context.l10n.sunsetTime}: ${AppDateFormatter.formatTime12hFromValues(sunsetTime!.hour, sunsetTime!.minute, Localizations.localeOf(context).languageCode)}',
+                          style: TextStyle(fontSize: 11, color: AppColors.getTextPrimary(context), fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
-            ],
-            if (sunriseTime != null && dhuhrTime != null) ...[
-              const SizedBox(width: 12),
-              Container(width: 1, height: 12, color: Colors.grey.shade400),
-              const SizedBox(width: 12),
-            ],
-            if (dhuhrTime != null) ...[
-              Icon(Icons.sunny, size: 12, color: AppColors.getTextPrimary(context)),
-              const SizedBox(width: 4),
-              Text(
-                '${context.l10n.dhuhrTime}: ${AppDateFormatter.formatTime12hFromValues(dhuhrTime!.hour, dhuhrTime!.minute, Localizations.localeOf(context).languageCode)}',
-                style: TextStyle(fontSize: 11, color: AppColors.getTextPrimary(context), fontWeight: FontWeight.w500),
-              ),
-            ],
-            if ((sunriseTime != null || dhuhrTime != null) && sunsetTime != null) ...[
-              const SizedBox(width: 12),
-              Container(width: 1, height: 12, color: Colors.grey.shade400),
-              const SizedBox(width: 12),
-            ],
-            if (sunsetTime != null) ...[
-              Icon(Icons.wb_twilight, size: 12, color: AppColors.getTextPrimary(context)),
-              const SizedBox(width: 4),
-              Text(
-                '${context.l10n.sunsetTime}: ${AppDateFormatter.formatTime12hFromValues(sunsetTime!.hour, sunsetTime!.minute, Localizations.localeOf(context).languageCode)}',
-                style: TextStyle(fontSize: 11, color: AppColors.getTextPrimary(context), fontWeight: FontWeight.w500),
-              ),
-            ],
-          ],
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
