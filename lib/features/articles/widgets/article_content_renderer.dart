@@ -145,10 +145,14 @@ class ArticleContentRenderer extends StatelessWidget {
     if (widgets.isEmpty && cleanedText.isNotEmpty) {
       widgets.addAll(_renderTextBlock(context, cleanedText));
     }
- 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: widgets,
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+
+    return Directionality(
+      textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: widgets,
+      ),
     );
   }
 }

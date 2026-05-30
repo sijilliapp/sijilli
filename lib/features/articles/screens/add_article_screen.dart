@@ -1218,7 +1218,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                     expands: true,
                     keyboardType: TextInputType.multiline,
                     textAlignVertical: TextAlignVertical.top,
-                    textDirection: TextDirection.rtl,
+                    textDirection: Localizations.localeOf(context).languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr,
                     selectionWidthStyle: ui.BoxWidthStyle.tight,
                     selectionHeightStyle: ui.BoxHeightStyle.tight,
                     style: TextStyle(

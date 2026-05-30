@@ -93,265 +93,270 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
     final currentUserId = context.read<AuthProvider>().user?.id;
     final isAuthor = currentUserId == updatedArticle.authorId;
 
-    return Scaffold(
-      backgroundColor: AppColors.getBackground(context),
-      body: SafeArea(
-        bottom: false,
-        child: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
-          // AppBar & Image Header
-          SliverAppBar(
-            expandedHeight: hasImage 
-                ? (_isImageExpanded ? 300.0 : 100.0) 
-                : kToolbarHeight,
-            pinned: true,
-            backgroundColor: AppColors.getBackground(context),
-            foregroundColor: AppColors.getTextPrimary(context),
-            actions: [
-              IconButton(
-                tooltip: 'تغيير خط القراءة (Traditional Arabic)',
-                icon: Icon(
-                  useTraditionalArabic ? Icons.font_download : Icons.font_download_outlined,
-                  color: useTraditionalArabic ? AppColors.primary : null,
-                ),
-                onPressed: () {
-                  settingsProvider.setUseTraditionalArabic(!useTraditionalArabic);
-                },
-              ),
-              if (isAuthor || updatedArticle.isPublished)
-                IconButton(
-                  tooltip: 'نسخ رابط المشاركة',
-                  icon: const Icon(Icons.link),
-                  onPressed: () async {
-                  final username = updatedArticle.author?.username ?? 'user';
-                  final url = 'https://sijilli.com/$username/${updatedArticle.id}';
-                  
-                  // Auto-publish if author and not already published
-                  if (isAuthor && !updatedArticle.isPublished) {
-                    await context.read<ArticleProvider>().togglePublishStatus(updatedArticle.id, true);
-                  }
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
-                  await Clipboard.setData(ClipboardData(text: url));
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(isAuthor && !updatedArticle.isPublished 
-                            ? 'تم نسخ رابط المقال إلى الحافظة ونشره تلقائياً 🚀'
-                            : 'تم نسخ رابط المشاركة إلى الحافظة 🔗'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  }
-                },
-              ),
-              if (isAuthor)
-                IconButton(
-                  tooltip: 'تعديل المقال',
-                  icon: const Icon(Icons.edit_outlined),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AddArticleScreen(article: updatedArticle),
-                      ),
-                    );
-                  },
-                ),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: hasImage
-                  ? GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isImageExpanded = !_isImageExpanded;
-                        });
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                        width: double.infinity,
-                        height: _isImageExpanded ? 300.0 : 100.0,
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            Image.network(
-                              'https://sijilli.pockethost.io/api/files/articles/${updatedArticle.id}/${updatedArticle.image}',
-                              fit: BoxFit.cover,
-                            ),
-                            // Gradient overlay to ensure back button is visible
-                            Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.black.withValues(alpha: 0.6),
-                                    Colors.transparent,
-                                  ],
-                                  stops: const [0.0, 0.3],
-                                ),
-                              ),
-                            ),
-                            if (!_isImageExpanded)
-                              Positioned(
-                                bottom: 8,
-                                right: 16,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black54,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 16),
-                                      const SizedBox(width: 4),
-                                      Text(context.l10n.expandImage, style: const TextStyle(color: Colors.white, fontSize: 10)),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    )
-                  : null,
-            ),
-          ),
-
-          // Article Content
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-
-                  // Text Content
-                  isAuthor
-                      ? GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AddArticleScreen(article: updatedArticle),
-                              ),
-                            );
-                          },
-                          child: ArticleContentRenderer(
-                            text: updatedArticle.text,
-                            fontFamily: fontFamily,
-                          ),
-                        )
-                      : ArticleContentRenderer(
-                          text: updatedArticle.text,
-                          fontFamily: fontFamily,
-                        ),
-                  
-                  // Metadata Block at the bottom
-                  const SizedBox(height: 48),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.getCardBackground(context).withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(12),
+    return Directionality(
+      textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+      child: Scaffold(
+        backgroundColor: AppColors.getBackground(context),
+        body: SafeArea(
+          bottom: false,
+          child: CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              // AppBar & Image Header
+              SliverAppBar(
+                expandedHeight: hasImage 
+                    ? (_isImageExpanded ? 300.0 : 100.0) 
+                    : kToolbarHeight,
+                pinned: true,
+                backgroundColor: AppColors.getBackground(context),
+                foregroundColor: AppColors.getTextPrimary(context),
+                actions: [
+                  IconButton(
+                    tooltip: 'تغيير خط القراءة (Traditional Arabic)',
+                    icon: Icon(
+                      useTraditionalArabic ? Icons.font_download : Icons.font_download_outlined,
+                      color: useTraditionalArabic ? AppColors.primary : null,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Word Count
-                        Row(
-                          children: [
-                            Icon(Icons.text_snippet_outlined, size: 18, color: AppColors.getTextSecondary(context)),
-                            const SizedBox(width: 8),
-                            Text(
-                              context.l10n.wordsCount(updatedArticle.wordCount),
-                              style: TextStyle(fontSize: 14, color: AppColors.getTextSecondary(context)),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        // Publish Date
-                        Row(
-                          children: [
-                            Icon(Icons.calendar_today_outlined, size: 18, color: AppColors.getTextSecondary(context)),
-                            const SizedBox(width: 8),
-                            Text(
-                              'تاريخ النشر: ${timeago.format(updatedArticle.createdAt, locale: Localizations.localeOf(context).languageCode)}',
-                              style: TextStyle(fontSize: 14, color: AppColors.getTextSecondary(context)),
-                            ),
-                          ],
-                        ),
-                        // Last Edit Date (if different)
-                        if (updatedArticle.updatedAt.isAfter(updatedArticle.createdAt.add(const Duration(minutes: 5)))) ...[
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Icon(Icons.edit_calendar_outlined, size: 18, color: AppColors.getTextSecondary(context)),
-                              const SizedBox(width: 8),
-                              Text(
-                                context.l10n.lastEdited(timeago.format(updatedArticle.updatedAt, locale: Localizations.localeOf(context).languageCode)),
-                                style: TextStyle(fontSize: 14, color: AppColors.getTextSecondary(context)),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // Interaction Bar
-                  const Divider(),
-                  Consumer<ArticleProvider>(
-                    builder: (context, provider, child) {
-                      // Find the updated article from the provider if possible
-                      final innerArticle = provider.articles.firstWhere(
-                        (a) => a.id == widget.article.id, 
-                        orElse: () => updatedArticle,
-                      );
-                      
-                      final isLiked = innerArticle.likes.contains(currentUserId);
-                      
-                      return Row(
-                        children: [
-                          IconButton(
-                            icon: Icon(
-                              isLiked ? Icons.favorite : Icons.favorite_border,
-                              color: isLiked ? AppColors.error : AppColors.getTextSecondary(context),
-                            ),
-                            onPressed: currentUserId != null ? () {
-                              provider.toggleLike(innerArticle.id, currentUserId);
-                            } : null,
-                          ),
-                          Text(
-                            '${innerArticle.likes.length}',
-                            style: TextStyle(
-                              fontSize: AppDimens.textSizeM,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.getTextSecondary(context),
-                            ),
-                          ),
-                          const Spacer(),
-                          IconButton(
-                            icon: Icon(Icons.comment_outlined, color: AppColors.getTextSecondary(context)),
-                            onPressed: () {
-                              // TODO: Open Comments Bottom Sheet
-                            },
-                          ),
-                        ],
-                      );
+                    onPressed: () {
+                      settingsProvider.setUseTraditionalArabic(!useTraditionalArabic);
                     },
                   ),
-                  const SizedBox(height: 32),
+                  if (isAuthor || updatedArticle.isPublished)
+                    IconButton(
+                      tooltip: 'نسخ رابط المشاركة',
+                      icon: const Icon(Icons.link),
+                      onPressed: () async {
+                      final username = updatedArticle.author?.username ?? 'user';
+                      final url = 'https://sijilli.com/$username/${updatedArticle.id}';
+                      
+                      // Auto-publish if author and not already published
+                      if (isAuthor && !updatedArticle.isPublished) {
+                        await context.read<ArticleProvider>().togglePublishStatus(updatedArticle.id, true);
+                      }
+  
+                      await Clipboard.setData(ClipboardData(text: url));
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(isAuthor && !updatedArticle.isPublished 
+                                ? 'تم نسخ رابط المقال إلى الحافظة ونشره تلقائياً 🚀'
+                                : 'تم نسخ رابط المشاركة إلى الحافظة 🔗'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                  if (isAuthor)
+                    IconButton(
+                      tooltip: 'تعديل المقال',
+                      icon: const Icon(Icons.edit_outlined),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AddArticleScreen(article: updatedArticle),
+                          ),
+                        );
+                      },
+                    ),
                 ],
+                flexibleSpace: FlexibleSpaceBar(
+                  background: hasImage
+                      ? GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _isImageExpanded = !_isImageExpanded;
+                            });
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                            width: double.infinity,
+                            height: _isImageExpanded ? 300.0 : 100.0,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                Image.network(
+                                  'https://sijilli.pockethost.io/api/files/articles/${updatedArticle.id}/${updatedArticle.image}',
+                                  fit: BoxFit.cover,
+                                ),
+                                // Gradient overlay to ensure back button is visible
+                                Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Colors.black.withValues(alpha: 0.6),
+                                        Colors.transparent,
+                                      ],
+                                      stops: const [0.0, 0.3],
+                                    ),
+                                  ),
+                                ),
+                                if (!_isImageExpanded)
+                                  Positioned(
+                                    bottom: 8,
+                                    right: 16,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black54,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 16),
+                                          const SizedBox(width: 4),
+                                          Text(context.l10n.expandImage, style: const TextStyle(color: Colors.white, fontSize: 10)),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : null,
+                ),
               ),
-            ),
+  
+              // Article Content
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+  
+                      // Text Content
+                      isAuthor
+                          ? GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => AddArticleScreen(article: updatedArticle),
+                                  ),
+                                );
+                              },
+                              child: ArticleContentRenderer(
+                                text: updatedArticle.text,
+                                fontFamily: fontFamily,
+                              ),
+                            )
+                          : ArticleContentRenderer(
+                              text: updatedArticle.text,
+                              fontFamily: fontFamily,
+                            ),
+                      
+                      // Metadata Block at the bottom
+                      const SizedBox(height: 48),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.getCardBackground(context).withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Word Count
+                            Row(
+                              children: [
+                                Icon(Icons.text_snippet_outlined, size: 18, color: AppColors.getTextSecondary(context)),
+                                const SizedBox(width: 8),
+                                Text(
+                                  context.l10n.wordsCount(updatedArticle.wordCount),
+                                  style: TextStyle(fontSize: 14, color: AppColors.getTextSecondary(context)),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            // Publish Date
+                            Row(
+                              children: [
+                                Icon(Icons.calendar_today_outlined, size: 18, color: AppColors.getTextSecondary(context)),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'تاريخ النشر: ${timeago.format(updatedArticle.createdAt, locale: Localizations.localeOf(context).languageCode)}',
+                                  style: TextStyle(fontSize: 14, color: AppColors.getTextSecondary(context)),
+                                ),
+                              ],
+                            ),
+                            // Last Edit Date (if different)
+                            if (updatedArticle.updatedAt.isAfter(updatedArticle.createdAt.add(const Duration(minutes: 5)))) ...[
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Icon(Icons.edit_calendar_outlined, size: 18, color: AppColors.getTextSecondary(context)),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    context.l10n.lastEdited(timeago.format(updatedArticle.updatedAt, locale: Localizations.localeOf(context).languageCode)),
+                                    style: TextStyle(fontSize: 14, color: AppColors.getTextSecondary(context)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // Interaction Bar
+                      const Divider(),
+                      Consumer<ArticleProvider>(
+                        builder: (context, provider, child) {
+                          // Find the updated article from the provider if possible
+                          final innerArticle = provider.articles.firstWhere(
+                            (a) => a.id == widget.article.id, 
+                            orElse: () => updatedArticle,
+                          );
+                          
+                          final isLiked = innerArticle.likes.contains(currentUserId);
+                          
+                          return Row(
+                            children: [
+                              IconButton(
+                                icon: Icon(
+                                  isLiked ? Icons.favorite : Icons.favorite_border,
+                                  color: isLiked ? AppColors.error : AppColors.getTextSecondary(context),
+                                ),
+                                onPressed: currentUserId != null ? () {
+                                  provider.toggleLike(innerArticle.id, currentUserId);
+                                } : null,
+                              ),
+                              Text(
+                                '${innerArticle.likes.length}',
+                                style: TextStyle(
+                                  fontSize: AppDimens.textSizeM,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.getTextSecondary(context),
+                                ),
+                              ),
+                              const Spacer(),
+                              IconButton(
+                                icon: Icon(Icons.comment_outlined, color: AppColors.getTextSecondary(context)),
+                                onPressed: () {
+                                  // TODO: Open Comments Bottom Sheet
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
       ),
     );
   }

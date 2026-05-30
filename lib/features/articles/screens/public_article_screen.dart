@@ -207,92 +207,96 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
     }
 
     final hasImage = _article!.image != null && _article!.image!.isNotEmpty;
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // عنوان المقال
-          Text(
-            _article!.title.isNotEmpty ? _article!.title : 'بدون عنوان',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              height: 1.4,
-              color: AppColors.getTextPrimary(context),
+    return Directionality(
+      textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // عنوان المقال
+            Text(
+              _article!.title.isNotEmpty ? _article!.title : 'بدون عنوان',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                height: 1.4,
+                color: AppColors.getTextPrimary(context),
+              ),
             ),
-          ),
-          const SizedBox(height: 10),
-          
-          // الكاتب والتاريخ
-          Row(
-            children: [
-              Text(
-                _authorProfile?.name ?? widget.username,
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                  color: AppColors.getTextSecondary(context),
+            const SizedBox(height: 10),
+            
+            // الكاتب والتاريخ
+            Row(
+              children: [
+                Text(
+                  _authorProfile?.name ?? widget.username,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: AppColors.getTextSecondary(context),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '•',
+                  style: TextStyle(color: AppColors.getTextSecondary(context)),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  timeago.format(_article!.createdAt, locale: context.l10n.localeName),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.getTextSecondary(context),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+  
+            // غلاف المقال
+            if (hasImage) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Image.network(
+                    'https://sijilli.pockethost.io/api/files/articles/${_article!.id}/${_article!.image}',
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: 200,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
                 ),
               ),
-              const SizedBox(width: 8),
-              Text(
-                '•',
-                style: TextStyle(color: AppColors.getTextSecondary(context)),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                timeago.format(_article!.createdAt, locale: context.l10n.localeName),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.getTextSecondary(context),
-                ),
-              ),
+              const SizedBox(height: 24),
             ],
-          ),
-          const SizedBox(height: 20),
-
-          // غلاف المقال
-          if (hasImage) ...[
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Image.network(
-                  'https://sijilli.pockethost.io/api/files/articles/${_article!.id}/${_article!.image}',
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: 200,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                ),
+  
+            // محتوى المقال
+            ArticleContentRenderer(text: _article!.text),
+            const SizedBox(height: 40),
+            
+            // زر العودة أو الدخول
+            Center(
+              child: OutlinedButton(
+                onPressed: () => Navigator.of(context).pushReplacementNamed('/main'),
+                child: const Text('تصفح تطبيق سجلي'),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 40),
           ],
-
-          // محتوى المقال
-          ArticleContentRenderer(text: _article!.text),
-          const SizedBox(height: 40),
-          
-          // زر العودة أو الدخول
-          Center(
-            child: OutlinedButton(
-              onPressed: () => Navigator.of(context).pushReplacementNamed('/main'),
-              child: const Text('تصفح تطبيق سجلي'),
-            ),
-          ),
-          const SizedBox(height: 40),
-        ],
+        ),
       ),
     );
   }
