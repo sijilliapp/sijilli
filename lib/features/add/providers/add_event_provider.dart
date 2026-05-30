@@ -33,11 +33,13 @@ class AddEventProvider extends ChangeNotifier {
   String _title = '';
   String _location = '';
   String _building = '';
+  String _coordinates = '';
   String _streamLink = '';
 
   String get draftTitle => _title;
   String get draftLocation => _location;
   String get draftBuilding => _building;
+  String get draftCoordinates => _coordinates;
   String get draftStreamLink => _streamLink;
 
 
@@ -53,6 +55,7 @@ class AddEventProvider extends ChangeNotifier {
   final List<UserModel> _selectedUsers = [];
   Coordinates? _userCoordinates;
   double _hijriAdjustment = 0; // Added for Provider logic
+  bool _pinAddress = false;
 
   // Recurrence
   bool _isRecurring = false;
@@ -94,6 +97,7 @@ class AddEventProvider extends ChangeNotifier {
   List<String> get suggestions => _suggestions;
   List<PivotMatch> get pivotSuggestions => _pivotSuggestions;
   bool get hasConflict => _hasConflict;
+  bool get pinAddress => _pinAddress;
 
   // Calculated Getters (Moved from UI)
   TimeOfDay? get sunsetTime {
@@ -246,11 +250,22 @@ class AddEventProvider extends ChangeNotifier {
       }
 
       // Note: Other fields
+      _location = initialAppointment.region ?? '';
+      _building = initialAppointment.building ?? '';
+      _coordinates = initialAppointment.coordinates ?? '';
+      _streamLink = initialAppointment.streamLink ?? '';
     } else {
       _selectedEndDate = _selectedDate;
       await _loadDraft();
       if (_privacy == 'followers' && _lastSelectedPrivacy != 'followers') {
         _privacy = _lastSelectedPrivacy;
+      }
+      final box = await Hive.openBox('appointment_drafts');
+      _pinAddress = box.get('pin_address', defaultValue: false);
+      if (_pinAddress && _location.isEmpty && _building.isEmpty) {
+        _location = box.get('pinned_location', defaultValue: '');
+        _building = box.get('pinned_building', defaultValue: '');
+        _coordinates = box.get('pinned_coordinates', defaultValue: '');
       }
     }
     
@@ -304,6 +319,7 @@ class AddEventProvider extends ChangeNotifier {
       _title = draft['title'] ?? '';
       _location = draft['location'] ?? '';
       _building = draft['building'] ?? '';
+      _coordinates = draft['coordinates'] ?? '';
       _streamLink = draft['streamLink'] ?? '';
       
       _privacy = draft['privacy'] ?? _lastSelectedPrivacy;
@@ -348,6 +364,7 @@ class AddEventProvider extends ChangeNotifier {
       'title': _title,
       'location': _location,
       'building': _building,
+      'coordinates': _coordinates,
       'streamLink': _streamLink,
       'privacy': _privacy,
       'isHijri': _isHijri,
@@ -391,6 +408,49 @@ class AddEventProvider extends ChangeNotifier {
     _saveLastPrivacy(value);
     _saveDraft();
     notifyListeners();
+  }
+
+  void setLocation(String value) {
+    _location = value;
+    _saveDraft();
+    notifyListeners();
+  }
+
+  void setBuilding(String value) {
+    _building = value;
+    _saveDraft();
+    notifyListeners();
+  }
+
+  void setCoordinates(String value) {
+    _coordinates = value;
+    _saveDraft();
+    notifyListeners();
+  }
+
+  Future<void> setPinAddress(bool value) async {
+    _pinAddress = value;
+    final box = await Hive.openBox('appointment_drafts');
+    await box.put('pin_address', value);
+    if (value) {
+      await box.put('pinned_location', _location);
+      await box.put('pinned_building', _building);
+      await box.put('pinned_coordinates', _coordinates);
+    } else {
+      await box.delete('pinned_location');
+      await box.delete('pinned_building');
+      await box.delete('pinned_coordinates');
+    }
+    notifyListeners();
+  }
+
+  Future<void> updatePinnedAddressIfNeeded() async {
+    if (_pinAddress) {
+      final box = await Hive.openBox('appointment_drafts');
+      await box.put('pinned_location', _location);
+      await box.put('pinned_building', _building);
+      await box.put('pinned_coordinates', _coordinates);
+    }
   }
 
   void _updateConflictStatus() {
@@ -713,8 +773,6 @@ class AddEventProvider extends ChangeNotifier {
 
   // Form Actions
   void clearForm() {
-    // We only reset state.
-    // We only reset state.
     _selectedDate = DateTime.now();
     _selectedTime = null;
     _duration = 45;
@@ -724,8 +782,20 @@ class AddEventProvider extends ChangeNotifier {
     _isSaving = false;
     _privacy = _lastSelectedPrivacy;
     _title = '';
-    _location = '';
-    _building = '';
+    
+    // Reload pinned location if active
+    if (_pinAddress) {
+      // Synchronously access because box is already open
+      final box = Hive.box('appointment_drafts');
+      _location = box.get('pinned_location', defaultValue: '');
+      _building = box.get('pinned_building', defaultValue: '');
+      _coordinates = box.get('pinned_coordinates', defaultValue: '');
+    } else {
+      _location = '';
+      _building = '';
+      _coordinates = '';
+    }
+
     _streamLink = '';
     _suggestions = [];
     _pivotSuggestions = [];
@@ -817,6 +887,7 @@ class AddEventProvider extends ChangeNotifier {
       duration: finalDuration,
       region: location.isNotEmpty ? location : null,
       building: building.isNotEmpty ? building : null,
+      coordinates: _coordinates.isNotEmpty ? _coordinates : null,
       privacy: _privacy,
       dateType: _isHijri ? 'hijri' : 'gregorian',
       hijriDate: hijriDateString,
@@ -849,6 +920,13 @@ class AddEventProvider extends ChangeNotifier {
            _learnedLocations[location] = {};
         }
         _learnedLocations[location]![building] = (_learnedLocations[location]![building] ?? 0) + 1;
+      }
+
+      if (_pinAddress) {
+        final box = await Hive.openBox('appointment_drafts');
+        await box.put('pinned_location', location);
+        await box.put('pinned_building', building);
+        await box.put('pinned_coordinates', _coordinates);
       }
 
       _draftService.clearDraft();

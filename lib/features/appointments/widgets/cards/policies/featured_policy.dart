@@ -27,5 +27,8 @@ class FeaturedPolicy extends StandardPolicy {
 
 
   @override
+  bool get showLocation => !isReadOnly;
+
+  @override
   Color get shadowColor => Colors.transparent;
 }

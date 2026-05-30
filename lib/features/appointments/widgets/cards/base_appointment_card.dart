@@ -85,11 +85,28 @@ class BaseAppointmentCard extends StatelessWidget {
                       icon: Icons.delete_outline,
                       isDestructive: true,
                       onTap: () async {
+                        final hasAnyAcceptedGuest = appointment.participants?.any((p) => p.userId != appointment.hostId && p.status == InvitationStatus.accepted) ?? false;
+                        final showHostWarning = isOwner && !hasAnyAcceptedGuest;
+
+                        final String titleText;
+                        final String confirmText;
+
+                        if (showHostWarning) {
+                          titleText = context.l10n.detailsDeleteTitleHost;
+                          confirmText = context.l10n.detailsDeleteConfirmHost;
+                        } else {
+                          final isAr = context.l10n.localeName == 'ar';
+                          titleText = isAr ? 'حذف الموعد' : 'Delete Appointment';
+                          confirmText = isAr 
+                              ? 'هذا قرار نهائي، سوف يؤدي إلى حذف سجل الموعد من صفحتك الشخصية.\nهل أنت متأكد؟'
+                              : 'This is a final decision, it will lead to deleting the appointment record from your personal page.\nAre you sure?';
+                        }
+
                         final confirm = await showDialog<bool>(
                           context: context,
                           builder: (dialogContext) => AlertDialog(
-                            title: Text(isOwner || isAdmin ? context.l10n.detailsDeleteTitleHost : context.l10n.detailsDeleteTitleGuest),
-                            content: Text(isOwner || isAdmin ? context.l10n.detailsDeleteConfirmHost : context.l10n.detailsDeleteConfirmGuest),
+                            title: Text(titleText),
+                            content: Text(confirmText),
                             actions: [
                               TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(context.l10n.cancel)),
                               TextButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(context.l10n.delete, style: const TextStyle(color: Colors.red))),
@@ -382,7 +399,7 @@ class _AppointmentCardBody extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               
-              if (appointment.hasLocation) ...[
+              if (appointment.hasLocation && policy.showLocation) ...[
                 AppointmentDetailItem(
                   icon: Icons.location_on, 
                   text: appointment.smartLocation!,

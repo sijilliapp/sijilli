@@ -10,6 +10,7 @@ import 'package:sijilli/features/auth/providers/auth_provider.dart';
 import 'package:sijilli/features/profile/providers/moderation_provider.dart';
 import 'package:sijilli/features/appointments/providers/appointment_provider.dart';
 import 'package:sijilli/features/add/screens/add_event_screen.dart';
+import 'package:sijilli/core/widgets/auth_wrapper.dart';
 import 'package:sijilli/core/widgets/sheets/app_action_sheet.dart';
 class PublicPolicy extends AppointmentCardPolicy {
   PublicPolicy(super.appointment, super.context, {super.customOnTap});
@@ -93,6 +94,13 @@ class PublicPolicy extends AppointmentCardPolicy {
   @override
   VoidCallback? get onCardTap => customOnTap ?? () {
     final auth = context.read<AuthProvider>();
+    if (auth.user == null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const AuthWrapper()),
+      );
+      return;
+    }
     final moderation = context.read<ModerationProvider>();
     final appointmentProvider = context.read<AppointmentProvider>();
     
@@ -245,6 +253,9 @@ class PublicPolicy extends AppointmentCardPolicy {
     return AvatarStatus.upcoming;
   }
   
+  @override
+  bool get showLocation => false;
+
   @override
   bool get canReport => false;
 }

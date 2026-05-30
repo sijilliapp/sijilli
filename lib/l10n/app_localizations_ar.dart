@@ -1575,7 +1575,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get boldTooltip => 'تغميق النص (عريض)';
 
   @override
-  String get poemTooltip => 'تنسيق كقصيدة';
+  String get poemTooltip => 'تنسيق الشعر';
 
   @override
   String get centerTooltip => 'توسيط النص';

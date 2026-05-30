@@ -89,6 +89,9 @@ class LocalAppointment extends HiveObject {
 
   @HiveField(26)
   String? appointmentGroupId;
+
+  @HiveField(27)
+  String? coordinates;
 }
 
 @HiveType(typeId: 2)

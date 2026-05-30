@@ -8,6 +8,7 @@ import '../providers/admin_provider.dart';
 import 'admin_messages_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_article_prefs_screen.dart';
+import 'admin_system_prefs_screen.dart';
 
 class SuperAdminScreen extends StatefulWidget {
   const SuperAdminScreen({super.key});
@@ -51,7 +52,7 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
             const Padding(
               padding: EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
               child: Text(
-                'إعدادات التسجيل والدخول',
+                'إعدادات النظام العامة',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -60,33 +61,17 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
               ),
             ),
             
-            Consumer2<GlobalConfigProvider, AdminProvider>(
-              builder: (context, config, admin, _) {
-                return _buildSwitchCard(
+            _buildClickableCard(
+              context,
+              isDark: isDark,
+              icon: Icons.settings_accessibility_outlined,
+              title: 'إعدادات التسجيل والتواصل',
+              subtitle: 'التحكم في حالة التسجيل للجدد ورقم الواتساب والبريد الإلكتروني للقرّاء',
+              badgeCount: 0,
+              onTap: () {
+                Navigator.push(
                   context,
-                  isDark: isDark,
-                  icon: Icons.person_add_alt_1_outlined,
-                  value: config.isRegistrationEnabled,
-                  isLoading: admin.isLoading,
-                  activeColor: AppColors.primary,
-                  onChanged: (val) async {
-                    final success = await admin.toggleRegistration(val, config);
-                    if (success && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(val ? 'تم استئناف التسجيل بنجاح' : 'تم إيقاف التسجيل بنجاح'),
-                          backgroundColor: val ? Colors.green : Colors.orange,
-                        ),
-                      );
-                    } else if (!success && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('حدث خطأ أثناء حفظ الإعدادات'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  },
+                  MaterialPageRoute(builder: (context) => const AdminSystemPrefsScreen()),
                 );
               },
             ),

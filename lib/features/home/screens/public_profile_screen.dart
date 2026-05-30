@@ -12,6 +12,7 @@ import 'package:sijilli/features/home/widgets/profile_tabs/profile_articles_tab.
 import 'package:sijilli/features/home/widgets/private_profile_wall.dart';
 import 'package:sijilli/features/home/providers/public_profile_provider.dart';
 import 'package:sijilli/features/profile/providers/moderation_provider.dart';
+import 'package:sijilli/core/widgets/auth_wrapper.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class PublicProfileScreen extends StatefulWidget {
@@ -151,6 +152,18 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> with SingleTi
                             Consumer<ModerationProvider>(
                               builder: (context, moderation, _) {
                                 final isBlocked = moderation.isUserBlocked(user.id);
+                                final currentUser = Provider.of<AuthProvider>(context, listen: false).user;
+                                if (currentUser == null) {
+                                  return IconButton(
+                                    icon: const Icon(Icons.more_vert, color: AppColors.primary),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => const AuthWrapper()),
+                                      );
+                                    },
+                                  );
+                                }
                                 return PopupMenuButton<String>(
                                   icon: const Icon(Icons.more_vert, color: AppColors.primary),
                                   onSelected: (val) async {

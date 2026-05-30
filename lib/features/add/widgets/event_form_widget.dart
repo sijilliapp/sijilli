@@ -32,6 +32,10 @@ class EventFormWidget extends StatelessWidget {
   final ValueChanged<String>? onRegionSelected;
   final ValueChanged<String>? onBuildingSelected;
 
+  final bool pinAddress;
+  final ValueChanged<bool>? onPinAddressChanged;
+  final VoidCallback? onOpenLocationPicker;
+
   const EventFormWidget({
     super.key,
     required this.titleController,
@@ -55,6 +59,9 @@ class EventFormWidget extends StatelessWidget {
     this.buildingSuggestions = const [],
     this.onRegionSelected,
     this.onBuildingSelected,
+    this.pinAddress = false,
+    this.onPinAddressChanged,
+    this.onOpenLocationPicker,
   });
 
   @override
@@ -120,11 +127,50 @@ class EventFormWidget extends StatelessWidget {
                 focusNode: buildingFocusNode,
                 label: context.l10n.building,
                 hint: context.l10n.buildingHint,
-                maxLength: 30,
+                maxLength: 60, // Increased to support building name + coordinate string suffix
+                suffixIcon: IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.primary, width: 1.5),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Icon(
+                      Icons.map_outlined,
+                      size: 16,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  onPressed: onOpenLocationPicker,
+                ),
               ),
             ),
           ],
         ),
+
+        // Pin Address Switch
+        if (onPinAddressChanged != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  context.l10n.localeName == 'ar' ? 'ثبِّت واستخدم هذا العنوان تلقائياً' : 'Pin and use this address automatically',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade300 : Colors.grey.shade800,
+                  ),
+                ),
+                Switch(
+                  value: pinAddress,
+                  onChanged: onPinAddressChanged,
+                  activeColor: AppColors.primary,
+                ),
+              ],
+            ),
+          ),
         
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),

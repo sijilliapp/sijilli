@@ -21,6 +21,7 @@ import '../../main/screens/main_screen.dart';
 import '../../../core/utils/app_pickers.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import '../../../core/services/autocomplete_service.dart';
+import 'location_picker_screen.dart';
 
 class AddEventScreen extends StatelessWidget {
   final Appointment? initialAppointment;
@@ -79,7 +80,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
     _locationController = TextEditingController(text: appt?.region);
     _locationController.addListener(_onLocationChanged);
     
-    _buildingController = TextEditingController(text: appt?.building);
+    _buildingController = TextEditingController(text: appt?.cleanBuilding);
     _buildingController.addListener(_onBuildingChanged);
     
     _streamLinkController = TextEditingController(text: appt?.streamLink);
@@ -201,19 +202,24 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
   }
 
   void _onLocationChanged() {
-    context.read<AddEventProvider>().updateRegionSuggestions(_locationController.text);
+    final text = _locationController.text;
+    context.read<AddEventProvider>().setLocation(text);
+    context.read<AddEventProvider>().updateRegionSuggestions(text);
     // Also update building suggestions if region changes (it might reset or change context)
     if (_isBuildingFocused) {
-       context.read<AddEventProvider>().updateBuildingSuggestions(_locationController.text, _buildingController.text);
+       context.read<AddEventProvider>().updateBuildingSuggestions(text, _buildingController.text);
     }
   }
 
   void _onBuildingChanged() {
-    context.read<AddEventProvider>().updateBuildingSuggestions(_locationController.text, _buildingController.text);
+    final text = _buildingController.text;
+    context.read<AddEventProvider>().setBuilding(text);
+    context.read<AddEventProvider>().updateBuildingSuggestions(_locationController.text, text);
   }
 
   void _onRegionSelected(String region) {
     _locationController.text = region;
+    context.read<AddEventProvider>().setLocation(region);
     // Move focus to building? Or just fill?
     // User often wants flow. Let's move to building.
     _buildingFocusNode.requestFocus();
@@ -222,8 +228,64 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
 
   void _onBuildingSelected(String building) {
     _buildingController.text = building;
+    context.read<AddEventProvider>().setBuilding(building);
     _buildingController.selection = TextSelection.collapsed(offset: building.length);
     // Maybe hide keyboard or just stay? Default stay.
+  }
+
+  Future<void> _openLocationPicker(AddEventProvider provider) async {
+    double? initialLat;
+    double? initialLon;
+    final coordsText = provider.draftCoordinates;
+    if (coordsText.isNotEmpty) {
+      final coords = coordsText.split(',');
+      if (coords.length == 2) {
+        initialLat = double.tryParse(coords[0]);
+        initialLon = double.tryParse(coords[1]);
+      }
+    } else {
+      final buildingText = _buildingController.text;
+      final parts = buildingText.split('|');
+      if (parts.length > 1) {
+        final coords = parts.last.trim().split(',');
+        if (coords.length == 2) {
+          initialLat = double.tryParse(coords[0]);
+          initialLon = double.tryParse(coords[1]);
+        }
+      }
+    }
+
+    final LocationPickerResult? result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LocationPickerScreen(
+          initialLatitude: initialLat,
+          initialLongitude: initialLon,
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      _locationController.removeListener(_onLocationChanged);
+      _buildingController.removeListener(_onBuildingChanged);
+
+      // Only populate region/location if currently empty and map result has a value
+      if (_locationController.text.trim().isEmpty && result.region.isNotEmpty) {
+        _locationController.text = result.region;
+        provider.setLocation(result.region);
+      }
+      
+      // Only populate building if currently empty and map result has a value
+      if (_buildingController.text.trim().isEmpty && result.building.isNotEmpty) {
+        _buildingController.text = result.building;
+        provider.setBuilding(result.building);
+      }
+      
+      provider.setCoordinates('${result.latitude},${result.longitude}');
+
+      _locationController.addListener(_onLocationChanged);
+      _buildingController.addListener(_onBuildingChanged);
+    }
   }
 
   @override
@@ -384,6 +446,9 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
                 buildingSuggestions: provider.buildingSuggestions,
                 onRegionSelected: _onRegionSelected,
                 onBuildingSelected: _onBuildingSelected,
+                pinAddress: provider.pinAddress,
+                onPinAddressChanged: (val) => provider.setPinAddress(val),
+                onOpenLocationPicker: () => _openLocationPicker(provider),
               ), 
             
             const SizedBox(height: AppDimens.spaceXXS),
@@ -772,10 +837,21 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
 
   void _performClearSilent() {
     _titleController.clear();
-    _locationController.clear();
-    _buildingController.clear();
     _streamLinkController.clear();
-    context.read<AddEventProvider>().clearForm();
+    
+    // Temporarily remove listeners to prevent updating provider with empty values on clear
+    _locationController.removeListener(_onLocationChanged);
+    _buildingController.removeListener(_onBuildingChanged);
+    
+    final provider = context.read<AddEventProvider>();
+    provider.clearForm();
+    
+    _locationController.text = provider.draftLocation;
+    _buildingController.text = provider.draftBuilding;
+    
+    // Re-attach listeners
+    _locationController.addListener(_onLocationChanged);
+    _buildingController.addListener(_onBuildingChanged);
   }
 
   Widget _buildConflictAlert() {

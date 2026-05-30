@@ -14,6 +14,7 @@ import '../../profile/widgets/user_follow_button.dart';
 import 'package:sijilli/features/profile/screens/follows_screen.dart';
 import 'package:sijilli/features/notifications/providers/notification_provider.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
+import 'package:sijilli/core/widgets/auth_wrapper.dart';
 
 class ProfileHeader extends StatelessWidget {
   final UserModel? user;
@@ -54,12 +55,21 @@ class ProfileHeader extends StatelessWidget {
                       imageUrl: displayUser.getAvatarUrl('https://sijilli.pockethost.io'),
                       status: currentStatus,
                       size: AppDimens.avatarSizeProfile,
-                      onTap: () => ProfileActionsHelper.showAvatarActions(
-                        context: context, 
-                        targetUser: displayUser, 
-                        currentUser: authProvider.user,
-                        streamLink: streamLink,
-                      ),
+                      onTap: () {
+                        if (authProvider.user == null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const AuthWrapper()),
+                          );
+                          return;
+                        }
+                        ProfileActionsHelper.showAvatarActions(
+                          context: context, 
+                          targetUser: displayUser, 
+                          currentUser: authProvider.user,
+                          streamLink: streamLink,
+                        );
+                      },
                     );
                   },
                 ),
@@ -68,6 +78,13 @@ class ProfileHeader extends StatelessWidget {
                 
                 InkWell(
                   onTap: () async {
+                    if (authProvider.user == null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const AuthWrapper()),
+                      );
+                      return;
+                    }
                     await Clipboard.setData(ClipboardData(text: displayUser.profileUrl));
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -260,6 +277,13 @@ class ProfileHeader extends StatelessWidget {
                           child: InkWell(
                             borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
                             onTap: () {
+                              if (authProvider.user == null) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const AuthWrapper()),
+                                );
+                                return;
+                              }
                               ProfileActionsHelper.showContactOptions(context, displayUser);
                             },
                             child: const Icon(Icons.link, color: AppColors.primary, size: AppDimens.iconSizeXS),

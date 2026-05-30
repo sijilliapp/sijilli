@@ -76,11 +76,9 @@ class AppointmentProvider extends ChangeNotifier {
   
   String _searchQuery = '';
 
-  /// الكلمات المفتاحية والكبسولات الحاصرة لمجال البحث
-  List<String> get searchKeywords {
-    final Set<String> keywords = {'(عام)', '(خاص)', '(معتمدون)'};
-    
-    // نستخدم getter المواعيد لضمان أنها المواعيد المنشورة فقط وغير المحظورة
+  /// الحصول على قائمة أسماء المناطق في الصفحة للبحث
+  List<String> get searchRegionKeywords {
+    final Set<String> regions = {};
     final mainAppointments = appointments.where((a) {
       final isHostedByMe = a.hostId == _currentUserId;
       final isAcceptedByMe = a.viewerRecord?.status == InvitationStatus.accepted;
@@ -88,27 +86,34 @@ class AppointmentProvider extends ChangeNotifier {
     }).toList();
 
     for (var a in mainAppointments) {
-      // إضافة اسم المضيف
-      if (a.host?.name != null && a.host!.name.isNotEmpty) {
-        keywords.add(a.host!.name.trim());
-      }
-      // إضافة أسماء المشاركين (الذين قبلوا الدعوة)
-      if (a.participants != null) {
-        for (var p in a.participants!) {
-          if (p.user?.name != null && p.user!.name.isNotEmpty) {
-            keywords.add(p.user!.name.trim());
-          }
-        }
+      if (a.region != null && a.region!.trim().isNotEmpty) {
+        regions.add(a.region!.trim());
       }
     }
-    
-    final result = keywords.toList();
-    // ترتيب (نترك الكبسولات الحاصرة في البداية ثم الأسماء أبجدياً)
-    final tags = ['(عام)', '(خاص)', '(معتمدون)'];
-    final names = result.where((k) => !tags.contains(k)).toList();
-    names.sort();
-    
-    return [...tags, ...names.take(15)];
+    return regions.toList()..sort();
+  }
+
+  /// الحصول على قائمة أسماء التصنيفات في الصفحة للبحث (مع كلمة معتمدون)
+  List<String> get searchCategoryKeywords {
+    final Set<String> categoryNames = {};
+    final mainAppointments = appointments.where((a) {
+      final isHostedByMe = a.hostId == _currentUserId;
+      final isAcceptedByMe = a.viewerRecord?.status == InvitationStatus.accepted;
+      return isHostedByMe || isAcceptedByMe;
+    }).toList();
+
+    for (var a in mainAppointments) {
+      if (a.currentUserInvitation?.categories?.name != null && a.currentUserInvitation!.categories!.name.trim().isNotEmpty) {
+        categoryNames.add(a.currentUserInvitation!.categories!.name.trim());
+      }
+    }
+    final sortedCategories = categoryNames.toList()..sort();
+    return [...sortedCategories, 'معتمدون'];
+  }
+
+  /// الكلمات المفتاحية لمجال البحث (المناطق المتوفرة في الصفحة أولاً، ثم التصنيفات categories، ثم كلمة معتمدون)
+  List<String> get searchKeywords {
+    return [...searchRegionKeywords, ...searchCategoryKeywords];
   }
 
   // Getters (Filter out blocked users and bookmarked items)
@@ -127,38 +132,53 @@ class AppointmentProvider extends ChangeNotifier {
 
     final rawQuery = _searchQuery.trim().toLowerCase();
     
-    // الفلترة بناءً على الكبسولات الحاصرة
+    // الفلترة الفورية بناءً على الكبسولات المحددة بالكامل
     if (rawQuery == '(عام)') {
       return base.where((a) => a.privacy == 'public').toList();
     }
     if (rawQuery == '(خاص)') {
       return base.where((a) => a.privacy == 'private').toList();
     }
-    if (rawQuery == '(معتمدون)') {
-      return base.where((a) => a.host?.role == 'approved').toList();
+    if (rawQuery == '(معتمدون)' || rawQuery == 'معتمدون') {
+      return base.where((a) => a.host?.role == 'approved' || a.host?.role == 'admin').toList();
     }
 
-    // دالة مساعدة لتوحيد النصوص (تحويل لحروف صغيرة واستبدال الرموز بمسافات)
+    // دالة مساعدة لتوحيد النصوص وإزالة التشكيل العربي لتبسيط البحث والتوثيق
     String normalize(String? text) {
       if (text == null) return '';
-      return text.toLowerCase().replaceAll(RegExp(r'[_\-\.,/\\|]'), ' ');
+      // إزالة علامات التشكيل العربية (الضمة، الفتحة، الكسرة، إلخ)
+      final diacritics = RegExp(r'[\u064B-\u0652\u065F\u0670\u06D6-\u06ED]');
+      return text.toLowerCase()
+                 .replaceAll(diacritics, '')
+                 .replaceAll(RegExp(r'[_\-\.,/\\|]'), ' ');
     }
 
     final q = normalize(rawQuery);
+    final queryWords = q.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
 
-    // الفلترة بناءً على اسم المشارك أو النص الحر
+    if (queryWords.isEmpty) return base;
+
+    // الفلترة بناءً على الكلمات المتعددة في الاستعلام مع دعم ذكي لكلمة "معتمدون" أو "معتمد"
     return base.where((a) {
-      final titleMatch = normalize(a.title).contains(q);
-      final regionMatch = normalize(a.region).contains(q);
-      final buildingMatch = normalize(a.building).contains(q);
-      
-      // البحث في أسماء المضيف والمشاركين
-      final hostMatch = normalize(a.host?.name).contains(q);
-      final participantsMatch = a.participants?.any((p) => 
-        normalize(p.user?.name).contains(q)
-      ) ?? false;
-      
-      return titleMatch || regionMatch || buildingMatch || hostMatch || participantsMatch;
+      // يجب أن تتحقق كل كلمة في الاستعلام داخل الموعد
+      return queryWords.every((word) {
+        // إذا كتب المستخدم كلمة "معتمدون" أو "معتمد"، نتحقق مما إذا كان المضيف معتمداً/مشرفاً أولاً
+        if (word == 'معتمدون' || word == 'معتمد') {
+          final isHostApproved = a.host?.role == 'approved' || a.host?.role == 'admin';
+          if (isHostApproved) return true;
+        }
+        
+        final titleMatch = normalize(a.title).contains(word);
+        final regionMatch = normalize(a.region).contains(word);
+        final buildingMatch = normalize(a.building).contains(word);
+        final hostMatch = normalize(a.host?.name).contains(word);
+        final categoryMatch = normalize(a.currentUserInvitation?.categories?.name).contains(word);
+        final participantsMatch = a.participants?.any((p) => 
+          normalize(p.user?.name).contains(word)
+        ) ?? false;
+        
+        return titleMatch || regionMatch || buildingMatch || hostMatch || categoryMatch || participantsMatch;
+      });
     }).toList();
   }
 

@@ -23,8 +23,59 @@ class AdminProvider extends ChangeNotifier {
   bool _isSearchingUsers = false;
   bool get isSearchingUsers => _isSearchingUsers;
 
+  List<UserModel> _recentRegisteredUsers = [];
+  List<UserModel> get recentRegisteredUsers => _recentRegisteredUsers;
+
+  bool _isFetchingRecentRegistered = false;
+  bool get isFetchingRecentRegistered => _isFetchingRecentRegistered;
+
+  List<UserModel> _adminUsers = [];
+  List<UserModel> get adminUsers => _adminUsers;
+
+  bool _isFetchingAdmins = false;
+  bool get isFetchingAdmins => _isFetchingAdmins;
+
   /// الحصول على عدد الرسائل الجديدة
   int get newMessagesCount => _messages.where((m) => m.status == 'new').length;
+
+  /// جلب المستخدمين المسجلين مؤخراً
+  Future<void> fetchRecentlyRegistered() async {
+    _isFetchingRecentRegistered = true;
+    notifyListeners();
+    try {
+      final pb = PocketBaseClient.instance.pb;
+      final records = await pb.collection('users').getList(
+        sort: '-created',
+        perPage: 20,
+      );
+      _recentRegisteredUsers = records.items.map((r) => UserModel.fromJson(r.toJson())).toList();
+    } catch (e) {
+      print('❌ Error fetching recent users: $e');
+    } finally {
+      _isFetchingRecentRegistered = false;
+      notifyListeners();
+    }
+  }
+
+  /// جلب المشرفين والمسؤولين
+  Future<void> fetchAdmins() async {
+    _isFetchingAdmins = true;
+    notifyListeners();
+    try {
+      final pb = PocketBaseClient.instance.pb;
+      final records = await pb.collection('users').getList(
+        filter: 'role = "admin" || role = "approved"',
+        sort: '-created',
+        perPage: 30,
+      );
+      _adminUsers = records.items.map((r) => UserModel.fromJson(r.toJson())).toList();
+    } catch (e) {
+      print('❌ Error fetching admins: $e');
+    } finally {
+      _isFetchingAdmins = false;
+      notifyListeners();
+    }
+  }
 
   /// تفعيل أو إيقاف التسجيل في التطبيق
   Future<bool> toggleRegistration(bool isEnabled, GlobalConfigProvider configProvider) async {

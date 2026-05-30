@@ -7,6 +7,7 @@ enum NotificationType {
   invite,
   system,
   approvalRequest,
+  visit,
   unknown;
 
   static NotificationType fromString(String value) {
@@ -23,6 +24,8 @@ enum NotificationType {
         return NotificationType.system;
       case 'approval_request':
         return NotificationType.approvalRequest;
+      case 'visit':
+        return NotificationType.visit;
       default:
         return NotificationType.unknown;
     }
@@ -42,6 +45,8 @@ enum NotificationType {
         return 'system';
       case NotificationType.approvalRequest:
         return 'approval_request';
+      case NotificationType.visit:
+        return 'visit';
       case NotificationType.unknown:
         return 'unknown';
     }

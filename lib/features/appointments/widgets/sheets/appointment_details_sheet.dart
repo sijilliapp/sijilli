@@ -217,6 +217,7 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
                       title: _appointment.title,
                       smartLocation: _appointment.smartLocation,
                       hasLocation: _appointment.hasLocation,
+                      coordinates: _appointment.locationCoordinates,
                     ),
 
                     const SizedBox(height: AppDimens.spaceL),
@@ -393,13 +394,29 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
       barrierDismissible: false, // Prevent closing while deleting
       builder: (ctx) => StatefulBuilder(
         builder: (context, setState) {
-          final isHostOrAdmin = _isHost || _isAdmin;
+          final hasAnyAcceptedGuest = _appointment.participants?.any((p) => p.userId != _appointment.hostId && p.status == InvitationStatus.accepted) ?? false;
+          final showHostWarning = _isHost && !hasAnyAcceptedGuest;
+
+          final String titleText;
+          final String confirmText;
+          final String actionButtonText;
+
+          if (showHostWarning) {
+            titleText = context.l10n.detailsDeleteTitleHost;
+            confirmText = context.l10n.detailsDeleteConfirmHost;
+            actionButtonText = context.l10n.detailsCancelAppointment;
+          } else {
+            final isAr = context.l10n.localeName == 'ar';
+            titleText = isAr ? 'حذف الموعد' : 'Delete Appointment';
+            confirmText = isAr 
+                ? 'هذا قرار نهائي، سوف يؤدي إلى حذف سجل الموعد من صفحتك الشخصية.\nهل أنت متأكد؟'
+                : 'This is a final decision, it will lead to deleting the appointment record from your personal page.\nAre you sure?';
+            actionButtonText = isAr ? 'حذف' : context.l10n.delete;
+          }
+
           return AlertDialog(
-            title: Text(isHostOrAdmin ? context.l10n.detailsDeleteTitleHost : context.l10n.detailsDeleteTitleGuest),
-            content: Text(isHostOrAdmin 
-                ? context.l10n.detailsDeleteConfirmHost
-                : context.l10n.detailsDeleteConfirmGuest
-            ),
+            title: Text(titleText),
+            content: Text(confirmText),
             actions: [
               TextButton(
                 onPressed: isLoading ? null : () => Navigator.pop(ctx), 
@@ -427,7 +444,7 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
                       height: 20, 
                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                     )
-                  : Text(isHostOrAdmin ? context.l10n.detailsCancelAppointment : context.l10n.delete),
+                  : Text(actionButtonText),
               ),
             ],
           );

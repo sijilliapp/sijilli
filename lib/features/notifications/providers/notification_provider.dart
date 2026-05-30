@@ -289,6 +289,7 @@ class NotificationProvider extends ChangeNotifier {
                 break;
               case NotificationType.reminder:
               case NotificationType.system:
+              case NotificationType.visit:
                 shouldShow = true; // Default match active/other?
                 break;
               default:

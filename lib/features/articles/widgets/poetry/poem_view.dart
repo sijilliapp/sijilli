@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimens.dart';
+import 'poem_formatter_utils.dart';
 
 class PoemView extends StatelessWidget {
   final String poemText;
@@ -25,7 +26,7 @@ class PoemView extends StatelessWidget {
         ? AppDimens.textSize * 1.5
         : AppDimens.textSize;
     final double lineHeight = isTraditionalArabic ? 1.3 : 1.8;
-    final FontWeight fontWeight = isTraditionalArabic ? FontWeight.bold : FontWeight.w600;
+    final FontWeight fontWeight = isTraditionalArabic ? FontWeight.normal : FontWeight.w600;
     
     final textStyle = TextStyle(
       fontSize: fontSize, // Base size 16
@@ -49,9 +50,11 @@ class PoemView extends StatelessWidget {
         } else {
           cleanLine = line.substring(8, line.length - 9).trim();
         }
+        final parsedCentered = PoemFormatterUtils.parseInlineText(cleanLine, textStyle, context);
         final textPainter = TextPainter(
-          text: TextSpan(text: cleanLine, style: textStyle),
+          text: TextSpan(children: parsedCentered),
           textDirection: TextDirection.rtl,
+          textScaler: MediaQuery.textScalerOf(context),
         )..layout();
         if (textPainter.width > maxCenteredWidth) maxCenteredWidth = textPainter.width;
         continue;
@@ -60,18 +63,21 @@ class PoemView extends StatelessWidget {
       final isSadr = poetryLineIndex % 2 == 0;
       poetryLineIndex++;
       
+      final parsedLine = PoemFormatterUtils.parseInlineText(line, textStyle, context);
       final textPainter = TextPainter(
-        text: TextSpan(text: line, style: textStyle),
+        text: TextSpan(children: parsedLine),
         textDirection: TextDirection.rtl,
+        textScaler: MediaQuery.textScalerOf(context),
       )..layout();
       
       if (isSadr && textPainter.width > maxSadrWidth) maxSadrWidth = textPainter.width;
       if (!isSadr && textPainter.width > maxAjezWidth) maxAjezWidth = textPainter.width;
     }
 
-    // Apply constraints
-    final double finalSadrWidth = maxSadrWidth > maxAllowedWidth ? maxAllowedWidth : maxSadrWidth;
-    final double finalAjezWidth = maxAjezWidth > maxAllowedWidth ? maxAllowedWidth : maxAjezWidth;
+    // Apply constraints and ensure Sadr and Ajez have the same width
+    final double maxHalfWidth = maxSadrWidth > maxAjezWidth ? maxSadrWidth : maxAjezWidth;
+    final double finalSadrWidth = maxHalfWidth > maxAllowedWidth ? maxAllowedWidth : maxHalfWidth;
+    final double finalAjezWidth = finalSadrWidth;
     
     // Calculate overlap to enforce 'interlocking fingers' perfectly
     const double overlapPixels = 40.0;
@@ -119,22 +125,24 @@ class PoemView extends StatelessWidget {
               } else {
                 line = line.substring(8, line.length - 9).trim();
               }
-              final centeredWords = line.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+              
+              final parsedCentered = PoemFormatterUtils.parseInlineText(line, textStyle.copyWith(
+                fontWeight: isTraditionalArabic ? FontWeight.normal : FontWeight.bold,
+                color: AppColors.getTextPrimary(context),
+              ), context);
+              
+              final centeredWordSpans = PoemFormatterUtils.splitSpansIntoWords(parsedCentered);
               final double targetCenteredWidth = finalCenteredWidth > containerWidth ? containerWidth : finalCenteredWidth;
               
               return Align(
                 alignment: Alignment.center,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 12.0),
-                  child: centeredWords.length <= 1
+                  child: centeredWordSpans.length <= 1
                       ? SizedBox(
                           width: targetCenteredWidth,
-                          child: Text(
-                            line,
-                            style: textStyle.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.getTextPrimary(context),
-                            ),
+                          child: Text.rich(
+                            TextSpan(children: parsedCentered),
                             textAlign: TextAlign.center,
                           ),
                         )
@@ -145,12 +153,10 @@ class PoemView extends StatelessWidget {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               textDirection: TextDirection.rtl,
-                              children: centeredWords.map((w) => Text(
-                                w,
-                                style: textStyle.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.getTextPrimary(context),
-                                ),
+                              children: centeredWordSpans.map((span) => Text.rich(
+                                span,
+                                softWrap: false,
+                                maxLines: 1,
                               )).toList(),
                             ),
                           ),
@@ -179,29 +185,57 @@ class PoemView extends StatelessWidget {
             renderPoetryLineIndex++;
             final targetWidth = isSadr ? finalSadrWidth : finalAjezWidth;
             
-            final words = line.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+            final parsedSpans = PoemFormatterUtils.parseInlineText(line, textStyle.copyWith(height: 1.6), context);
+            final wordSpans = PoemFormatterUtils.splitSpansIntoWords(parsedSpans);
+
+            final textPainter = TextPainter(
+              text: TextSpan(children: parsedSpans),
+              textDirection: TextDirection.rtl,
+              textScaler: MediaQuery.textScalerOf(context),
+            )..layout();
+            final double naturalWidth = textPainter.width;
 
             return Align(
               alignment: isSadr ? Alignment.centerRight : Alignment.centerLeft,
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 6.0),
-                child: words.length <= 1
+                child: wordSpans.length <= 1
                     ? SizedBox(
                         width: targetWidth,
-                        child: Text(
-                          line,
-                          style: textStyle.copyWith(height: 1.6),
-                          textAlign: isSadr ? TextAlign.right : TextAlign.left,
+                        child: Align(
+                          alignment: isSadr ? Alignment.centerRight : Alignment.centerLeft,
+                          child: naturalWidth > targetWidth
+                              ? FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text.rich(
+                                    TextSpan(children: parsedSpans),
+                                    softWrap: false,
+                                    maxLines: 1,
+                                  ),
+                                )
+                              : Text.rich(
+                                  TextSpan(children: parsedSpans),
+                                  textAlign: isSadr ? TextAlign.right : TextAlign.left,
+                                  softWrap: false,
+                                  maxLines: 1,
+                                ),
                         ),
                       )
-                    : FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: SizedBox(
-                          width: targetWidth,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            textDirection: TextDirection.rtl,
-                            children: words.map((w) => Text(w, style: textStyle.copyWith(height: 1.6))).toList(),
+                    : SizedBox(
+                        width: targetWidth,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: SizedBox(
+                            width: naturalWidth > targetWidth ? naturalWidth : targetWidth,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              textDirection: TextDirection.rtl,
+                              children: wordSpans.map((span) => Text.rich(
+                                span,
+                                softWrap: false,
+                                maxLines: 1,
+                              )).toList(),
+                            ),
                           ),
                         ),
                       ),

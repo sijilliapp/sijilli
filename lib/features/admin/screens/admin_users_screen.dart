@@ -25,9 +25,12 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   @override
   void initState() {
     super.initState();
-    // تنظيف نتائج البحث السابقة فور الفتح لتبدأ الواجهة نظيفة
+    // تنظيف نتائج البحث وجلب قوائم التبويبات تلقائياً
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AdminProvider>().clearUserSearch();
+      final adminProvider = context.read<AdminProvider>();
+      adminProvider.clearUserSearch();
+      adminProvider.fetchRecentlyRegistered();
+      adminProvider.fetchAdmins();
     });
     // تحميل عمليات البحث الأخيرة المخزنة محلياً
     _loadRecentSearches();
@@ -85,95 +88,118 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isSearchEmpty = _searchController.text.trim().isEmpty;
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          'إدارة المشتركين',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        elevation: 0,
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // 🔎 حقل البحث الأنيق
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: TextField(
-                controller: _searchController,
-                onChanged: _onSearchChanged,
-                decoration: InputDecoration(
-                  hintText: 'ابحث بالاسم أو اسم المستخدم...',
-                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear, color: Colors.grey),
-                          onPressed: () {
-                            _searchController.clear();
-                            context.read<AdminProvider>().clearUserSearch();
-                            _loadRecentSearches();
-                            setState(() {});
-                          },
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: isDark ? AppColors.darkSurface : Colors.grey.shade100,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        appBar: AppBar(
+          title: const Text(
+            'إدارة المشتركين',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          elevation: 0,
+          centerTitle: true,
+        ),
+        body: SafeArea(
+          child: Column(
+            children: [
+              // 🔎 حقل البحث الأنيق
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: _onSearchChanged,
+                  decoration: InputDecoration(
+                    hintText: 'ابحث بالاسم أو اسم المستخدم...',
+                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, color: Colors.grey),
+                            onPressed: () {
+                              _searchController.clear();
+                              context.read<AdminProvider>().clearUserSearch();
+                              _loadRecentSearches();
+                              setState(() {});
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: isDark ? AppColors.darkSurface : Colors.grey.shade100,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                    ),
                   ),
                 ),
               ),
-            ),
 
-            // 📜 نتائج البحث أو عمليات البحث الأخيرة
-            Expanded(
-              child: Consumer<AdminProvider>(
-                builder: (context, admin, child) {
-                  if (admin.isSearchingUsers) {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  }
-
-                  // إذا كان حقل البحث فارغاً، نعرض قائمة آخر المبحوث عنهم
-                  if (_searchController.text.trim().isEmpty) {
-                    if (_recentSearches.isEmpty) {
-                      return _buildInitialState(isDark);
-                    }
-                    return _buildRecentSearchesSection(isDark);
-                  }
-
-                  if (admin.userSearchResults.isEmpty) {
-                    return _buildEmptyState(isDark);
-                  }
-
-                  return ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: admin.userSearchResults.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final user = admin.userSearchResults[index];
-                      return _buildUserCard(context, user, isDark);
-                    },
-                  );
-                },
+              // عرض التبويبات إذا كان البحث فارغاً، أو عرض نتائج البحث مباشرة
+              Expanded(
+                child: isSearchEmpty
+                    ? Column(
+                        children: [
+                          TabBar(
+                            labelColor: AppColors.primary,
+                            unselectedLabelColor: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                            indicatorColor: AppColors.primary,
+                            indicatorSize: TabBarIndicatorSize.tab,
+                            labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            tabs: const [
+                              Tab(text: 'المستدعون مؤخراً'),
+                              Tab(text: 'المسجلون مؤخراً'),
+                              Tab(text: 'المشرفون'),
+                            ],
+                          ),
+                          Expanded(
+                            child: TabBarView(
+                              children: [
+                                // 1. المستدعون مؤخراً
+                                _recentSearches.isEmpty
+                                    ? _buildInitialState(isDark)
+                                    : _buildRecentSearchesSection(isDark),
+                                // 2. المسجلون مؤخراً
+                                _buildRecentlyRegisteredSection(isDark),
+                                // 3. المشرفون
+                                _buildAdminsSection(isDark),
+                              ],
+                            ),
+                          ),
+                        ],
+                      )
+                    : Consumer<AdminProvider>(
+                        builder: (context, admin, child) {
+                          if (admin.isSearchingUsers) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+                          if (admin.userSearchResults.isEmpty) {
+                            return _buildEmptyState(isDark);
+                          }
+                          return ListView.separated(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: admin.userSearchResults.length,
+                            separatorBuilder: (context, index) => const SizedBox(height: 8),
+                            itemBuilder: (context, index) {
+                              final user = admin.userSearchResults[index];
+                              return _buildUserCard(context, user, isDark);
+                            },
+                          );
+                        },
+                      ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -189,7 +215,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'آخر المبحوث عنهم',
+                'آخر من تم البحث عنهم محلياً',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
@@ -226,8 +252,71 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     );
   }
 
+  Widget _buildRecentlyRegisteredSection(bool isDark) {
+    return Consumer<AdminProvider>(
+      builder: (context, admin, child) {
+        if (admin.isFetchingRecentRegistered) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (admin.recentRegisteredUsers.isEmpty) {
+          return Center(
+            child: Text(
+              'لا يوجد مسجلين مؤخراً في السحابة',
+              style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+            ),
+          );
+        }
+        return RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: () => admin.fetchRecentlyRegistered(),
+          child: ListView.separated(
+            padding: const EdgeInsets.all(16),
+            physics: const AlwaysScrollableScrollPhysics(),
+            itemCount: admin.recentRegisteredUsers.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final user = admin.recentRegisteredUsers[index];
+              return _buildUserCard(context, user, isDark);
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAdminsSection(bool isDark) {
+    return Consumer<AdminProvider>(
+      builder: (context, admin, child) {
+        if (admin.isFetchingAdmins) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (admin.adminUsers.isEmpty) {
+          return Center(
+            child: Text(
+              'لا يوجد مشرفين أو مسؤولين حالياً',
+              style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+            ),
+          );
+        }
+        return RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: () => admin.fetchAdmins(),
+          child: ListView.separated(
+            padding: const EdgeInsets.all(16),
+            physics: const AlwaysScrollableScrollPhysics(),
+            itemCount: admin.adminUsers.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final user = admin.adminUsers[index];
+              return _buildUserCard(context, user, isDark);
+            },
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildUserCard(BuildContext context, UserModel user, bool isDark) {
-    // تحديد شارة الصلاحية واللون
     Color roleColor;
     String roleLabel;
     switch (user.role) {
@@ -257,7 +346,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       color: isDark ? AppColors.darkSurface : Colors.white,
       child: InkWell(
         onTap: () async {
-          // حفظ هذا المستخدم في آخر المبحوث عنهم
+          // حفظ هذا المستخدم في آخر المبحوث عنهم محلياً
           await _saveRecentSearch(user);
 
           if (!mounted) return;
@@ -269,10 +358,14 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               builder: (context) => AdminUserEditScreen(user: user),
             ),
           );
-          // بعد العودة، نحدث البحث لرؤية التغييرات المطبقة
+          
+          // بعد العودة، نحدث القوائم لرؤية التغييرات المطبقة
           if (mounted) {
+            final provider = context.read<AdminProvider>();
+            provider.fetchRecentlyRegistered();
+            provider.fetchAdmins();
             if (_searchController.text.isNotEmpty) {
-              context.read<AdminProvider>().searchUsers(_searchController.text);
+              provider.searchUsers(_searchController.text);
             } else {
               _loadRecentSearches();
             }

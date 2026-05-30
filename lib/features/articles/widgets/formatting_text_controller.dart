@@ -44,6 +44,47 @@ class FormattingTextEditingController extends TextEditingController {
       return;
     }
 
+    final String newText = newValue.text;
+    final String cleanedText = _cleanCitations(newText);
+    
+    if (cleanedText != newText) {
+      int newBase = newValue.selection.baseOffset;
+      int newExtent = newValue.selection.extentOffset;
+      
+      int mappedBase = newBase;
+      int mappedExtent = newExtent;
+      
+      int cleanIdx = 0;
+      int rawIdx = 0;
+      
+      while (rawIdx < newText.length && cleanIdx < cleanedText.length) {
+        if (rawIdx == newBase) {
+          mappedBase = cleanIdx;
+        }
+        if (rawIdx == newExtent) {
+          mappedExtent = cleanIdx;
+        }
+        
+        if (newText[rawIdx] == cleanedText[cleanIdx]) {
+          cleanIdx++;
+          rawIdx++;
+        } else {
+          rawIdx++;
+        }
+      }
+      
+      if (rawIdx == newBase) mappedBase = cleanIdx;
+      if (rawIdx == newExtent) mappedExtent = cleanIdx;
+      
+      newValue = newValue.copyWith(
+        text: cleanedText,
+        selection: TextSelection(
+          baseOffset: mappedBase,
+          extentOffset: mappedExtent,
+        ),
+      );
+    }
+
     final oldSel = value.selection;
     final newSel = newValue.selection;
 
@@ -100,8 +141,18 @@ class FormattingTextEditingController extends TextEditingController {
     super.value = newValue;
   }
 
+  String _cleanCitations(String rawText) {
+    return rawText.replaceAllMapped(RegExp(r'\[([^\]]+?)\]'), (match) {
+      final content = match.group(1)!;
+      final cleanedContent = content
+          .replaceAll('ٱ', 'ا')
+          .replaceAll(RegExp(r'[\u064b-\u0652\u0670]'), '');
+      return '[$cleanedContent]';
+    });
+  }
+
   FormattingTextEditingController({String rawText = ''}) {
-    text = rawText;
+    text = _cleanCitations(rawText);
   }
 
   String? get highlightQuery => _highlightQuery;
@@ -136,7 +187,7 @@ class FormattingTextEditingController extends TextEditingController {
   /// تعيين النص الخام
   void setRawText(String raw) {
     _internalUpdate = true;
-    text = raw;
+    text = _cleanCitations(raw);
     _internalUpdate = false;
   }
 
@@ -274,7 +325,7 @@ class FormattingTextEditingController extends TextEditingController {
     notifyListeners();
   }
 
-  /// يُطبِّق/يُزيل التعريض (Bold) على الكلمة أو الجزء المحدد
+  /// يُطبِّق/يُزيل التعريض (Bold) على الكلمة أو الجزء المحدد (كـ Switch)
   void toggleBoldAtCursor() {
     final currentSel = selection;
     if (!currentSel.isValid) return;
@@ -299,21 +350,21 @@ class FormattingTextEditingController extends TextEditingController {
     if (selectedText.trim().isEmpty) return;
 
     String newText;
-    final trimmedSelected = selectedText.trim();
-    final bool startsWithTag = trimmedSelected.toUpperCase().startsWith('[BOLD]') || trimmedSelected.toUpperCase().startsWith('[B]');
-    final bool endsWithTag = trimmedSelected.toUpperCase().endsWith('[/BOLD]') || trimmedSelected.toUpperCase().endsWith('[/B]');
+    final upperSelected = selectedText.toUpperCase();
+    final bool hasBoldTag = upperSelected.contains('[BOLD]') || 
+                           upperSelected.contains('[/BOLD]') || 
+                           upperSelected.contains('[B]') || 
+                           upperSelected.contains('[/B]') ||
+                           selectedText.contains('*');
 
-    if (startsWithTag && endsWithTag) {
+    if (hasBoldTag) {
       // إزالة التنسيق
-      String clean = selectedText;
-      if (clean.toUpperCase().contains('[BOLD]')) {
-        clean = clean.replaceFirst(RegExp(r'\[BOLD\]', caseSensitive: false), '');
-        clean = clean.replaceFirst(RegExp(r'\[/BOLD\]', caseSensitive: false), '');
-      } else {
-        clean = clean.replaceFirst(RegExp(r'\[B\]', caseSensitive: false), '');
-        clean = clean.replaceFirst(RegExp(r'\[/B\]', caseSensitive: false), '');
-      }
-      newText = clean;
+      newText = selectedText
+          .replaceAll(RegExp(r'\[BOLD\]', caseSensitive: false), '')
+          .replaceAll(RegExp(r'\[/BOLD\]', caseSensitive: false), '')
+          .replaceAll(RegExp(r'\[B\]', caseSensitive: false), '')
+          .replaceAll(RegExp(r'\[/B\]', caseSensitive: false), '')
+          .replaceAll('*', '');
     } else {
       // إضافة التنسيق
       newText = '[BOLD]$selectedText[/BOLD]';
@@ -329,7 +380,7 @@ class FormattingTextEditingController extends TextEditingController {
     notifyListeners();
   }
 
-  /// يُطبِّق/يُزيل التمييز (Highlight) على الكلمة أو الجزء المحدد
+  /// يُطبِّق/يُزيل التمييز (Highlight) على الكلمة أو الجزء المحدد (كـ Switch)
   void toggleHighlightAtCursor() {
     final currentSel = selection;
     if (!currentSel.isValid) return;
@@ -354,16 +405,15 @@ class FormattingTextEditingController extends TextEditingController {
     if (selectedText.trim().isEmpty) return;
 
     String newText;
-    final trimmedSelected = selectedText.trim();
-    final bool startsWithTag = trimmedSelected.toUpperCase().startsWith('[HIGHLIGHT]');
-    final bool endsWithTag = trimmedSelected.toUpperCase().endsWith('[/HIGHLIGHT]');
+    final upperSelected = selectedText.toUpperCase();
+    final bool hasHighlightTag = upperSelected.contains('[HIGHLIGHT]') || 
+                                 upperSelected.contains('[/HIGHLIGHT]');
 
-    if (startsWithTag && endsWithTag) {
+    if (hasHighlightTag) {
       // إزالة التنسيق
-      String clean = selectedText;
-      clean = clean.replaceFirst(RegExp(r'\[HIGHLIGHT\]', caseSensitive: false), '');
-      clean = clean.replaceFirst(RegExp(r'\[/HIGHLIGHT\]', caseSensitive: false), '');
-      newText = clean;
+      newText = selectedText
+          .replaceAll(RegExp(r'\[HIGHLIGHT\]', caseSensitive: false), '')
+          .replaceAll(RegExp(r'\[/HIGHLIGHT\]', caseSensitive: false), '');
     } else {
       // إضافة التنسيق
       newText = '[HIGHLIGHT]$selectedText[/HIGHLIGHT]';

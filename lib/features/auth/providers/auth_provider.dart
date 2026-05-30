@@ -551,6 +551,69 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  // ====================== محاكاة حساب المشترك (Impersonation) ======================
+  UserModel? _backupAdminUser;
+  String? _backupAdminToken;
+  bool _isSimulating = false;
+
+  bool get isSimulating => _isSimulating;
+
+  /// تفعيل وضع محاكاة حساب مشترك
+  Future<void> simulateUser(UserModel targetUser) async {
+    if (_isSimulating) return;
+    _backupAdminUser = _user;
+    _backupAdminToken = PocketBaseClient.instance.pb.authStore.token;
+    _isSimulating = true;
+
+    _user = targetUser;
+    
+    // محاكاة وتمرير التوكن الفعلي للمشرف العام لكي تقبل القاعدة الطلبات من المشرف
+    final pb = PocketBaseClient.instance.pb;
+    final userRecord = RecordModel({
+      'id': targetUser.id,
+      'collectionId': '_pb_users_auth_',
+      'collectionName': 'users',
+      'data': {
+        'username': targetUser.username,
+        'email': targetUser.email,
+        'name': targetUser.name,
+        'role': targetUser.role,
+      }
+    });
+    pb.authStore.save(_backupAdminToken ?? '', userRecord);
+
+    _status = AuthStatus.authenticated;
+    notifyListeners();
+  }
+
+  /// إنهاء وضع المحاكاة والعودة لحساب المشرف الأصلي
+  Future<void> stopSimulation() async {
+    if (!_isSimulating) return;
+    _isSimulating = false;
+    _user = _backupAdminUser;
+
+    final pb = PocketBaseClient.instance.pb;
+    if (_backupAdminUser != null && _backupAdminToken != null) {
+      final adminRecord = RecordModel({
+        'id': _backupAdminUser!.id,
+        'collectionId': '_pb_users_auth_',
+        'collectionName': 'users',
+        'data': {
+          'username': _backupAdminUser!.username,
+          'email': _backupAdminUser!.email,
+          'name': _backupAdminUser!.name,
+          'role': _backupAdminUser!.role,
+        }
+      });
+      pb.authStore.save(_backupAdminToken!, adminRecord);
+    }
+
+    _backupAdminUser = null;
+    _backupAdminToken = null;
+    _status = AuthStatus.authenticated;
+    notifyListeners();
+  }
+
   /// 🛡️ فحص صلاحية التوكن محلياً عبر فك تشفير JWT
   bool _isTokenExpired(String token) {
     try {

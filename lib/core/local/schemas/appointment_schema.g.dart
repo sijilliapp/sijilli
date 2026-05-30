@@ -43,13 +43,14 @@ class LocalAppointmentAdapter extends TypeAdapter<LocalAppointment> {
       ..hijriMonth = fields[23] as int?
       ..dateType = fields[24] as String
       ..streamLink = fields[25] as String?
-      ..appointmentGroupId = fields[26] as String?;
+      ..appointmentGroupId = fields[26] as String?
+      ..coordinates = fields[27] as String?;
   }
 
   @override
   void write(BinaryWriter writer, LocalAppointment obj) {
     writer
-      ..writeByte(27)
+      ..writeByte(28)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -103,7 +104,9 @@ class LocalAppointmentAdapter extends TypeAdapter<LocalAppointment> {
       ..writeByte(25)
       ..write(obj.streamLink)
       ..writeByte(26)
-      ..write(obj.appointmentGroupId);
+      ..write(obj.appointmentGroupId)
+      ..writeByte(27)
+      ..write(obj.coordinates);
   }
 
   @override

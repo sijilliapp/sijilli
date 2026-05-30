@@ -2807,7 +2807,7 @@ abstract class AppLocalizations {
   /// No description provided for @poemTooltip.
   ///
   /// In ar, this message translates to:
-  /// **'تنسيق كقصيدة'**
+  /// **'تنسيق الشعر'**
   String get poemTooltip;
 
   /// No description provided for @centerTooltip.

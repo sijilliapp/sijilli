@@ -194,25 +194,49 @@ extension AppointmentLogic on Appointment {
     return 'مستقبلي';
   }
   
+  /// الحصول على اسم المبنى النظيف بدون إحداثيات الخريطة
+  String get cleanBuilding {
+    if (building == null) return '';
+    if (coordinates != null && coordinates!.isNotEmpty) return building!;
+    final parts = building!.split('|');
+    return parts.first.trim();
+  }
+
+  /// الحصول على إحداثيات الخريطة المضمنة في حقل المبنى
+  String? get locationCoordinates {
+    if (coordinates != null && coordinates!.isNotEmpty) return coordinates;
+    if (building == null) return null;
+    final parts = building!.split('|');
+    if (parts.length > 1) {
+      final coords = parts.last.trim();
+      if (coords.contains(',')) {
+        return coords;
+      }
+    }
+    return null;
+  }
+
   /// الحصول على المكان كامل
   String? get fullLocation {
     final hasRegion = region != null && region!.trim().isNotEmpty;
-    final hasBuilding = building != null && building!.trim().isNotEmpty;
+    final cleanB = cleanBuilding;
+    final hasBuilding = cleanB.isNotEmpty;
 
     if (!hasRegion && !hasBuilding) return null;
-    if (hasRegion && hasBuilding) return '$region - $building';
-    return region ?? building;
+    if (hasRegion && hasBuilding) return '$region - $cleanB';
+    return region ?? cleanB;
   }
   
   /// الموقع المختصر الذكي (يعطي الأولوية للمبنى/المكان المحدد)
   String? get smartLocation {
     final hasRegion = region != null && region!.trim().isNotEmpty;
-    final hasBuilding = building != null && building!.trim().isNotEmpty;
+    final cleanB = cleanBuilding;
+    final hasBuilding = cleanB.isNotEmpty;
 
     if (!hasRegion && !hasBuilding) return null;
     // Flip order: Building - Region
-    if (hasRegion && hasBuilding) return '$building - $region';
-    return region ?? building;
+    if (hasRegion && hasBuilding) return '$cleanB - $region';
+    return region ?? cleanB;
   }
   
   /// التحقق إذا كان الموعد لديه مكان (يتجاهل النصوص الفارغة)

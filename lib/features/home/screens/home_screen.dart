@@ -200,43 +200,52 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
 
   @override
   Widget build(BuildContext context) {
-    context.watch<AuthProvider>().user;
+    final auth = context.watch<AuthProvider>();
+    final isSimulating = auth.isSimulating;
+    final apptProvider = context.watch<AppointmentProvider>();
+    final hasRegions = apptProvider.searchRegionKeywords.isNotEmpty;
+    final hasCategories = apptProvider.searchCategoryKeywords.isNotEmpty;
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: NotificationListener<ScrollNotification>(
-        onNotification: (notification) {
-          if (notification is ScrollEndNotification) {
-            final settings = context.read<SettingsProvider>();
-            final appointments = context.read<AppointmentProvider>().appointments;
+    double capsulesHeight = 0.0;
+    if (hasRegions && hasCategories) {
+      capsulesHeight = 90.0;
+    } else if (hasRegions || hasCategories) {
+      capsulesHeight = 45.0;
+    }
 
-            // Skip snap if disabled or no appointments
-            if (!settings.isMagneticScrollEnabled || appointments.isEmpty) {
-              return false;
-            }
+    Widget bodyWidget = NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification is ScrollEndNotification) {
+          final settings = context.read<SettingsProvider>();
+          final appointments = context.read<AppointmentProvider>().appointments;
 
-            final user = context.read<AuthProvider>().user;
-            final double snapOffset = (user?.hasBio ?? false) ? 310 : 280;
-            final offset = _scrollController.offset;
+          // Skip snap if disabled or no appointments
+          if (!settings.isMagneticScrollEnabled || appointments.isEmpty) {
+            return false;
+          }
 
-            // Magnetic snap if between 0 and snapOffset
-            if (offset > 0 && offset < snapOffset) {
-              if (offset > snapOffset / 2) {
-                _snapToTabs();
-              } else {
-                _scrollController.animateTo(
-                  0,
-                  duration: const Duration(milliseconds: 400),
-                  curve: Curves.easeOut,
-                );
-              }
+          final user = auth.user;
+          final double snapOffset = (user?.hasBio ?? false) ? 310 : 280;
+          final offset = _scrollController.offset;
+
+          // Magnetic snap if between 0 and snapOffset
+          if (offset > 0 && offset < snapOffset) {
+            if (offset > snapOffset / 2) {
+              _snapToTabs();
+            } else {
+              _scrollController.animateTo(
+                0,
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeOut,
+              );
             }
           }
-          return false;
-        },
-        child: NestedScrollView(
-          controller: _scrollController,
-          headerSliverBuilder: (context, innerBoxIsScrolled) {
+        }
+        return false;
+      },
+      child: NestedScrollView(
+        controller: _scrollController,
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
             // 1. Pinned App Bar
             SliverAppBar(
@@ -282,12 +291,12 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                     },
                   ),
               ],
-              bottom: _isSearching 
-                ? PreferredSize(
-                    preferredSize: const Size.fromHeight(50),
-                    child: _buildSearchCapsules(),
-                  )
-                : null,
+              bottom: _isSearching && capsulesHeight > 0
+                  ? PreferredSize(
+                      preferredSize: Size.fromHeight(capsulesHeight),
+                      child: _buildSearchCapsules(),
+                    )
+                  : null,
             ),
 
             // 2. Dynamic Profile Header
@@ -330,51 +339,143 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
 
               // Tab 2: Articles
               ProfileArticlesTab(
-                userId: context.read<AuthProvider>().user?.id ?? '',
+                userId: auth.user?.id ?? '',
                 isCurrentUser: true,
               ),
             ],
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+
+    if (isSimulating) {
+      bodyWidget = Column(
+        children: [
+          Container(
+            color: Colors.amber.shade900,
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: SafeArea(
+              bottom: false,
+              child: Row(
+                children: [
+                  const Icon(Icons.security_outlined, color: Colors.white, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'تصفح محاكى لحساب: ${auth.user?.name} (@${auth.user?.username})',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.amber.shade900,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      minimumSize: Size.zero,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    onPressed: () {
+                      auth.stopSimulation();
+                    },
+                    child: const Text('خروج والعودة للمشرف', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(child: bodyWidget),
+        ],
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: bodyWidget,
+    );
+  }
 
   Widget _buildSearchCapsules() {
     return Consumer<AppointmentProvider>(
       builder: (context, provider, _) {
-        final keywords = provider.searchKeywords;
-        if (keywords.isEmpty) return const SizedBox.shrink();
+        final regions = provider.searchRegionKeywords;
+        final categories = provider.searchCategoryKeywords;
 
-        return Container(
-          height: 50,
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: keywords.length,
-            itemBuilder: (context, index) {
-              final keyword = keywords[index];
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ActionChip(
-                  label: Text(keyword, style: const TextStyle(fontSize: 12)),
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.05),
-                  side: BorderSide.none,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  onPressed: () {
-                    _searchController.text = keyword;
-                    provider.filterAppointments(keyword);
+        if (regions.isEmpty && categories.isEmpty) return const SizedBox.shrink();
+
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // السطر الأول: أسماء المناطق المتوفرة
+            if (regions.isNotEmpty)
+              Container(
+                height: 45,
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: regions.length,
+                  itemBuilder: (context, index) {
+                    final keyword = regions[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: ActionChip(
+                        label: Text(keyword, style: const TextStyle(fontSize: 12)),
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.05),
+                        side: BorderSide(
+                          color: isDark ? Colors.white.withValues(alpha: 0.3) : Colors.black,
+                          width: 1.0,
+                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        onPressed: () {
+                          _searchController.text = keyword;
+                          provider.filterAppointments(keyword);
+                        },
+                      ),
+                    );
                   },
                 ),
-              );
-            },
-          ),
+              ),
+            // السطر الثاني: أسماء التصنيفات والخصوصية
+            if (categories.isNotEmpty)
+              Container(
+                height: 45,
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: categories.length,
+                  itemBuilder: (context, index) {
+                    final keyword = categories[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: ActionChip(
+                        label: Text(keyword, style: const TextStyle(fontSize: 12)),
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.05),
+                        side: BorderSide(
+                          color: isDark ? Colors.white.withValues(alpha: 0.3) : Colors.black,
+                          width: 1.0,
+                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        onPressed: () {
+                          _searchController.text = keyword;
+                          provider.filterAppointments(keyword);
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
         );
       },
     );
   }
+
+
 
   Widget _buildMenuButton() {
     return PopupMenuButton<String>(

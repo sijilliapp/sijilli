@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../core/widgets/auth_wrapper.dart';
+import '../../../features/auth/providers/auth_provider.dart';
 import '../../settings/services/pb_user_service.dart';
 import '../../add/screens/add_event_screen.dart';
 import '../../../core/constants/app_colors.dart';
@@ -81,6 +84,15 @@ class _UserFollowButtonState extends State<UserFollowButton> {
   }
 
   Future<void> _toggleFollow() async {
+    final auth = context.read<AuthProvider>();
+    if (auth.user == null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const AuthWrapper()),
+      );
+      return;
+    }
+
     if (_isBlocked) {
       try {
         await _userService.unfollowUser(widget.userId); // In friendship table, unblocking is setting status to none

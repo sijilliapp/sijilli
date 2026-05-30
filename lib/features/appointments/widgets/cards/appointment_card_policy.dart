@@ -44,6 +44,7 @@ abstract class AppointmentCardPolicy {
   // --- Flags ---
   bool get isFeatured => false;
   bool get showPrivacyCapsule => true;
+  bool get showLocation => true;
   bool get canReport;
 
   // --- Layout ---

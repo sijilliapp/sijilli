@@ -7,6 +7,7 @@ import '../../../core/utils/app_date_formatter.dart';
 import '../../../core/widgets/pulse_avatar.dart';
 import '../providers/admin_provider.dart';
 import '../../../models/user.dart';
+import '../../auth/providers/auth_provider.dart';
 
 class AdminUserEditScreen extends StatefulWidget {
   final UserModel user;
@@ -44,6 +45,55 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
     _isPublic = widget.user.isPublic;
     _hideFromSearch = widget.user.hideFromSearch;
     _isSuggested = widget.user.isSuggested;
+  }
+
+  void _confirmAndSimulate(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'محاكاة الدخول للحساب',
+          textAlign: TextAlign.right,
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'هل تريد تصفح التطبيق بصفتك المشترك ${widget.user.name}؟\n\n'
+          'سيقوم التطبيق بنقلك للواجهة الرئيسية كأنك المشترك، مع إمكانية العودة لحسابك كمشرف في أي وقت.',
+          textAlign: TextAlign.right,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber.shade900,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              Navigator.pop(dialogCtx);
+              
+              // تفعيل المحاكاة
+              context.read<AuthProvider>().simulateUser(widget.user);
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('تم الدخول بصفتك ${widget.user.name} 👥'),
+                  backgroundColor: Colors.amber.shade900,
+                ),
+              );
+              
+              // العودة للواجهة الرئيسية الأولى
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            },
+            child: const Text('دخول'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -161,6 +211,22 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
                   ),
                 ],
               ),
+            ),
+            const SizedBox(width: 12),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber.shade900,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              icon: const Icon(Icons.login_rounded, size: 14),
+              label: const Text(
+                'دخول ومحاكاة',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+              onPressed: () => _confirmAndSimulate(context),
             ),
           ],
         ),

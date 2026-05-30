@@ -93,6 +93,10 @@ class NotificationItem extends StatelessWidget {
         icon = Icons.rule;
         color = Colors.purple;
         break;
+      case NotificationType.visit:
+        icon = Icons.visibility_outlined;
+        color = Colors.teal;
+        break;
       default:
         icon = Icons.notifications;
         color = Colors.grey;

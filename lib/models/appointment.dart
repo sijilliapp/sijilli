@@ -283,6 +283,7 @@ class Appointment {
   
   final String? region; // المنطقة
   final String? building; // المبنى
+  final String? coordinates; // إحداثيات الخريطة
   
   // ====================== الإعدادات ======================
   final String privacy; // 'public' أو 'private'
@@ -342,6 +343,7 @@ class Appointment {
     required this.time,
     this.region,
     this.building,
+    this.coordinates,
     this.privacy = 'private',
     this.description,
     this.participantsCount = 0,
@@ -476,6 +478,7 @@ class Appointment {
       time: '${localDateTime.hour.toString().padLeft(2, '0')}:${localDateTime.minute.toString().padLeft(2, '0')}', 
       region: JsonUtils.parseString(json['region']),
       building: JsonUtils.parseString(json['building']),
+      coordinates: JsonUtils.parseString(json['coordinates']),
       privacy: JsonUtils.parseString(json['privacy']) ?? 'private',
       description: JsonUtils.parseString(json['description']),
       participantsCount: JsonUtils.parseInt(json['participants_count']) ?? 0,
@@ -514,6 +517,7 @@ class Appointment {
     int duration = 45,
     String? region,
     String? building,
+    String? coordinates,
     String privacy = 'private',
     String? description,
     String dateType = 'gregorian',
@@ -553,6 +557,7 @@ class Appointment {
       time: time,
       region: region,
       building: building,
+      coordinates: coordinates,
       privacy: privacy,
       description: description,
       dateType: dateType,
@@ -584,6 +589,7 @@ class Appointment {
       // REMOVED: 'date' and 'time' strings. Let DB generate them from start_at.
       'region': region,
       'building': building,
+      'coordinates': coordinates,
       'privacy': privacy,
       'description': description,
       'participants_count': participantsCount,
@@ -636,6 +642,7 @@ class Appointment {
     String? time,
     String? region,
     String? building,
+    String? coordinates,
     String? privacy,
     String? description,
     int? participantsCount,
@@ -669,6 +676,7 @@ class Appointment {
       time: time ?? this.time,
       region: region ?? this.region,
       building: building ?? this.building,
+      coordinates: coordinates ?? this.coordinates,
       privacy: privacy ?? this.privacy,
       description: description ?? this.description,
       participantsCount: participantsCount ?? this.participantsCount,

@@ -3,6 +3,7 @@ import 'package:hijri/hijri_calendar.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import '../../../core/utils/app_date_formatter.dart';
 import '../../../core/constants/app_dimens.dart';
+import '../../../core/constants/app_colors.dart';
 
 class DateHeader extends StatelessWidget {
   final int hijriAdjustment;
@@ -51,8 +52,8 @@ class DateHeader extends StatelessWidget {
                 locale == 'ar' ? AppDateFormatter.toEasternArabicDigits(hijriText) : hijriText,
                 style: TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.normal,
-                  color: Colors.grey.shade500,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.getTextPrimary(context),
                 ),
               ),
             ],
@@ -64,8 +65,8 @@ class DateHeader extends StatelessWidget {
             textDirection: TextDirection.ltr,
             style: TextStyle(
               fontSize: 14,
-              fontWeight: FontWeight.normal,
-              color: Colors.grey.shade500,
+              fontWeight: FontWeight.bold,
+              color: AppColors.getTextSecondary(context),
             ),
           ),
         ],

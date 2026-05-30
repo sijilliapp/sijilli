@@ -76,7 +76,6 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
     if (text.isEmpty) return;
     
     int changesCount = 0;
-    String newText = text;
 
     String replaceWithCount(String source, Pattern pattern, String Function(Match) replace) {
       return source.replaceAllMapped(pattern, (match) {
@@ -85,101 +84,191 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
       });
     }
 
-    // 1. تعريب الرموز الإنجليزية
-    newText = replaceWithCount(newText, ',', (m) => '،');
-    newText = replaceWithCount(newText, '?', (m) => '؟');
+    bool isParagraphEnglish(String paragraph) {
+      final clean = paragraph.trim();
+      if (clean.isEmpty) return false;
 
-    // 2. هندسة علامات التنصيص (الأقواس)
-    newText = replaceWithCount(newText, RegExp(r'"([^"]*)"'), (match) => '«${match.group(1)}»');
+      final arabicRegExp = RegExp(r'[\u0600-\u06FF]');
+      final latinRegExp = RegExp(r'[a-zA-Z]');
+      
+      final arabicCount = arabicRegExp.allMatches(clean).length;
+      final latinCount = latinRegExp.allMatches(clean).length;
+      
+      return latinCount > arabicCount;
+    }
 
-    // 3. تنظيف المسافات المحيطة بالأقواس
-    newText = replaceWithCount(newText, RegExp(r'\(\s+'), (m) => '(');
-    newText = replaceWithCount(newText, RegExp(r'\s+\)'), (m) => ')');
-    newText = replaceWithCount(newText, RegExp(r'«\s+'), (m) => '«');
-    newText = replaceWithCount(newText, RegExp(r'\s+»'), (m) => '»');
+    final paragraphs = text.split('\n');
+    final formattedParagraphs = <String>[];
 
-    // 4. هندسة المسافات حول علامات الترقيم
-    newText = replaceWithCount(newText, RegExp(r'\s+([،.؛:؟!])'), (match) => match.group(1)!);
-    newText = replaceWithCount(newText, RegExp(r'([،.؛:؟!])(?=[^\s،.؛:؟!])'), (match) => '${match.group(1)} ');
+    for (var para in paragraphs) {
+      if (para.trim().isEmpty) {
+        formattedParagraphs.add(para);
+        continue;
+      }
 
-    // 5. واو العطف (نلصق الواو المتبوعة بمسافة والتي لا تسبقها كلمة)
-    newText = replaceWithCount(newText, RegExp(r'(?<=\s|^)و([\u064B-\u0652]*)\s+'), (match) => 'و${match.group(1)}');
+      if (isParagraphEnglish(para)) {
+        // --- ENGLISH PARAGRAPH ---
+        // 1. Convert Arabic punctuation to English if typed by mistake
+        para = replaceWithCount(para, '،', (m) => ',');
+        para = replaceWithCount(para, '؟', (m) => '?');
 
-    // 6. تنظيف الفراغات الزائدة
-    newText = replaceWithCount(newText, RegExp(r'[ \t]{2,}'), (m) => ' ');
+        // 2. Clean spaces around brackets
+        para = replaceWithCount(para, RegExp(r'\(\s+'), (m) => '(');
+        para = replaceWithCount(para, RegExp(r'\s+\)'), (m) => ')');
+
+        // 3. Punctuation spacing (no space before, one space after)
+        para = replaceWithCount(para, RegExp(r'\s+([,.;:?!])'), (match) => match.group(1)!);
+        para = replaceWithCount(para, RegExp(r'([,.;:?!])(?=[^\s,.;:?!"\d])'), (match) => '${match.group(1)} ');
+
+        // 4. Indentation for English paragraphs
+        if (para.isNotEmpty && !para.startsWith(RegExp(r'[\s\u2003=~\[]'))) {
+          para = '\u2003$para';
+          changesCount++;
+        }
+
+        // 5. English spelling fixes for absolute errors
+        final englishSpellingFixes = {
+          'teh': 'the',
+          'dont': "don't",
+          'cant': "can't",
+          'wont': "won't",
+          'im': "I'm",
+          'ive': "I've",
+          'id': "I'd",
+          'youre': "you're",
+          'theyre': "they're",
+          'weve': "we've",
+          'shouldnt': "shouldn't",
+          'wouldnt': "wouldn't",
+          'couldnt': "couldn't",
+          'didnt': "didn't",
+          'doesnt': "doesn't",
+          'isnt': "isn't",
+          'arent': "aren't",
+          'wasnt': "wasn't",
+          'werent': "weren't",
+          'hasnt': "hasn't",
+          'havent': "haven't",
+          'hadnt': "hadn't",
+          'reiceve': 'receive',
+          'reiceved': 'received',
+          'reiceving': 'receiving',
+          'seperate': 'separate',
+          'seperated': 'separated',
+          'seperating': 'separating',
+          'seperation': 'separation',
+          'occured': 'occurred',
+          'occurence': 'occurrence',
+          'alot': 'a lot',
+          'wierd': 'weird',
+          'goverment': 'government',
+          'enviroment': 'environment',
+        };
+
+        englishSpellingFixes.forEach((wrong, correct) {
+          final pattern = RegExp('\\b' + RegExp.escape(wrong) + '\\b', caseSensitive: false);
+          para = replaceWithCount(para, pattern, (match) {
+            final matchedText = match.group(0)!;
+            if (matchedText.startsWith(RegExp(r'[A-Z]'))) {
+              return correct[0].toUpperCase() + correct.substring(1);
+            }
+            return correct;
+          });
+        });
+      } else {
+        // --- ARABIC PARAGRAPH ---
+        // 1. Convert English punctuation to Arabic
+        para = replaceWithCount(para, ',', (m) => '،');
+        para = replaceWithCount(para, '?', (m) => '؟');
+
+        // 2. Double quotes to Arabic quote brackets
+        para = replaceWithCount(para, RegExp(r'"([^"]*)"'), (match) => '«${match.group(1)}»');
+
+        // 3. Clean spaces around brackets/quotes
+        para = replaceWithCount(para, RegExp(r'\(\s+'), (m) => '(');
+        para = replaceWithCount(para, RegExp(r'\s+\)'), (m) => ')');
+        para = replaceWithCount(para, RegExp(r'«\s+'), (m) => '«');
+        para = replaceWithCount(para, RegExp(r'\s+»'), (m) => '»');
+
+        // 4. Punctuation spacing
+        para = replaceWithCount(para, RegExp(r'\s+([،.؛:؟!])'), (match) => match.group(1)!);
+        para = replaceWithCount(para, RegExp(r'([،.؛:؟!])(?=[^\s،.؛:؟!])'), (match) => '${match.group(1)} ');
+
+        // 5. Conjunction "و"
+        para = replaceWithCount(para, RegExp(r'(?<=\s|^)و([\u064B-\u0652]*)\s+'), (match) => 'و${match.group(1)}');
+
+        // 6. Indentation
+        if (para.isNotEmpty && !para.startsWith(RegExp(r'[\s\u2003=~\[]'))) {
+          para = '\u2003$para';
+          changesCount++;
+        }
+
+        // 7. Arabic spelling fixes (static & dynamic)
+        final spellingFixes = {
+          'انشاء الله': 'إن شاء الله',
+          'إنشاء الله': 'إن شاء الله',
+          'اللهم صلي': 'اللهم صلِّ',
+          'هاذا': 'هذا',
+          'هاذه': 'هذه',
+          'هاذان': 'هذان',
+          'هاؤلاء': 'هؤلاء',
+          'ذالك': 'ذلك',
+          'كذالك': 'كذلك',
+          'لاكن': 'لكن',
+          'لاكنه': 'لكنه',
+          'لاكنها': 'لكنها',
+          'لاكنهم': 'لكنهم',
+          'انتي': 'أنتِ',
+          'أنتي': 'أنتِ',
+          'إسم': 'اسم',
+          'أسم': 'اسم',
+          'إبن': 'ابن',
+          'إمرأة': 'امرأة',
+          'أمرأة': 'امرأة',
+          'شئ': 'شيء',
+          'مأئة': 'مئة',
+          'مائة': 'مئة',
+          'داوود': 'داود',
+          'طاووس': 'طاوس',
+          'أولائك': 'أولئك',
+          'الى': 'إلى',
+          'او': 'أو',
+          'ايجاد': 'إيجاد',
+          'انشاء': 'إنشاء',
+          'ndcwa': 'ندعو',
+          'ندعوا': 'ندعو',
+          'نرجوا': 'نرجو',
+          'مديروا': 'مديرو',
+          'اللة': 'الله',
+          'حتي': 'حتى',
+          'مستشفي': 'مستشفى',
+          'جزاكي': 'جزاكِ',
+        };
+
+        final dynamicFixes = context.read<GlobalConfigProvider>().spellingFixes;
+        final mergedFixes = {...spellingFixes, ...dynamicFixes};
+
+        mergedFixes.forEach((wrong, correct) {
+          final baseWrong = wrong.replaceAll(RegExp(r'[\u064B-\u0652]'), '');
+          final patternParts = baseWrong.split('').map((char) {
+            if (char == ' ') return r'\s+';
+            return RegExp.escape(char) + r'[\u064B-\u0652]*';
+          }).join('');
+          final pattern = RegExp('(?<![\\u0600-\\u06FF])' + patternParts + '(?![\\u0600-\\u06FF])');
+          para = replaceWithCount(para, pattern, (match) => correct);
+        });
+      }
+
+      // Universal paragraph space clean
+      para = replaceWithCount(para, RegExp(r'[ \t]{2,}'), (m) => ' ');
+      
+      formattedParagraphs.add(para);
+    }
+
+    String newText = formattedParagraphs.join('\n');
+    
+    // Clean excessive newlines on the joined text
     newText = replaceWithCount(newText, RegExp(r'\n{3,}'), (m) => '\n\n');
-
-    // 7. المسافة البادئة (Indentation) للفقرات
-    // إضافة مسافة بادئة (Em Space) بعد كل سطر جديد (أو بداية النص) إذا لم تكن موجودة وإذا كان السطر يحتوي نصاً وليس رموز تنسيق
-    if (newText.isNotEmpty && !newText.startsWith(RegExp(r'[\s=~\[]'))) {
-      newText = '\u2003$newText';
-      changesCount++;
-    }
-    newText = replaceWithCount(newText, RegExp(r'\n(?=[^\s=~\[\n])'), (match) => '\n\u2003');
-
-    // 8. القاموس المصغر للأخطاء المطلقة (الصريحة التي لا تحتمل وجهين)
-    final spellingFixes = {
-      'انشاء الله': 'إن شاء الله',
-      'إنشاء الله': 'إن شاء الله',
-      'اللهم صلي': 'اللهم صلِّ',
-      'هاذا': 'هذا',
-      'هاذه': 'هذه',
-      'هاذان': 'هذان',
-      'هاؤلاء': 'هؤلاء',
-      'ذالك': 'ذلك',
-      'كذالك': 'كذلك',
-      'لاكن': 'لكن',
-      'لاكنه': 'لكنه',
-      'لاكنها': 'لكنها',
-      'لاكنهم': 'لكنهم',
-      'انتي': 'أنتِ',
-      'أنتي': 'أنتِ',
-      'إسم': 'اسم',
-      'أسم': 'اسم',
-      'إبن': 'ابن',
-      'إمرأة': 'امرأة',
-      'أمرأة': 'امرأة',
-      'شئ': 'شيء',
-      'مأئة': 'مئة',
-      'مائة': 'مئة',
-      'داوود': 'داود',
-      'طاووس': 'طاوس',
-      'أولائك': 'أولئك',
-      'الى': 'إلى',
-      'او': 'أو',
-      'ايجاد': 'إيجاد',
-      'انشاء': 'إنشاء',
-      'ndcwa': 'ندعو', // Note: keep original strings in case there are transliterated values, or check original:
-      'ندعوا': 'ندعو',
-      'نرجوا': 'نرجو',
-      'مديروا': 'مديرو',
-      'اللة': 'الله',
-      'حتي': 'حتى',
-      'مستشفي': 'مستشفى',
-      'جزاكي': 'جزاكِ',
-    };
-
-    final dynamicFixes = context.read<GlobalConfigProvider>().spellingFixes;
-    final mergedFixes = {...spellingFixes, ...dynamicFixes};
-
-    mergedFixes.forEach((wrong, correct) {
-      // نستخدم حدود الكلمة العربية لتجنب تغيير أجزاء من كلمات أخرى (مثل: هلاكن -> هلكن)
-      // الحروف العربية تقع في النطاق \u0600-\u06FF
-      final baseWrong = wrong.replaceAll(RegExp(r'[\u064B-\u0652]'), '');
-      final patternParts = baseWrong.split('').map((char) {
-        if (char == ' ') return r'\s+';
-        return RegExp.escape(char) + r'[\u064B-\u0652]*';
-      }).join('');
-      final pattern = RegExp('(?<![\\u0600-\\u06FF])' + patternParts + '(?![\\u0600-\\u06FF])');
-      newText = replaceWithCount(newText, pattern, (match) => correct);
-    });
-
-    if (changesCount > 0) {
-      setState(() {
-        _textController.text = newText;
-        _textController.selection = TextSelection.collapsed(offset: newText.length);
-      });
-    }
 
     int wordCount = text.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
     int score = 100;
@@ -197,16 +286,42 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
 
     showDialog(
       context: context,
+      barrierDismissible: false,
+      builder: (context) => _MagicFormattingProgressDialog(
+        resultMessage: message,
+        onComplete: () {
+          if (changesCount > 0) {
+            setState(() {
+              _textController.text = newText;
+              _textController.selection = TextSelection.collapsed(offset: newText.length);
+            });
+          }
+          _textFocusNode.requestFocus();
+        },
+      ),
+    );
+  }
+
+  void _showQuranInstructionDialog() {
+    showDialog(
+      context: context,
       builder: (context) => AlertDialog(
-        title: const Text('التدقيق الآلي'),
-        content: Text(message),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.menu_book, color: AppColors.primary),
+            SizedBox(width: 8),
+            Text('تنسيق القرآن'),
+          ],
+        ),
+        content: const Text('حدد نص قرآني لتصحيحه وتنسيقه', style: TextStyle(fontSize: 16)),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               _textFocusNode.requestFocus();
             },
-            child: const Text('تم'),
+            child: const Text('تم', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -216,11 +331,15 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
   Future<void> _formatQuranVerse() async {
     final selection = _textController.selection;
     if (selection.isCollapsed || selection.start < 0 || selection.end < 0) {
+      _showQuranInstructionDialog();
       return;
     }
 
     final String selectedText = _textController.text.substring(selection.start, selection.end).trim();
-    if (selectedText.isEmpty) return;
+    if (selectedText.isEmpty) {
+      _showQuranInstructionDialog();
+      return;
+    }
 
     final QuranMatch? match = await QuranService.searchAndFormatVerse(selectedText);
     
@@ -238,6 +357,8 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
         );
       });
       _textFocusNode.requestFocus();
+    } else {
+      _showQuranInstructionDialog();
     }
   }
 
@@ -741,22 +862,57 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                                 );
                               },
                             ),
-                            // 4. تنسيق الشعر: الفقرة الحالية (مع استخدام رمز أسطر متداخلة)
-                            ListenableBuilder(
-                              listenable: _textController,
-                              builder: (context, _) {
-                                final active = _textController.currentParagraphFormat == ParagraphFormat.poem;
-                                return IconButton(
-                                  tooltip: context.l10n.poemTooltip,
-                                  icon: const Icon(Icons.notes),
-                                  color: active ? AppColors.error : AppColors.primary,
-                                  onPressed: () {
-                                    _textController.toggleParagraphFormat(ParagraphFormat.poem);
-                                    _textFocusNode.requestFocus();
-                                  },
-                                );
-                              },
-                            ),
+                            // 4. تنسيق الشعر: الفقرة الحالية (مع استخدام رمز عمودين مخصص)
+                            if (Localizations.localeOf(context).languageCode == 'ar')
+                              ListenableBuilder(
+                                listenable: _textController,
+                                builder: (context, _) {
+                                  final active = _textController.currentParagraphFormat == ParagraphFormat.poem;
+                                  return IconButton(
+                                    tooltip: context.l10n.poemTooltip,
+                                    icon: SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: Center(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: List.generate(5, (index) {
+                                            return Padding(
+                                              padding: EdgeInsets.only(bottom: index == 4 ? 0 : 2),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Container(
+                                                    width: 8,
+                                                    height: 2,
+                                                    decoration: BoxDecoration(
+                                                      color: active ? AppColors.error : AppColors.primary,
+                                                      borderRadius: BorderRadius.circular(1),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Container(
+                                                    width: 8,
+                                                    height: 2,
+                                                    decoration: BoxDecoration(
+                                                      color: active ? AppColors.error : AppColors.primary,
+                                                      borderRadius: BorderRadius.circular(1),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          }),
+                                        ),
+                                      ),
+                                    ),
+                                    onPressed: () {
+                                      _textController.toggleParagraphFormat(ParagraphFormat.poem);
+                                      _textFocusNode.requestFocus();
+                                    },
+                                  );
+                                },
+                              ),
                             // 5. تعريض الخط: الجزء المحدد
                             ListenableBuilder(
                               listenable: _textController,
@@ -770,13 +926,46 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                                 },
                               ),
                             ),
-                            // 5.5. تمييز النص (هايلايتر)
+                            // 5.5. تمييز النص (قلم التظليل)
                             ListenableBuilder(
                               listenable: _textController,
                               builder: (context, _) => IconButton(
-                                tooltip: 'تمييز النص (هايلايتر)',
-                                icon: const Icon(Icons.border_color),
-                                color: AppColors.primary,
+                                tooltip: 'قلم التظليل',
+                                icon: SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        // Cap/Tip (Black)
+                                        Container(
+                                          width: 5,
+                                          height: 3,
+                                          decoration: const BoxDecoration(
+                                            color: Colors.black,
+                                            borderRadius: BorderRadius.vertical(top: Radius.circular(1)),
+                                          ),
+                                        ),
+                                        // Body (Yellow)
+                                        Container(
+                                          width: 7,
+                                          height: 11,
+                                          color: const Color(0xFFFFEB3B), // Yellow color for highlighter
+                                        ),
+                                        // Base (Black)
+                                        Container(
+                                          width: 7,
+                                          height: 3,
+                                          decoration: const BoxDecoration(
+                                            color: Colors.black,
+                                            borderRadius: BorderRadius.vertical(bottom: Radius.circular(1)),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                                 onPressed: () {
                                   _textController.toggleHighlightAtCursor();
                                   _textFocusNode.requestFocus();
@@ -784,21 +973,22 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                               ),
                             ),
                             // 5.7. تنسيق آية قرآنية
-                            IconButton(
-                              tooltip: 'تنسيق آية قرآنية',
-                              icon: Text(
-                                '﴿آية﴾',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                  color: AppColors.primary,
+                            if (Localizations.localeOf(context).languageCode == 'ar')
+                              IconButton(
+                                tooltip: 'تنسيق آية قرآنية',
+                                icon: Text(
+                                  '﴿آية﴾',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    color: AppColors.primary,
+                                  ),
                                 ),
+                                onPressed: _formatQuranVerse,
                               ),
-                              onPressed: _formatQuranVerse,
-                            ),
-                            // 6. تصحيح وتنسيق سحري
+                            // 6. تصحيح إملائي
                             IconButton(
-                              tooltip: 'تنسيق سحري وتصحيح',
+                              tooltip: 'تصحيح إملائي',
                               icon: const Icon(Icons.auto_fix_high),
                               color: AppColors.primary,
                               onPressed: _applyMagicFormatting,
@@ -858,11 +1048,12 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                         icon: const Icon(Icons.arrow_back, size: 20),
                         color: AppColors.primary,
                         onPressed: () {
+                          final text = _textController.text;
                           final selection = _textController.selection;
                           if (selection.isValid) {
                             setState(() {
                               final currentExtent = selection.extentOffset;
-                              final newOffset = currentExtent > 0 ? currentExtent - 1 : 0;
+                              final newOffset = currentExtent < text.length ? currentExtent + 1 : text.length;
                               if (_isSelecting && _selectionAnchor != null) {
                                 _textController.selection = TextSelection(baseOffset: _selectionAnchor!, extentOffset: newOffset);
                               } else {
@@ -894,12 +1085,11 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                         icon: const Icon(Icons.arrow_forward, size: 20),
                         color: AppColors.primary,
                         onPressed: () {
-                          final text = _textController.text;
                           final selection = _textController.selection;
                           if (selection.isValid) {
                             setState(() {
                               final currentExtent = selection.extentOffset;
-                              final newOffset = currentExtent < text.length ? currentExtent + 1 : text.length;
+                              final newOffset = currentExtent > 0 ? currentExtent - 1 : 0;
                               if (_isSelecting && _selectionAnchor != null) {
                                 _textController.selection = TextSelection(baseOffset: _selectionAnchor!, extentOffset: newOffset);
                               } else {
@@ -1046,6 +1236,127 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MagicFormattingProgressDialog extends StatefulWidget {
+  final VoidCallback onComplete;
+  final String resultMessage;
+
+  const _MagicFormattingProgressDialog({
+    required this.onComplete,
+    required this.resultMessage,
+  });
+
+  @override
+  State<_MagicFormattingProgressDialog> createState() => _MagicFormattingProgressDialogState();
+}
+
+class _MagicFormattingProgressDialogState extends State<_MagicFormattingProgressDialog> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _progress;
+  final List<String> _words = [
+    'جاري التدقيق...',
+    'تحليل الكلمات...',
+    'ضبط القواعد...',
+    'تصحيح الإملاء...',
+    'تنسيق الفقرات...',
+    'معالجة النصوص...'
+  ];
+  String _currentWord = 'جاري التدقيق...';
+  bool _isDone = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 2500));
+    _progress = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    
+    _controller.addListener(() {
+      if (mounted) {
+        setState(() {
+          int wordIndex = (_progress.value * _words.length).floor();
+          if (wordIndex >= _words.length) wordIndex = _words.length - 1;
+          _currentWord = _words[wordIndex];
+        });
+      }
+    });
+
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        if (mounted) {
+          setState(() {
+            _isDone = true;
+          });
+          widget.onComplete();
+        }
+      }
+    });
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isDone) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green),
+            SizedBox(width: 8),
+            Text('اكتمل التدقيق'),
+          ],
+        ),
+        content: Text(widget.resultMessage, style: const TextStyle(fontSize: 16, height: 1.5)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('تم', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      );
+    }
+
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Text('التدقيق الآلي', textAlign: TextAlign.center),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: _progress.value,
+              minHeight: 10,
+              backgroundColor: Colors.grey.shade300,
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '${(_progress.value * 100).toInt()}%',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+          ),
+          const SizedBox(height: 12),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: Text(
+              _currentWord,
+              key: ValueKey<String>(_currentWord),
+              style: const TextStyle(color: Colors.grey, fontSize: 16),
+              textAlign: TextAlign.center,
             ),
           ),
         ],

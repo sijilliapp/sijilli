@@ -323,6 +323,7 @@ class LocalDbService {
       ..time = app.time
       ..region = app.region
       ..building = app.building
+      ..coordinates = app.coordinates
       ..privacy = app.privacy
       ..description = app.description
       ..participantsCount = app.participantsCount
@@ -355,6 +356,7 @@ class LocalDbService {
       time: la.time,
       region: la.region,
       building: la.building,
+      coordinates: la.coordinates,
       privacy: la.privacy,
       description: la.description,
       participantsCount: la.participantsCount,

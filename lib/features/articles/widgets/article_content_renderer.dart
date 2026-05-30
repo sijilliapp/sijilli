@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimens.dart';
 import 'poetry/poem_view.dart';
+import 'poetry/poem_formatter_utils.dart';
 
 class ArticleContentRenderer extends StatelessWidget {
   final String text;
@@ -15,66 +16,17 @@ class ArticleContentRenderer extends StatelessWidget {
         ? AppDimens.textSizeM * 1.5
         : AppDimens.textSizeM;
     final double lineHeight = isTraditionalArabic ? 1.3 : 1.8;
-    final FontWeight? fontWeight = isTraditionalArabic ? FontWeight.bold : null;
 
     final defaultStyle = TextStyle(
       fontSize: fontSize,
       height: lineHeight,
       color: AppColors.getTextPrimary(context),
       fontFamily: fontFamily,
-      fontWeight: fontWeight,
     );
 
-    final List<TextSpan> spans = [];
-    final pattern = RegExp(
-      r'\[BOLD\](.*?)\[/BOLD\]'
-      r'|\[B\](.*?)\[/B\]'
-      r'|\*(.*?)\*'
-      r'|\[HIGHLIGHT\](.*?)\[/HIGHLIGHT\]',
-      caseSensitive: false,
-      dotAll: true,
+    return TextSpan(
+      children: PoemFormatterUtils.parseInlineText(text, defaultStyle, context),
     );
-    
-    int lastMatchEnd = 0;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    for (final match in pattern.allMatches(text)) {
-      final preText = text.substring(lastMatchEnd, match.start);
-      if (preText.isNotEmpty) {
-        spans.add(TextSpan(text: preText, style: defaultStyle));
-      }
-      
-      final isBold = match.group(1) != null || match.group(2) != null || match.group(3) != null;
-      final isHighlight = match.group(4) != null;
-      final formattedText = match.group(1) ?? match.group(2) ?? match.group(3) ?? match.group(4) ?? '';
-      
-      if (formattedText.isNotEmpty) {
-        spans.add(TextSpan(
-          text: formattedText,
-          style: defaultStyle.copyWith(
-            fontWeight: isBold ? FontWeight.w900 : null,
-            backgroundColor: isHighlight 
-                ? (isDark ? const Color(0xFF78350F).withValues(alpha: 0.5) : const Color(0xFFFEF08A))
-                : null,
-            color: isHighlight
-                ? (isDark ? const Color(0xFFFFFBEB) : const Color(0xFF1E293B))
-                : null,
-          ),
-        ));
-      }
-      lastMatchEnd = match.end;
-    }
-    
-    final postText = text.substring(lastMatchEnd);
-    if (postText.isNotEmpty) {
-      spans.add(TextSpan(text: postText, style: defaultStyle));
-    }
-    
-    if (spans.isEmpty) {
-      return TextSpan(text: text, style: defaultStyle);
-    }
-    
-    return TextSpan(children: spans);
   }
 
   List<Widget> _renderTextBlock(BuildContext context, String blockText) {
@@ -144,14 +96,23 @@ class ArticleContentRenderer extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    // Clean citations in brackets [...] of diacritics to prevent font rendering/ligature distortion
+    final cleanedText = text.replaceAllMapped(RegExp(r'\[([^\]]+?)\]'), (match) {
+      final content = match.group(1)!;
+      final cleanedContent = content
+          .replaceAll('ٱ', 'ا')
+          .replaceAll(RegExp(r'[\u064b-\u0652\u0670]'), '');
+      return '[$cleanedContent]';
+    });
+
     final List<Widget> widgets = [];
     final poemPattern = RegExp(r'\[POEM\](.*?)\[/POEM\]', dotAll: true, caseSensitive: false);
     
     int lastMatchEnd = 0;
     
-    for (final match in poemPattern.allMatches(text)) {
+    for (final match in poemPattern.allMatches(cleanedText)) {
       // Add preceding normal text if any
-      final preText = text.substring(lastMatchEnd, match.start).trim();
+      final preText = cleanedText.substring(lastMatchEnd, match.start).trim();
       if (preText.isNotEmpty) {
         widgets.add(Padding(
           padding: const EdgeInsets.only(bottom: 16.0),
@@ -172,7 +133,7 @@ class ArticleContentRenderer extends StatelessWidget {
     }
     
     // Add remaining normal text
-    final postText = text.substring(lastMatchEnd).trim();
+    final postText = cleanedText.substring(lastMatchEnd).trim();
     if (postText.isNotEmpty) {
       widgets.add(Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -181,8 +142,8 @@ class ArticleContentRenderer extends StatelessWidget {
     }
     
     // If no text or poems were added at all, just render the original string
-    if (widgets.isEmpty && text.isNotEmpty) {
-      widgets.addAll(_renderTextBlock(context, text));
+    if (widgets.isEmpty && cleanedText.isNotEmpty) {
+      widgets.addAll(_renderTextBlock(context, cleanedText));
     }
  
     return Column(

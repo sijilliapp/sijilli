@@ -2,9 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import '../../../../models/user.dart';
 import '../../../../models/appointment.dart';
+import 'dart:convert';
+import 'dart:io' show Platform;
+import 'package:crypto/crypto.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+
 import '../../settings/services/pb_user_service.dart';
 import '../../appointments/services/pb_appointment_browse_service.dart';
 import '../../settings/services/pb_moderation_service.dart';
+import '../../notifications/services/notification_service.dart';
+import '../../../../models/notification.dart';
 
 class PublicProfileProvider extends ChangeNotifier {
   final PbUserService _userService = PbUserService();
@@ -138,10 +145,76 @@ class PublicProfileProvider extends ChangeNotifier {
 
       _isLoading = false;
       notifyListeners();
+
+      if (currentUserId == null && user.isPublic) {
+        _trackAnonymousVisit(user.id);
+      }
     } catch (e) {
       _error = 'حدث خطأ في جلب البيانات';
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> _trackAnonymousVisit(String targetUserId) async {
+    try {
+      final now = DateTime.now().toUtc();
+      final dateStr = '${now.year}-${now.month}-${now.day}';
+      
+      String deviceName = 'جهاز غير معروف';
+      String deviceType = 'عابر';
+      
+      final deviceInfoPlugin = DeviceInfoPlugin();
+      
+      if (kIsWeb) {
+        final webInfo = await deviceInfoPlugin.webBrowserInfo;
+        deviceName = webInfo.browserName.toString().replaceAll('BrowserName.', '');
+        deviceType = 'متصفح';
+      } else {
+        if (Platform.isIOS) {
+          final iosInfo = await deviceInfoPlugin.iosInfo;
+          deviceName = iosInfo.name;
+          deviceType = 'آيفون';
+        } else if (Platform.isAndroid) {
+          final androidInfo = await deviceInfoPlugin.androidInfo;
+          deviceName = androidInfo.model;
+          deviceType = 'أندرويد';
+        } else if (Platform.isMacOS) {
+          deviceName = 'ماك';
+          deviceType = 'حاسب';
+        } else if (Platform.isWindows) {
+          deviceName = 'ويندوز';
+          deviceType = 'حاسب';
+        }
+      }
+
+      final rawString = '$dateStr-$deviceName';
+      final bytes = utf8.encode(rawString);
+      final hash = sha256.convert(bytes).toString();
+      
+      final notificationService = NotificationService();
+      
+      final existing = await notificationService.getNotifications(
+        filter: 'user = "$targetUserId" && type = "visit" && related_id = "$hash"',
+        perPage: 1
+      );
+      
+      if (existing.isEmpty) {
+        await notificationService.createNotification(
+          targetUserId: targetUserId,
+          title: 'زيارة مجهولة',
+          message: 'قام $deviceType ($deviceName) باستعراض صفحتك الشخصية للتو.',
+          type: NotificationType.visit,
+          relatedId: hash,
+        );
+      } else {
+        // Option: Update the time of the existing visit?
+        // In PocketBase, we can't easily "touch" updated_at without changing data, 
+        // but for now 1 notification per day per device is perfect to avoid spam.
+      }
+      
+    } catch (e) {
+      print('⚠️ Failed to track anonymous visit: $e');
     }
   }
 
