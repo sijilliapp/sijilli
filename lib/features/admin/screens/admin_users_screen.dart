@@ -76,6 +76,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   }
 
   void _onSearchChanged(String query) {
+    setState(() {});
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     
     _debounce = Timer(const Duration(milliseconds: 500), () {
@@ -180,7 +181,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                       )
                     : Consumer<AdminProvider>(
                         builder: (context, admin, child) {
-                          if (admin.isSearchingUsers) {
+                          final isDebouncing = _debounce?.isActive ?? false;
+                          if (admin.isSearchingUsers || (isDebouncing && admin.userSearchResults.isEmpty)) {
                             return const Center(child: CircularProgressIndicator());
                           }
                           if (admin.userSearchResults.isEmpty) {
