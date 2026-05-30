@@ -1,6 +1,5 @@
-// 📍 lib/features/admin/providers/admin_provider.dart
-
 import 'package:flutter/material.dart';
+import 'package:pocketbase/pocketbase.dart';
 import '../../../core/services/pocketbase_client.dart';
 import '../../../core/providers/global_config_provider.dart';
 import '../../../models/contact_message.dart';
@@ -15,6 +14,15 @@ class AdminProvider extends ChangeNotifier {
 
   bool _isFetchingMessages = false;
   bool get isFetchingMessages => _isFetchingMessages;
+
+  // إدارة البلاغات والتقارير
+  List<RecordModel> _reports = [];
+  List<RecordModel> get reports => _reports;
+
+  bool _isFetchingReports = false;
+  bool get isFetchingReports => _isFetchingReports;
+
+  int get pendingReportsCount => _reports.where((r) => r.getStringValue('status') == 'pending').length;
 
   // إدارة المستخدمين
   List<UserModel> _userSearchResults = [];
@@ -337,6 +345,85 @@ class AdminProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return false;
+    }
+  }
+
+  /// جلب البلاغات والتقارير
+  Future<void> fetchReports() async {
+    _isFetchingReports = true;
+    notifyListeners();
+    try {
+      final pb = PocketBaseClient.instance.pb;
+      final records = await pb.collection('reports').getList(
+        sort: '-created',
+        expand: 'reporter',
+        perPage: 50,
+      );
+      _reports = records.items;
+    } catch (e) {
+      print('❌ Error fetching reports: $e');
+    } finally {
+      _isFetchingReports = false;
+      notifyListeners();
+    }
+  }
+
+  /// تحديث حالة البلاغ (pending, resolved, ignored)
+  Future<bool> updateReportStatus(String reportId, String status) async {
+    try {
+      final pb = PocketBaseClient.instance.pb;
+      await pb.collection('reports').update(reportId, body: {
+        'status': status,
+      });
+      await fetchReports();
+      return true;
+    } catch (e) {
+      print('❌ Error updating report status: $e');
+      return false;
+    }
+  }
+
+  /// حذف المحتوى المُبلّغ عنه (موعد، مقال، مستخدم)
+  Future<bool> deleteReportedContent(String subjectType, String subjectId) async {
+    try {
+      final pb = PocketBaseClient.instance.pb;
+      String collectionName;
+      if (subjectType == 'appointment') {
+        collectionName = 'appointments';
+      } else if (subjectType == 'article') {
+        collectionName = 'articles';
+      } else if (subjectType == 'user') {
+        collectionName = 'users';
+      } else {
+        return false;
+      }
+      await pb.collection(collectionName).delete(subjectId);
+      return true;
+    } catch (e) {
+      print('❌ Error deleting reported content: $e');
+      return false;
+    }
+  }
+
+  /// جلب تفاصيل المحتوى المُبلّغ عنه بشكل منفصل لعرضه
+  Future<Map<String, dynamic>?> fetchSubjectDetails(String subjectType, String subjectId) async {
+    try {
+      final pb = PocketBaseClient.instance.pb;
+      String collectionName;
+      if (subjectType == 'appointment') {
+        collectionName = 'appointments';
+      } else if (subjectType == 'article') {
+        collectionName = 'articles';
+      } else if (subjectType == 'user') {
+        collectionName = 'users';
+      } else {
+        return null;
+      }
+      final record = await pb.collection(collectionName).getOne(subjectId);
+      return record.toJson();
+    } catch (e) {
+      print('❌ Error fetching subject details ($subjectType, $subjectId): $e');
+      return null;
     }
   }
 }

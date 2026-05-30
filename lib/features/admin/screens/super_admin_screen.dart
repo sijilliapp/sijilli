@@ -3,12 +3,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/providers/global_config_provider.dart';
 import '../providers/admin_provider.dart';
 import 'admin_messages_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_article_prefs_screen.dart';
 import 'admin_system_prefs_screen.dart';
+import 'admin_reports_screen.dart';
 
 class SuperAdminScreen extends StatefulWidget {
   const SuperAdminScreen({super.key});
@@ -21,10 +21,12 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
   @override
   void initState() {
     super.initState();
-    // جلب الرسائل في الخلفية فور فتح لوحة التحكم
+    // جلب الرسائل والبلاغات في الخلفية فور فتح لوحة التحكم
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<AdminProvider>().fetchContactMessages();
+        final provider = context.read<AdminProvider>();
+        provider.fetchContactMessages();
+        provider.fetchReports();
       }
     });
   }
@@ -125,11 +127,11 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
 
             const SizedBox(height: 8),
 
-            // 💬 القسم الثاني: الدعم الفني والمراسلات
+            // 💬 القسم الثالث: مراسلات المشتركين
             const Padding(
               padding: EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 4),
               child: Text(
-                'المراسلات والدعم الفني',
+                'مراسلات المشتركين',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -140,103 +142,41 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
 
             Consumer<AdminProvider>(
               builder: (context, admin, _) {
-                return _buildClickableCard(
-                  context,
-                  isDark: isDark,
-                  icon: Icons.chat_bubble_outline_rounded,
-                  title: 'مراسلات التواصل',
-                  subtitle: 'استعراض وإدارة استفسارات واقتراحات وشكاوى المستخدمين',
-                  badgeCount: admin.newMessagesCount,
-                  onTap: () {
-                    Navigator.push(
+                return Column(
+                  children: [
+                    _buildClickableCard(
                       context,
-                      MaterialPageRoute(builder: (context) => const AdminMessagesScreen()),
-                    );
-                  },
+                      isDark: isDark,
+                      icon: Icons.chat_bubble_outline_rounded,
+                      title: 'التواصل مع فريق سجلي',
+                      subtitle: 'استعراض وإدارة استفسارات واقتراحات وشكاوى المستخدمين',
+                      badgeCount: admin.newMessagesCount,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const AdminMessagesScreen()),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    _buildClickableCard(
+                      context,
+                      isDark: isDark,
+                      icon: Icons.report_problem_outlined,
+                      title: 'البلاغات والتقارير',
+                      subtitle: 'إدارة وحسم البلاغات المقدمة ضد مستخدمين أو مواعيد أو مقالات مخترقة',
+                      badgeCount: admin.pendingReportsCount,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const AdminReportsScreen()),
+                        );
+                      },
+                    ),
+                  ],
                 );
               },
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSwitchCard(
-    BuildContext context, {
-    required bool isDark,
-    required IconData icon,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-    required bool isLoading,
-    Color activeColor = AppColors.primary,
-  }) {
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-          width: 1,
-        ),
-      ),
-      color: isDark ? AppColors.darkSurface : Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: activeColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: activeColor, size: 24),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'السماح بتسجيل حسابات جديدة',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'تعطيل هذا الخيار سيمنع انضمام أي مشترك جديد للتطبيق.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).brightness == Brightness.dark 
-                          ? Colors.grey.shade400 
-                          : Colors.grey.shade600,
-                      height: 1.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            if (isLoading)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
-            else
-              Switch(
-                value: value,
-                onChanged: onChanged,
-                activeColor: activeColor,
-              ),
           ],
         ),
       ),
