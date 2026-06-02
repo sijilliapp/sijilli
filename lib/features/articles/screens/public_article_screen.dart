@@ -39,6 +39,14 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
 
   void _showCommentsSheet() {
     if (_article == null) return;
+    
+    // أخذ القارئ المجهول لصفحة الدخول
+    final currentUserId = PocketBaseClient.instance.pb.authStore.record?.id;
+    if (currentUserId == null) {
+      Navigator.of(context).pushReplacementNamed('/main');
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -251,35 +259,9 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // عنوان المقال
-            Text(
-              _article!.title.isNotEmpty ? _article!.title : 'بدون عنوان',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                height: 1.4,
-                color: AppColors.getTextPrimary(context),
-              ),
-            ),
-            const SizedBox(height: 10),
-            
-            // الكاتب والتاريخ
+            // اللمحة الزمنية
             Row(
               children: [
-                Text(
-                  _authorProfile?.name ?? widget.username,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: AppColors.getTextSecondary(context),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '•',
-                  style: TextStyle(color: AppColors.getTextSecondary(context)),
-                ),
-                const SizedBox(width: 8),
                 Text(
                   timeago.format(_article!.createdAt, locale: context.l10n.localeName),
                   style: TextStyle(
