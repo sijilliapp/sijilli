@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:device_info_plus/device_info_plus.dart';
 import '../../../models/article.dart';
 import '../../../models/comment.dart';
 import '../../../models/notification.dart';
@@ -518,9 +519,35 @@ class ArticleProvider extends ChangeNotifier {
       final dateStr = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
       final startOfDay = '$dateStr 00:00:00';
       
-      String deviceName = 'متصفح ويب';
+      String deviceName = 'جهاز غير معروف';
+      final deviceInfoPlugin = DeviceInfoPlugin();
 
-      if (!kIsWeb) {
+      if (kIsWeb) {
+        final webInfo = await deviceInfoPlugin.webBrowserInfo;
+        final userAgent = webInfo.userAgent?.toLowerCase() ?? '';
+        final browser = webInfo.browserName.toString().replaceAll('BrowserName.', '');
+        String browserName = browser;
+        if (browser.isNotEmpty) {
+          browserName = browser[0].toUpperCase() + browser.substring(1);
+        }
+        if (browserName == 'Safari') browserName = 'سفاري';
+        if (browserName == 'Chrome') browserName = 'كروم';
+        if (browserName == 'Firefox') browserName = 'فايرفوكس';
+
+        if (userAgent.contains('iphone')) {
+          deviceName = 'آيفون ($browserName)';
+        } else if (userAgent.contains('ipad')) {
+          deviceName = 'آيباد ($browserName)';
+        } else if (userAgent.contains('android')) {
+          deviceName = 'أندرويد ($browserName)';
+        } else if (userAgent.contains('macintosh') || userAgent.contains('mac os')) {
+          deviceName = 'ماك ($browserName)';
+        } else if (userAgent.contains('windows')) {
+          deviceName = 'ويندوز ($browserName)';
+        } else {
+          deviceName = 'متصفح $browserName';
+        }
+      } else {
         if (Platform.isAndroid) {
           deviceName = 'أندرويد';
         } else if (Platform.isIOS) {

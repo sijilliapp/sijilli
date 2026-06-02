@@ -238,7 +238,29 @@ class PublicProfileProvider extends ChangeNotifier {
       
       if (kIsWeb) {
         final webInfo = await deviceInfoPlugin.webBrowserInfo;
-        deviceName = webInfo.browserName.toString().replaceAll('BrowserName.', '');
+        final userAgent = webInfo.userAgent?.toLowerCase() ?? '';
+        final browser = webInfo.browserName.toString().replaceAll('BrowserName.', '');
+        String browserName = browser;
+        if (browser.isNotEmpty) {
+          browserName = browser[0].toUpperCase() + browser.substring(1);
+        }
+        if (browserName == 'Safari') browserName = 'سفاري';
+        if (browserName == 'Chrome') browserName = 'كروم';
+        if (browserName == 'Firefox') browserName = 'فايرفوكس';
+
+        if (userAgent.contains('iphone')) {
+          deviceName = 'آيفون ($browserName)';
+        } else if (userAgent.contains('ipad')) {
+          deviceName = 'آيباد ($browserName)';
+        } else if (userAgent.contains('android')) {
+          deviceName = 'أندرويد ($browserName)';
+        } else if (userAgent.contains('macintosh') || userAgent.contains('mac os')) {
+          deviceName = 'ماك ($browserName)';
+        } else if (userAgent.contains('windows')) {
+          deviceName = 'ويندوز ($browserName)';
+        } else {
+          deviceName = 'متصفح $browserName';
+        }
       } else {
         if (Platform.isIOS) {
           final iosInfo = await deviceInfoPlugin.iosInfo;
