@@ -296,4 +296,12 @@ class PbAppointmentService {
       return {};
     }
   }
+
+  Future<Appointment> getAppointmentById(String id, {int contextAdjustment = 0}) async {
+    final record = await _pb.collection(collectionAppointments).getOne(
+      id,
+      expand: 'host,invitations_via_appointment.user,invitations_via_appointment.linked_article',
+    );
+    return Appointment.fromJson(record.toJson(), contextAdjustment: contextAdjustment);
+  }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/context_l10n.dart';
 import '../../../core/providers/global_config_provider.dart';
 import '../providers/admin_provider.dart';
 
@@ -39,9 +40,9 @@ class _AdminSystemPrefsScreenState extends State<AdminSystemPrefsScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'إعدادات التسجيل والتواصل',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          context.l10n.registrationSettings,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         elevation: 0,
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -56,11 +57,11 @@ class _AdminSystemPrefsScreenState extends State<AdminSystemPrefsScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 children: [
                   // 📋 القسم الأول: بوابة التسجيل
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 8.0, right: 4.0),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0, right: 4.0),
                     child: Text(
-                      'حالة التسجيل للجدد',
-                      style: TextStyle(
+                      context.l10n.registrationGate,
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
@@ -94,15 +95,15 @@ class _AdminSystemPrefsScreenState extends State<AdminSystemPrefsScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'السماح بتسجيل حسابات جديدة',
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                Text(
+                                  context.l10n.allowNewRegistrations,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   config.isRegistrationEnabled
-                                      ? 'التسجيل متاح حالياً للجميع'
-                                      : 'التسجيل معطل حالياً (تظهر شاشة مغلق)',
+                                      ? context.l10n.registrationEnabledDesc
+                                      : context.l10n.registrationDisabledDesc,
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
@@ -125,7 +126,9 @@ class _AdminSystemPrefsScreenState extends State<AdminSystemPrefsScreen> {
                                     if (success && context.mounted) {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
-                                          content: Text(val ? 'تم فتح التسجيل بنجاح 🎉' : 'تم إغلاق التسجيل 🔒'),
+                                          content: Text(val
+                                              ? context.l10n.registrationOpenedSuccess
+                                              : context.l10n.registrationClosedSuccess),
                                           backgroundColor: val ? Colors.green : Colors.orange,
                                         ),
                                       );
@@ -140,11 +143,11 @@ class _AdminSystemPrefsScreenState extends State<AdminSystemPrefsScreen> {
                   const SizedBox(height: 24),
 
                   // 📞 القسم الثاني: قنوات التواصل
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 8.0, right: 4.0),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0, right: 4.0),
                     child: Text(
-                      'بيانات التواصل والدعم الفني',
-                      style: TextStyle(
+                      context.l10n.contactSupportChannels,
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
@@ -179,9 +182,9 @@ class _AdminSystemPrefsScreenState extends State<AdminSystemPrefsScreen> {
                                 child: const Icon(Icons.chat_bubble_rounded, color: Colors.green),
                               ),
                               const SizedBox(width: 12),
-                              const Text(
-                                'رقم الواتساب للتواصل',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                              Text(
+                                context.l10n.whatsappSupportNumber,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                               ),
                             ],
                           ),
@@ -192,7 +195,7 @@ class _AdminSystemPrefsScreenState extends State<AdminSystemPrefsScreen> {
                             textDirection: TextDirection.ltr,
                             decoration: InputDecoration(
                               hintText: '+973xxxxxxxx',
-                              helperText: 'يرجى كتابة الرمز الدولي (مثال: 97339477742+)',
+                              helperText: context.l10n.whatsappHelperText,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -200,7 +203,7 @@ class _AdminSystemPrefsScreenState extends State<AdminSystemPrefsScreen> {
                             ),
                             validator: (val) {
                               if (val == null || val.trim().isEmpty) {
-                                return 'حقل الرقم مطلوب';
+                                  return context.l10n.whatsappRequired;
                               }
                               return null;
                             },
@@ -215,7 +218,7 @@ class _AdminSystemPrefsScreenState extends State<AdminSystemPrefsScreen> {
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               ),
                               icon: const Icon(Icons.save, size: 16),
-                              label: const Text('حفظ رقم الواتساب'),
+                              label: Text(context.l10n.saveWhatsappBtn),
                               onPressed: admin.isLoading
                                   ? null
                                   : () async {
@@ -227,8 +230,8 @@ class _AdminSystemPrefsScreenState extends State<AdminSystemPrefsScreen> {
                                         );
                                         if (success && context.mounted) {
                                           ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('تم تحديث رقم الواتساب بنجاح 🎉'),
+                                            SnackBar(
+                                              content: Text(context.l10n.whatsappUpdatedSuccess),
                                               backgroundColor: Colors.green,
                                             ),
                                           );
@@ -271,9 +274,9 @@ class _AdminSystemPrefsScreenState extends State<AdminSystemPrefsScreen> {
                                 child: const Icon(Icons.email_outlined, color: Colors.blue),
                               ),
                               const SizedBox(width: 12),
-                              const Text(
-                                'البريد الإلكتروني للتواصل',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                              Text(
+                                context.l10n.emailSupportLabel,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                               ),
                             ],
                           ),
@@ -291,10 +294,10 @@ class _AdminSystemPrefsScreenState extends State<AdminSystemPrefsScreen> {
                             ),
                             validator: (val) {
                               if (val == null || val.trim().isEmpty) {
-                                return 'حقل البريد الإلكتروني مطلوب';
+                                return context.l10n.emailRequired;
                               }
                               if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(val.trim())) {
-                                return 'الرجاء إدخال بريد إلكتروني صحيح';
+                                return context.l10n.emailInvalid;
                               }
                               return null;
                             },
@@ -309,7 +312,7 @@ class _AdminSystemPrefsScreenState extends State<AdminSystemPrefsScreen> {
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               ),
                               icon: const Icon(Icons.save, size: 16),
-                              label: const Text('حفظ البريد الإلكتروني'),
+                              label: Text(context.l10n.saveEmailBtn),
                               onPressed: admin.isLoading
                                   ? null
                                   : () async {
@@ -321,8 +324,8 @@ class _AdminSystemPrefsScreenState extends State<AdminSystemPrefsScreen> {
                                         );
                                         if (success && context.mounted) {
                                           ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('تم تحديث البريد الإلكتروني بنجاح 🎉'),
+                                            SnackBar(
+                                              content: Text(context.l10n.emailUpdatedSuccess),
                                               backgroundColor: Colors.green,
                                             ),
                                           );

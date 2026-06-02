@@ -12,12 +12,15 @@ import 'package:sijilli/core/extensions/context_l10n.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../../core/providers/settings_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../widgets/comment_section.dart';
 class ArticleDetailsScreen extends StatefulWidget {
   final Article article;
+  final bool openComments;
 
   const ArticleDetailsScreen({
     super.key,
     required this.article,
+    this.openComments = false,
   });
 
   @override
@@ -35,7 +38,34 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
     _scrollController.addListener(_saveScrollPosition);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _restoreScrollPosition();
+      Provider.of<ArticleProvider>(context, listen: false).fetchComments(widget.article.id);
+      if (widget.openComments) {
+        _showCommentsSheet();
+      }
     });
+
+    // تتبع قراءة المقال إذا كان القارئ غير الكاتب
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final currentUserId = authProvider.user?.id;
+      if (currentUserId != widget.article.authorId) {
+        Provider.of<ArticleProvider>(context, listen: false).trackArticleVisit(
+          articleId: widget.article.id,
+          authorId: widget.article.authorId,
+          articleTitle: widget.article.title,
+        );
+      }
+    });
+  }
+
+  void _showCommentsSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => CommentSection(article: widget.article),
+    );
   }
 
   @override
@@ -327,7 +357,8 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                                   color: isLiked ? AppColors.error : AppColors.getTextSecondary(context),
                                 ),
                                 onPressed: currentUserId != null ? () {
-                                  provider.toggleLike(innerArticle.id, currentUserId);
+                                  final likerName = context.read<AuthProvider>().user?.name ?? '';
+                                  provider.toggleLike(innerArticle.id, currentUserId, likerName: likerName);
                                 } : null,
                               ),
                               Text(
@@ -339,11 +370,24 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                                 ),
                               ),
                               const Spacer(),
+                              InkWell(
+                                onTap: _showCommentsSheet,
+                                borderRadius: BorderRadius.circular(8),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
+                                  child: Text(
+                                    'عدد التعليقات: ${provider.getCommentsForArticle(innerArticle.id).length}',
+                                    style: TextStyle(
+                                      fontSize: AppDimens.textSizeM,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.getTextSecondary(context),
+                                    ),
+                                  ),
+                                ),
+                              ),
                               IconButton(
                                 icon: Icon(Icons.comment_outlined, color: AppColors.getTextSecondary(context)),
-                                onPressed: () {
-                                  // TODO: Open Comments Bottom Sheet
-                                },
+                                onPressed: _showCommentsSheet,
                               ),
                             ],
                           );

@@ -2840,12 +2840,6 @@ abstract class AppLocalizations {
   /// **'تم نسخ {url} للحافظة'**
   String copiedToClipboard(String url);
 
-  /// No description provided for @errorArticleNotPublished.
-  ///
-  /// In ar, this message translates to:
-  /// **'المقال غير منشور أو غير متوفر حالياً.'**
-  String get errorArticleNotPublished;
-
   /// No description provided for @errorFetchingArticle.
   ///
   /// In ar, this message translates to:
@@ -2857,6 +2851,846 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'المقال'**
   String get article;
+
+  /// No description provided for @adminPanelTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'لوحة تحكم المشرف العام'**
+  String get adminPanelTitle;
+
+  /// No description provided for @systemSettingsSection.
+  ///
+  /// In ar, this message translates to:
+  /// **'إعدادات النظام العامة'**
+  String get systemSettingsSection;
+
+  /// No description provided for @registrationSettings.
+  ///
+  /// In ar, this message translates to:
+  /// **'إعدادات التسجيل والتواصل'**
+  String get registrationSettings;
+
+  /// No description provided for @registrationSettingsDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'التحكم في حالة التسجيل للجدد ورقم الواتساب والبريد الإلكتروني للقرّاء'**
+  String get registrationSettingsDesc;
+
+  /// No description provided for @userManagement.
+  ///
+  /// In ar, this message translates to:
+  /// **'إدارة حسابات المستخدمين'**
+  String get userManagement;
+
+  /// No description provided for @userManagementDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'البحث عن المشتركين وتعديل الصلاحيات والأدوار الفعالة'**
+  String get userManagementDesc;
+
+  /// No description provided for @articlesManagement.
+  ///
+  /// In ar, this message translates to:
+  /// **'إدارة المقالات والمحتوى'**
+  String get articlesManagement;
+
+  /// No description provided for @articlePrefs.
+  ///
+  /// In ar, this message translates to:
+  /// **'تفضيلات المقالات الإدارية'**
+  String get articlePrefs;
+
+  /// No description provided for @articlePrefsDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'الحد الأقصى لحروف المقالات وإدارة قاموس الأخطاء الشائعة المخصص'**
+  String get articlePrefsDesc;
+
+  /// No description provided for @userMessages.
+  ///
+  /// In ar, this message translates to:
+  /// **'مراسلات المشتركين'**
+  String get userMessages;
+
+  /// No description provided for @incomingMessages.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرسائل الواردة من القراء'**
+  String get incomingMessages;
+
+  /// No description provided for @incomingMessagesDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'عرض الاستفسارات والشكاوى الواردة من صفحة التواصل والرد عليها'**
+  String get incomingMessagesDesc;
+
+  /// No description provided for @reportsAndTickets.
+  ///
+  /// In ar, this message translates to:
+  /// **'البلاغات والتقارير'**
+  String get reportsAndTickets;
+
+  /// No description provided for @reportsAndTicketsDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'متابعة البلاغات وحل المشكلات المتعلقة بالمواعيد أو المقالات المسيئة'**
+  String get reportsAndTicketsDesc;
+
+  /// No description provided for @searchSubscribers.
+  ///
+  /// In ar, this message translates to:
+  /// **'البحث عن المشتركين...'**
+  String get searchSubscribers;
+
+  /// No description provided for @recentlyRegistered.
+  ///
+  /// In ar, this message translates to:
+  /// **'المسجلون حديثاً'**
+  String get recentlyRegistered;
+
+  /// No description provided for @allAdmins.
+  ///
+  /// In ar, this message translates to:
+  /// **'المشرفون'**
+  String get allAdmins;
+
+  /// No description provided for @searchResult.
+  ///
+  /// In ar, this message translates to:
+  /// **'نتائج البحث'**
+  String get searchResult;
+
+  /// No description provided for @clearSearch.
+  ///
+  /// In ar, this message translates to:
+  /// **'مسح البحث'**
+  String get clearSearch;
+
+  /// No description provided for @noRecentSearches.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد عمليات بحث أخيرة'**
+  String get noRecentSearches;
+
+  /// No description provided for @editUserAccount.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعديل حساب المشترك'**
+  String get editUserAccount;
+
+  /// No description provided for @simulateLogin.
+  ///
+  /// In ar, this message translates to:
+  /// **'محاكاة الدخول للحساب'**
+  String get simulateLogin;
+
+  /// No description provided for @simulateConfirm.
+  ///
+  /// In ar, this message translates to:
+  /// **'هل تريد تصفح التطبيق بصفتك المشترك {name}؟\n\nسيقوم التطبيق بنقلك للواجهة الرئيسية كأنك المشترك، مع إمكانية العودة لحسابك كمشرف في أي وقت.'**
+  String simulateConfirm(String name);
+
+  /// No description provided for @loginSimulated.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم الدخول بصفتك {name} 👥'**
+  String loginSimulated(String name);
+
+  /// No description provided for @permissionsAndControl.
+  ///
+  /// In ar, this message translates to:
+  /// **'الصلاحيات والتحكم'**
+  String get permissionsAndControl;
+
+  /// No description provided for @accountOptions.
+  ///
+  /// In ar, this message translates to:
+  /// **'إعدادات وخصائص الحساب الفعالة'**
+  String get accountOptions;
+
+  /// No description provided for @verifiedEmailLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'توثيق البريد الإلكتروني (Verified Email)'**
+  String get verifiedEmailLabel;
+
+  /// No description provided for @verifiedEmailDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'تحديد حالة التحقق والتوثيق للبريد الإلكتروني للقروبات.'**
+  String get verifiedEmailDesc;
+
+  /// No description provided for @verifiedPhoneLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'توثيق رقم الهاتف (Verified Phone)'**
+  String get verifiedPhoneLabel;
+
+  /// No description provided for @verifiedPhoneDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'تحديد ما إذا كان رقم هاتف المشترك موثق ومؤكد.'**
+  String get verifiedPhoneDesc;
+
+  /// No description provided for @publicProfileLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'ملف شخصي عام (Public Profile)'**
+  String get publicProfileLabel;
+
+  /// No description provided for @publicProfileDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'السماح للجميع برؤية ومتابعة هذا الملف الشخصي.'**
+  String get publicProfileDesc;
+
+  /// No description provided for @hideFromSearchLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'إخفاء الحساب من محرك البحث'**
+  String get hideFromSearchLabel;
+
+  /// No description provided for @hideFromSearchDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'منع ظهور حساب المشترك في نتائج البحث العامة داخل التطبيق.'**
+  String get hideFromSearchDesc;
+
+  /// No description provided for @suggestedAccountLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'حساب مقترح (Suggested Account)'**
+  String get suggestedAccountLabel;
+
+  /// No description provided for @suggestedAccountDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'إظهار حساب هذا المشترك في قائمة الحسابات المقترحة للاعتماد.'**
+  String get suggestedAccountDesc;
+
+  /// No description provided for @superAdminLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'ترقية لمشرف عام (Super Admin)'**
+  String get superAdminLabel;
+
+  /// No description provided for @superAdminDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'منح صلاحيات كاملة لإدارة الأدوار وتعديل صلاحيات المشرفين الآخرين.'**
+  String get superAdminDesc;
+
+  /// No description provided for @saveChangesBtn.
+  ///
+  /// In ar, this message translates to:
+  /// **'حفظ التغييرات'**
+  String get saveChangesBtn;
+
+  /// No description provided for @userRoleLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'الدور الوظيفي / الصلاحية (Role)'**
+  String get userRoleLabel;
+
+  /// No description provided for @roleUserOption.
+  ///
+  /// In ar, this message translates to:
+  /// **'مستخدم عادي (user)'**
+  String get roleUserOption;
+
+  /// No description provided for @roleApprovedOption.
+  ///
+  /// In ar, this message translates to:
+  /// **'مستخدم معتمد (approved)'**
+  String get roleApprovedOption;
+
+  /// No description provided for @roleAdminOption.
+  ///
+  /// In ar, this message translates to:
+  /// **'مشرف عام (admin)'**
+  String get roleAdminOption;
+
+  /// No description provided for @saveChangesSuccess.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم تحديث إعدادات حساب المشترك بنجاح 🛡️'**
+  String get saveChangesSuccess;
+
+  /// No description provided for @saveChangesFailed.
+  ///
+  /// In ar, this message translates to:
+  /// **'فشل حفظ التغييرات، يرجى مراجعة الصلاحيات'**
+  String get saveChangesFailed;
+
+  /// No description provided for @registrationGate.
+  ///
+  /// In ar, this message translates to:
+  /// **'حالة التسجيل للجدد'**
+  String get registrationGate;
+
+  /// No description provided for @allowNewRegistrations.
+  ///
+  /// In ar, this message translates to:
+  /// **'السماح بتسجيل حسابات جديدة'**
+  String get allowNewRegistrations;
+
+  /// No description provided for @registrationEnabledDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'التسجيل متاح حالياً للجميع'**
+  String get registrationEnabledDesc;
+
+  /// No description provided for @registrationDisabledDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'التسجيل معطل حالياً (تظهر شاشة مغلق)'**
+  String get registrationDisabledDesc;
+
+  /// No description provided for @registrationOpenedSuccess.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم فتح التسجيل بنجاح 🎉'**
+  String get registrationOpenedSuccess;
+
+  /// No description provided for @registrationClosedSuccess.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم إغلاق التسجيل 🔒'**
+  String get registrationClosedSuccess;
+
+  /// No description provided for @contactSupportChannels.
+  ///
+  /// In ar, this message translates to:
+  /// **'بيانات التواصل والدعم الفني'**
+  String get contactSupportChannels;
+
+  /// No description provided for @whatsappSupportNumber.
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم الواتساب للتواصل'**
+  String get whatsappSupportNumber;
+
+  /// No description provided for @whatsappHelperText.
+  ///
+  /// In ar, this message translates to:
+  /// **'يرجى كتابة الرمز الدولي (مثال: 97339477742+)'**
+  String get whatsappHelperText;
+
+  /// No description provided for @whatsappRequired.
+  ///
+  /// In ar, this message translates to:
+  /// **'حقل الرقم مطلوب'**
+  String get whatsappRequired;
+
+  /// No description provided for @saveWhatsappBtn.
+  ///
+  /// In ar, this message translates to:
+  /// **'حفظ رقم الواتساب'**
+  String get saveWhatsappBtn;
+
+  /// No description provided for @whatsappUpdatedSuccess.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم تحديث رقم الواتساب بنجاح 🎉'**
+  String get whatsappUpdatedSuccess;
+
+  /// No description provided for @emailSupportLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'البريد الإلكتروني للتواصل'**
+  String get emailSupportLabel;
+
+  /// No description provided for @emailRequired.
+  ///
+  /// In ar, this message translates to:
+  /// **'حقل البريد الإلكتروني مطلوب'**
+  String get emailRequired;
+
+  /// No description provided for @emailInvalid.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرجاء إدخال بريد إلكتروني صحيح'**
+  String get emailInvalid;
+
+  /// No description provided for @saveEmailBtn.
+  ///
+  /// In ar, this message translates to:
+  /// **'حفظ البريد الإلكتروني'**
+  String get saveEmailBtn;
+
+  /// No description provided for @emailUpdatedSuccess.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم تحديث البريد الإلكتروني بنجاح 🎉'**
+  String get emailUpdatedSuccess;
+
+  /// No description provided for @articleMaxCharacters.
+  ///
+  /// In ar, this message translates to:
+  /// **'الحد الأقصى لحروف المقال'**
+  String get articleMaxCharacters;
+
+  /// No description provided for @articleMaxCharactersDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'عدد الحروف الأقصى المسموح بكتابته في المقال الواحد'**
+  String get articleMaxCharactersDesc;
+
+  /// No description provided for @charactersCountLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'عدد الحروف: {count}'**
+  String charactersCountLabel(int count);
+
+  /// No description provided for @saveLimitBtn.
+  ///
+  /// In ar, this message translates to:
+  /// **'حفظ الحد الأقصى'**
+  String get saveLimitBtn;
+
+  /// No description provided for @articleLimitUpdated.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم تحديث الحد الأقصى لحروف المقال بنجاح 📝'**
+  String get articleLimitUpdated;
+
+  /// No description provided for @typoDictionary.
+  ///
+  /// In ar, this message translates to:
+  /// **'قاموس الأخطاء الإملائية الشائعة'**
+  String get typoDictionary;
+
+  /// No description provided for @typoWordHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'الكلمة الخاطئة (مثال: هاذا)'**
+  String get typoWordHint;
+
+  /// No description provided for @correctedWordHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'التصحيح (مثال: هذا)'**
+  String get correctedWordHint;
+
+  /// No description provided for @addWordBtn.
+  ///
+  /// In ar, this message translates to:
+  /// **'إضافة للقاموس'**
+  String get addWordBtn;
+
+  /// No description provided for @deleteWordConfirm.
+  ///
+  /// In ar, this message translates to:
+  /// **'هل تريد حذف هذه الكلمة من القاموس الإملائي؟'**
+  String get deleteWordConfirm;
+
+  /// No description provided for @wordAddedSuccess.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم إضافة الكلمة بنجاح 🎉'**
+  String get wordAddedSuccess;
+
+  /// No description provided for @wordDeletedSuccess.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم حذف الكلمة بنجاح 🗑️'**
+  String get wordDeletedSuccess;
+
+  /// No description provided for @emptyDictionary.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد كلمات مضافة في القاموس بعد'**
+  String get emptyDictionary;
+
+  /// No description provided for @supportMessagesTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرسائل الواردة'**
+  String get supportMessagesTitle;
+
+  /// No description provided for @noSupportMessages.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد رسائل واردة حالياً'**
+  String get noSupportMessages;
+
+  /// No description provided for @allMessagesTab.
+  ///
+  /// In ar, this message translates to:
+  /// **'الكل'**
+  String get allMessagesTab;
+
+  /// No description provided for @unreadMessagesTab.
+  ///
+  /// In ar, this message translates to:
+  /// **'غير المقروءة'**
+  String get unreadMessagesTab;
+
+  /// No description provided for @readMessagesTab.
+  ///
+  /// In ar, this message translates to:
+  /// **'المقروءة'**
+  String get readMessagesTab;
+
+  /// No description provided for @messageFrom.
+  ///
+  /// In ar, this message translates to:
+  /// **'من: {name}'**
+  String messageFrom(String name);
+
+  /// No description provided for @deleteMessageConfirm.
+  ///
+  /// In ar, this message translates to:
+  /// **'هل تريد حذف رسالة {title} نهائياً؟'**
+  String deleteMessageConfirm(String title);
+
+  /// No description provided for @messageDeletedSuccess.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم حذف الرسالة بنجاح 🗑️'**
+  String get messageDeletedSuccess;
+
+  /// No description provided for @messageMarkedRead.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم تمييز الرسالة كمقروءة'**
+  String get messageMarkedRead;
+
+  /// No description provided for @messageMarkedUnread.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم تمييز الرسالة كغير مقروءة'**
+  String get messageMarkedUnread;
+
+  /// No description provided for @reportsScreenTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'البلاغات والتقارير'**
+  String get reportsScreenTitle;
+
+  /// No description provided for @noReportsFound.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد بلاغات معلقة حالياً'**
+  String get noReportsFound;
+
+  /// No description provided for @reporterLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'المُبلِّغ: {name}'**
+  String reporterLabel(String name);
+
+  /// No description provided for @reportTypeLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'نوع البلاغ: {type}'**
+  String reportTypeLabel(String type);
+
+  /// No description provided for @reportReasonLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'السبب: {reason}'**
+  String reportReasonLabel(String reason);
+
+  /// No description provided for @statusLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'الحالة: {status}'**
+  String statusLabel(String status);
+
+  /// No description provided for @subjectDetailsTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'تفاصيل المحتوى المُبلغ عنه'**
+  String get subjectDetailsTitle;
+
+  /// No description provided for @reportActionIgnore.
+  ///
+  /// In ar, this message translates to:
+  /// **'تجاهل البلاغ'**
+  String get reportActionIgnore;
+
+  /// No description provided for @reportActionDelete.
+  ///
+  /// In ar, this message translates to:
+  /// **'حذف المحتوى'**
+  String get reportActionDelete;
+
+  /// No description provided for @reportActionIgnoreConfirm.
+  ///
+  /// In ar, this message translates to:
+  /// **'تجاهل بلاغ {reporter}'**
+  String reportActionIgnoreConfirm(String reporter);
+
+  /// No description provided for @reportActionIgnoreDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'سيتم أرشفة البلاغ وحفظه دون تعديل المحتوى الأصلي.\nسيتم تسجيل تدوين اسم المشرف الحالي في حقل البلاغ.'**
+  String get reportActionIgnoreDesc;
+
+  /// No description provided for @reportActionDeleteConfirm.
+  ///
+  /// In ar, this message translates to:
+  /// **'حذف نهائي للمحتوى'**
+  String get reportActionDeleteConfirm;
+
+  /// No description provided for @reportActionDeleteDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'انتبه: هذا الإجراء نهائي ولا يمكن التراجع عنه!\nسيتم حذف هذا المحتوى بالكامل من السيرفر وتسجيل اسم المشرف الحالي كحاذف للمحتوى.'**
+  String get reportActionDeleteDesc;
+
+  /// No description provided for @reportResolvedSuccess.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم معالجة البلاغ بنجاح'**
+  String get reportResolvedSuccess;
+
+  /// No description provided for @reportDeleteSuccess.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم حذف المحتوى وحل البلاغ بنجاح'**
+  String get reportDeleteSuccess;
+
+  /// No description provided for @joinedSince.
+  ///
+  /// In ar, this message translates to:
+  /// **'انضم منذ: {date}'**
+  String joinedSince(String date);
+
+  /// No description provided for @reportTypeUser.
+  ///
+  /// In ar, this message translates to:
+  /// **'حساب مستخدم'**
+  String get reportTypeUser;
+
+  /// No description provided for @reportTypeAppointment.
+  ///
+  /// In ar, this message translates to:
+  /// **'موعد جديد'**
+  String get reportTypeAppointment;
+
+  /// No description provided for @reportTypeArticle.
+  ///
+  /// In ar, this message translates to:
+  /// **'مقال منشورة'**
+  String get reportTypeArticle;
+
+  /// No description provided for @allSafeAndClean.
+  ///
+  /// In ar, this message translates to:
+  /// **'كل شيء يبدو آمناً ونظيفاً!'**
+  String get allSafeAndClean;
+
+  /// No description provided for @loadingReportedDetails.
+  ///
+  /// In ar, this message translates to:
+  /// **'جاري تحميل تفاصيل المحتوى المُبلّغ عنه...'**
+  String get loadingReportedDetails;
+
+  /// No description provided for @reportedContentUnavailable.
+  ///
+  /// In ar, this message translates to:
+  /// **'⚠️ هذا المحتوى لم يعد متاحاً أو تم حذفه مسبقاً.'**
+  String get reportedContentUnavailable;
+
+  /// No description provided for @byModerator.
+  ///
+  /// In ar, this message translates to:
+  /// **' بواسطة {name}'**
+  String byModerator(String name);
+
+  /// No description provided for @reportStatusResolved.
+  ///
+  /// In ar, this message translates to:
+  /// **'✅ تم حسم هذا البلاغ وحذف المحتوى{byModerator}'**
+  String reportStatusResolved(String byModerator);
+
+  /// No description provided for @reportStatusIgnored.
+  ///
+  /// In ar, this message translates to:
+  /// **'ℹ️ تم تجاهل هذا البلاغ وأرشفته{byModerator}'**
+  String reportStatusIgnored(String byModerator);
+
+  /// No description provided for @reportSubjectAppointmentDetails.
+  ///
+  /// In ar, this message translates to:
+  /// **'تفاصيل الموعد المُبلّغ عنه:'**
+  String get reportSubjectAppointmentDetails;
+
+  /// No description provided for @reportSubjectArticleDetails.
+  ///
+  /// In ar, this message translates to:
+  /// **'تفاصيل المقال المُبلّغ عنه:'**
+  String get reportSubjectArticleDetails;
+
+  /// No description provided for @reportDeleteFailed.
+  ///
+  /// In ar, this message translates to:
+  /// **'⚠️ فشل في حذف المحتوى. قد يكون تم حذفه مسبقاً.'**
+  String get reportDeleteFailed;
+
+  /// No description provided for @appointmentNoTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'موعد بدون عنوان'**
+  String get appointmentNoTitle;
+
+  /// No description provided for @articleNoTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'مقال بدون عنوان'**
+  String get articleNoTitle;
+
+  /// No description provided for @anonymous.
+  ///
+  /// In ar, this message translates to:
+  /// **'مجهول'**
+  String get anonymous;
+
+  /// No description provided for @limitsAndControls.
+  ///
+  /// In ar, this message translates to:
+  /// **'الحدود والضوابط'**
+  String get limitsAndControls;
+
+  /// No description provided for @enterNewValue.
+  ///
+  /// In ar, this message translates to:
+  /// **'أدخل القيمة الجديدة...'**
+  String get enterNewValue;
+
+  /// No description provided for @searchDictionaryHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'البحث في القاموس المخصص...'**
+  String get searchDictionaryHint;
+
+  /// No description provided for @typoWordHeader.
+  ///
+  /// In ar, this message translates to:
+  /// **'الخطأ الشائع'**
+  String get typoWordHeader;
+
+  /// No description provided for @correctedWordHeader.
+  ///
+  /// In ar, this message translates to:
+  /// **'التصحيح المعتمد'**
+  String get correctedWordHeader;
+
+  /// No description provided for @actionHeader.
+  ///
+  /// In ar, this message translates to:
+  /// **'إجراء'**
+  String get actionHeader;
+
+  /// No description provided for @messageTypeInquiry.
+  ///
+  /// In ar, this message translates to:
+  /// **'استفسار'**
+  String get messageTypeInquiry;
+
+  /// No description provided for @messageTypeSuggestion.
+  ///
+  /// In ar, this message translates to:
+  /// **'اقتراح'**
+  String get messageTypeSuggestion;
+
+  /// No description provided for @messageTypeComplaint.
+  ///
+  /// In ar, this message translates to:
+  /// **'شكوى'**
+  String get messageTypeComplaint;
+
+  /// No description provided for @messageTypeOther.
+  ///
+  /// In ar, this message translates to:
+  /// **'أخرى'**
+  String get messageTypeOther;
+
+  /// No description provided for @messageStatusNew.
+  ///
+  /// In ar, this message translates to:
+  /// **'جديدة'**
+  String get messageStatusNew;
+
+  /// No description provided for @messageStatusRead.
+  ///
+  /// In ar, this message translates to:
+  /// **'مقروءة'**
+  String get messageStatusRead;
+
+  /// No description provided for @messageStatusReplied.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم الرد عليها'**
+  String get messageStatusReplied;
+
+  /// No description provided for @messageStatusClosed.
+  ///
+  /// In ar, this message translates to:
+  /// **'مغلقة'**
+  String get messageStatusClosed;
+
+  /// No description provided for @unregisteredVisitor.
+  ///
+  /// In ar, this message translates to:
+  /// **'زائر غير مسجل'**
+  String get unregisteredVisitor;
+
+  /// No description provided for @inboxCleanTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'صندوق الوارد نظيف تماماً!'**
+  String get inboxCleanTitle;
+
+  /// No description provided for @inboxCleanDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد رسائل واردة تطابق الفلاتر المحددة حالياً.'**
+  String get inboxCleanDesc;
+
+  /// No description provided for @unknown.
+  ///
+  /// In ar, this message translates to:
+  /// **'غير معروف'**
+  String get unknown;
+
+  /// No description provided for @messageSenderHeader.
+  ///
+  /// In ar, this message translates to:
+  /// **'مرسل الرسالة'**
+  String get messageSenderHeader;
+
+  /// No description provided for @updateMessageStatusTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'تحديث حالة المراسلة'**
+  String get updateMessageStatusTitle;
+
+  /// No description provided for @messageStatusUpdateSuccess.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم تحديث حالة الرسالة بنجاح'**
+  String get messageStatusUpdateSuccess;
+
+  /// No description provided for @messageStatusUpdateFailed.
+  ///
+  /// In ar, this message translates to:
+  /// **'فشل تحديث حالة الرسالة'**
+  String get messageStatusUpdateFailed;
+
+  /// No description provided for @errorArticleNotPublished.
+  ///
+  /// In ar, this message translates to:
+  /// **'هذا المقال غير منشور حالياً.'**
+  String get errorArticleNotPublished;
+
+  /// No description provided for @adminPanelDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'إدارة وتخصيص إعدادات النظام والتسجيل'**
+  String get adminPanelDesc;
 }
 
 class _AppLocalizationsDelegate

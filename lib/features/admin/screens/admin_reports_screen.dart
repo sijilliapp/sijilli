@@ -6,8 +6,10 @@ import '../../../core/constants/app_colors.dart';
 import '../providers/admin_provider.dart';
 import 'admin_user_edit_screen.dart';
 import '../../../models/user.dart';
+import '../../auth/providers/auth_provider.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import '../../../core/extensions/context_l10n.dart';
 
 class AdminReportsScreen extends StatefulWidget {
   const AdminReportsScreen({super.key});
@@ -17,8 +19,6 @@ class AdminReportsScreen extends StatefulWidget {
 }
 
 class _AdminReportsScreenState extends State<AdminReportsScreen> {
-  final Map<String, Map<String, dynamic>?> _subjectDetailsCache = {};
-  final Map<String, bool> _loadingSubjects = {};
 
   @override
   void initState() {
@@ -30,25 +30,6 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
     });
   }
 
-  Future<void> _loadSubjectDetails(String reportId, String subjectType, String subjectId) async {
-    if (_subjectDetailsCache.containsKey(reportId) || (_loadingSubjects[reportId] ?? false)) {
-      return;
-    }
-
-    setState(() {
-      _loadingSubjects[reportId] = true;
-    });
-
-    final details = await context.read<AdminProvider>().fetchSubjectDetails(subjectType, subjectId);
-
-    if (mounted) {
-      setState(() {
-        _subjectDetailsCache[reportId] = details;
-        _loadingSubjects[reportId] = false;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -56,9 +37,9 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'البلاغات والتقارير',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          context.l10n.reportsScreenTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
@@ -89,13 +70,13 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'لا توجد بلاغات معلقة',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    Text(
+                      context.l10n.noReportsFound,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'كل شيء يبدو آمناً ونظيفاً!',
+                      context.l10n.allSafeAndClean,
                       style: TextStyle(
                         fontSize: 14,
                         color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
@@ -115,7 +96,11 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                 separatorBuilder: (context, index) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final report = admin.reports[index];
-                  return _buildReportCard(context, report, isDark, admin);
+                  return ReportCardWidget(
+                    report: report,
+                    isDark: isDark,
+                    admin: admin,
+                  );
                 },
               ),
             );
@@ -124,15 +109,72 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
       ),
     );
   }
+}
 
-  Widget _buildReportCard(BuildContext context, RecordModel report, bool isDark, AdminProvider admin) {
+class ReportCardWidget extends StatefulWidget {
+  final RecordModel report;
+  final bool isDark;
+  final AdminProvider admin;
+
+  const ReportCardWidget({
+    super.key,
+    required this.report,
+    required this.isDark,
+    required this.admin,
+  });
+
+  @override
+  State<ReportCardWidget> createState() => _ReportCardWidgetState();
+}
+
+class _ReportCardWidgetState extends State<ReportCardWidget> {
+  Map<String, dynamic>? _details;
+  bool _isLoading = true;
+  bool _hasAttempted = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasAttempted) {
+      _hasAttempted = true;
+      _loadDetails();
+    }
+  }
+
+  Future<void> _loadDetails() async {
+    final subjectType = widget.report.getStringValue('subject_type');
+    final subjectId = widget.report.getStringValue('subject_id');
+    final details = await widget.admin.fetchSubjectDetails(subjectType, subjectId);
+    if (mounted) {
+      setState(() {
+        _details = details;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final report = widget.report;
+    final isDark = widget.isDark;
+    final admin = widget.admin;
+
     final reportId = report.id;
-    final reporter = report.expand['reporter']?.first;
-    final reporterName = reporter?.getStringValue('name') ?? reporter?.getStringValue('username') ?? 'مجهول';
+    final reporterList = report.get<List<RecordModel>>('expand.reporter');
+    final reporter = (reporterList != null && reporterList.isNotEmpty) ? reporterList.first : null;
+    final reporterName = reporter?.getStringValue('name') ?? reporter?.getStringValue('username') ?? context.l10n.anonymous;
     final subjectType = report.getStringValue('subject_type');
     final subjectId = report.getStringValue('subject_id');
     final reason = report.getStringValue('reason');
     final status = report.getStringValue('status');
+    final isResolved = status.startsWith('resolved');
+    final isIgnored = status.startsWith('ignored');
+    final isPending = !isResolved && !isIgnored;
+
+    String moderatorTag = '';
+    if (status.contains(': ')) {
+      moderatorTag = status.split(': ')[1];
+    }
     final created = report.getStringValue('created');
     final createdDate = DateTime.tryParse(created) ?? DateTime.now();
 
@@ -142,29 +184,20 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
 
     switch (subjectType) {
       case 'user':
-        typeLabel = 'حساب مستخدم';
+        typeLabel = context.l10n.reportTypeUser;
         typeIcon = Icons.person_outline;
         typeColor = Colors.orange;
         break;
       case 'appointment':
-        typeLabel = 'موعد جديد';
+        typeLabel = context.l10n.reportTypeAppointment;
         typeIcon = Icons.calendar_today_outlined;
         typeColor = AppColors.primary;
         break;
       case 'article':
-        typeLabel = 'مقال منشورة';
+        typeLabel = context.l10n.reportTypeArticle;
         typeIcon = Icons.article_outlined;
         typeColor = Colors.blue;
         break;
-    }
-
-    final hasDetails = _subjectDetailsCache.containsKey(reportId);
-    final details = _subjectDetailsCache[reportId];
-    final isLoadingDetails = _loadingSubjects[reportId] ?? false;
-
-    // Trigger details load if expanded or just load automatically on build
-    if (!hasDetails && !isLoadingDetails) {
-      _loadSubjectDetails(reportId, subjectType, subjectId);
     }
 
     return Card(
@@ -207,7 +240,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                   ),
                 ),
                 Text(
-                  timeago.format(createdDate, locale: 'ar'),
+                  timeago.format(createdDate, locale: Localizations.localeOf(context).languageCode),
                   style: TextStyle(
                     fontSize: 11,
                     color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
@@ -222,17 +255,15 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
               children: [
                 const Icon(Icons.campaign_outlined, size: 16, color: Colors.grey),
                 const SizedBox(width: 6),
-                Text(
-                  'المُبلّغ: ',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                Expanded(
+                  child: Text(
+                    context.l10n.reporterLabel(reporterName),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                    ),
                   ),
-                ),
-                Text(
-                  reporterName,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -240,7 +271,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
 
             // Reason
             Text(
-              'السبب: $reason',
+              context.l10n.reportReasonLabel(reason),
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
@@ -250,38 +281,38 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
             const Divider(height: 24),
 
             // Subject Details Section
-            if (isLoadingDetails)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8.0),
+            if (_isLoading)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: Row(
                   children: [
-                    SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
-                    SizedBox(width: 10),
-                    Text('جاري تحميل تفاصيل المحتوى المُبلّغ عنه...', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                    const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+                    const SizedBox(width: 10),
+                    Text(context.l10n.loadingReportedDetails, style: const TextStyle(fontSize: 11, color: Colors.grey)),
                   ],
                 ),
               )
-            else if (details == null)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8.0),
+            else if (_details == null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: Text(
-                  '⚠️ هذا المحتوى لم يعد متاحاً أو تم حذفه مسبقاً.',
-                  style: TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w600),
+                  context.l10n.reportedContentUnavailable,
+                  style: const TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w600),
                 ),
               )
             else
-              _buildSubjectPreview(context, subjectType, details, isDark),
+              _buildSubjectPreview(context, subjectType, _details!, isDark),
 
             const SizedBox(height: 16),
 
             // Action Buttons
-            if (status == 'pending')
+            if (isPending)
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.block_outlined, size: 16, color: Colors.red),
-                      label: const Text('حذف المحتوى', style: TextStyle(color: Colors.red, fontSize: 12)),
+                      label: Text(context.l10n.reportActionDelete, style: const TextStyle(color: Colors.red, fontSize: 12)),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Colors.red),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -293,12 +324,16 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                   Expanded(
                     child: ElevatedButton.icon(
                       icon: const Icon(Icons.done_all, size: 16, color: Colors.white),
-                      label: const Text('تجاهل وحفظ', style: TextStyle(color: Colors.white, fontSize: 12)),
+                      label: Text(context.l10n.reportActionIgnore, style: const TextStyle(color: Colors.white, fontSize: 12)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
-                      onPressed: () => admin.updateReportStatus(reportId, 'ignored'),
+                      onPressed: () {
+                        final currentUser = Provider.of<AuthProvider>(context, listen: false).user;
+                        final moderatorTag = currentUser != null ? '@${currentUser.username}' : '@${context.l10n.anonymous}';
+                        admin.updateReportStatus(reportId, 'ignored: $moderatorTag');
+                      },
                     ),
                   ),
                 ],
@@ -308,15 +343,17 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: status == 'resolved' ? Colors.green.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.1),
+                  color: isResolved ? Colors.green.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  status == 'resolved' ? '✅ تم حسم هذا البلاغ وحذف المحتوى' : 'ℹ️ تم تجاهل هذا البلاغ وأرشفته',
+                  isResolved 
+                      ? context.l10n.reportStatusResolved(moderatorTag.isNotEmpty ? context.l10n.byModerator(moderatorTag) : '') 
+                      : context.l10n.reportStatusIgnored(moderatorTag.isNotEmpty ? context.l10n.byModerator(moderatorTag) : ''),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: status == 'resolved' ? Colors.green : Colors.grey,
+                    color: isResolved ? Colors.green : Colors.grey,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -365,7 +402,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
         ),
       );
     } else if (subjectType == 'appointment') {
-      final title = details['title'] ?? 'موعد بدون عنوان';
+      final title = details['title'] ?? context.l10n.appointmentNoTitle;
       final desc = details['description'] ?? '';
       return Container(
         padding: const EdgeInsets.all(10),
@@ -376,11 +413,11 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.event_note, size: 16, color: AppColors.primary),
-                SizedBox(width: 6),
-                Text('تفاصيل الموعد المُبلّغ عنه:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                const Icon(Icons.event_note, size: 16, color: AppColors.primary),
+                const SizedBox(width: 6),
+                Text(context.l10n.reportSubjectAppointmentDetails, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
               ],
             ),
             const SizedBox(height: 6),
@@ -400,7 +437,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
     } else if (subjectType == 'article') {
       final text = details['text'] ?? '';
       // Extract title first few words
-      String title = 'مقال بدون عنوان';
+      String title = context.l10n.articleNoTitle;
       if (text.trim().isNotEmpty) {
         final lines = text.split('\n').where((l) => l.trim().isNotEmpty).toList();
         if (lines.isNotEmpty) {
@@ -417,11 +454,11 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.menu_book, size: 16, color: AppColors.primary),
-                SizedBox(width: 6),
-                Text('تفاصيل المقال المُبلّغ عنه:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                const Icon(Icons.menu_book, size: 16, color: AppColors.primary),
+                const SizedBox(width: 6),
+                Text(context.l10n.reportSubjectArticleDetails, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
               ],
             ),
             const SizedBox(height: 6),
@@ -443,35 +480,37 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
   void _confirmDeleteContent(BuildContext context, AdminProvider admin, String reportId, String subjectType, String subjectId) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('تأكيد حذف المحتوى', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('هل أنت متأكد من رغبتك في حذف هذا المحتوى نهائياً من قاعدة البيانات؟ لا يمكن التراجع عن هذا الإجراء.'),
+      builder: (dialogCtx) => AlertDialog(
+        title: Text(context.l10n.reportActionDeleteConfirm, style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Text(context.l10n.reportActionDeleteDesc),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء', style: TextStyle(color: Colors.grey)),
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text(context.l10n.cancel, style: const TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(dialogCtx);
               final success = await admin.deleteReportedContent(subjectType, subjectId);
               if (success) {
-                await admin.updateReportStatus(reportId, 'resolved');
+                final currentUser = Provider.of<AuthProvider>(context, listen: false).user;
+                final moderatorTag = currentUser != null ? '@${currentUser.username}' : '@${context.l10n.anonymous}';
+                await admin.updateReportStatus(reportId, 'resolved: $moderatorTag');
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('تم حذف المحتوى بنجاح وحسم البلاغ 🚀')),
+                    SnackBar(content: Text(context.l10n.reportDeleteSuccess)),
                   );
                 }
               } else {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('⚠️ فشل في حذف المحتوى. قد يكون تم حذفه مسبقاً.')),
+                    SnackBar(content: Text(context.l10n.reportDeleteFailed)),
                   );
                 }
               }
             },
-            child: const Text('نعم، حذف نهائياً', style: TextStyle(color: Colors.white)),
+            child: Text(context.l10n.reportActionDelete, style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),

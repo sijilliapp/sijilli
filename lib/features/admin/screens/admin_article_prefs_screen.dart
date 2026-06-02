@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/providers/global_config_provider.dart';
 import '../providers/admin_provider.dart';
+import '../../../core/extensions/context_l10n.dart';
 
 class AdminArticlePrefsScreen extends StatefulWidget {
   const AdminArticlePrefsScreen({super.key});
@@ -33,39 +34,36 @@ class _AdminArticlePrefsScreenState extends State<AdminArticlePrefsScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'إضافة خطأ شائع جديد',
-          textAlign: TextAlign.right,
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          context.l10n.addWordBtn,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: wrongController,
-              textDirection: TextDirection.rtl,
-              decoration: const InputDecoration(
-                labelText: 'الكلمة غير الصحيحة (مثال: هاذا)',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.l10n.typoWordHint,
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: correctController,
-              textDirection: TextDirection.rtl,
-              decoration: const InputDecoration(
-                labelText: 'التصحيح (مثال: هذا)',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.l10n.correctedWordHint,
+                border: const OutlineInputBorder(),
               ),
             ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text(context.l10n.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -81,7 +79,7 @@ class _AdminArticlePrefsScreenState extends State<AdminArticlePrefsScreen> {
               final updated = Map<String, String>.from(currentFixes);
               updated[wrong] = correct;
 
-              Navigator.pop(context);
+              Navigator.pop(dialogCtx);
               final success = await adminProvider.updateConfigString(
                 'spelling_fixes',
                 json.encode(updated),
@@ -90,14 +88,14 @@ class _AdminArticlePrefsScreenState extends State<AdminArticlePrefsScreen> {
 
               if (success && context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('تمت إضافة التصحيح بنجاح 🎉'),
+                  SnackBar(
+                    content: Text(context.l10n.wordAddedSuccess),
                     backgroundColor: Colors.green,
                   ),
                 );
               }
             },
-            child: const Text('إضافة'),
+            child: Text(context.l10n.add),
           ),
         ],
       ),
@@ -113,20 +111,20 @@ class _AdminArticlePrefsScreenState extends State<AdminArticlePrefsScreen> {
   ) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('حذف قاعدة التصحيح'),
-        content: Text('هل أنت متأكد من حذف قاعدة تصحيح "$wrong"؟'),
+      builder: (dialogCtx) => AlertDialog(
+        title: Text(context.l10n.confirmDeleteArticle),
+        content: Text(context.l10n.deleteWordConfirm),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text(context.l10n.cancel),
           ),
           TextButton(
             onPressed: () async {
               final updated = Map<String, String>.from(currentFixes);
               updated.remove(wrong);
 
-              Navigator.pop(context);
+              Navigator.pop(dialogCtx);
               final success = await adminProvider.updateConfigString(
                 'spelling_fixes',
                 json.encode(updated),
@@ -135,14 +133,14 @@ class _AdminArticlePrefsScreenState extends State<AdminArticlePrefsScreen> {
 
               if (success && context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('تم حذف قاعدة التصحيح'),
+                  SnackBar(
+                    content: Text(context.l10n.wordDeletedSuccess),
                     backgroundColor: Colors.orange,
                   ),
                 );
               }
             },
-            child: const Text('حذف', style: TextStyle(color: Colors.red)),
+            child: Text(context.l10n.delete, style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -156,9 +154,9 @@ class _AdminArticlePrefsScreenState extends State<AdminArticlePrefsScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'تفضيلات المقالات الإدارية',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          context.l10n.articlePrefs,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         elevation: 0,
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -176,11 +174,11 @@ class _AdminArticlePrefsScreenState extends State<AdminArticlePrefsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               children: [
                 // 📊 القسم الأول: الحد الأقصى لحروف المقال
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 8.0, right: 4.0),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0, right: 4.0),
                   child: Text(
-                    'الحدود والضوابط',
-                    style: TextStyle(
+                    context.l10n.limitsAndControls,
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: AppColors.primary,
@@ -214,13 +212,13 @@ class _AdminArticlePrefsScreenState extends State<AdminArticlePrefsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'الحد الأقصى لحروف المقال',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                              Text(
+                                context.l10n.articleMaxCharacters,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'العدد الأقصى للحروف للمقال الواحد: ${config.articleMaxChars}',
+                                '${context.l10n.articleMaxCharactersDesc} (${context.l10n.charactersCountLabel(config.articleMaxChars)})',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
@@ -245,35 +243,35 @@ class _AdminArticlePrefsScreenState extends State<AdminArticlePrefsScreen> {
                                   ),
                                 ),
                                 icon: const Icon(Icons.edit, size: 16),
-                                label: const Text('تعديل'),
+                                label: Text(context.l10n.edit),
                                 onPressed: () async {
                                   final controller = TextEditingController(
                                     text: config.articleMaxChars.toString(),
                                   );
                                   final result = await showDialog<int>(
                                     context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: const Text('تعديل الحد الأقصى للحروف'),
+                                    builder: (dialogCtx) => AlertDialog(
+                                      title: Text(context.l10n.articleMaxCharacters),
                                       content: TextField(
                                         controller: controller,
                                         keyboardType: TextInputType.number,
-                                        decoration: const InputDecoration(
-                                          hintText: 'أدخل العدد الجديد...',
+                                        decoration: InputDecoration(
+                                          hintText: context.l10n.enterNewValue,
                                         ),
                                       ),
                                       actions: [
                                         TextButton(
-                                          onPressed: () => Navigator.pop(context),
-                                          child: const Text('إلغاء'),
+                                          onPressed: () => Navigator.pop(dialogCtx),
+                                          child: Text(context.l10n.cancel),
                                         ),
                                         TextButton(
                                           onPressed: () {
                                             final val = int.tryParse(controller.text);
                                             if (val != null) {
-                                              Navigator.pop(context, val);
+                                              Navigator.pop(dialogCtx, val);
                                             }
                                           },
-                                          child: const Text('حفظ'),
+                                          child: Text(context.l10n.save),
                                         ),
                                       ],
                                     ),
@@ -299,9 +297,9 @@ class _AdminArticlePrefsScreenState extends State<AdminArticlePrefsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'إدارة الأخطاء الشائعة والتدقيق',
-                      style: TextStyle(
+                    Text(
+                      context.l10n.typoDictionary,
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
@@ -316,7 +314,7 @@ class _AdminArticlePrefsScreenState extends State<AdminArticlePrefsScreen> {
                         ),
                       ),
                       icon: const Icon(Icons.add, size: 16),
-                      label: const Text('إضافة خطأ شائع'),
+                      label: Text(context.l10n.addWordBtn),
                       onPressed: () => _showAddWordDialog(context, fixes, config, admin),
                     ),
                   ],
@@ -326,9 +324,8 @@ class _AdminArticlePrefsScreenState extends State<AdminArticlePrefsScreen> {
                 // حقل البحث في الكلمات
                 TextField(
                   controller: _searchController,
-                  textDirection: TextDirection.rtl,
                   decoration: InputDecoration(
-                    hintText: 'البحث في القاموس المخصص...',
+                    hintText: context.l10n.searchDictionaryHint,
                     prefixIcon: const Icon(Icons.search),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
@@ -373,8 +370,8 @@ class _AdminArticlePrefsScreenState extends State<AdminArticlePrefsScreen> {
                             child: Center(
                               child: Text(
                                 _searchQuery.isEmpty
-                                    ? 'لا يوجد كلمات مضافة في القاموس الإداري المخصص بعد.'
-                                    : 'لم يتم العثور على نتائج مطابقة للبحث.',
+                                    ? context.l10n.emptyDictionary
+                                    : context.l10n.noResultsFound,
                                 style: const TextStyle(color: Colors.grey),
                                 textAlign: TextAlign.center,
                               ),
@@ -398,26 +395,26 @@ class _AdminArticlePrefsScreenState extends State<AdminArticlePrefsScreen> {
                                 decoration: BoxDecoration(
                                   color: isDark ? Colors.black26 : Colors.grey.shade50,
                                 ),
-                                children: const [
+                                children: [
                                   Padding(
-                                    padding: EdgeInsets.all(12.0),
+                                    padding: const EdgeInsets.all(12.0),
                                     child: Text(
-                                      'الخطأ الشائع',
-                                      style: TextStyle(fontWeight: FontWeight.bold),
+                                      context.l10n.typoWordHeader,
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
                                     ),
                                   ),
                                   Padding(
-                                    padding: EdgeInsets.all(12.0),
+                                    padding: const EdgeInsets.all(12.0),
                                     child: Text(
-                                      'التصحيح المعتمد',
-                                      style: TextStyle(fontWeight: FontWeight.bold),
+                                      context.l10n.correctedWordHeader,
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
                                     ),
                                   ),
                                   Padding(
-                                    padding: EdgeInsets.all(12.0),
+                                    padding: const EdgeInsets.all(12.0),
                                     child: Text(
-                                      'إجراء',
-                                      style: TextStyle(fontWeight: FontWeight.bold),
+                                      context.l10n.actionHeader,
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
                                       textAlign: TextAlign.center,
                                     ),
                                   ),
@@ -431,7 +428,7 @@ class _AdminArticlePrefsScreenState extends State<AdminArticlePrefsScreen> {
                                     Padding(
                                       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
                                       child: Align(
-                                        alignment: Alignment.centerRight,
+                                        alignment: AlignmentDirectional.centerStart,
                                         child: Text(
                                           wrong,
                                           style: const TextStyle(fontWeight: FontWeight.w500),
@@ -441,7 +438,7 @@ class _AdminArticlePrefsScreenState extends State<AdminArticlePrefsScreen> {
                                     Padding(
                                       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
                                       child: Align(
-                                        alignment: Alignment.centerRight,
+                                        alignment: AlignmentDirectional.centerStart,
                                         child: Text(
                                           correct,
                                           style: const TextStyle(

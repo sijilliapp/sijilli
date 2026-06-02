@@ -88,7 +88,7 @@ class SettingsScreen extends StatelessWidget {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    'لوحة تحكم المشرف العام',
+                                    context.l10n.adminPanelTitle,
                                     style: TextStyle(
                                       color: isAmberDark ? Colors.amber.shade300 : Colors.amber.shade900,
                                       fontWeight: FontWeight.w900,
@@ -99,7 +99,7 @@ class SettingsScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    'إدارة وتخصيص إعدادات النظام والتسجيل',
+                                    context.l10n.adminPanelDesc,
                                     style: TextStyle(
                                       color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                                       fontSize: 12,

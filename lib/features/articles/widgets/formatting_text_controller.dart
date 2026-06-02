@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 
@@ -20,6 +21,18 @@ class FormattingTextEditingController extends TextEditingController {
   String? _highlightQuery;
 
   // ============================================================
+  // Undo/Redo History Stacks
+  // ============================================================
+  final List<TextEditingValue> _undoStack = [];
+  final List<TextEditingValue> _redoStack = [];
+  bool _isUndoingOrRedoing = false;
+  bool _isTypingSession = false;
+  Timer? _debounceTimer;
+
+  bool get canUndo => _undoStack.isNotEmpty;
+  bool get canRedo => _redoStack.isNotEmpty;
+
+  // ============================================================
   // FormattingTextEditingController
   // ============================================================
 
@@ -39,12 +52,47 @@ class FormattingTextEditingController extends TextEditingController {
 
   @override
   set value(TextEditingValue newValue) {
+    final String oldText = value.text;
+    final String newText = newValue.text;
+
+    // Record undo/redo history if the text changed and we are not currently undoing/redoing
+    if (newText != oldText && !_isUndoingOrRedoing) {
+      _redoStack.clear();
+      
+      if (_internalUpdate) {
+        // Programmatic changes (like formatting buttons) are committed immediately
+        _undoStack.add(value);
+        if (_undoStack.length > 100) {
+          _undoStack.removeAt(0);
+        }
+        _isTypingSession = false;
+        _debounceTimer?.cancel();
+      } else {
+        // Typing changes
+        final bool isWordBoundary = newText.length > oldText.length && 
+            (newText.endsWith(' ') || newText.endsWith('\n') || newText.endsWith('\t'));
+        final bool isSignificantChange = (newText.length - oldText.length).abs() > 1;
+        
+        if (!_isTypingSession || isWordBoundary || isSignificantChange) {
+          _undoStack.add(value);
+          if (_undoStack.length > 100) {
+            _undoStack.removeAt(0);
+          }
+          _isTypingSession = true;
+        }
+        
+        _debounceTimer?.cancel();
+        _debounceTimer = Timer(const Duration(milliseconds: 800), () {
+          _isTypingSession = false;
+        });
+      }
+    }
+
     if (_internalUpdate) {
       super.value = newValue;
       return;
     }
 
-    final String newText = newValue.text;
     final String cleanedText = _cleanCitations(newText);
     
     if (cleanedText != newText) {
@@ -153,6 +201,66 @@ class FormattingTextEditingController extends TextEditingController {
 
   FormattingTextEditingController({String rawText = ''}) {
     text = _cleanCitations(rawText);
+    clearHistory();
+  }
+
+  void undo() {
+    if (!canUndo) return;
+    
+    final currentVal = value;
+    _redoStack.add(currentVal);
+    if (_redoStack.length > 100) {
+      _redoStack.removeAt(0);
+    }
+    
+    final previousVal = _undoStack.removeLast();
+    
+    _isUndoingOrRedoing = true;
+    _isTypingSession = false;
+    _debounceTimer?.cancel();
+    value = previousVal;
+    _isUndoingOrRedoing = false;
+    
+    notifyListeners();
+  }
+
+  void redo() {
+    if (!canRedo) return;
+    
+    final currentVal = value;
+    _undoStack.add(currentVal);
+    if (_undoStack.length > 100) {
+      _undoStack.removeAt(0);
+    }
+    
+    final nextVal = _redoStack.removeLast();
+    
+    _isUndoingOrRedoing = true;
+    _isTypingSession = false;
+    _debounceTimer?.cancel();
+    value = nextVal;
+    _isUndoingOrRedoing = false;
+    
+    notifyListeners();
+  }
+
+  void clearHistory() {
+    _undoStack.clear();
+    _redoStack.clear();
+    _isTypingSession = false;
+    _debounceTimer?.cancel();
+  }
+
+  void updateValueProgrammatically(TextEditingValue newValue) {
+    _internalUpdate = true;
+    value = newValue;
+    _internalUpdate = false;
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
   }
 
   String? get highlightQuery => _highlightQuery;

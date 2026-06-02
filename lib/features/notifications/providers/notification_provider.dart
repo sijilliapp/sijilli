@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -11,6 +12,7 @@ import '../../../../models/appointment.dart';
 import '../services/notification_service.dart';
 import '../../appointments/services/pb_appointment_service.dart';
 import '../../../core/services/pocketbase_client.dart';
+import '../../../../routes/app_router.dart';
 
 class NotificationProvider extends ChangeNotifier {
   final NotificationService _service = NotificationService();
@@ -102,6 +104,15 @@ class NotificationProvider extends ChangeNotifier {
       settings: initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         print('🔔 Notification tapped: ${response.payload}');
+        if (response.payload != null && response.payload!.isNotEmpty) {
+          try {
+            final Map<String, dynamic> json = jsonDecode(response.payload!);
+            final notification = NotificationModel.fromJson(json);
+            AppRouter.handleNotificationTap(notification);
+          } catch (e) {
+            print('⚠️ Error handling notification response tap: $e');
+          }
+        }
       },
     );
 
@@ -302,7 +313,7 @@ class NotificationProvider extends ChangeNotifier {
                 id: newNotification.id.hashCode,
                 title: newNotification.title,
                 message: newNotification.message,
-                payload: newNotification.relatedId,
+                payload: jsonEncode(newNotification.toJson()),
               );
             }
           }

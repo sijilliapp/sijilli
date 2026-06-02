@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/context_l10n.dart';
 import '../../../core/local/local_db_service.dart';
 import '../../../core/widgets/pulse_avatar.dart';
 import '../providers/admin_provider.dart';
@@ -96,9 +97,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          title: const Text(
-            'إدارة المشتركين',
-            style: TextStyle(fontWeight: FontWeight.bold),
+          title: Text(
+            context.l10n.userManagement,
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           elevation: 0,
@@ -114,7 +115,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   controller: _searchController,
                   onChanged: _onSearchChanged,
                   decoration: InputDecoration(
-                    hintText: 'ابحث بالاسم أو اسم المستخدم...',
+                    hintText: context.l10n.searchUserHint,
                     prefixIcon: const Icon(Icons.search, color: Colors.grey),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
@@ -157,10 +158,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                             indicatorColor: AppColors.primary,
                             indicatorSize: TabBarIndicatorSize.tab,
                             labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                            tabs: const [
-                              Tab(text: 'المستدعون مؤخراً'),
-                              Tab(text: 'المسجلون مؤخراً'),
-                              Tab(text: 'المشرفون'),
+                            tabs: [
+                              Tab(text: context.l10n.recentSearches),
+                              Tab(text: context.l10n.recentlyRegistered),
+                              Tab(text: context.l10n.allAdmins),
                             ],
                           ),
                           Expanded(
@@ -217,7 +218,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'آخر من تم البحث عنهم محلياً',
+                context.l10n.recentSearches,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
@@ -231,9 +232,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   padding: EdgeInsets.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text(
-                  'مسح الكل',
-                  style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
+                child: Text(
+                  context.l10n.clear,
+                  style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -263,7 +264,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         if (admin.recentRegisteredUsers.isEmpty) {
           return Center(
             child: Text(
-              'لا يوجد مسجلين مؤخراً في السحابة',
+              context.l10n.noResultsFound,
               style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
             ),
           );
@@ -295,7 +296,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         if (admin.adminUsers.isEmpty) {
           return Center(
             child: Text(
-              'لا يوجد مشرفين أو مسؤولين حالياً',
+              context.l10n.noResultsFound,
               style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
             ),
           );
@@ -321,18 +322,18 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   Widget _buildUserCard(BuildContext context, UserModel user, bool isDark) {
     Color roleColor;
     String roleLabel;
-    switch (user.role) {
-      case 'admin':
-        roleColor = Colors.amber.shade800;
-        roleLabel = 'مشرف عام';
-        break;
-      case 'approved':
-        roleColor = AppColors.primary;
-        roleLabel = 'معتمد';
-        break;
-      default:
-        roleColor = Colors.grey;
-        roleLabel = 'مستخدم عادي';
+    if (user.isSuperAdmin) {
+      roleColor = Colors.purple;
+      roleLabel = context.l10n.roleAdminOption;
+    } else if (user.isAdmin) {
+      roleColor = Colors.amber.shade800;
+      roleLabel = context.l10n.roleAdminOption;
+    } else if (user.isApproved) {
+      roleColor = AppColors.primary;
+      roleLabel = context.l10n.roleApprovedOption;
+    } else {
+      roleColor = Colors.grey;
+      roleLabel = context.l10n.roleUserOption;
     }
 
     return Card(
@@ -424,7 +425,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '@${user.username}',
+                       '@${user.username}',
                       style: TextStyle(
                         fontSize: 11.5,
                         color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
@@ -464,16 +465,16 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'ابحث عن مشترك',
-            style: TextStyle(
+          Text(
+            context.l10n.searchSubscribers,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'اكتب الحروف الأولى من اسم المشترك أو معرفه للبدء.',
+            context.l10n.searchUserHint,
             style: TextStyle(
               fontSize: 14,
               color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
@@ -503,16 +504,16 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'لم نجد أي نتائج!',
-            style: TextStyle(
+          Text(
+            context.l10n.noResultsFound,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'تأكد من كتابة الاسم أو اسم المستخدم بشكل صحيح.',
+            context.l10n.searchHint,
             style: TextStyle(
               fontSize: 14,
               color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,

@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../features/home/screens/public_profile_screen.dart';
 import '../features/articles/screens/public_article_screen.dart';
+import '../features/articles/screens/article_details_screen.dart';
+import '../features/articles/services/pb_article_service.dart';
+import '../features/appointments/services/pb_appointment_service.dart';
+import '../features/appointments/widgets/sheets/appointment_details_sheet.dart';
+import '../features/notifications/providers/notification_provider.dart';
+import '../models/notification.dart';
 
 class AppRouter {
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  
   static const String root = '/';
   static const String main = '/main';
   
@@ -64,5 +73,75 @@ class AppRouter {
     }
 
     return null;
+  }
+
+  /// معالجة نقر الإشعار وتوجيه المستخدم للمكان الصحيح
+  static void handleNotificationTap(NotificationModel notification) async {
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+    
+    // 1. تعليم الإشعار كمقروء
+    try {
+      Provider.of<NotificationProvider>(context, listen: false).markAsRead(notification.id);
+    } catch (_) {}
+
+    final relatedId = notification.relatedId;
+    if (relatedId.isEmpty) return;
+
+    // 2. توجيه المستخدم حسب نوع الإشعار
+    if (notification.type == NotificationType.follow || notification.type == NotificationType.approvalRequest) {
+      // التوجيه لملف الشخص الذي تابعني
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PublicProfileScreen(usernameOrId: relatedId),
+        ),
+      );
+    } else if (notification.type == NotificationType.invite || 
+               notification.type == NotificationType.cancel || 
+               notification.type == NotificationType.reminder) {
+      // جلب الموعد وفتح تفاصيله
+      try {
+        final apptService = PbAppointmentService();
+        final appointment = await apptService.getAppointmentById(relatedId);
+        if (context.mounted) {
+          showModalBottomSheet(
+            context: context,
+            useRootNavigator: true,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (context) => AppointmentDetailsSheet(appointment: appointment),
+          );
+        }
+      } catch (e) {
+        print('⚠️ Failed to open appointment details: $e');
+      }
+    } else if (notification.type == NotificationType.visit || notification.type == NotificationType.system) {
+      // إذا كان معرف المقال بطول 15 حرفاً
+      if (relatedId.length == 15) {
+        try {
+          final articleService = PbArticleService();
+          final article = await articleService.getArticleById(relatedId);
+          if (context.mounted) {
+            final isComment = notification.title.contains('تعليق') || notification.message.contains('علق');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ArticleDetailsScreen(
+                  article: article,
+                  openComments: isComment,
+                ),
+              ),
+            );
+          }
+        } catch (e) {
+          print('⚠️ Failed to open article details: $e');
+        }
+      } else {
+        // إذا كان زيارة ملف شخصي (معرف طويل)، نفتح صفحة الملف الشخصي الخاصة بالمستخدم نفسه
+        // لأن زيارة ملفه تمت من زائر مجهول، فنكتفي بتوجيهه لقائمة الإشعارات أو لملفه الشخصي.
+        // بما أن المستخدم متواجد بالفعل، فليس هناك صفحة زائر لعرضها.
+      }
+    }
   }
 }

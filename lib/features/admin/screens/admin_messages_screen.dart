@@ -7,6 +7,7 @@ import '../../../core/utils/app_date_formatter.dart';
 import '../providers/admin_provider.dart';
 import '../../../models/contact_message.dart';
 import '../widgets/message_detail_sheet.dart';
+import '../../../core/extensions/context_l10n.dart';
 
 class AdminMessagesScreen extends StatefulWidget {
   const AdminMessagesScreen({super.key});
@@ -47,9 +48,9 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> with SingleTi
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'مراسلات الدعم الفني',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          context.l10n.supportMessagesTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
@@ -61,12 +62,12 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> with SingleTi
           unselectedLabelColor: Colors.grey,
           indicatorColor: AppColors.primary,
           indicatorWeight: 3,
-          tabs: const [
-            Tab(text: 'الكل'),
-            Tab(text: 'جديدة 🆕'),
-            Tab(text: 'مقروءة'),
-            Tab(text: 'تم الرد عليها'),
-            Tab(text: 'مغلقة'),
+          tabs: [
+            Tab(text: context.l10n.allMessagesTab),
+            Tab(text: '${context.l10n.messageStatusNew} 🆕'),
+            Tab(text: context.l10n.messageStatusRead),
+            Tab(text: context.l10n.messageStatusReplied),
+            Tab(text: context.l10n.messageStatusClosed),
           ],
         ),
       ),
@@ -122,11 +123,11 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> with SingleTi
 
   Widget _buildTypeFilterRow(bool isDark) {
     final types = [
-      {'key': 'all', 'label': 'الكل'},
-      {'key': 'inquiry', 'label': 'استفسار'},
-      {'key': 'suggestion', 'label': 'اقتراح'},
-      {'key': 'complaint', 'label': 'شكوى'},
-      {'key': 'other', 'label': 'أخرى'},
+      {'key': 'all', 'label': context.l10n.allMessagesTab},
+      {'key': 'inquiry', 'label': context.l10n.messageTypeInquiry},
+      {'key': 'suggestion', 'label': context.l10n.messageTypeSuggestion},
+      {'key': 'complaint', 'label': context.l10n.messageTypeComplaint},
+      {'key': 'other', 'label': context.l10n.messageTypeOther},
     ];
 
     return Container(
@@ -167,7 +168,7 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> with SingleTi
 
   Widget _buildMessageCard(BuildContext context, ContactMessageModel msg, bool isDark) {
     final hasUser = msg.user != null;
-    final senderName = hasUser ? msg.user!.name : 'زائر غير مسجل';
+    final senderName = hasUser ? msg.user!.name : context.l10n.unregisteredVisitor;
     
     // الألوان والأيقونات الخاصة بنوع الرسالة
     Color typeColor;
@@ -175,19 +176,19 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> with SingleTi
     switch (msg.type) {
       case 'suggestion':
         typeColor = Colors.green;
-        typeLabel = 'اقتراح';
+        typeLabel = context.l10n.messageTypeSuggestion;
         break;
       case 'complaint':
         typeColor = Colors.red;
-        typeLabel = 'شكوى';
+        typeLabel = context.l10n.messageTypeComplaint;
         break;
       case 'inquiry':
         typeColor = Colors.blue;
-        typeLabel = 'استفسار';
+        typeLabel = context.l10n.messageTypeInquiry;
         break;
       default:
         typeColor = Colors.orange;
-        typeLabel = 'أخرى';
+        typeLabel = context.l10n.messageTypeOther;
     }
 
     // الألوان الخاصة بحالة الرسالة
@@ -198,22 +199,22 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> with SingleTi
       case 'new':
         statusBgColor = Colors.amber.shade800.withValues(alpha: 0.15);
         statusTextColor = Colors.amber.shade900;
-        statusLabel = 'جديدة';
+        statusLabel = context.l10n.messageStatusNew;
         break;
       case 'read':
         statusBgColor = Colors.blueGrey.shade100.withValues(alpha: 0.3);
         statusTextColor = Colors.blueGrey.shade700;
-        statusLabel = 'مقروءة';
+        statusLabel = context.l10n.messageStatusRead;
         break;
       case 'replied':
         statusBgColor = Colors.teal.shade50;
         statusTextColor = Colors.teal.shade800;
-        statusLabel = 'تم الرد';
+        statusLabel = context.l10n.messageStatusReplied;
         break;
       case 'closed':
         statusBgColor = Colors.grey.shade200;
         statusTextColor = Colors.grey.shade600;
-        statusLabel = 'مغلقة';
+        statusLabel = context.l10n.messageStatusClosed;
         break;
       default:
         statusBgColor = Colors.grey.shade100;
@@ -337,7 +338,7 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> with SingleTi
                     ],
                   ),
                   Text(
-                    AppDateFormatter.timeAgo(msg.created, 'ar'),
+                    AppDateFormatter.timeAgo(msg.created, Localizations.localeOf(context).languageCode, context.l10n),
                     style: TextStyle(
                       fontSize: 11,
                       color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
@@ -370,16 +371,16 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> with SingleTi
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'صندوق الوارد نظيف تماماً!',
-            style: TextStyle(
+          Text(
+            context.l10n.inboxCleanTitle,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'لا توجد رسائل واردة تطابق الفلاتر المحددة حالياً.',
+            context.l10n.inboxCleanDesc,
             style: TextStyle(
               fontSize: 14,
               color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,

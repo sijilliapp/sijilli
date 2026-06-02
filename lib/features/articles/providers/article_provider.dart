@@ -2,8 +2,13 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../../models/article.dart';
+import '../../../models/comment.dart';
+import '../../../models/notification.dart';
 import '../../../core/local/local_db_service.dart';
 import '../services/pb_article_service.dart';
+import '../services/pb_comment_service.dart';
+import '../../notifications/services/notification_service.dart';
+import '../../../core/services/pocketbase_client.dart';
 
 class ArticleProvider extends ChangeNotifier {
   final PbArticleService _articleService = PbArticleService();
@@ -11,6 +16,14 @@ class ArticleProvider extends ChangeNotifier {
   List<Article> _articles = [];
   bool _isLoading = false;
   String? _errorMessage;
+  
+  final PbCommentService _commentService = PbCommentService();
+  final Map<String, List<Comment>> _articleComments = {};
+  bool _isCommentsLoading = false;
+
+  Map<String, List<Comment>> get articleComments => _articleComments;
+  List<Comment> getCommentsForArticle(String articleId) => _articleComments[articleId] ?? [];
+  bool get isCommentsLoading => _isCommentsLoading;
   
   // Pagination
   int _currentPage = 1;
@@ -27,6 +40,9 @@ class ArticleProvider extends ChangeNotifier {
       _articles = cachedArticles;
       _sortArticles();
       notifyListeners();
+      
+      // Batch fetch comments in background for cached articles
+      fetchCommentsForArticles(cachedArticles.map((a) => a.id).toList());
     }
   }
 
@@ -94,6 +110,10 @@ class ArticleProvider extends ChangeNotifier {
       _sortArticles();
       await LocalDbService.instance.saveArticles(_articles);
       
+      if (fetchedArticles.isNotEmpty) {
+        fetchCommentsForArticles(fetchedArticles.map((a) => a.id).toList());
+      }
+      
       _currentPage++;
       _errorMessage = null;
     } catch (e) {
@@ -146,6 +166,10 @@ class ArticleProvider extends ChangeNotifier {
       
       _sortArticles();
       await LocalDbService.instance.saveArticles(_articles);
+      
+      if (fetchedArticles.isNotEmpty) {
+        fetchCommentsForArticles(fetchedArticles.map((a) => a.id).toList());
+      }
       
       _currentPage++;
       _errorMessage = null;
@@ -274,12 +298,13 @@ class ArticleProvider extends ChangeNotifier {
   }
 
   /// Toggle Like
-  Future<void> toggleLike(String articleId, String userId) async {
+  Future<void> toggleLike(String articleId, String userId, {String? likerName}) async {
     final index = _articles.indexWhere((a) => a.id == articleId);
     if (index == -1) return;
 
     final article = _articles[index];
     final currentLikes = List<String>.from(article.likes);
+    final isAddingLike = !currentLikes.contains(userId);
     
     // Optimistic UI update
     if (currentLikes.contains(userId)) {
@@ -292,6 +317,22 @@ class ArticleProvider extends ChangeNotifier {
 
     try {
       await _articleService.toggleLike(articleId, userId);
+      
+      // If we added a like, trigger a notification to the author
+      if (isAddingLike && userId != article.authorId && likerName != null && likerName.isNotEmpty) {
+        try {
+          final notificationService = NotificationService();
+          await notificationService.createNotification(
+            targetUserId: article.authorId,
+            title: 'إعجابات',
+            message: 'لقد سجل $likerName إعجاباً بمقالك.',
+            type: NotificationType.system, // use system type to display in screen feed
+            relatedId: articleId,
+          );
+        } catch (e) {
+          print('⚠️ Failed to send like notification: $e');
+        }
+      }
     } catch (e) {
       // Revert if API fails
       _articles[index] = article;
@@ -346,6 +387,170 @@ class ArticleProvider extends ChangeNotifier {
       _errorMessage = 'Failed to delete article: $e';
       notifyListeners();
       return false;
+    }
+  }
+
+  /// Fetch comments for a list of articles in a single batch query
+  Future<void> fetchCommentsForArticles(List<String> articleIds) async {
+    if (articleIds.isEmpty) return;
+    try {
+      // Build a PocketBase filter query: article = "id1" || article = "id2" || ...
+      final filterString = articleIds.map((id) => 'article = "$id"').join(' || ');
+      final resultList = await PocketBaseClient.instance.pb.collection('comments').getList(
+        page: 1,
+        perPage: 500, // Safe batch limit
+        filter: filterString,
+        expand: 'user',
+      );
+      
+      final comments = resultList.items.map((record) => Comment.fromJson(record.toJson())).toList();
+      
+      // Initialize lists
+      for (final id in articleIds) {
+        _articleComments[id] = [];
+      }
+      
+      // Group by articleId
+      for (final comment in comments) {
+        if (_articleComments.containsKey(comment.articleId)) {
+          _articleComments[comment.articleId]!.add(comment);
+        } else {
+          _articleComments[comment.articleId] = [comment];
+        }
+      }
+      notifyListeners();
+    } catch (e) {
+      print('⚠️ fetchCommentsForArticles error: $e');
+    }
+  }
+
+  /// Fetch comments for a specific article
+  Future<void> fetchComments(String articleId) async {
+    _isCommentsLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final comments = await _commentService.getComments(articleId);
+      _articleComments[articleId] = comments;
+      _errorMessage = null;
+    } catch (e) {
+      _errorMessage = 'Failed to load comments: $e';
+    } finally {
+      _isCommentsLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Add a comment to an article and send a notification to the author
+  Future<Comment?> addComment({
+    required String articleId,
+    required String content,
+    required String authorId,
+    required String articleTitle,
+    required String commenterName,
+  }) async {
+    _errorMessage = null;
+    try {
+      final newComment = await _commentService.createComment(
+        articleId: articleId,
+        content: content,
+      );
+
+      // Add to local cache list
+      if (_articleComments.containsKey(articleId)) {
+        _articleComments[articleId]!.add(newComment);
+      } else {
+        _articleComments[articleId] = [newComment];
+      }
+      notifyListeners();
+
+      // Trigger a notification to the article author (if commenter is not the author)
+      final currentUserId = newComment.userId;
+      if (currentUserId != authorId) {
+        try {
+          final notificationService = NotificationService();
+          await notificationService.createNotification(
+            targetUserId: authorId,
+            title: 'تعليقات',
+            message: 'قام $commenterName بالتعليق على مقالك',
+            type: NotificationType.system, // use system to bypass constraints
+            relatedId: articleId,
+          );
+        } catch (e) {
+          print('⚠️ Failed to send comment notification to author: $e');
+        }
+      }
+
+      return newComment;
+    } catch (e) {
+      _errorMessage = 'Failed to add comment: $e';
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// Delete a comment
+  Future<bool> deleteComment(String articleId, String commentId) async {
+    _errorMessage = null;
+    try {
+      await _commentService.deleteComment(commentId);
+      if (_articleComments.containsKey(articleId)) {
+        _articleComments[articleId]!.removeWhere((c) => c.id == commentId);
+      }
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Failed to delete comment: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Track anonymous views of articles
+  Future<void> trackArticleVisit({
+    required String articleId,
+    required String authorId,
+    required String articleTitle,
+  }) async {
+    try {
+      final now = DateTime.now().toUtc();
+      final dateStr = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final startOfDay = '$dateStr 00:00:00';
+      
+      String deviceName = 'متصفح ويب';
+
+      if (!kIsWeb) {
+        if (Platform.isAndroid) {
+          deviceName = 'أندرويد';
+        } else if (Platform.isIOS) {
+          deviceName = 'آيفون';
+        } else if (Platform.isMacOS) {
+          deviceName = 'ماك';
+        } else if (Platform.isWindows) {
+          deviceName = 'ويندوز';
+        }
+      }
+
+      final notificationService = NotificationService();
+      
+      // Look for a notification for this article, from this device, created today
+      final existing = await notificationService.getNotifications(
+        filter: 'user = "$authorId" && type = "visit" && related_id = "$articleId" && message ~ "$deviceName" && created >= "$startOfDay"',
+        perPage: 1
+      );
+      
+      if (existing.isEmpty) {
+        await notificationService.createNotification(
+          targetUserId: authorId,
+          title: 'توافد الجمهور',
+          message: 'قام $deviceName بقراءة مقالك.',
+          type: NotificationType.visit,
+          relatedId: articleId, // Store article ID to support direct redirect when tapped!
+        );
+      }
+    } catch (e) {
+      print('⚠️ Failed to track anonymous article visit: $e');
     }
   }
 }

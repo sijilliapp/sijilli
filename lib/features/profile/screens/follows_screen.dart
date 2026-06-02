@@ -137,6 +137,27 @@ class _FollowsScreenState extends State<FollowsScreen> {
         }
       }
 
+      // جلب عداد الدخول والزيارات للملفات الشخصية لترتيب المعتمدين
+      final clickCounts = await LocalDbService.instance.getUserClickCounts();
+      
+      // ترتيب المعتمدين: المقبولين (Approved/Admin) أولاً، ثم الأكثر دخولاً/زيارةً بالترتيب التنازلي
+      accreditedList.sort((a, b) {
+        final aApproved = a.isApproved || a.isAdmin;
+        final bApproved = b.isApproved || b.isAdmin;
+        
+        if (aApproved && !bApproved) return -1;
+        if (!aApproved && bApproved) return 1;
+        
+        final aClicks = clickCounts[a.id] ?? 0;
+        final bClicks = clickCounts[b.id] ?? 0;
+        
+        if (aClicks != bClicks) {
+          return bClicks.compareTo(aClicks); // تنازلي (الأكثر دخولاً أولاً)
+        }
+        
+        return a.name.compareTo(b.name);
+      });
+
       // جلب الحسابات المقترحة المعلمة كاقتراح (is_suggested = true)
       List<UserModel> suggestions = [];
       try {

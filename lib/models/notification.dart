@@ -91,6 +91,20 @@ class NotificationModel {
     );
   }
 
+  factory NotificationModel.fromJson(Map<String, dynamic> json) {
+    return NotificationModel(
+      id: json['id'] ?? '',
+      userId: json['user'] ?? '',
+      title: json['title'] ?? '',
+      message: json['message'] ?? '',
+      type: NotificationType.fromString(json['type'] ?? ''),
+      relatedId: json['related_id'] ?? '',
+      isRead: json['is_read'] ?? false,
+      created: json['created'] != null ? DateTime.parse(json['created']) : DateTime.now(),
+      updated: json['updated'] != null ? DateTime.parse(json['updated']) : DateTime.now(),
+    );
+  }
+
   NotificationModel copyWith({
     String? id,
     String? userId,
@@ -117,12 +131,15 @@ class NotificationModel {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'user': userId,
       'title': title,
       'message': message,
       'type': type.toValue(),
       'related_id': relatedId,
       'is_read': isRead,
+      'created': created.toIso8601String(),
+      'updated': updated.toIso8601String(),
     };
   }
 }

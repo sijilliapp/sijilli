@@ -10,6 +10,7 @@ import '../../../models/notification.dart';
 import '../widgets/invitation_tile.dart';
 import '../widgets/notification_item.dart';
 import '../../../core/extensions/context_l10n.dart';
+import '../../../routes/app_router.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -89,19 +90,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             return isNotHost && hasInvitation;
           }).toList();
 
-          // 2. Join Requests (Where I am a HOST)
-          // Any appointment where I am the host and there's a pending participant (not me)
-          final joinRequests = apptProvider.appointments.where((a) {
-            final isHost = a.hostId == userId;
-            final hasPending = a.participants?.any((p) => p.userId != userId && p.status == InvitationStatus.pending) ?? false;
-            return isHost && hasPending;
-          }).toList();
-
-          // Combined List
-          final List<Appointment> combinedList = [
-            ...receivedInvitations,
-            ...joinRequests,
-          ];
+          // Combined List (Only received invitations for guests, host outgoing invitations are excluded)
+          final List<Appointment> combinedList = receivedInvitations;
 
           // Sort by date desc
           combinedList.sort((a, b) {
@@ -109,25 +99,28 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           });
 
 
-          List<dynamic> filteredList = combinedList;
+          List<Appointment> filteredList = combinedList;
           
           if (_hideAnswered) {
              filteredList = combinedList.where((item) {
-                 if (item is Appointment) {
-                    final isPending = item.currentUserInvitation?.status == InvitationStatus.pending;
-                    final isNotPast = !item.isPast;
-                    return isPending && isNotPast;
-                 }
-                 return true;
-              }).toList();
+                final isPending = item.currentUserInvitation?.status == InvitationStatus.pending;
+                final isNotPast = !item.isPast;
+                return isPending && isNotPast;
+             }).toList();
           }
 
-          // General notifications from provider (exclusively unfollow cancellations and guest acceptance news)
+          // General notifications from provider (includes cancels, acceptances, follows, visits, system alerts, reminders, and approval requests)
           final List<NotificationModel> generalNotifications = notifProvider.notifications.where((item) {
-            final isCancel = item.type == NotificationType.cancel;
-            final isAcceptance = item.type == NotificationType.invite && 
-                (item.title.toLowerCase().contains('accept') || item.title.contains('قبول') || item.title.contains('قبل'));
-            return isCancel || isAcceptance;
+            if (item.type == NotificationType.cancel) return true;
+            if (item.type == NotificationType.invite && 
+                (item.title.toLowerCase().contains('accept') || item.title.contains('قبول') || item.title.contains('قبل'))) {
+              return true;
+            }
+            return item.type == NotificationType.follow ||
+                item.type == NotificationType.visit ||
+                item.type == NotificationType.system ||
+                item.type == NotificationType.reminder ||
+                item.type == NotificationType.approvalRequest;
           }).toList();
 
           if ((apptProvider.isLoading || notifProvider.isLoading) && filteredList.isEmpty && generalNotifications.isEmpty) {
@@ -170,12 +163,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       ),
                     ),
                   ),
-                  ...filteredList.map((item) {
-                    if (item is Appointment) {
-                      return InvitationTile(appointment: item);
-                    }
-                    return const SizedBox.shrink();
-                  }),
+                  ...filteredList.map((item) => InvitationTile(appointment: item)),
                   const SizedBox(height: 16),
                 ],
                 
@@ -194,7 +182,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   ...generalNotifications.map((item) => NotificationItem(
                     notification: item,
                     onTap: () {
-                      notifProvider.markAsRead(item.id);
+                      AppRouter.handleNotificationTap(item);
                     },
                   )),
                 ],

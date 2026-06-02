@@ -1566,13 +1566,484 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get errorArticleNotPublished =>
-      'المقال غير منشور أو غير متوفر حالياً.';
-
-  @override
   String get errorFetchingArticle =>
       'تعذر جلب بيانات المقال. الرجاء التحقق من الرابط.';
 
   @override
   String get article => 'المقال';
+
+  @override
+  String get adminPanelTitle => 'Super Admin Panel';
+
+  @override
+  String get systemSettingsSection => 'System General Settings';
+
+  @override
+  String get registrationSettings => 'Registration & Support Settings';
+
+  @override
+  String get registrationSettingsDesc =>
+      'Control registration status, WhatsApp number, and support email';
+
+  @override
+  String get userManagement => 'User Accounts Management';
+
+  @override
+  String get userManagementDesc =>
+      'Search for subscribers, edit roles, and active permissions';
+
+  @override
+  String get articlesManagement => 'Articles & Content Management';
+
+  @override
+  String get articlePrefs => 'Administrative Article Preferences';
+
+  @override
+  String get articlePrefsDesc =>
+      'Max characters limit and custom typo dictionary';
+
+  @override
+  String get userMessages => 'Subscribers Messages';
+
+  @override
+  String get incomingMessages => 'Incoming Support Messages';
+
+  @override
+  String get incomingMessagesDesc =>
+      'View and respond to inquiries and complaints';
+
+  @override
+  String get reportsAndTickets => 'Reports & Tickets';
+
+  @override
+  String get reportsAndTicketsDesc =>
+      'Monitor reports and resolve issues with offensive content';
+
+  @override
+  String get searchSubscribers => 'Search subscribers...';
+
+  @override
+  String get recentlyRegistered => 'Recently Registered';
+
+  @override
+  String get allAdmins => 'Administrators';
+
+  @override
+  String get searchResult => 'Search Results';
+
+  @override
+  String get clearSearch => 'Clear Search';
+
+  @override
+  String get noRecentSearches => 'No recent searches';
+
+  @override
+  String get editUserAccount => 'Edit Subscriber Account';
+
+  @override
+  String get simulateLogin => 'Impersonate User Session';
+
+  @override
+  String simulateConfirm(String name) {
+    return 'Do you want to browse the app as $name?\n\nThe app will take you to the home screen as this user, and you can return to your admin account at any time.';
+  }
+
+  @override
+  String loginSimulated(String name) {
+    return 'Logged in as $name 👥';
+  }
+
+  @override
+  String get permissionsAndControl => 'Permissions & Control';
+
+  @override
+  String get accountOptions => 'Active Account Options';
+
+  @override
+  String get verifiedEmailLabel => 'Email Verified (Verified Email)';
+
+  @override
+  String get verifiedEmailDesc =>
+      'Set verification status of email for groups.';
+
+  @override
+  String get verifiedPhoneLabel => 'Phone Verified (Verified Phone)';
+
+  @override
+  String get verifiedPhoneDesc =>
+      'Determine if the subscriber\'s phone is verified.';
+
+  @override
+  String get publicProfileLabel => 'Public Profile';
+
+  @override
+  String get publicProfileDesc =>
+      'Allow everyone to view and follow this profile.';
+
+  @override
+  String get hideFromSearchLabel => 'Hide Profile from Search';
+
+  @override
+  String get hideFromSearchDesc =>
+      'Prevent profile from showing in general search results.';
+
+  @override
+  String get suggestedAccountLabel => 'Suggested Account';
+
+  @override
+  String get suggestedAccountDesc =>
+      'Show this subscriber in suggested accounts list.';
+
+  @override
+  String get superAdminLabel => 'Upgrade to Super Admin';
+
+  @override
+  String get superAdminDesc =>
+      'Grant full access to manage roles and moderator permissions.';
+
+  @override
+  String get saveChangesBtn => 'Save Changes';
+
+  @override
+  String get userRoleLabel => 'Job Role / Permission (Role)';
+
+  @override
+  String get roleUserOption => 'Standard User (user)';
+
+  @override
+  String get roleApprovedOption => 'Approved User (approved)';
+
+  @override
+  String get roleAdminOption => 'General Moderator (admin)';
+
+  @override
+  String get saveChangesSuccess =>
+      'Subscriber settings updated successfully 🛡️';
+
+  @override
+  String get saveChangesFailed =>
+      'Failed to save changes, please review permissions';
+
+  @override
+  String get registrationGate => 'New Users Registration Gate';
+
+  @override
+  String get allowNewRegistrations => 'Allow New Account Registrations';
+
+  @override
+  String get registrationEnabledDesc =>
+      'Registration is currently open for everyone';
+
+  @override
+  String get registrationDisabledDesc => 'Registration is currently closed';
+
+  @override
+  String get registrationOpenedSuccess => 'Registration opened successfully 🎉';
+
+  @override
+  String get registrationClosedSuccess => 'Registration closed 🔒';
+
+  @override
+  String get contactSupportChannels => 'Support & Contact Channels Info';
+
+  @override
+  String get whatsappSupportNumber => 'WhatsApp Support Number';
+
+  @override
+  String get whatsappHelperText =>
+      'Please write international code (e.g. +97339477742)';
+
+  @override
+  String get whatsappRequired => 'WhatsApp number field is required';
+
+  @override
+  String get saveWhatsappBtn => 'Save WhatsApp Number';
+
+  @override
+  String get whatsappUpdatedSuccess =>
+      'WhatsApp number updated successfully 🎉';
+
+  @override
+  String get emailSupportLabel => 'Support Email Address';
+
+  @override
+  String get emailRequired => 'Email field is required';
+
+  @override
+  String get emailInvalid => 'Please enter a valid email address';
+
+  @override
+  String get saveEmailBtn => 'Save Email Address';
+
+  @override
+  String get emailUpdatedSuccess => 'Email address updated successfully 🎉';
+
+  @override
+  String get articleMaxCharacters => 'Maximum Article Character Limit';
+
+  @override
+  String get articleMaxCharactersDesc =>
+      'Max characters allowed in a single article body';
+
+  @override
+  String charactersCountLabel(int count) {
+    return 'Character Count: $count';
+  }
+
+  @override
+  String get saveLimitBtn => 'Save Limit';
+
+  @override
+  String get articleLimitUpdated =>
+      'Article characters limit updated successfully 📝';
+
+  @override
+  String get typoDictionary => 'Common Typo Auto-Correction Dictionary';
+
+  @override
+  String get typoWordHint => 'Typo Word (e.g. هاذا)';
+
+  @override
+  String get correctedWordHint => 'Corrected Word (e.g. هذا)';
+
+  @override
+  String get addWordBtn => 'Add to Dictionary';
+
+  @override
+  String get deleteWordConfirm => 'Remove this word from spelling dictionary?';
+
+  @override
+  String get wordAddedSuccess => 'Word added successfully 🎉';
+
+  @override
+  String get wordDeletedSuccess => 'Word deleted successfully 🗑️';
+
+  @override
+  String get emptyDictionary => 'Spelling dictionary is currently empty';
+
+  @override
+  String get supportMessagesTitle => 'Support Inbox';
+
+  @override
+  String get noSupportMessages => 'No incoming support messages found';
+
+  @override
+  String get allMessagesTab => 'All';
+
+  @override
+  String get unreadMessagesTab => 'Unread';
+
+  @override
+  String get readMessagesTab => 'Read';
+
+  @override
+  String messageFrom(String name) {
+    return 'From: $name';
+  }
+
+  @override
+  String deleteMessageConfirm(String title) {
+    return 'Permanently delete the message: $title?';
+  }
+
+  @override
+  String get messageDeletedSuccess => 'Message deleted successfully 🗑️';
+
+  @override
+  String get messageMarkedRead => 'Message marked as read';
+
+  @override
+  String get messageMarkedUnread => 'Message marked as unread';
+
+  @override
+  String get reportsScreenTitle => 'Reports & Tickets';
+
+  @override
+  String get noReportsFound => 'No pending reports found';
+
+  @override
+  String reporterLabel(String name) {
+    return 'Reporter: $name';
+  }
+
+  @override
+  String reportTypeLabel(String type) {
+    return 'Report Type: $type';
+  }
+
+  @override
+  String reportReasonLabel(String reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
+  String statusLabel(String status) {
+    return 'Status: $status';
+  }
+
+  @override
+  String get subjectDetailsTitle => 'Reported Content Details';
+
+  @override
+  String get reportActionIgnore => 'Ignore Report';
+
+  @override
+  String get reportActionDelete => 'Delete Content';
+
+  @override
+  String reportActionIgnoreConfirm(String reporter) {
+    return 'Ignore report from $reporter';
+  }
+
+  @override
+  String get reportActionIgnoreDesc =>
+      'The report will be archived without affecting the original content.';
+
+  @override
+  String get reportActionDeleteConfirm => 'Confirm Permanent Content Deletion';
+
+  @override
+  String get reportActionDeleteDesc =>
+      'Warning: This action is permanent and cannot be undone!';
+
+  @override
+  String get reportResolvedSuccess => 'Report resolved successfully';
+
+  @override
+  String get reportDeleteSuccess =>
+      'Content deleted and report resolved successfully';
+
+  @override
+  String joinedSince(String date) {
+    return 'Joined since: $date';
+  }
+
+  @override
+  String get reportTypeUser => 'User Account';
+
+  @override
+  String get reportTypeAppointment => 'New Appointment';
+
+  @override
+  String get reportTypeArticle => 'Published Article';
+
+  @override
+  String get allSafeAndClean => 'Everything looks safe and clean!';
+
+  @override
+  String get loadingReportedDetails => 'Loading reported content details...';
+
+  @override
+  String get reportedContentUnavailable =>
+      '⚠️ This content is no longer available or was previously deleted.';
+
+  @override
+  String byModerator(String name) {
+    return ' by $name';
+  }
+
+  @override
+  String reportStatusResolved(String byModerator) {
+    return '✅ This report has been resolved and content deleted$byModerator';
+  }
+
+  @override
+  String reportStatusIgnored(String byModerator) {
+    return 'ℹ️ This report has been ignored and archived$byModerator';
+  }
+
+  @override
+  String get reportSubjectAppointmentDetails => 'Reported Appointment Details:';
+
+  @override
+  String get reportSubjectArticleDetails => 'Reported Article Details:';
+
+  @override
+  String get reportDeleteFailed =>
+      '⚠️ Failed to delete content. It might have been deleted already.';
+
+  @override
+  String get appointmentNoTitle => 'Untitled Appointment';
+
+  @override
+  String get articleNoTitle => 'Untitled Article';
+
+  @override
+  String get anonymous => 'Anonymous';
+
+  @override
+  String get limitsAndControls => 'Limits & Controls';
+
+  @override
+  String get enterNewValue => 'Enter the new value...';
+
+  @override
+  String get searchDictionaryHint => 'Search custom dictionary...';
+
+  @override
+  String get typoWordHeader => 'Common Typo';
+
+  @override
+  String get correctedWordHeader => 'Approved Correction';
+
+  @override
+  String get actionHeader => 'Action';
+
+  @override
+  String get messageTypeInquiry => 'Inquiry';
+
+  @override
+  String get messageTypeSuggestion => 'Suggestion';
+
+  @override
+  String get messageTypeComplaint => 'Complaint';
+
+  @override
+  String get messageTypeOther => 'Other';
+
+  @override
+  String get messageStatusNew => 'New';
+
+  @override
+  String get messageStatusRead => 'Read';
+
+  @override
+  String get messageStatusReplied => 'Replied';
+
+  @override
+  String get messageStatusClosed => 'Closed';
+
+  @override
+  String get unregisteredVisitor => 'Unregistered Visitor';
+
+  @override
+  String get inboxCleanTitle => 'Inbox is completely clean!';
+
+  @override
+  String get inboxCleanDesc =>
+      'No incoming messages match the selected filters currently.';
+
+  @override
+  String get unknown => 'Unknown';
+
+  @override
+  String get messageSenderHeader => 'Message Sender';
+
+  @override
+  String get updateMessageStatusTitle => 'Update Message Status';
+
+  @override
+  String get messageStatusUpdateSuccess =>
+      'Message status updated successfully';
+
+  @override
+  String get messageStatusUpdateFailed => 'Failed to update message status';
+
+  @override
+  String get errorArticleNotPublished =>
+      'This article is not currently published.';
+
+  @override
+  String get adminPanelDesc =>
+      'Manage and customize system settings and registration';
 }

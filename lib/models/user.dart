@@ -30,6 +30,7 @@ class UserModel {
 
   final bool emailVisibility;
   final bool phoneVerified; // 📱 هل تم التحقق من الهاتف؟
+  final bool isSuperAdmin; // 🛡️ مشرف عام (صلاحيات كاملة)
   
   // ====================== التواريخ ======================
   final DateTime? date; // تاريخ الميلاد
@@ -60,6 +61,7 @@ class UserModel {
     this.isSuggested = false,
     this.emailVisibility = false,
     this.phoneVerified = false, // Default is false
+    this.isSuperAdmin = false, // Default is false
     this.date,
     required this.created,
     required this.updated,
@@ -89,6 +91,7 @@ class UserModel {
       isSuggested: JsonUtils.parseBool(json['is_suggested']) ?? JsonUtils.parseBool(json['isSuggested']),
       emailVisibility: JsonUtils.parseBool(json['emailVisibility']),
       phoneVerified: JsonUtils.parseBool(json['phone_verified']) ?? JsonUtils.parseBool(json['phoneVerified']),
+      isSuperAdmin: JsonUtils.parseBool(json['is_super_admin']) ?? JsonUtils.parseBool(json['isSuperAdmin']),
       date: JsonUtils.parseDateTime(json['date']),
       created: JsonUtils.parseDateTime(json['created']) ?? DateTime.now(),
       updated: JsonUtils.parseDateTime(json['updated']) ?? DateTime.now(),
@@ -121,6 +124,7 @@ class UserModel {
       verified: false,
       isSuggested: false,
       emailVisibility: false,
+      isSuperAdmin: false,
       created: now,
       updated: now,
       joiningDate: now,
@@ -137,6 +141,7 @@ class UserModel {
       name: 'مستخدم مجهول',
       email: '',
       isSuggested: false,
+      isSuperAdmin: false,
       created: now,
       updated: now,
       joiningDate: now,
@@ -166,6 +171,7 @@ class UserModel {
       'is_suggested': isSuggested,
       'emailVisibility': emailVisibility,
       'phone_verified': phoneVerified,
+      'is_super_admin': isSuperAdmin,
       'date': date?.toIso8601String(),
       'created': created.toIso8601String(),
       'updated': updated.toIso8601String(),
@@ -200,6 +206,7 @@ class UserModel {
     bool? isSuggested,
     bool? emailVisibility,
     bool? phoneVerified,
+    bool? isSuperAdmin,
     DateTime? date,
     DateTime? created,
     DateTime? updated,
@@ -225,6 +232,7 @@ class UserModel {
       isSuggested: isSuggested ?? this.isSuggested,
       emailVisibility: emailVisibility ?? this.emailVisibility,
       phoneVerified: phoneVerified ?? this.phoneVerified,
+      isSuperAdmin: isSuperAdmin ?? this.isSuperAdmin,
       date: date ?? this.date,
       created: created ?? this.created,
       updated: updated ?? this.updated,
@@ -264,6 +272,7 @@ class UserModel {
   
   /// الحصول على اسم الدور بالعربية
   String get roleDisplayName {
+    if (isSuperAdmin) return 'مشرف عام';
     switch (role) {
       case 'admin':
         return 'مشرف';

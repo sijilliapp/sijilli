@@ -614,5 +614,243 @@
   "centerTooltip": "Center text",
   "justifyTooltip": "Justify text",
   "editArticleCover": "Edit article cover",
-  "expandImage": "Expand image"
+  "expandImage": "Expand image",
+  "adminPanelTitle": "Super Admin Panel",
+  "systemSettingsSection": "System General Settings",
+  "registrationSettings": "Registration & Support Settings",
+  "registrationSettingsDesc": "Control registration status, WhatsApp number, and support email",
+  "userManagement": "User Accounts Management",
+  "userManagementDesc": "Search for subscribers, edit roles, and active permissions",
+  "articlesManagement": "Articles & Content Management",
+  "articlePrefs": "Administrative Article Preferences",
+  "articlePrefsDesc": "Max characters limit and custom typo dictionary",
+  "userMessages": "Subscribers Messages",
+  "incomingMessages": "Incoming Support Messages",
+  "incomingMessagesDesc": "View and respond to inquiries and complaints",
+  "reportsAndTickets": "Reports & Tickets",
+  "reportsAndTicketsDesc": "Monitor reports and resolve issues with offensive content",
+  "searchSubscribers": "Search subscribers...",
+  "recentlyRegistered": "Recently Registered",
+  "allAdmins": "Administrators",
+  "searchResult": "Search Results",
+  "clearSearch": "Clear Search",
+  "noRecentSearches": "No recent searches",
+  "editUserAccount": "Edit Subscriber Account",
+  "simulateLogin": "Impersonate User Session",
+  "simulateConfirm": "Do you want to browse the app as {name}?\n\nThe app will take you to the home screen as this user, and you can return to your admin account at any time.",
+  "@simulateConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "loginSimulated": "Logged in as {name} 👥",
+  "@loginSimulated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "permissionsAndControl": "Permissions & Control",
+  "accountOptions": "Active Account Options",
+  "verifiedEmailLabel": "Email Verified (Verified Email)",
+  "verifiedEmailDesc": "Set verification status of email for groups.",
+  "verifiedPhoneLabel": "Phone Verified (Verified Phone)",
+  "verifiedPhoneDesc": "Determine if the subscriber's phone is verified.",
+  "publicProfileLabel": "Public Profile",
+  "publicProfileDesc": "Allow everyone to view and follow this profile.",
+  "hideFromSearchLabel": "Hide Profile from Search",
+  "hideFromSearchDesc": "Prevent profile from showing in general search results.",
+  "suggestedAccountLabel": "Suggested Account",
+  "suggestedAccountDesc": "Show this subscriber in suggested accounts list.",
+  "superAdminLabel": "Upgrade to Super Admin",
+  "superAdminDesc": "Grant full access to manage roles and moderator permissions.",
+  "saveChangesBtn": "Save Changes",
+  "userRoleLabel": "Job Role / Permission (Role)",
+  "roleUserOption": "Standard User (user)",
+  "roleApprovedOption": "Approved User (approved)",
+  "roleAdminOption": "General Moderator (admin)",
+  "saveChangesSuccess": "Subscriber settings updated successfully 🛡️",
+  "saveChangesFailed": "Failed to save changes, please review permissions",
+  "registrationGate": "New Users Registration Gate",
+  "allowNewRegistrations": "Allow New Account Registrations",
+  "registrationEnabledDesc": "Registration is currently open for everyone",
+  "registrationDisabledDesc": "Registration is currently closed",
+  "registrationOpenedSuccess": "Registration opened successfully 🎉",
+  "registrationClosedSuccess": "Registration closed 🔒",
+  "contactSupportChannels": "Support & Contact Channels Info",
+  "whatsappSupportNumber": "WhatsApp Support Number",
+  "whatsappHelperText": "Please write international code (e.g. +97339477742)",
+  "whatsappRequired": "WhatsApp number field is required",
+  "saveWhatsappBtn": "Save WhatsApp Number",
+  "whatsappUpdatedSuccess": "WhatsApp number updated successfully 🎉",
+  "emailSupportLabel": "Support Email Address",
+  "emailRequired": "Email field is required",
+  "emailInvalid": "Please enter a valid email address",
+  "saveEmailBtn": "Save Email Address",
+  "emailUpdatedSuccess": "Email address updated successfully 🎉",
+  "articleMaxCharacters": "Maximum Article Character Limit",
+  "articleMaxCharactersDesc": "Max characters allowed in a single article body",
+  "charactersCountLabel": "Character Count: {count}",
+  "@charactersCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "saveLimitBtn": "Save Limit",
+  "articleLimitUpdated": "Article characters limit updated successfully 📝",
+  "typoDictionary": "Common Typo Auto-Correction Dictionary",
+  "typoWordHint": "Typo Word (e.g. هاذا)",
+  "correctedWordHint": "Corrected Word (e.g. هذا)",
+  "addWordBtn": "Add to Dictionary",
+  "deleteWordConfirm": "Remove this word from spelling dictionary?",
+  "wordAddedSuccess": "Word added successfully 🎉",
+  "wordDeletedSuccess": "Word deleted successfully 🗑️",
+  "emptyDictionary": "Spelling dictionary is currently empty",
+  "supportMessagesTitle": "Support Inbox",
+  "noSupportMessages": "No incoming support messages found",
+  "allMessagesTab": "All",
+  "unreadMessagesTab": "Unread",
+  "readMessagesTab": "Read",
+  "messageFrom": "From: {name}",
+  "@messageFrom": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteMessageConfirm": "Permanently delete the message: {title}?",
+  "@deleteMessageConfirm": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "messageDeletedSuccess": "Message deleted successfully 🗑️",
+  "messageMarkedRead": "Message marked as read",
+  "messageMarkedUnread": "Message marked as unread",
+  "reportsScreenTitle": "Reports & Tickets",
+  "noReportsFound": "No pending reports found",
+  "reporterLabel": "Reporter: {name}",
+  "@reporterLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reportTypeLabel": "Report Type: {type}",
+  "@reportTypeLabel": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "reportReasonLabel": "Reason: {reason}",
+  "@reportReasonLabel": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "statusLabel": "Status: {status}",
+  "@statusLabel": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "subjectDetailsTitle": "Reported Content Details",
+  "reportActionIgnore": "Ignore Report",
+  "reportActionDelete": "Delete Content",
+  "reportActionIgnoreConfirm": "Ignore report from {reporter}",
+  "@reportActionIgnoreConfirm": {
+    "placeholders": {
+      "reporter": {
+        "type": "String"
+      }
+    }
+  },
+  "reportActionIgnoreDesc": "The report will be archived without affecting the original content.",
+  "reportActionDeleteConfirm": "Confirm Permanent Content Deletion",
+  "reportActionDeleteDesc": "Warning: This action is permanent and cannot be undone!",
+  "reportResolvedSuccess": "Report resolved successfully",
+  "reportDeleteSuccess": "Content deleted and report resolved successfully",
+  "joinedSince": "Joined since: {date}",
+  "@joinedSince": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "reportTypeUser": "User Account",
+  "reportTypeAppointment": "New Appointment",
+  "reportTypeArticle": "Published Article",
+  "allSafeAndClean": "Everything looks safe and clean!",
+  "loadingReportedDetails": "Loading reported content details...",
+  "reportedContentUnavailable": "⚠️ This content is no longer available or was previously deleted.",
+  "byModerator": " by {name}",
+  "@byModerator": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reportStatusResolved": "✅ This report has been resolved and content deleted{byModerator}",
+  "@reportStatusResolved": {
+    "placeholders": {
+      "byModerator": {
+        "type": "String"
+      }
+    }
+  },
+  "reportStatusIgnored": "ℹ️ This report has been ignored and archived{byModerator}",
+  "@reportStatusIgnored": {
+    "placeholders": {
+      "byModerator": {
+        "type": "String"
+      }
+    }
+  },
+  "reportSubjectAppointmentDetails": "Reported Appointment Details:",
+  "reportSubjectArticleDetails": "Reported Article Details:",
+  "reportDeleteFailed": "⚠️ Failed to delete content. It might have been deleted already.",
+  "appointmentNoTitle": "Untitled Appointment",
+  "articleNoTitle": "Untitled Article",
+  "anonymous": "Anonymous",
+  "limitsAndControls": "Limits & Controls",
+  "enterNewValue": "Enter the new value...",
+  "searchDictionaryHint": "Search custom dictionary...",
+  "typoWordHeader": "Common Typo",
+  "correctedWordHeader": "Approved Correction",
+  "actionHeader": "Action",
+  "messageTypeInquiry": "Inquiry",
+  "messageTypeSuggestion": "Suggestion",
+  "messageTypeComplaint": "Complaint",
+  "messageTypeOther": "Other",
+  "messageStatusNew": "New",
+  "messageStatusRead": "Read",
+  "messageStatusReplied": "Replied",
+  "messageStatusClosed": "Closed",
+  "unregisteredVisitor": "Unregistered Visitor",
+  "inboxCleanTitle": "Inbox is completely clean!",
+  "inboxCleanDesc": "No incoming messages match the selected filters currently.",
+  "unknown": "Unknown",
+  "messageSenderHeader": "Message Sender",
+  "updateMessageStatusTitle": "Update Message Status",
+  "messageStatusUpdateSuccess": "Message status updated successfully",
+  "messageStatusUpdateFailed": "Failed to update message status",
+  "errorArticleNotPublished": "This article is not currently published.",
+  "adminPanelDesc": "Manage and customize system settings and registration"
 }

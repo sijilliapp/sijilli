@@ -27,6 +27,7 @@ class ArticleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentUserId = context.read<AuthProvider>().user?.id;
     final isAuthor = currentUserId == article.authorId;
+    final commentsCount = context.watch<ArticleProvider>().getCommentsForArticle(article.id).length;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 4.0),
@@ -307,7 +308,7 @@ class ArticleCard extends StatelessWidget {
                               ),
                             ],
                           ),
-                          // Likes Counter
+                          // Likes & Comments Counters
                           Directionality(
                             textDirection: TextDirection.ltr,
                             child: Row(
@@ -327,6 +328,22 @@ class ArticleCard extends StatelessWidget {
                                     color: AppColors.getTextSecondary(context),
                                   ),
                                 ),
+                                if (commentsCount > 0) ...[
+                                  const SizedBox(width: 12),
+                                  Icon(
+                                    Icons.comment_outlined,
+                                    size: 16,
+                                    color: AppColors.getTextSecondary(context),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    commentsCount.toString(),
+                                    style: TextStyle(
+                                      fontSize: AppDimens.textSizeS,
+                                      color: AppColors.getTextSecondary(context),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ),

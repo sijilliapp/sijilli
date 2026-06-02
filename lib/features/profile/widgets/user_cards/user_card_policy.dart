@@ -99,7 +99,7 @@ abstract class UserCardPolicy {
   }
 
   Widget? buildBadges() {
-    if (user.isApproved || user.isOfficial) {
+    if (user.isOfficial) {
       return Padding(
         padding: const EdgeInsets.only(right: 4),
         child: Icon(

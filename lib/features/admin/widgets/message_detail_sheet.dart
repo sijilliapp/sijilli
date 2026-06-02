@@ -8,6 +8,7 @@ import '../../../core/utils/app_date_formatter.dart';
 import '../../../core/widgets/pulse_avatar.dart';
 import '../../../models/contact_message.dart';
 import '../providers/admin_provider.dart';
+import '../../../core/extensions/context_l10n.dart';
 
 void showMessageDetailSheet(BuildContext context, ContactMessageModel message) {
   showModalBottomSheet(
@@ -41,8 +42,8 @@ class _MessageDetailSheetState extends State<_MessageDetailSheet> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasUser = widget.message.user != null;
-    final senderName = hasUser ? widget.message.user!.name : 'زائر غير مسجل';
-    final username = hasUser ? '@${widget.message.user!.username}' : 'غير معروف';
+    final senderName = hasUser ? widget.message.user!.name : context.l10n.unregisteredVisitor;
+    final username = hasUser ? '@${widget.message.user!.username}' : context.l10n.unknown;
 
     // الألوان والأيقونات الخاصة بنوع الرسالة
     Color typeColor;
@@ -50,26 +51,26 @@ class _MessageDetailSheetState extends State<_MessageDetailSheet> {
     switch (widget.message.type) {
       case 'suggestion':
         typeColor = Colors.green;
-        typeLabel = 'اقتراح';
+        typeLabel = context.l10n.messageTypeSuggestion;
         break;
       case 'complaint':
         typeColor = Colors.red;
-        typeLabel = 'شكوى';
+        typeLabel = context.l10n.messageTypeComplaint;
         break;
       case 'inquiry':
         typeColor = Colors.blue;
-        typeLabel = 'استفسار';
+        typeLabel = context.l10n.messageTypeInquiry;
         break;
       default:
         typeColor = Colors.orange;
-        typeLabel = 'أخرى';
+        typeLabel = context.l10n.messageTypeOther;
     }
 
     final statusOptions = [
-      {'key': 'new', 'label': 'جديدة 🆕'},
-      {'key': 'read', 'label': 'مقروءة 👁️'},
-      {'key': 'replied', 'label': 'تم الرد عليها 💬'},
-      {'key': 'closed', 'label': 'مغلقة 🔒'},
+      {'key': 'new', 'label': '${context.l10n.messageStatusNew} 🆕'},
+      {'key': 'read', 'label': '${context.l10n.messageStatusRead} 👁️'},
+      {'key': 'replied', 'label': '${context.l10n.messageStatusReplied} 💬'},
+      {'key': 'closed', 'label': '${context.l10n.messageStatusClosed} 🔒'},
     ];
 
     return Container(
@@ -123,7 +124,7 @@ class _MessageDetailSheetState extends State<_MessageDetailSheet> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  AppDateFormatter.formatFullDateTime(widget.message.created, 'ar'),
+                  AppDateFormatter.formatFullDateTime(widget.message.created, Localizations.localeOf(context).languageCode),
                   style: TextStyle(
                     fontSize: 11,
                     color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
@@ -182,7 +183,7 @@ class _MessageDetailSheetState extends State<_MessageDetailSheet> {
             
             // 👤 معلومات المرسل
             Text(
-              'مرسل الرسالة',
+              context.l10n.messageSenderHeader,
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
@@ -245,7 +246,7 @@ class _MessageDetailSheetState extends State<_MessageDetailSheet> {
                 const Icon(Icons.settings_outlined, size: 18, color: AppColors.primary),
                 const SizedBox(width: 8),
                 Text(
-                  'تحديث حالة المراسلة',
+                  context.l10n.updateMessageStatusTitle,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -306,7 +307,7 @@ class _MessageDetailSheetState extends State<_MessageDetailSheet> {
                           
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(success ? 'تم تحديث حالة الرسالة بنجاح' : 'فشل تحديث حالة الرسالة'),
+                              content: Text(success ? context.l10n.messageStatusUpdateSuccess : context.l10n.messageStatusUpdateFailed),
                               backgroundColor: success ? Colors.green : Colors.red,
                             ),
                           );

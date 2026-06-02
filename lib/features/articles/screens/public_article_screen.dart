@@ -5,9 +5,13 @@ import '../../../models/user.dart';
 import '../services/pb_article_service.dart';
 import '../../settings/services/pb_user_service.dart';
 import '../widgets/article_content_renderer.dart';
+import '../widgets/comment_section.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_dimens.dart';
 import '../../../core/services/pocketbase_client.dart';
 import '../../home/screens/public_profile_screen.dart';
+import 'package:provider/provider.dart';
+import '../providers/article_provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 class PublicArticleScreen extends StatefulWidget {
@@ -32,6 +36,16 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
   UserModel? _authorProfile;
   bool _isLoading = true;
   String? _error;
+
+  void _showCommentsSheet() {
+    if (_article == null) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => CommentSection(article: _article!),
+    );
+  }
 
   @override
   void initState() {
@@ -66,6 +80,27 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
         _authorProfile = profile;
         _isLoading = false;
       });
+
+      // جلب تعليقات المقال لتحديث العداد
+      if (mounted) {
+        Provider.of<ArticleProvider>(context, listen: false).fetchComments(article.id);
+      }
+
+      // تتبع قراءة المقال للجمهور العابر (الزوار المجهولين)
+      if (mounted) {
+        final currentUserId = PocketBaseClient.instance.pb.authStore.record?.id;
+        if (currentUserId == null || currentUserId != article.authorId) {
+          try {
+            Provider.of<ArticleProvider>(context, listen: false).trackArticleVisit(
+              articleId: article.id,
+              authorId: article.authorId,
+              articleTitle: article.title,
+            );
+          } catch (e) {
+            print('⚠️ Failed to call trackArticleVisit from PublicArticleScreen: $e');
+          }
+        }
+      }
     } catch (e) {
       setState(() {
         _error = context.l10n.errorFetchingArticle;
@@ -285,7 +320,69 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
   
             // محتوى المقال
             ArticleContentRenderer(text: _article!.text),
-            const SizedBox(height: 40),
+            const SizedBox(height: 20),
+            
+            // شريط التفاعل (الإعجاب والتعليقات)
+            const Divider(),
+            Consumer<ArticleProvider>(
+              builder: (context, provider, child) {
+                final currentUserId = PocketBaseClient.instance.pb.authStore.record?.id;
+                
+                // البحث عن نسخة المقال المحدثة في المزود
+                final innerArticle = provider.articles.firstWhere(
+                  (a) => a.id == _article!.id, 
+                  orElse: () => _article!,
+                );
+                
+                final isLiked = innerArticle.likes.contains(currentUserId);
+                final commentsCount = provider.getCommentsForArticle(innerArticle.id).length;
+                
+                return Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        isLiked ? Icons.favorite : Icons.favorite_border,
+                        color: isLiked ? AppColors.error : AppColors.getTextSecondary(context),
+                      ),
+                      onPressed: currentUserId != null ? () {
+                        final record = PocketBaseClient.instance.pb.authStore.record;
+                        final name = record?.data['name'] ?? record?.data['username'] ?? '';
+                        provider.toggleLike(innerArticle.id, currentUserId, likerName: name);
+                      } : null,
+                    ),
+                    Text(
+                      '${innerArticle.likes.length}',
+                      style: TextStyle(
+                        fontSize: AppDimens.textSizeM,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.getTextSecondary(context),
+                      ),
+                    ),
+                    const Spacer(),
+                    InkWell(
+                      onTap: _showCommentsSheet,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
+                        child: Text(
+                          'عدد التعليقات: $commentsCount',
+                          style: TextStyle(
+                            fontSize: AppDimens.textSizeM,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.getTextSecondary(context),
+                          ),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.comment_outlined, color: AppColors.getTextSecondary(context)),
+                      onPressed: _showCommentsSheet,
+                    ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 30),
             
             // زر العودة أو الدخول
             Center(

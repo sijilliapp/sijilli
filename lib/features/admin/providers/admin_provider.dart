@@ -4,6 +4,7 @@ import '../../../core/services/pocketbase_client.dart';
 import '../../../core/providers/global_config_provider.dart';
 import '../../../models/contact_message.dart';
 import '../../../models/user.dart';
+import '../../auth/services/pb_auth_service.dart';
 
 class AdminProvider extends ChangeNotifier {
   bool _isLoading = false;
@@ -303,6 +304,9 @@ class AdminProvider extends ChangeNotifier {
       if (body.containsKey('isSuggested')) {
         body['is_suggested'] = body.remove('isSuggested');
       }
+      if (body.containsKey('isSuperAdmin')) {
+        body['is_super_admin'] = body.remove('isSuperAdmin');
+      }
 
       await pb.collection('users').update(userId, body: body);
 
@@ -329,6 +333,7 @@ class AdminProvider extends ChangeNotifier {
           isSuggested: fields['isSuggested'] ?? fields['is_suggested'] ?? oldUser.isSuggested,
           emailVisibility: oldUser.emailVisibility,
           phoneVerified: fields['phoneVerified'] ?? fields['phone_verified'] ?? oldUser.phoneVerified,
+          isSuperAdmin: fields['isSuperAdmin'] ?? fields['is_super_admin'] ?? oldUser.isSuperAdmin,
           date: oldUser.date,
           created: oldUser.created,
           updated: DateTime.now(),
@@ -383,21 +388,19 @@ class AdminProvider extends ChangeNotifier {
     }
   }
 
-  /// حذف المحتوى المُبلّغ عنه (موعد، مقال، مستخدم)
   Future<bool> deleteReportedContent(String subjectType, String subjectId) async {
     try {
       final pb = PocketBaseClient.instance.pb;
-      String collectionName;
       if (subjectType == 'appointment') {
-        collectionName = 'appointments';
+        await pb.collection('appointments').delete(subjectId);
       } else if (subjectType == 'article') {
-        collectionName = 'articles';
+        await pb.collection('articles').delete(subjectId);
       } else if (subjectType == 'user') {
-        collectionName = 'users';
+        // تنظيف كامل لبيانات العضو وحذف حسابه بشكل آمن لمنع البيانات اليتيمة
+        await PbAuthService().deleteAccount(subjectId);
       } else {
         return false;
       }
-      await pb.collection(collectionName).delete(subjectId);
       return true;
     } catch (e) {
       print('❌ Error deleting reported content: $e');

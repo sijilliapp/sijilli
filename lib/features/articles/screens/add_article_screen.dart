@@ -64,6 +64,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
     if (draft != null && draft.trim().isNotEmpty && mounted) {
       setState(() {
         _textController.setRawText(draft);
+        _textController.clearHistory();
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.articleDraftRestored)),
@@ -292,8 +293,10 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
         onComplete: () {
           if (changesCount > 0) {
             setState(() {
-              _textController.text = newText;
-              _textController.selection = TextSelection.collapsed(offset: newText.length);
+              _textController.updateValueProgrammatically(TextEditingValue(
+                text: newText,
+                selection: TextSelection.collapsed(offset: newText.length),
+              ));
             });
           }
           _textFocusNode.requestFocus();
@@ -351,10 +354,10 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
       final String newText = currentText.replaceRange(selection.start, selection.end, formattedText);
       
       setState(() {
-        _textController.value = TextEditingValue(
+        _textController.updateValueProgrammatically(TextEditingValue(
           text: newText,
           selection: TextSelection.collapsed(offset: selection.start + formattedText.length),
-        );
+        ));
       });
       _textFocusNode.requestFocus();
     } else {
@@ -641,10 +644,10 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
       }
       
       setState(() {
-        _textController.value = TextEditingValue(
+        _textController.updateValueProgrammatically(TextEditingValue(
           text: newText,
           selection: TextSelection.collapsed(offset: newCursorPosition),
-        );
+        ));
       });
       _textFocusNode.requestFocus();
     } else {
@@ -1030,6 +1033,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                     builder: (context) {
                       final hasImage = _selectedImage != null || (widget.article?.image != null && widget.article!.image!.isNotEmpty && !_deleteExistingImage);
                       return IconButton(
+                        visualDensity: VisualDensity.compact,
                         tooltip: hasImage ? 'إزالة الصورة' : 'إضافة صورة غلاف',
                         icon: Icon(
                           hasImage ? Icons.no_photography : Icons.add_photo_alternate_outlined,
@@ -1044,6 +1048,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
+                        visualDensity: VisualDensity.compact,
                         tooltip: 'تحريك المؤشر لليمين',
                         icon: const Icon(Icons.arrow_back, size: 20),
                         color: AppColors.primary,
@@ -1065,6 +1070,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                         },
                       ),
                       IconButton(
+                        visualDensity: VisualDensity.compact,
                         tooltip: _isSelecting ? 'إلغاء التظليل' : 'بدء التظليل',
                         icon: Icon(_isSelecting ? Icons.highlight_remove : Icons.highlight, size: 20),
                         color: _isSelecting ? AppColors.error : AppColors.primary,
@@ -1081,6 +1087,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                         },
                       ),
                       IconButton(
+                        visualDensity: VisualDensity.compact,
                         tooltip: 'تحريك المؤشر لليسار',
                         icon: const Icon(Icons.arrow_forward, size: 20),
                         color: AppColors.primary,
@@ -1102,11 +1109,42 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                       ),
                     ],
                   ),
-                  // باليمين: زر المعاينة + زر اللصق من الحافظة
+                  // باليمين: أزرار التراجع والتقدم، زر المعاينة، وزر اللصق
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      ListenableBuilder(
+                        listenable: _textController,
+                        builder: (context, _) => IconButton(
+                          visualDensity: VisualDensity.compact,
+                          tooltip: 'تراجع (Undo)',
+                          icon: const Icon(Icons.undo),
+                          color: _textController.canUndo ? AppColors.primary : AppColors.getHintColor(context).withValues(alpha: 0.5),
+                          onPressed: _textController.canUndo
+                              ? () {
+                                  _textController.undo();
+                                  _textFocusNode.requestFocus();
+                                }
+                              : null,
+                        ),
+                      ),
+                      ListenableBuilder(
+                        listenable: _textController,
+                        builder: (context, _) => IconButton(
+                          visualDensity: VisualDensity.compact,
+                          tooltip: 'إعادة/تقدم (Redo)',
+                          icon: const Icon(Icons.redo),
+                          color: _textController.canRedo ? AppColors.primary : AppColors.getHintColor(context).withValues(alpha: 0.5),
+                          onPressed: _textController.canRedo
+                              ? () {
+                                  _textController.redo();
+                                  _textFocusNode.requestFocus();
+                                }
+                              : null,
+                        ),
+                      ),
                       IconButton(
+                        visualDensity: VisualDensity.compact,
                         tooltip: _isPreviewMode ? context.l10n.closePreview : context.l10n.livePreview,
                         icon: Icon(
                           _isPreviewMode ? Icons.visibility_off : Icons.visibility,
@@ -1119,6 +1157,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                         },
                       ),
                       IconButton(
+                        visualDensity: VisualDensity.compact,
                         tooltip: 'لصق من الحافظة',
                         icon: const Icon(Icons.content_paste),
                         color: AppColors.primary,

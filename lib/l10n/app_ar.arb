@@ -648,7 +648,244 @@
       }
     }
   },
-  "errorArticleNotPublished": "المقال غير منشور أو غير متوفر حالياً.",
   "errorFetchingArticle": "تعذر جلب بيانات المقال. الرجاء التحقق من الرابط.",
-  "article": "المقال"
+  "article": "المقال",
+  "adminPanelTitle": "لوحة تحكم المشرف العام",
+  "systemSettingsSection": "إعدادات النظام العامة",
+  "registrationSettings": "إعدادات التسجيل والتواصل",
+  "registrationSettingsDesc": "التحكم في حالة التسجيل للجدد ورقم الواتساب والبريد الإلكتروني للقرّاء",
+  "userManagement": "إدارة حسابات المستخدمين",
+  "userManagementDesc": "البحث عن المشتركين وتعديل الصلاحيات والأدوار الفعالة",
+  "articlesManagement": "إدارة المقالات والمحتوى",
+  "articlePrefs": "تفضيلات المقالات الإدارية",
+  "articlePrefsDesc": "الحد الأقصى لحروف المقالات وإدارة قاموس الأخطاء الشائعة المخصص",
+  "userMessages": "مراسلات المشتركين",
+  "incomingMessages": "الرسائل الواردة من القراء",
+  "incomingMessagesDesc": "عرض الاستفسارات والشكاوى الواردة من صفحة التواصل والرد عليها",
+  "reportsAndTickets": "البلاغات والتقارير",
+  "reportsAndTicketsDesc": "متابعة البلاغات وحل المشكلات المتعلقة بالمواعيد أو المقالات المسيئة",
+  "searchSubscribers": "البحث عن المشتركين...",
+  "recentlyRegistered": "المسجلون حديثاً",
+  "allAdmins": "المشرفون",
+  "searchResult": "نتائج البحث",
+  "clearSearch": "مسح البحث",
+  "noRecentSearches": "لا توجد عمليات بحث أخيرة",
+  "editUserAccount": "تعديل حساب المشترك",
+  "simulateLogin": "محاكاة الدخول للحساب",
+  "simulateConfirm": "هل تريد تصفح التطبيق بصفتك المشترك {name}؟\n\nسيقوم التطبيق بنقلك للواجهة الرئيسية كأنك المشترك، مع إمكانية العودة لحسابك كمشرف في أي وقت.",
+  "@simulateConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "loginSimulated": "تم الدخول بصفتك {name} 👥",
+  "@loginSimulated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "permissionsAndControl": "الصلاحيات والتحكم",
+  "accountOptions": "إعدادات وخصائص الحساب الفعالة",
+  "verifiedEmailLabel": "توثيق البريد الإلكتروني (Verified Email)",
+  "verifiedEmailDesc": "تحديد حالة التحقق والتوثيق للبريد الإلكتروني للقروبات.",
+  "verifiedPhoneLabel": "توثيق رقم الهاتف (Verified Phone)",
+  "verifiedPhoneDesc": "تحديد ما إذا كان رقم هاتف المشترك موثق ومؤكد.",
+  "publicProfileLabel": "ملف شخصي عام (Public Profile)",
+  "publicProfileDesc": "السماح للجميع برؤية ومتابعة هذا الملف الشخصي.",
+  "hideFromSearchLabel": "إخفاء الحساب من محرك البحث",
+  "hideFromSearchDesc": "منع ظهور حساب المشترك في نتائج البحث العامة داخل التطبيق.",
+  "suggestedAccountLabel": "حساب مقترح (Suggested Account)",
+  "suggestedAccountDesc": "إظهار حساب هذا المشترك في قائمة الحسابات المقترحة للاعتماد.",
+  "superAdminLabel": "ترقية لمشرف عام (Super Admin)",
+  "superAdminDesc": "منح صلاحيات كاملة لإدارة الأدوار وتعديل صلاحيات المشرفين الآخرين.",
+  "saveChangesBtn": "حفظ التغييرات",
+  "userRoleLabel": "الدور الوظيفي / الصلاحية (Role)",
+  "roleUserOption": "مستخدم عادي (user)",
+  "roleApprovedOption": "مستخدم معتمد (approved)",
+  "roleAdminOption": "مشرف عام (admin)",
+  "saveChangesSuccess": "تم تحديث إعدادات حساب المشترك بنجاح 🛡️",
+  "saveChangesFailed": "فشل حفظ التغييرات، يرجى مراجعة الصلاحيات",
+  "registrationGate": "حالة التسجيل للجدد",
+  "allowNewRegistrations": "السماح بتسجيل حسابات جديدة",
+  "registrationEnabledDesc": "التسجيل متاح حالياً للجميع",
+  "registrationDisabledDesc": "التسجيل معطل حالياً (تظهر شاشة مغلق)",
+  "registrationOpenedSuccess": "تم فتح التسجيل بنجاح 🎉",
+  "registrationClosedSuccess": "تم إغلاق التسجيل 🔒",
+  "contactSupportChannels": "بيانات التواصل والدعم الفني",
+  "whatsappSupportNumber": "رقم الواتساب للتواصل",
+  "whatsappHelperText": "يرجى كتابة الرمز الدولي (مثال: 97339477742+)",
+  "whatsappRequired": "حقل الرقم مطلوب",
+  "saveWhatsappBtn": "حفظ رقم الواتساب",
+  "whatsappUpdatedSuccess": "تم تحديث رقم الواتساب بنجاح 🎉",
+  "emailSupportLabel": "البريد الإلكتروني للتواصل",
+  "emailRequired": "حقل البريد الإلكتروني مطلوب",
+  "emailInvalid": "الرجاء إدخال بريد إلكتروني صحيح",
+  "saveEmailBtn": "حفظ البريد الإلكتروني",
+  "emailUpdatedSuccess": "تم تحديث البريد الإلكتروني بنجاح 🎉",
+  "articleMaxCharacters": "الحد الأقصى لحروف المقال",
+  "articleMaxCharactersDesc": "عدد الحروف الأقصى المسموح بكتابته في المقال الواحد",
+  "charactersCountLabel": "عدد الحروف: {count}",
+  "@charactersCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "saveLimitBtn": "حفظ الحد الأقصى",
+  "articleLimitUpdated": "تم تحديث الحد الأقصى لحروف المقال بنجاح 📝",
+  "typoDictionary": "قاموس الأخطاء الإملائية الشائعة",
+  "typoWordHint": "الكلمة الخاطئة (مثال: هاذا)",
+  "correctedWordHint": "التصحيح (مثال: هذا)",
+  "addWordBtn": "إضافة للقاموس",
+  "deleteWordConfirm": "هل تريد حذف هذه الكلمة من القاموس الإملائي؟",
+  "wordAddedSuccess": "تم إضافة الكلمة بنجاح 🎉",
+  "wordDeletedSuccess": "تم حذف الكلمة بنجاح 🗑️",
+  "emptyDictionary": "لا توجد كلمات مضافة في القاموس بعد",
+  "supportMessagesTitle": "الرسائل الواردة",
+  "noSupportMessages": "لا توجد رسائل واردة حالياً",
+  "allMessagesTab": "الكل",
+  "unreadMessagesTab": "غير المقروءة",
+  "readMessagesTab": "المقروءة",
+  "messageFrom": "من: {name}",
+  "@messageFrom": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteMessageConfirm": "هل تريد حذف رسالة {title} نهائياً؟",
+  "@deleteMessageConfirm": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "messageDeletedSuccess": "تم حذف الرسالة بنجاح 🗑️",
+  "messageMarkedRead": "تم تمييز الرسالة كمقروءة",
+  "messageMarkedUnread": "تم تمييز الرسالة كغير مقروءة",
+  "reportsScreenTitle": "البلاغات والتقارير",
+  "noReportsFound": "لا توجد بلاغات معلقة حالياً",
+  "reporterLabel": "المُبلِّغ: {name}",
+  "@reporterLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reportTypeLabel": "نوع البلاغ: {type}",
+  "@reportTypeLabel": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "reportReasonLabel": "السبب: {reason}",
+  "@reportReasonLabel": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "statusLabel": "الحالة: {status}",
+  "@statusLabel": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "subjectDetailsTitle": "تفاصيل المحتوى المُبلغ عنه",
+  "reportActionIgnore": "تجاهل البلاغ",
+  "reportActionDelete": "حذف المحتوى",
+  "reportActionIgnoreConfirm": "تجاهل بلاغ {reporter}",
+  "@reportActionIgnoreConfirm": {
+    "placeholders": {
+      "reporter": {
+        "type": "String"
+      }
+    }
+  },
+  "reportActionIgnoreDesc": "سيتم أرشفة البلاغ وحفظه دون تعديل المحتوى الأصلي.\nسيتم تسجيل تدوين اسم المشرف الحالي في حقل البلاغ.",
+  "reportActionDeleteConfirm": "حذف نهائي للمحتوى",
+  "reportActionDeleteDesc": "انتبه: هذا الإجراء نهائي ولا يمكن التراجع عنه!\nسيتم حذف هذا المحتوى بالكامل من السيرفر وتسجيل اسم المشرف الحالي كحاذف للمحتوى.",
+  "reportResolvedSuccess": "تم معالجة البلاغ بنجاح",
+  "reportDeleteSuccess": "تم حذف المحتوى وحل البلاغ بنجاح",
+  "joinedSince": "انضم منذ: {date}",
+  "@joinedSince": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "reportTypeUser": "حساب مستخدم",
+  "reportTypeAppointment": "موعد جديد",
+  "reportTypeArticle": "مقال منشورة",
+  "allSafeAndClean": "كل شيء يبدو آمناً ونظيفاً!",
+  "loadingReportedDetails": "جاري تحميل تفاصيل المحتوى المُبلّغ عنه...",
+  "reportedContentUnavailable": "⚠️ هذا المحتوى لم يعد متاحاً أو تم حذفه مسبقاً.",
+  "byModerator": " بواسطة {name}",
+  "@byModerator": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reportStatusResolved": "✅ تم حسم هذا البلاغ وحذف المحتوى{byModerator}",
+  "@reportStatusResolved": {
+    "placeholders": {
+      "byModerator": {
+        "type": "String"
+      }
+    }
+  },
+  "reportStatusIgnored": "ℹ️ تم تجاهل هذا البلاغ وأرشفته{byModerator}",
+  "@reportStatusIgnored": {
+    "placeholders": {
+      "byModerator": {
+        "type": "String"
+      }
+    }
+  },
+  "reportSubjectAppointmentDetails": "تفاصيل الموعد المُبلّغ عنه:",
+  "reportSubjectArticleDetails": "تفاصيل المقال المُبلّغ عنه:",
+  "reportDeleteFailed": "⚠️ فشل في حذف المحتوى. قد يكون تم حذفه مسبقاً.",
+  "appointmentNoTitle": "موعد بدون عنوان",
+  "articleNoTitle": "مقال بدون عنوان",
+  "anonymous": "مجهول",
+  "limitsAndControls": "الحدود والضوابط",
+  "enterNewValue": "أدخل القيمة الجديدة...",
+  "searchDictionaryHint": "البحث في القاموس المخصص...",
+  "typoWordHeader": "الخطأ الشائع",
+  "correctedWordHeader": "التصحيح المعتمد",
+  "actionHeader": "إجراء",
+  "messageTypeInquiry": "استفسار",
+  "messageTypeSuggestion": "اقتراح",
+  "messageTypeComplaint": "شكوى",
+  "messageTypeOther": "أخرى",
+  "messageStatusNew": "جديدة",
+  "messageStatusRead": "مقروءة",
+  "messageStatusReplied": "تم الرد عليها",
+  "messageStatusClosed": "مغلقة",
+  "unregisteredVisitor": "زائر غير مسجل",
+  "inboxCleanTitle": "صندوق الوارد نظيف تماماً!",
+  "inboxCleanDesc": "لا توجد رسائل واردة تطابق الفلاتر المحددة حالياً.",
+  "unknown": "غير معروف",
+  "messageSenderHeader": "مرسل الرسالة",
+  "updateMessageStatusTitle": "تحديث حالة المراسلة",
+  "messageStatusUpdateSuccess": "تم تحديث حالة الرسالة بنجاح",
+  "messageStatusUpdateFailed": "فشل تحديث حالة الرسالة",
+  "errorArticleNotPublished": "هذا المقال غير منشور حالياً.",
+  "adminPanelDesc": "إدارة وتخصيص إعدادات النظام والتسجيل"
 }

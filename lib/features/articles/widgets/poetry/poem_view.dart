@@ -59,6 +59,30 @@ class PoemView extends StatelessWidget {
         if (textPainter.width > maxCenteredWidth) maxCenteredWidth = textPainter.width;
         continue;
       }
+
+      // التحقق إذا كان السطر عبارة عن كلمة واحدة (مع تجاهل علامات التنسيق والرموز)
+      String cleanLineForWordCheck = line;
+      if ((cleanLineForWordCheck.startsWith('=') && cleanLineForWordCheck.endsWith('=')) ||
+          (cleanLineForWordCheck.startsWith('~') && cleanLineForWordCheck.endsWith('~'))) {
+        if (cleanLineForWordCheck.length > 1) {
+          cleanLineForWordCheck = cleanLineForWordCheck.substring(1, cleanLineForWordCheck.length - 1).trim();
+        }
+      } else if ((cleanLineForWordCheck.startsWith('--') && cleanLineForWordCheck.endsWith('--')) ||
+                 (cleanLineForWordCheck.startsWith('++') && cleanLineForWordCheck.endsWith('++'))) {
+        if (cleanLineForWordCheck.length > 3) {
+          cleanLineForWordCheck = cleanLineForWordCheck.substring(2, cleanLineForWordCheck.length - 2).trim();
+        }
+      }
+      cleanLineForWordCheck = cleanLineForWordCheck
+          .replaceAll(RegExp(r'\[/?(BOLD|B|HIGHLIGHT|CENTER|JUSTIFY|LEFT|RIGHT)\]', caseSensitive: false), '')
+          .trim();
+      final words = cleanLineForWordCheck.split(RegExp(r'\s+')).where((w) => w.trim().isNotEmpty).toList();
+      final isSingleWord = words.length <= 1;
+
+      if (isSingleWord) {
+        // لا يحتسب صدراً ولا عجزاً في حسابات الهوامش
+        continue;
+      }
       
       final isSadr = poetryLineIndex % 2 == 0;
       poetryLineIndex++;
@@ -118,6 +142,56 @@ class PoemView extends StatelessWidget {
             final isCentered = (originalLine.toUpperCase().startsWith('[CENTER]') && originalLine.toUpperCase().endsWith('[/CENTER]')) ||
                                (originalLine.startsWith('=') && originalLine.endsWith('=') && originalLine.length > 1);
             
+            // التحقق إذا كان السطر عبارة عن كلمة واحدة
+            String cleanLineForWordCheck = originalLine;
+            if ((cleanLineForWordCheck.startsWith('=') && cleanLineForWordCheck.endsWith('=')) ||
+                (cleanLineForWordCheck.startsWith('~') && cleanLineForWordCheck.endsWith('~'))) {
+              if (cleanLineForWordCheck.length > 1) {
+                cleanLineForWordCheck = cleanLineForWordCheck.substring(1, cleanLineForWordCheck.length - 1).trim();
+              }
+            } else if ((cleanLineForWordCheck.startsWith('--') && cleanLineForWordCheck.endsWith('--')) ||
+                       (cleanLineForWordCheck.startsWith('++') && cleanLineForWordCheck.endsWith('++'))) {
+              if (cleanLineForWordCheck.length > 3) {
+                cleanLineForWordCheck = cleanLineForWordCheck.substring(2, cleanLineForWordCheck.length - 2).trim();
+              }
+            }
+            cleanLineForWordCheck = cleanLineForWordCheck
+                .replaceAll(RegExp(r'\[/?(BOLD|B|HIGHLIGHT|CENTER|JUSTIFY|LEFT|RIGHT)\]', caseSensitive: false), '')
+                .trim();
+            final words = cleanLineForWordCheck.split(RegExp(r'\s+')).where((w) => w.trim().isNotEmpty).toList();
+            final isSingleWord = words.length <= 1;
+
+            if (isSingleWord && !isCentered) {
+              final isLeftAligned = originalLine.toUpperCase().contains('[LEFT]');
+              
+              String displayLine = originalLine;
+              // تنظيف علامات التنسيق والفقرات للعرض النظيف
+              if ((displayLine.startsWith('=') && displayLine.endsWith('=')) ||
+                  (displayLine.startsWith('~') && displayLine.endsWith('~'))) {
+                if (displayLine.length > 1) displayLine = displayLine.substring(1, displayLine.length - 1).trim();
+              } else if ((displayLine.startsWith('--') && displayLine.endsWith('--')) ||
+                         (displayLine.startsWith('++') && displayLine.endsWith('++'))) {
+                if (displayLine.length > 3) displayLine = displayLine.substring(2, displayLine.length - 2).trim();
+              }
+              displayLine = displayLine
+                  .replaceAll(RegExp(r'\[/?(BOLD|B|HIGHLIGHT|CENTER|JUSTIFY|LEFT|RIGHT)\]', caseSensitive: false), '')
+                  .trim();
+              
+              final parsedSpans = PoemFormatterUtils.parseInlineText(displayLine, textStyle.copyWith(height: 1.6), context);
+              
+              return Align(
+                alignment: isLeftAligned ? Alignment.centerLeft : Alignment.centerRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 6.0),
+                  child: Text.rich(
+                    TextSpan(children: parsedSpans),
+                    softWrap: false,
+                    maxLines: 1,
+                  ),
+                ),
+              );
+            }
+
             String line = originalLine;
             if (isCentered) {
               if (line.startsWith('=')) {

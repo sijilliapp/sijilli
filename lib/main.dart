@@ -322,6 +322,7 @@ class SijilliApp extends StatelessWidget {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: const AuthWrapper(),
+            navigatorKey: AppRouter.navigatorKey,
             onGenerateRoute: AppRouter.onGenerateRoute,
             navigatorObservers: [routeObserver],
             routes: {

@@ -1595,13 +1595,477 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get errorArticleNotPublished =>
-      'المقال غير منشور أو غير متوفر حالياً.';
-
-  @override
   String get errorFetchingArticle =>
       'تعذر جلب بيانات المقال. الرجاء التحقق من الرابط.';
 
   @override
   String get article => 'المقال';
+
+  @override
+  String get adminPanelTitle => 'لوحة تحكم المشرف العام';
+
+  @override
+  String get systemSettingsSection => 'إعدادات النظام العامة';
+
+  @override
+  String get registrationSettings => 'إعدادات التسجيل والتواصل';
+
+  @override
+  String get registrationSettingsDesc =>
+      'التحكم في حالة التسجيل للجدد ورقم الواتساب والبريد الإلكتروني للقرّاء';
+
+  @override
+  String get userManagement => 'إدارة حسابات المستخدمين';
+
+  @override
+  String get userManagementDesc =>
+      'البحث عن المشتركين وتعديل الصلاحيات والأدوار الفعالة';
+
+  @override
+  String get articlesManagement => 'إدارة المقالات والمحتوى';
+
+  @override
+  String get articlePrefs => 'تفضيلات المقالات الإدارية';
+
+  @override
+  String get articlePrefsDesc =>
+      'الحد الأقصى لحروف المقالات وإدارة قاموس الأخطاء الشائعة المخصص';
+
+  @override
+  String get userMessages => 'مراسلات المشتركين';
+
+  @override
+  String get incomingMessages => 'الرسائل الواردة من القراء';
+
+  @override
+  String get incomingMessagesDesc =>
+      'عرض الاستفسارات والشكاوى الواردة من صفحة التواصل والرد عليها';
+
+  @override
+  String get reportsAndTickets => 'البلاغات والتقارير';
+
+  @override
+  String get reportsAndTicketsDesc =>
+      'متابعة البلاغات وحل المشكلات المتعلقة بالمواعيد أو المقالات المسيئة';
+
+  @override
+  String get searchSubscribers => 'البحث عن المشتركين...';
+
+  @override
+  String get recentlyRegistered => 'المسجلون حديثاً';
+
+  @override
+  String get allAdmins => 'المشرفون';
+
+  @override
+  String get searchResult => 'نتائج البحث';
+
+  @override
+  String get clearSearch => 'مسح البحث';
+
+  @override
+  String get noRecentSearches => 'لا توجد عمليات بحث أخيرة';
+
+  @override
+  String get editUserAccount => 'تعديل حساب المشترك';
+
+  @override
+  String get simulateLogin => 'محاكاة الدخول للحساب';
+
+  @override
+  String simulateConfirm(String name) {
+    return 'هل تريد تصفح التطبيق بصفتك المشترك $name؟\n\nسيقوم التطبيق بنقلك للواجهة الرئيسية كأنك المشترك، مع إمكانية العودة لحسابك كمشرف في أي وقت.';
+  }
+
+  @override
+  String loginSimulated(String name) {
+    return 'تم الدخول بصفتك $name 👥';
+  }
+
+  @override
+  String get permissionsAndControl => 'الصلاحيات والتحكم';
+
+  @override
+  String get accountOptions => 'إعدادات وخصائص الحساب الفعالة';
+
+  @override
+  String get verifiedEmailLabel => 'توثيق البريد الإلكتروني (Verified Email)';
+
+  @override
+  String get verifiedEmailDesc =>
+      'تحديد حالة التحقق والتوثيق للبريد الإلكتروني للقروبات.';
+
+  @override
+  String get verifiedPhoneLabel => 'توثيق رقم الهاتف (Verified Phone)';
+
+  @override
+  String get verifiedPhoneDesc =>
+      'تحديد ما إذا كان رقم هاتف المشترك موثق ومؤكد.';
+
+  @override
+  String get publicProfileLabel => 'ملف شخصي عام (Public Profile)';
+
+  @override
+  String get publicProfileDesc =>
+      'السماح للجميع برؤية ومتابعة هذا الملف الشخصي.';
+
+  @override
+  String get hideFromSearchLabel => 'إخفاء الحساب من محرك البحث';
+
+  @override
+  String get hideFromSearchDesc =>
+      'منع ظهور حساب المشترك في نتائج البحث العامة داخل التطبيق.';
+
+  @override
+  String get suggestedAccountLabel => 'حساب مقترح (Suggested Account)';
+
+  @override
+  String get suggestedAccountDesc =>
+      'إظهار حساب هذا المشترك في قائمة الحسابات المقترحة للاعتماد.';
+
+  @override
+  String get superAdminLabel => 'ترقية لمشرف عام (Super Admin)';
+
+  @override
+  String get superAdminDesc =>
+      'منح صلاحيات كاملة لإدارة الأدوار وتعديل صلاحيات المشرفين الآخرين.';
+
+  @override
+  String get saveChangesBtn => 'حفظ التغييرات';
+
+  @override
+  String get userRoleLabel => 'الدور الوظيفي / الصلاحية (Role)';
+
+  @override
+  String get roleUserOption => 'مستخدم عادي (user)';
+
+  @override
+  String get roleApprovedOption => 'مستخدم معتمد (approved)';
+
+  @override
+  String get roleAdminOption => 'مشرف عام (admin)';
+
+  @override
+  String get saveChangesSuccess => 'تم تحديث إعدادات حساب المشترك بنجاح 🛡️';
+
+  @override
+  String get saveChangesFailed => 'فشل حفظ التغييرات، يرجى مراجعة الصلاحيات';
+
+  @override
+  String get registrationGate => 'حالة التسجيل للجدد';
+
+  @override
+  String get allowNewRegistrations => 'السماح بتسجيل حسابات جديدة';
+
+  @override
+  String get registrationEnabledDesc => 'التسجيل متاح حالياً للجميع';
+
+  @override
+  String get registrationDisabledDesc => 'التسجيل معطل حالياً (تظهر شاشة مغلق)';
+
+  @override
+  String get registrationOpenedSuccess => 'تم فتح التسجيل بنجاح 🎉';
+
+  @override
+  String get registrationClosedSuccess => 'تم إغلاق التسجيل 🔒';
+
+  @override
+  String get contactSupportChannels => 'بيانات التواصل والدعم الفني';
+
+  @override
+  String get whatsappSupportNumber => 'رقم الواتساب للتواصل';
+
+  @override
+  String get whatsappHelperText =>
+      'يرجى كتابة الرمز الدولي (مثال: 97339477742+)';
+
+  @override
+  String get whatsappRequired => 'حقل الرقم مطلوب';
+
+  @override
+  String get saveWhatsappBtn => 'حفظ رقم الواتساب';
+
+  @override
+  String get whatsappUpdatedSuccess => 'تم تحديث رقم الواتساب بنجاح 🎉';
+
+  @override
+  String get emailSupportLabel => 'البريد الإلكتروني للتواصل';
+
+  @override
+  String get emailRequired => 'حقل البريد الإلكتروني مطلوب';
+
+  @override
+  String get emailInvalid => 'الرجاء إدخال بريد إلكتروني صحيح';
+
+  @override
+  String get saveEmailBtn => 'حفظ البريد الإلكتروني';
+
+  @override
+  String get emailUpdatedSuccess => 'تم تحديث البريد الإلكتروني بنجاح 🎉';
+
+  @override
+  String get articleMaxCharacters => 'الحد الأقصى لحروف المقال';
+
+  @override
+  String get articleMaxCharactersDesc =>
+      'عدد الحروف الأقصى المسموح بكتابته في المقال الواحد';
+
+  @override
+  String charactersCountLabel(int count) {
+    return 'عدد الحروف: $count';
+  }
+
+  @override
+  String get saveLimitBtn => 'حفظ الحد الأقصى';
+
+  @override
+  String get articleLimitUpdated =>
+      'تم تحديث الحد الأقصى لحروف المقال بنجاح 📝';
+
+  @override
+  String get typoDictionary => 'قاموس الأخطاء الإملائية الشائعة';
+
+  @override
+  String get typoWordHint => 'الكلمة الخاطئة (مثال: هاذا)';
+
+  @override
+  String get correctedWordHint => 'التصحيح (مثال: هذا)';
+
+  @override
+  String get addWordBtn => 'إضافة للقاموس';
+
+  @override
+  String get deleteWordConfirm => 'هل تريد حذف هذه الكلمة من القاموس الإملائي؟';
+
+  @override
+  String get wordAddedSuccess => 'تم إضافة الكلمة بنجاح 🎉';
+
+  @override
+  String get wordDeletedSuccess => 'تم حذف الكلمة بنجاح 🗑️';
+
+  @override
+  String get emptyDictionary => 'لا توجد كلمات مضافة في القاموس بعد';
+
+  @override
+  String get supportMessagesTitle => 'الرسائل الواردة';
+
+  @override
+  String get noSupportMessages => 'لا توجد رسائل واردة حالياً';
+
+  @override
+  String get allMessagesTab => 'الكل';
+
+  @override
+  String get unreadMessagesTab => 'غير المقروءة';
+
+  @override
+  String get readMessagesTab => 'المقروءة';
+
+  @override
+  String messageFrom(String name) {
+    return 'من: $name';
+  }
+
+  @override
+  String deleteMessageConfirm(String title) {
+    return 'هل تريد حذف رسالة $title نهائياً؟';
+  }
+
+  @override
+  String get messageDeletedSuccess => 'تم حذف الرسالة بنجاح 🗑️';
+
+  @override
+  String get messageMarkedRead => 'تم تمييز الرسالة كمقروءة';
+
+  @override
+  String get messageMarkedUnread => 'تم تمييز الرسالة كغير مقروءة';
+
+  @override
+  String get reportsScreenTitle => 'البلاغات والتقارير';
+
+  @override
+  String get noReportsFound => 'لا توجد بلاغات معلقة حالياً';
+
+  @override
+  String reporterLabel(String name) {
+    return 'المُبلِّغ: $name';
+  }
+
+  @override
+  String reportTypeLabel(String type) {
+    return 'نوع البلاغ: $type';
+  }
+
+  @override
+  String reportReasonLabel(String reason) {
+    return 'السبب: $reason';
+  }
+
+  @override
+  String statusLabel(String status) {
+    return 'الحالة: $status';
+  }
+
+  @override
+  String get subjectDetailsTitle => 'تفاصيل المحتوى المُبلغ عنه';
+
+  @override
+  String get reportActionIgnore => 'تجاهل البلاغ';
+
+  @override
+  String get reportActionDelete => 'حذف المحتوى';
+
+  @override
+  String reportActionIgnoreConfirm(String reporter) {
+    return 'تجاهل بلاغ $reporter';
+  }
+
+  @override
+  String get reportActionIgnoreDesc =>
+      'سيتم أرشفة البلاغ وحفظه دون تعديل المحتوى الأصلي.\nسيتم تسجيل تدوين اسم المشرف الحالي في حقل البلاغ.';
+
+  @override
+  String get reportActionDeleteConfirm => 'حذف نهائي للمحتوى';
+
+  @override
+  String get reportActionDeleteDesc =>
+      'انتبه: هذا الإجراء نهائي ولا يمكن التراجع عنه!\nسيتم حذف هذا المحتوى بالكامل من السيرفر وتسجيل اسم المشرف الحالي كحاذف للمحتوى.';
+
+  @override
+  String get reportResolvedSuccess => 'تم معالجة البلاغ بنجاح';
+
+  @override
+  String get reportDeleteSuccess => 'تم حذف المحتوى وحل البلاغ بنجاح';
+
+  @override
+  String joinedSince(String date) {
+    return 'انضم منذ: $date';
+  }
+
+  @override
+  String get reportTypeUser => 'حساب مستخدم';
+
+  @override
+  String get reportTypeAppointment => 'موعد جديد';
+
+  @override
+  String get reportTypeArticle => 'مقال منشورة';
+
+  @override
+  String get allSafeAndClean => 'كل شيء يبدو آمناً ونظيفاً!';
+
+  @override
+  String get loadingReportedDetails =>
+      'جاري تحميل تفاصيل المحتوى المُبلّغ عنه...';
+
+  @override
+  String get reportedContentUnavailable =>
+      '⚠️ هذا المحتوى لم يعد متاحاً أو تم حذفه مسبقاً.';
+
+  @override
+  String byModerator(String name) {
+    return ' بواسطة $name';
+  }
+
+  @override
+  String reportStatusResolved(String byModerator) {
+    return '✅ تم حسم هذا البلاغ وحذف المحتوى$byModerator';
+  }
+
+  @override
+  String reportStatusIgnored(String byModerator) {
+    return 'ℹ️ تم تجاهل هذا البلاغ وأرشفته$byModerator';
+  }
+
+  @override
+  String get reportSubjectAppointmentDetails => 'تفاصيل الموعد المُبلّغ عنه:';
+
+  @override
+  String get reportSubjectArticleDetails => 'تفاصيل المقال المُبلّغ عنه:';
+
+  @override
+  String get reportDeleteFailed =>
+      '⚠️ فشل في حذف المحتوى. قد يكون تم حذفه مسبقاً.';
+
+  @override
+  String get appointmentNoTitle => 'موعد بدون عنوان';
+
+  @override
+  String get articleNoTitle => 'مقال بدون عنوان';
+
+  @override
+  String get anonymous => 'مجهول';
+
+  @override
+  String get limitsAndControls => 'الحدود والضوابط';
+
+  @override
+  String get enterNewValue => 'أدخل القيمة الجديدة...';
+
+  @override
+  String get searchDictionaryHint => 'البحث في القاموس المخصص...';
+
+  @override
+  String get typoWordHeader => 'الخطأ الشائع';
+
+  @override
+  String get correctedWordHeader => 'التصحيح المعتمد';
+
+  @override
+  String get actionHeader => 'إجراء';
+
+  @override
+  String get messageTypeInquiry => 'استفسار';
+
+  @override
+  String get messageTypeSuggestion => 'اقتراح';
+
+  @override
+  String get messageTypeComplaint => 'شكوى';
+
+  @override
+  String get messageTypeOther => 'أخرى';
+
+  @override
+  String get messageStatusNew => 'جديدة';
+
+  @override
+  String get messageStatusRead => 'مقروءة';
+
+  @override
+  String get messageStatusReplied => 'تم الرد عليها';
+
+  @override
+  String get messageStatusClosed => 'مغلقة';
+
+  @override
+  String get unregisteredVisitor => 'زائر غير مسجل';
+
+  @override
+  String get inboxCleanTitle => 'صندوق الوارد نظيف تماماً!';
+
+  @override
+  String get inboxCleanDesc =>
+      'لا توجد رسائل واردة تطابق الفلاتر المحددة حالياً.';
+
+  @override
+  String get unknown => 'غير معروف';
+
+  @override
+  String get messageSenderHeader => 'مرسل الرسالة';
+
+  @override
+  String get updateMessageStatusTitle => 'تحديث حالة المراسلة';
+
+  @override
+  String get messageStatusUpdateSuccess => 'تم تحديث حالة الرسالة بنجاح';
+
+  @override
+  String get messageStatusUpdateFailed => 'فشل تحديث حالة الرسالة';
+
+  @override
+  String get errorArticleNotPublished => 'هذا المقال غير منشور حالياً.';
+
+  @override
+  String get adminPanelDesc => 'إدارة وتخصيص إعدادات النظام والتسجيل';
 }

@@ -212,17 +212,11 @@ class AppointmentProvider extends ChangeNotifier {
   int get pendingInvitationsCount {
     if (_currentUserId == null) return 0;
     return _appointments.where((a) {
-      // 1. Actionable for me as a GUEST (Invite received)
+      // Actionable for me as a GUEST (Invite received)
       final isIncomingInvite = a.hostId != _currentUserId && 
                                a.viewerRecord?.status == InvitationStatus.pending;
       
-      // 2. Actionable for me as a HOST (Join request received from someone else)
-      // We check if any participant (other than me) is pending. 
-      // Note: In FCFS/Public events, status starts as pending for the requester.
-      final hasPendingRequests = a.hostId == _currentUserId && 
-                                 (a.participants?.any((p) => p.userId != _currentUserId && p.status == InvitationStatus.pending) ?? false);
-      
-      if (!(isIncomingInvite || hasPendingRequests)) return false;
+      if (!isIncomingInvite) return false;
 
       // Global safety filters
       return a.viewerRecord?.postStatus == PostStatus.published &&

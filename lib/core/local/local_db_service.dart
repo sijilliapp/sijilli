@@ -508,4 +508,30 @@ class LocalDbService {
       debugPrint('❌ Error clearing article draft: $e');
     }
   }
+
+  // ====================== User Click Tracking Operations ======================
+
+  Future<void> incrementUserClickCount(String userId) async {
+    try {
+      final prefBox = await Hive.openBox<dynamic>('app_preferences');
+      final clicksMap = prefBox.get('user_clicks', defaultValue: <dynamic, dynamic>{});
+      final Map<String, int> typedMap = Map<String, int>.from(clicksMap);
+      
+      typedMap[userId] = (typedMap[userId] ?? 0) + 1;
+      await prefBox.put('user_clicks', typedMap);
+    } catch (e) {
+      debugPrint('❌ Error incrementing user click count: $e');
+    }
+  }
+
+  Future<Map<String, int>> getUserClickCounts() async {
+    try {
+      final prefBox = await Hive.openBox<dynamic>('app_preferences');
+      final clicksMap = prefBox.get('user_clicks', defaultValue: <dynamic, dynamic>{});
+      return Map<String, int>.from(clicksMap);
+    } catch (e) {
+      debugPrint('❌ Error getting user click counts: $e');
+      return {};
+    }
+  }
 }

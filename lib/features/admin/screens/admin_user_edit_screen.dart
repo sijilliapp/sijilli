@@ -8,6 +8,7 @@ import '../../../core/widgets/pulse_avatar.dart';
 import '../providers/admin_provider.dart';
 import '../../../models/user.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../../core/extensions/context_l10n.dart';
 
 class AdminUserEditScreen extends StatefulWidget {
   final UserModel user;
@@ -25,6 +26,7 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
   late bool _isPublic;
   late bool _hideFromSearch;
   late bool _isSuggested;
+  late bool _isSuperAdmin;
   bool _isSaving = false;
 
   @override
@@ -45,6 +47,7 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
     _isPublic = widget.user.isPublic;
     _hideFromSearch = widget.user.hideFromSearch;
     _isSuggested = widget.user.isSuggested;
+    _isSuperAdmin = widget.user.isSuperAdmin;
   }
 
   void _confirmAndSimulate(BuildContext context) {
@@ -52,20 +55,17 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
       context: context,
       builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'محاكاة الدخول للحساب',
-          textAlign: TextAlign.right,
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          context.l10n.simulateLogin,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         content: Text(
-          'هل تريد تصفح التطبيق بصفتك المشترك ${widget.user.name}؟\n\n'
-          'سيقوم التطبيق بنقلك للواجهة الرئيسية كأنك المشترك، مع إمكانية العودة لحسابك كمشرف في أي وقت.',
-          textAlign: TextAlign.right,
+          context.l10n.simulateConfirm(widget.user.name),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('إلغاء'),
+            child: Text(context.l10n.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -81,7 +81,7 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
               
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('تم الدخول بصفتك ${widget.user.name} 👥'),
+                  content: Text(context.l10n.loginSimulated(widget.user.name)),
                   backgroundColor: Colors.amber.shade900,
                 ),
               );
@@ -89,7 +89,7 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
               // العودة للواجهة الرئيسية الأولى
               Navigator.of(context).popUntil((route) => route.isFirst);
             },
-            child: const Text('دخول'),
+            child: Text(context.l10n.login),
           ),
         ],
       ),
@@ -103,9 +103,9 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'تعديل حساب المشترك',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          context.l10n.editUserAccount,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
@@ -124,14 +124,14 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
                   const SizedBox(height: 16),
                   
                   // ⚙️ قسم الصلاحيات والأدوار (الأساسي حالياً)
-                  _buildSectionTitle(context, 'الصلاحيات والتحكم'),
+                  _buildSectionTitle(context, context.l10n.permissionsAndControl),
                   const SizedBox(height: 8),
                   _buildRoleCard(isDark),
                   
                   const SizedBox(height: 16),
                   
                   // 🚀 قسم الميزات والخيارات التفاعلية
-                  _buildSectionTitle(context, 'إعدادات وخصائص الحساب الفعالة'),
+                  _buildSectionTitle(context, context.l10n.accountOptions),
                   const SizedBox(height: 8),
                   _buildExtensibleOptionsCard(isDark),
                 ],
@@ -200,11 +200,15 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
                         color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        'انضم منذ: ${AppDateFormatter.formatMediumDate(widget.user.joiningDate, 'ar')}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
+                      Expanded(
+                        child: Text(
+                          context.l10n.joinedSince(AppDateFormatter.formatMediumDate(widget.user.joiningDate, Localizations.localeOf(context).languageCode)),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -222,9 +226,11 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               icon: const Icon(Icons.login_rounded, size: 14),
-              label: const Text(
-                'دخول ومحاكاة',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+              label: Text(
+                context.l10n.simulateLogin,
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               onPressed: () => _confirmAndSimulate(context),
             ),
@@ -250,9 +256,9 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
 
   Widget _buildRoleCard(bool isDark) {
     final roleOptions = [
-      {'key': 'user', 'label': 'مستخدم عادي (user)'},
-      {'key': 'approved', 'label': 'مستخدم معتمد (approved)'},
-      {'key': 'admin', 'label': 'مشرف عام (admin)'},
+      {'key': 'user', 'label': context.l10n.roleUserOption},
+      {'key': 'approved', 'label': context.l10n.roleApprovedOption},
+      {'key': 'admin', 'label': context.l10n.roleAdminOption},
     ];
 
     return Card(
@@ -272,7 +278,7 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'الدور الوظيفي / الصلاحية (Role)',
+              context.l10n.userRoleLabel,
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
@@ -343,8 +349,8 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
             // 📧 توثيق البريد الإلكتروني
             _buildInteractiveSwitchRow(
               icon: Icons.verified_user_outlined,
-              title: 'توثيق البريد الإلكتروني (Verified Email)',
-              subtitle: 'تحديد حالة التحقق والتوثيق للبريد الإلكتروني للقروبات.',
+              title: context.l10n.verifiedEmailLabel,
+              subtitle: context.l10n.verifiedEmailDesc,
               value: _isVerified,
               onChanged: (val) {
                 setState(() {
@@ -358,8 +364,8 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
             // 📱 توثيق رقم الهاتف
             _buildInteractiveSwitchRow(
               icon: Icons.phone_android_outlined,
-              title: 'توثيق رقم الهاتف (Verified Phone)',
-              subtitle: 'تحديد ما إذا كان رقم هاتف المشترك موثق ومؤكد.',
+              title: context.l10n.verifiedPhoneLabel,
+              subtitle: context.l10n.verifiedPhoneDesc,
               value: _phoneVerified,
               onChanged: (val) {
                 setState(() {
@@ -373,8 +379,8 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
             // 🌐 ملف شخصي عام
             _buildInteractiveSwitchRow(
               icon: Icons.public_outlined,
-              title: 'ملف شخصي عام (Public Profile)',
-              subtitle: 'السماح للجميع برؤية ومتابعة هذا الملف الشخصي.',
+              title: context.l10n.publicProfileLabel,
+              subtitle: context.l10n.publicProfileDesc,
               value: _isPublic,
               onChanged: (val) {
                 setState(() {
@@ -388,8 +394,8 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
             // 👁️ إخفاء الحساب من البحث
             _buildInteractiveSwitchRow(
               icon: Icons.visibility_off_outlined,
-              title: 'إخفاء الحساب من محرك البحث',
-              subtitle: 'منع ظهور حساب المشترك في نتائج البحث العامة داخل التطبيق.',
+              title: context.l10n.hideFromSearchLabel,
+              subtitle: context.l10n.hideFromSearchDesc,
               value: _hideFromSearch,
               onChanged: (val) {
                 setState(() {
@@ -403,8 +409,8 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
             // 📢 اقتراح الحساب للمستخدمين
             _buildInteractiveSwitchRow(
               icon: Icons.star_outline_rounded,
-              title: 'حساب مقترح (Suggested Account)',
-              subtitle: 'إظهار حساب هذا المشترك في قائمة الحسابات المقترحة للاعتماد.',
+              title: context.l10n.suggestedAccountLabel,
+              subtitle: context.l10n.suggestedAccountDesc,
               value: _isSuggested,
               onChanged: (val) {
                 setState(() {
@@ -412,6 +418,22 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
                 });
               },
             ),
+
+            // 🛡️ ترقية لمشرف عام (Super Admin) - لا تظهر إلا للمشرف العام
+            if (context.read<AuthProvider>().user?.isSuperAdmin == true) ...[
+              const Divider(height: 1),
+              _buildInteractiveSwitchRow(
+                icon: Icons.shield_outlined,
+                title: context.l10n.superAdminLabel,
+                subtitle: context.l10n.superAdminDesc,
+                value: _isSuperAdmin,
+                onChanged: (val) {
+                  setState(() {
+                    _isSuperAdmin = val;
+                  });
+                },
+              ),
+            ],
           ],
         ),
       ),
@@ -498,9 +520,9 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
                   strokeWidth: 2.5,
                 ),
               )
-            : const Text(
-                'حفظ التغييرات',
-                style: TextStyle(
+            : Text(
+                context.l10n.saveChangesBtn,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -522,6 +544,7 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
       'isPublic': _isPublic,
       'hideFromSearch': _hideFromSearch,
       'isSuggested': _isSuggested,
+      'isSuperAdmin': _isSuperAdmin,
     };
 
     final success = await context.read<AdminProvider>().updateUserFields(
@@ -536,16 +559,16 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
 
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم تحديث إعدادات حساب المشترك بنجاح 🛡️'),
+          SnackBar(
+            content: Text(context.l10n.saveChangesSuccess),
             backgroundColor: Colors.green,
           ),
         );
         Navigator.pop(context);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('فشل حفظ التغييرات، يرجى مراجعة الصلاحيات'),
+          SnackBar(
+            content: Text(context.l10n.saveChangesFailed),
             backgroundColor: Colors.red,
           ),
         );

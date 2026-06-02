@@ -30,7 +30,7 @@ class NotificationItem extends StatelessWidget {
         ),
       ),
       child: ListTile(
-        onTap: null, // News cards are completely inert (no actions)
+        onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: _buildIcon(context),
         title: Text(
@@ -82,8 +82,18 @@ class NotificationItem extends StatelessWidget {
         color = Colors.red;
         break;
       case NotificationType.system:
-        icon = Icons.info_outline;
-        color = AppColors.primary;
+        final isLike = notification.title == 'إعجابات' || notification.message.contains('إعجاب');
+        final isComment = notification.title == 'تعليقات' || notification.message.contains('تعليق') || notification.message.contains('علق');
+        if (isLike) {
+          icon = Icons.favorite;
+          color = Colors.red;
+        } else if (isComment) {
+          icon = Icons.comment;
+          color = Colors.blue;
+        } else {
+          icon = Icons.info_outline;
+          color = AppColors.primary;
+        }
         break;
       case NotificationType.follow:
         icon = Icons.person_add_alt_1;

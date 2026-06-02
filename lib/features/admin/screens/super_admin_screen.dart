@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/context_l10n.dart';
 import '../providers/admin_provider.dart';
 import 'admin_messages_screen.dart';
 import 'admin_users_screen.dart';
@@ -38,9 +39,9 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'لوحة تحكم المشرف العام',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          context.l10n.adminPanelTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
@@ -51,11 +52,11 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           children: [
             // 📋 القسم الأول: إعدادات التطبيق العامة
-            const Padding(
-              padding: EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+            Padding(
+              padding: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
               child: Text(
-                'إعدادات النظام العامة',
-                style: TextStyle(
+                context.l10n.systemSettingsSection,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: AppColors.primary,
@@ -67,8 +68,8 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
               context,
               isDark: isDark,
               icon: Icons.settings_accessibility_outlined,
-              title: 'إعدادات التسجيل والتواصل',
-              subtitle: 'التحكم في حالة التسجيل للجدد ورقم الواتساب والبريد الإلكتروني للقرّاء',
+              title: context.l10n.registrationSettings,
+              subtitle: context.l10n.registrationSettingsDesc,
               badgeCount: 0,
               onTap: () {
                 Navigator.push(
@@ -84,8 +85,8 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
               context,
               isDark: isDark,
               icon: Icons.manage_accounts_outlined,
-              title: 'إدارة حسابات المستخدمين',
-              subtitle: 'البحث عن المشتركين وتعديل الصلاحيات والأدوار الفعالة',
+              title: context.l10n.userManagement,
+              subtitle: context.l10n.userManagementDesc,
               badgeCount: 0,
               onTap: () {
                 Navigator.push(
@@ -98,11 +99,11 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
             const SizedBox(height: 8),
 
             // 📝 القسم الثاني: إدارة المقالات والمحتوى
-            const Padding(
-              padding: EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 4),
+            Padding(
+              padding: const EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 4),
               child: Text(
-                'إدارة المقالات والمحتوى',
-                style: TextStyle(
+                context.l10n.articlesManagement,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: AppColors.primary,
@@ -114,8 +115,8 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
               context,
               isDark: isDark,
               icon: Icons.article_outlined,
-              title: 'تفضيلات المقالات الإدارية',
-              subtitle: 'الحد الأقصى لحروف المقالات وإدارة قاموس الأخطاء الشائعة المخصص',
+              title: context.l10n.articlePrefs,
+              subtitle: context.l10n.articlePrefsDesc,
               badgeCount: 0,
               onTap: () {
                 Navigator.push(
@@ -128,11 +129,11 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
             const SizedBox(height: 8),
 
             // 💬 القسم الثالث: مراسلات المشتركين
-            const Padding(
-              padding: EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 4),
+            Padding(
+              padding: const EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 4),
               child: Text(
-                'مراسلات المشتركين',
-                style: TextStyle(
+                context.l10n.userMessages,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: AppColors.primary,
@@ -148,8 +149,8 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
                       context,
                       isDark: isDark,
                       icon: Icons.chat_bubble_outline_rounded,
-                      title: 'التواصل مع فريق سجلي',
-                      subtitle: 'استعراض وإدارة استفسارات واقتراحات وشكاوى المستخدمين',
+                      title: context.l10n.incomingMessages,
+                      subtitle: context.l10n.incomingMessagesDesc,
                       badgeCount: admin.newMessagesCount,
                       onTap: () {
                         Navigator.push(
@@ -163,8 +164,8 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
                       context,
                       isDark: isDark,
                       icon: Icons.report_problem_outlined,
-                      title: 'البلاغات والتقارير',
-                      subtitle: 'إدارة وحسم البلاغات المقدمة ضد مستخدمين أو مواعيد أو مقالات مخترقة',
+                      title: context.l10n.reportsAndTickets,
+                      subtitle: context.l10n.reportsAndTicketsDesc,
                       badgeCount: admin.pendingReportsCount,
                       onTap: () {
                         Navigator.push(

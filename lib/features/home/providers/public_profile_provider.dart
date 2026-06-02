@@ -12,6 +12,7 @@ import '../../appointments/services/pb_appointment_browse_service.dart';
 import '../../settings/services/pb_moderation_service.dart';
 import '../../notifications/services/notification_service.dart';
 import '../../../../models/notification.dart';
+import '../../../../core/local/local_db_service.dart';
 
 class PublicProfileProvider extends ChangeNotifier {
   final PbUserService _userService = PbUserService();
@@ -24,17 +25,80 @@ class PublicProfileProvider extends ChangeNotifier {
   bool _isFollowing = false;
   bool _isFriend = false;
   String? _error;
+  String _searchQuery = '';
 
   UserModel? get user => _user;
-  List<Appointment> get appointments => _appointments;
+  
+  List<Appointment> get appointments {
+    if (_searchQuery.isEmpty) return _appointments;
+
+    final rawQuery = _searchQuery.trim().toLowerCase();
+    
+    // الفلترة الفورية بناءً على الكبسولات المحددة بالكامل
+    if (rawQuery == '(عام)') {
+      return _appointments.where((a) => a.privacy == 'public').toList();
+    }
+    if (rawQuery == '(خاص)') {
+      return _appointments.where((a) => a.privacy == 'private').toList();
+    }
+    if (rawQuery == '(معتمدون)' || rawQuery == 'معتمدون') {
+      return _appointments.where((a) => a.host?.role == 'approved' || a.host?.role == 'admin').toList();
+    }
+
+    // دالة مساعدة لتوحيد النصوص وإزالة التشكيل العربي لتبسيط البحث والتوثيق
+    String normalize(String? text) {
+      if (text == null) return '';
+      // إزالة علامات التشكيل العربية (الضمة، الفتحة، الكسرة، إلخ)
+      final diacritics = RegExp(r'[\u064B-\u0652\u065F\u0670\u06D6-\u06ED]');
+      return text.toLowerCase()
+                 .replaceAll(diacritics, '')
+                 .replaceAll(RegExp(r'[_\-\.,/\\|]'), ' ');
+    }
+
+    final q = normalize(rawQuery);
+    final queryWords = q.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+
+    if (queryWords.isEmpty) return _appointments;
+
+    // الفلترة بناءً على الكلمات المتعددة في الاستعلام مع دعم ذكي لكلمة "معتمدون" أو "معتمد"
+    return _appointments.where((a) {
+      // يجب أن تتحقق كل كلمة في الاستعلام داخل الموعد
+      return queryWords.every((word) {
+        // إذا كتب المستخدم كلمة "معتمدون" أو "معتمد"، نتحقق مما إذا كان المضيف معتمداً/مشرفاً أولاً
+        if (word == 'معتمدون' || word == 'معتمد') {
+          final isHostApproved = a.host?.role == 'approved' || a.host?.role == 'admin';
+          if (isHostApproved) return true;
+        }
+        
+        final titleMatch = normalize(a.title).contains(word);
+        final regionMatch = normalize(a.region).contains(word);
+        final buildingMatch = normalize(a.building).contains(word);
+        final hostMatch = normalize(a.host?.name).contains(word);
+        final categoryMatch = normalize(a.currentUserInvitation?.categories?.name).contains(word);
+        final participantsMatch = a.participants?.any((p) => 
+          normalize(p.user?.name).contains(word)
+        ) ?? false;
+        
+        return titleMatch || regionMatch || buildingMatch || hostMatch || categoryMatch || participantsMatch;
+      });
+    }).toList();
+  }
+
   bool get isLoading => _isLoading;
   bool get isFollowing => _isFollowing;
   bool get isFriend => _isFriend;
   String? get error => _error;
+  String get searchQuery => _searchQuery;
+
+  void filterAppointments(String query) {
+    _searchQuery = query;
+    notifyListeners();
+  }
 
   Future<void> fetchData(String usernameOrId, {String? currentUserId}) async {
     _isLoading = true;
     _error = null;
+    _searchQuery = '';
     notifyListeners();
 
     try {
@@ -48,6 +112,13 @@ class PublicProfileProvider extends ChangeNotifier {
       }
 
       _user = user;
+      
+      // تسجيل الدخول على الملف الشخصي لزيادة عداد الزيارات محلياً
+      try {
+        await LocalDbService.instance.incrementUserClickCount(user.id);
+      } catch (e) {
+        debugPrint('Error tracking profile click locally: $e');
+      }
       
       // 1.5 Check if Viewer is Blocked BY the target user
       if (currentUserId != null && currentUserId != user.id) {
@@ -162,29 +233,23 @@ class PublicProfileProvider extends ChangeNotifier {
       final dateStr = '${now.year}-${now.month}-${now.day}';
       
       String deviceName = 'جهاز غير معروف';
-      String deviceType = 'عابر';
       
       final deviceInfoPlugin = DeviceInfoPlugin();
       
       if (kIsWeb) {
         final webInfo = await deviceInfoPlugin.webBrowserInfo;
         deviceName = webInfo.browserName.toString().replaceAll('BrowserName.', '');
-        deviceType = 'متصفح';
       } else {
         if (Platform.isIOS) {
           final iosInfo = await deviceInfoPlugin.iosInfo;
           deviceName = iosInfo.name;
-          deviceType = 'آيفون';
         } else if (Platform.isAndroid) {
           final androidInfo = await deviceInfoPlugin.androidInfo;
           deviceName = androidInfo.model;
-          deviceType = 'أندرويد';
         } else if (Platform.isMacOS) {
           deviceName = 'ماك';
-          deviceType = 'حاسب';
         } else if (Platform.isWindows) {
           deviceName = 'ويندوز';
-          deviceType = 'حاسب';
         }
       }
 
@@ -202,8 +267,8 @@ class PublicProfileProvider extends ChangeNotifier {
       if (existing.isEmpty) {
         await notificationService.createNotification(
           targetUserId: targetUserId,
-          title: 'زيارة مجهولة',
-          message: 'قام $deviceType ($deviceName) باستعراض صفحتك الشخصية للتو.',
+          title: 'توافد الجمهور',
+          message: 'قام $deviceName بتصفح ملفك الشخصي.',
           type: NotificationType.visit,
           relatedId: hash,
         );
@@ -225,5 +290,6 @@ class PublicProfileProvider extends ChangeNotifier {
     _isFollowing = false;
     _isFriend = false;
     _error = null;
+    _searchQuery = '';
   }
 }
