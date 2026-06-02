@@ -153,8 +153,32 @@
       <div class="progress-bar-container">
         <div class="progress-bar-value"></div>
       </div>
-    </div>
   </div>
+  <script>
+    // MutationObserver to detect when Flutter mounts its views and remove the loading overlay
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const addedNode of mutation.addedNodes) {
+          const name = addedNode.nodeName || '';
+          if (name.includes('FLT-') || name.includes('FLUTTER-') || addedNode.tagName === 'CANVAS') {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+              overlay.style.transition = 'opacity 0.4s ease-out';
+              overlay.style.opacity = '0';
+              setTimeout(() => {
+                if (overlay.parentNode) {
+                  overlay.parentNode.removeChild(overlay);
+                }
+              }, 400);
+            }
+            observer.disconnect();
+            return;
+          }
+        }
+      }
+    });
+    observer.observe(document.body, { childList: true });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 
