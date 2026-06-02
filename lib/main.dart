@@ -79,24 +79,20 @@ void main() async { // Changed to async
       onTimeout: () => throw TimeoutException('Local DB initialization timed out'),
     );
     
-    // تحميل الإعدادات مع مهلة زمنية
+    // تحميل الإعدادات المحلية السريعة (لا تتطلب شبكة)
     await Future.wait([
       themeProvider.loadSettings(),
       settingsProvider.loadSettings(),
-      // جلب إعدادات النظام من السحابة مع مهلة 5 ثوانٍ كحد أقصى لمنع الشاشة البيضاء
-      globalConfigProvider.fetchConfig().timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          debugPrint('⚠️ Global config fetch timed out, using defaults.');
-        },
-      ),
     ]).timeout(
-      const Duration(seconds: 10),
+      const Duration(seconds: 5),
       onTimeout: () {
-        debugPrint('⚠️ General initialization timed out.');
+        debugPrint('⚠️ Local settings load timed out.');
         return [];
       },
     );
+    
+    // جلب إعدادات النظام من السحابة في الخلفية دون حجب تشغيل التطبيق (Non-blocking background fetch)
+    unawaited(globalConfigProvider.fetchConfig());
   } catch (e, stack) {
     debugPrint('‼️ Initialization Error: $e');
     debugPrint('Stacktrace: $stack');
