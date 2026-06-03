@@ -387,69 +387,53 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
   }
 
   void _showDeleteDialog() {
-    bool isLoading = false;
-
     showDialog(
       context: context,
-      barrierDismissible: false, // Prevent closing while deleting
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setState) {
-          final hasAnyAcceptedGuest = _appointment.participants?.any((p) => p.userId != _appointment.hostId && p.status == InvitationStatus.accepted) ?? false;
-          final showHostWarning = _isHost && !hasAnyAcceptedGuest;
+      barrierDismissible: true,
+      builder: (ctx) {
+        final hasAnyAcceptedGuest = _appointment.participants?.any((p) => p.userId != _appointment.hostId && p.status == InvitationStatus.accepted) ?? false;
+        final showHostWarning = _isHost && !hasAnyAcceptedGuest;
 
-          final String titleText;
-          final String confirmText;
-          final String actionButtonText;
+        final String titleText;
+        final String confirmText;
+        final String actionButtonText;
 
-          if (showHostWarning) {
-            titleText = context.l10n.detailsDeleteTitleHost;
-            confirmText = context.l10n.detailsDeleteConfirmHost;
-            actionButtonText = context.l10n.detailsCancelAppointment;
-          } else {
-            final isAr = context.l10n.localeName == 'ar';
-            titleText = isAr ? 'حذف الموعد' : 'Delete Appointment';
-            confirmText = isAr 
-                ? 'هذا قرار نهائي، سوف يؤدي إلى حذف سجل الموعد من صفحتك الشخصية.\nهل أنت متأكد؟'
-                : 'This is a final decision, it will lead to deleting the appointment record from your personal page.\nAre you sure?';
-            actionButtonText = isAr ? 'حذف' : context.l10n.delete;
-          }
-
-          return AlertDialog(
-            title: Text(titleText),
-            content: Text(confirmText),
-            actions: [
-              TextButton(
-                onPressed: isLoading ? null : () => Navigator.pop(ctx), 
-                child: Text(context.l10n.detailsUndo),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.warning, 
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: AppColors.warning.withValues(alpha: 0.6),
-                ),
-                onPressed: isLoading ? null : () async {
-                  setState(() => isLoading = true);
-                  try {
-                    await context.read<AppointmentProvider>().deleteInvitation(_appointment.id);
-                    if (ctx.mounted) Navigator.pop(ctx);
-                    if (mounted) Navigator.pop(context);
-                  } catch (e) {
-                    if (ctx.mounted) setState(() => isLoading = false);
-                  }
-                },
-                child: isLoading 
-                  ? const SizedBox(
-                      width: 20, 
-                      height: 20, 
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    )
-                  : Text(actionButtonText),
-              ),
-            ],
-          );
+        if (showHostWarning) {
+          titleText = ctx.l10n.detailsDeleteTitleHost;
+          confirmText = ctx.l10n.detailsDeleteConfirmHost;
+          actionButtonText = ctx.l10n.detailsCancelAppointment;
+        } else {
+          final isAr = ctx.l10n.localeName == 'ar';
+          titleText = isAr ? 'حذف الموعد' : 'Delete Appointment';
+          confirmText = isAr 
+              ? 'هذا قرار نهائي، سوف يؤدي إلى حذف سجل الموعد من صفحتك الشخصية.\nهل أنت متأكد؟'
+              : 'This is a final decision, it will lead to deleting the appointment record from your personal page.\nAre you sure?';
+          actionButtonText = isAr ? 'حذف' : ctx.l10n.delete;
         }
-      ),
+
+        return AlertDialog(
+          title: Text(titleText),
+          content: Text(confirmText),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx), 
+              child: Text(ctx.l10n.detailsUndo),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.warning, 
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                context.read<AppointmentProvider>().deleteInvitation(_appointment.id);
+                Navigator.pop(ctx); // Close dialog
+                Navigator.pop(context); // Close details sheet
+              },
+              child: Text(actionButtonText),
+            ),
+          ],
+        );
+      }
     );
   }
 
