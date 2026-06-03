@@ -571,8 +571,26 @@ class AppointmentProvider extends ChangeNotifier {
     final invitationId = appointment.viewerRecord?.id;
     if (invitationId == null) return;
 
+    final now = DateTime.now();
+
+    // 1. Optimistic Update: Move from active to archived lists immediately
+    _appointments.removeAt(indexBefore);
+    
+    final updatedInv = appointment.viewerRecord!.copyWith(
+      postStatus: PostStatus.archived,
+    );
+    final archivedAppt = appointment.copyWith(
+      currentUserInvitation: appointment.currentUserInvitation == appointment.viewerRecord ? updatedInv : null,
+      viewerInvitation: appointment.viewerInvitation == appointment.viewerRecord ? updatedInv : null,
+    );
+
+    _archivedAppointments.add(archivedAppt);
+    _archivedAppointments.sort((a, b) => b.startAt.compareTo(a.startAt));
+    _sortAppointments();
+    notifyListeners();
+
     try {
-      final now = DateTime.now();
+      // 2. Background API Call
       await _invitationService.updateInvitationStatus(
         invitationId, 
         appointment.viewerRecord!.status, 
@@ -580,13 +598,23 @@ class AppointmentProvider extends ChangeNotifier {
         archivedAt: now,
       );
       
-      // إزالة آمنة لتجنب أخطاء الفهرس (RangeError) بعد العمليات غير المتزامنة
-      _appointments.removeWhere((a) => a.id == appointmentId);
+      // Save local cache state
+      await _localDb.saveAppointments(_appointments);
       
-      notifyListeners();
-      fetchArchivedAppointments();
+      // Quiet background refresh of archive list to sync completely
+      await fetchArchivedAppointments();
     } catch (e) {
+      print('❌ Failed to archive invitation: $e');
       _errorMessage = 'Failed to archive invitation: $e';
+      
+      // 3. Rollback on failure
+      _archivedAppointments.removeWhere((a) => a.id == appointmentId);
+      if (indexBefore <= _appointments.length) {
+        _appointments.insert(indexBefore, appointment);
+      } else {
+        _appointments.add(appointment);
+      }
+      _sortAppointments();
       notifyListeners();
     }
   }
@@ -599,22 +627,47 @@ class AppointmentProvider extends ChangeNotifier {
     final invitationId = appointment.viewerRecord?.id;
     if (invitationId == null) return;
 
+    // 1. Optimistic Update: Move from archived to active lists immediately
+    _archivedAppointments.removeAt(indexBefore);
+    
+    final updatedInv = appointment.viewerRecord!.copyWith(
+      postStatus: PostStatus.published,
+    );
+    final unarchivedAppt = appointment.copyWith(
+      currentUserInvitation: appointment.currentUserInvitation == appointment.viewerRecord ? updatedInv : null,
+      viewerInvitation: appointment.viewerInvitation == appointment.viewerRecord ? updatedInv : null,
+    );
+
+    _appointments.add(unarchivedAppt);
+    _sortAppointments();
+    notifyListeners();
+
     try {
+      // 2. Background API Call
       await _invitationService.updateInvitationStatus(
         invitationId, 
         appointment.viewerRecord!.status, 
         postStatus: PostStatus.published
       );
       
-      // إزالة آمنة لتجنب أخطاء الفهرس
-      _archivedAppointments.removeWhere((a) => a.id == appointmentId);
+      // Save local cache state
+      await _localDb.saveAppointments(_appointments);
       
-      notifyListeners();
-      
-      fetchAppointments();
+      // Quiet background refresh of active list
+      await fetchAppointments();
     } catch (e) {
+      print('❌ Failed to unarchive invitation: $e');
       _errorMessage = 'Failed to unarchive invitation: $e';
-      print('Error unarchiving: $e');
+      
+      // 3. Rollback on failure
+      _appointments.removeWhere((a) => a.id == appointmentId);
+      if (indexBefore <= _archivedAppointments.length) {
+        _archivedAppointments.insert(indexBefore, appointment);
+      } else {
+        _archivedAppointments.add(appointment);
+      }
+      _archivedAppointments.sort((a, b) => b.startAt.compareTo(a.startAt));
+      _sortAppointments();
       notifyListeners();
     }
   }
@@ -665,19 +718,51 @@ class AppointmentProvider extends ChangeNotifier {
 
     if (indexBefore == -1 && !_isAdmin) return;
 
-    final bool isHost = indexBefore != -1 && (listType == 'active' 
-        ? _appointments[indexBefore] 
-        : _archivedAppointments[indexBefore]).hostId == _currentUserId;
+    final appointment = indexBefore != -1 
+        ? (listType == 'active' ? _appointments[indexBefore] : _archivedAppointments[indexBefore])
+        : null;
+
+    final bool isHost = appointment?.hostId == _currentUserId;
+
+    // 1. Optimistic Update: Remove from current list and add to trashed list
+    if (appointment != null) {
+      if (listType == 'active') {
+        _appointments.removeAt(indexBefore);
+      } else {
+        _archivedAppointments.removeAt(indexBefore);
+      }
+
+      final now = DateTime.now();
+      var newStatus = appointment.viewerRecord?.status ?? InvitationStatus.pending;
+      if (!isHost && newStatus == InvitationStatus.accepted) {
+        newStatus = InvitationStatus.deletedAfterAccept;
+      }
+
+      final updatedInv = appointment.viewerRecord?.copyWith(
+        postStatus: PostStatus.trash,
+        status: newStatus,
+        deletedAt: now,
+      );
+
+      final trashedAppt = appointment.copyWith(
+        isCancelled: (isHost || _isAdmin) ? true : appointment.isCancelled,
+        isDeleted: (isHost || _isAdmin) ? true : appointment.isDeleted,
+        currentUserInvitation: appointment.currentUserInvitation == appointment.viewerRecord ? updatedInv : null,
+        viewerInvitation: appointment.viewerInvitation == appointment.viewerRecord ? updatedInv : null,
+      );
+
+      _trashedAppointments.add(trashedAppt);
+      _trashedAppointments.sort((a, b) => b.startAt.compareTo(a.startAt));
+      _sortAppointments();
+      notifyListeners();
+    }
 
     try {
+      // 2. Perform Network Call
       if (isHost || _isAdmin) {
         await _apptService.cancelAppointment(appointmentId);
       } else {
-        if (indexBefore != -1) {
-          final appointment = listType == 'active' 
-              ? _appointments[indexBefore] 
-              : _archivedAppointments[indexBefore];
-              
+        if (appointment != null) {
           final invitationId = appointment.viewerRecord?.id;
           if (invitationId != null) {
             var newStatus = appointment.viewerRecord!.status;
@@ -696,20 +781,37 @@ class AppointmentProvider extends ChangeNotifier {
         }
       }
 
-      // إزالة آمنة
-      if (listType == 'active') {
-        _appointments.removeWhere((a) => a.id == appointmentId);
-      } else {
-        _archivedAppointments.removeWhere((a) => a.id == appointmentId);
-      }
-      
-      notifyListeners();
-      
-      fetchAppointments();
-      fetchTrashedAppointments();
+      // Save local cache state
+      await _localDb.saveAppointments(_appointments);
+
+      // Background sync to verify state
+      await fetchAppointments();
+      await fetchTrashedAppointments();
     } catch (e) {
+      print('❌ Failed to delete appointment: $e');
       _errorMessage = 'Failed to delete appointment: $e';
-      notifyListeners();
+      
+      // 3. Rollback on failure
+      if (appointment != null) {
+        _trashedAppointments.removeWhere((a) => a.id == appointmentId);
+        
+        if (listType == 'active') {
+          if (indexBefore <= _appointments.length) {
+            _appointments.insert(indexBefore, appointment);
+          } else {
+            _appointments.add(appointment);
+          }
+        } else {
+          if (indexBefore <= _archivedAppointments.length) {
+            _archivedAppointments.insert(indexBefore, appointment);
+          } else {
+            _archivedAppointments.add(appointment);
+          }
+          _archivedAppointments.sort((a, b) => b.startAt.compareTo(a.startAt));
+        }
+        _sortAppointments();
+        notifyListeners();
+      }
     }
   }
 
