@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../models/appointment.dart';
 import '../../../../core/widgets/pulse_avatar.dart';
+import '../../../../core/providers/settings_provider.dart';
 
 /// Abstract policy for defining visual and interactive behavior of appointment cards.
 abstract class AppointmentCardPolicy {
@@ -44,7 +46,13 @@ abstract class AppointmentCardPolicy {
   // --- Flags ---
   bool get isFeatured => false;
   bool get showPrivacyCapsule => true;
-  bool get showLocation => true;
+  bool get showLocation {
+    try {
+      return Provider.of<SettingsProvider>(context, listen: false).showLocationInfo;
+    } catch (_) {
+      return true;
+    }
+  }
   bool get canReport;
 
   // --- Layout ---

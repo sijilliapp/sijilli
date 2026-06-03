@@ -203,6 +203,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     final auth = context.watch<AuthProvider>();
     final isSimulating = auth.isSimulating;
     final apptProvider = context.watch<AppointmentProvider>();
+    final settings = context.watch<SettingsProvider>();
     final hasRegions = apptProvider.searchRegionKeywords.isNotEmpty;
     final hasCategories = apptProvider.searchCategoryKeywords.isNotEmpty;
 
@@ -478,6 +479,9 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
 
 
   Widget _buildMenuButton() {
+    final settings = context.read<SettingsProvider>();
+    final showLoc = settings.showLocationInfo;
+
     return PopupMenuButton<String>(
       icon: const Icon(Icons.menu, color: AppColors.primary),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimens.radiusM)),
@@ -496,6 +500,8 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
             context,
             MaterialPageRoute(builder: (context) => const SavedAppointmentsScreen()),
           );
+        } else if (value == 'location_toggle') {
+          settings.setShowLocationInfo(!showLoc);
         } else if (value == 'contact') {
           Navigator.push(
             context,
@@ -533,6 +539,20 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
               const Icon(Icons.bookmarks_outlined, size: 20, color: AppColors.primary),
               const SizedBox(width: 8),
               const Text('المحفوظات'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'location_toggle',
+          child: Row(
+            children: [
+              Icon(
+                showLoc ? Icons.location_off_outlined : Icons.location_on_outlined,
+                size: 20,
+                color: AppColors.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(showLoc ? 'إخفاء معلومات المكان' : 'إظهار معلومات المكان'),
             ],
           ),
         ),

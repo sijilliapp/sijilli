@@ -4,17 +4,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 class SettingsProvider extends ChangeNotifier {
   static const String keyMagneticScroll = 'magnetic_scroll_enabled';
   static const String keyUseTraditionalArabic = 'use_traditional_arabic';
+  static const String keyShowLocationInfo = 'show_location_info';
   
   bool _isMagneticScrollEnabled = true;
   bool _useTraditionalArabic = false;
+  bool _showLocationInfo = true;
 
   bool get isMagneticScrollEnabled => _isMagneticScrollEnabled;
   bool get useTraditionalArabic => _useTraditionalArabic;
+  bool get showLocationInfo => _showLocationInfo;
 
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     _isMagneticScrollEnabled = prefs.getBool(keyMagneticScroll) ?? true;
     _useTraditionalArabic = prefs.getBool(keyUseTraditionalArabic) ?? false;
+    _showLocationInfo = prefs.getBool(keyShowLocationInfo) ?? true;
     notifyListeners();
   }
 
@@ -36,5 +40,15 @@ class SettingsProvider extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(keyUseTraditionalArabic, enabled);
+  }
+
+  Future<void> setShowLocationInfo(bool enabled) async {
+    if (_showLocationInfo == enabled) return;
+
+    _showLocationInfo = enabled;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(keyShowLocationInfo, enabled);
   }
 }

@@ -12,6 +12,7 @@ import 'package:sijilli/features/appointments/providers/appointment_provider.dar
 import 'package:sijilli/features/add/screens/add_event_screen.dart';
 import 'package:sijilli/core/widgets/auth_wrapper.dart';
 import 'package:sijilli/core/widgets/sheets/app_action_sheet.dart';
+import 'package:sijilli/core/providers/settings_provider.dart';
 class PublicPolicy extends AppointmentCardPolicy {
   PublicPolicy(super.appointment, super.context, {super.customOnTap});
 
@@ -254,7 +255,15 @@ class PublicPolicy extends AppointmentCardPolicy {
   }
   
   @override
-  bool get showLocation => false;
+  bool get showLocation {
+    final auth = context.read<AuthProvider>();
+    if (auth.user == null) return false;
+    try {
+      return Provider.of<SettingsProvider>(context, listen: false).showLocationInfo;
+    } catch (_) {
+      return true;
+    }
+  }
 
   @override
   bool get canReport => false;

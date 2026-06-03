@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:sijilli/core/constants/app_colors.dart';
+import 'package:sijilli/core/providers/settings_provider.dart';
 import 'package:sijilli/features/appointments/widgets/cards/policies/standard_policy.dart';
 
 class FeaturedPolicy extends StandardPolicy {
@@ -27,7 +29,14 @@ class FeaturedPolicy extends StandardPolicy {
 
 
   @override
-  bool get showLocation => !isReadOnly;
+  bool get showLocation {
+    if (isReadOnly) return false;
+    try {
+      return Provider.of<SettingsProvider>(context, listen: false).showLocationInfo;
+    } catch (_) {
+      return true;
+    }
+  }
 
   @override
   Color get shadowColor => Colors.transparent;
