@@ -7,6 +7,7 @@ import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/main/screens/main_screen.dart';
 import '../constants/app_colors.dart';
+import '../utils/web_utils.dart';
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -31,6 +32,9 @@ class AuthWrapper extends StatelessWidget {
         authProvider.status == AuthStatus.loading) {
       return const LoadingScreen(key: ValueKey('loading'));
     }
+    
+    // إزالة شاشة التحميل للويب فور اكتمال التوجيه والجاهزية
+    removeWebLoader();
     
     if (authProvider.isAuthenticated) {
       return const MainScreen(key: ValueKey('main'));

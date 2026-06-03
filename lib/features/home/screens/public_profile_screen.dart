@@ -14,6 +14,7 @@ import 'package:sijilli/features/home/providers/public_profile_provider.dart';
 import 'package:sijilli/features/profile/providers/moderation_provider.dart';
 import 'package:sijilli/core/widgets/auth_wrapper.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
+import 'package:sijilli/core/utils/web_utils.dart';
 
 class PublicProfileScreen extends StatefulWidget {
   final String usernameOrId;
@@ -83,6 +84,12 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> with SingleTi
         final isLoading = profileProvider.isLoading;
         final error = profileProvider.error;
         final isFollowing = profileProvider.isFollowing;
+        
+        if (!isLoading) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            removeWebLoader();
+          });
+        }
         
         final isMe = user != null && user.id == authProvider.user?.id;
         final canView = (user?.isPublic ?? false) || isFollowing || isMe;

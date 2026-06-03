@@ -13,6 +13,7 @@ import '../../home/screens/public_profile_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/article_provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import '../../../core/utils/web_utils.dart';
 
 class PublicArticleScreen extends StatefulWidget {
   final String username;
@@ -109,11 +110,13 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
           }
         }
       }
+      removeWebLoader();
     } catch (e) {
       setState(() {
         _error = context.l10n.errorFetchingArticle;
         _isLoading = false;
       });
+      removeWebLoader();
     }
   }
 

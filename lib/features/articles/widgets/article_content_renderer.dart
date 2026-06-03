@@ -14,14 +14,15 @@ class ArticleContentRenderer extends StatelessWidget {
     final isTraditionalArabic = fontFamily == 'Traditional_Arabic';
     final double fontSize = isTraditionalArabic
         ? AppDimens.textSizeM * 1.5
-        : AppDimens.textSizeM;
-    final double lineHeight = isTraditionalArabic ? 1.3 : 1.8;
+        : 21.0; // Increased from AppDimens.textSizeM (18) for better readability
+    final double lineHeight = isTraditionalArabic ? 1.3 : 1.7;
 
     final defaultStyle = TextStyle(
       fontSize: fontSize,
       height: lineHeight,
       color: AppColors.getTextPrimary(context),
       fontFamily: fontFamily,
+      fontWeight: FontWeight.w500, // Medium weight for better clarity and sharpness
     );
 
     return TextSpan(
