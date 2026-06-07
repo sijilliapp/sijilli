@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
 
 // ============================================================
 // تعريف أنواع التنسيق
@@ -14,6 +13,60 @@ enum ParagraphFormat {
   left,
   right,
   poem,
+  poemCenter,
+  poemLeft,
+}
+
+enum SpanType { bold, highlight }
+
+class StyleSpan {
+  final int start;
+  final int end;
+  final SpanType type;
+
+  StyleSpan({required this.start, required this.end, required this.type});
+
+  StyleSpan copyWith({int? start, int? end, SpanType? type}) {
+    return StyleSpan(
+      start: start ?? this.start,
+      end: end ?? this.end,
+      type: type ?? this.type,
+    );
+  }
+
+  @override
+  String toString() => 'StyleSpan($start, $end, $type)';
+}
+
+class ParsedInlineText {
+  final String cleanText;
+  final List<StyleSpan> spans;
+  ParsedInlineText(this.cleanText, this.spans);
+}
+
+class ParsedArticleContent {
+  final String cleanText;
+  final List<StyleSpan> inlineSpans;
+  final List<ParagraphFormat> lineFormats;
+
+  ParsedArticleContent({
+    required this.cleanText,
+    required this.inlineSpans,
+    required this.lineFormats,
+  });
+}
+
+class ControllerHistoryState {
+  final TextEditingValue value;
+  final List<StyleSpan> spans;
+  final List<ParagraphFormat> lineFormats;
+
+  ControllerHistoryState({
+    required this.value,
+    required List<StyleSpan> spans,
+    required List<ParagraphFormat> lineFormats,
+  })  : spans = List<StyleSpan>.from(spans),
+        lineFormats = List<ParagraphFormat>.from(lineFormats);
 }
 
 class FormattingTextEditingController extends TextEditingController {
@@ -21,10 +74,19 @@ class FormattingTextEditingController extends TextEditingController {
   String? _highlightQuery;
 
   // ============================================================
+  // التنسيقات الوصفية المدمجة (Style Metadata)
+  // ============================================================
+  List<StyleSpan> _spans = [];
+  List<ParagraphFormat> _lineFormats = [];
+
+  List<StyleSpan> get spans => _spans;
+  List<ParagraphFormat> get lineFormats => _lineFormats;
+
+  // ============================================================
   // Undo/Redo History Stacks
   // ============================================================
-  final List<TextEditingValue> _undoStack = [];
-  final List<TextEditingValue> _redoStack = [];
+  final List<ControllerHistoryState> _undoStack = [];
+  final List<ControllerHistoryState> _redoStack = [];
   bool _isUndoingOrRedoing = false;
   bool _isTypingSession = false;
   Timer? _debounceTimer;
@@ -32,36 +94,58 @@ class FormattingTextEditingController extends TextEditingController {
   bool get canUndo => _undoStack.isNotEmpty;
   bool get canRedo => _redoStack.isNotEmpty;
 
-  // ============================================================
-  // FormattingTextEditingController
-  // ============================================================
-
-  /// `TextEditingController` مخصص يعمل بنظام التحرير المباشر مع التنسيق البصري للوسوم.
-  /// يتم تخزين النص مع وسومه في الـ `text` مباشرة لتفادي أي مشاكل إزاحة أو مزامنة.
-  List<(int start, int end)> _getTagRangesOfText(String content) {
-    final pattern = RegExp(
-      r'\[/?(?:POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT)\]',
-      caseSensitive: false,
-    );
-    final List<(int start, int end)> ranges = [];
-    for (final match in pattern.allMatches(content)) {
-      ranges.add((match.start, match.end));
-    }
-    return ranges;
+  FormattingTextEditingController({String rawText = ''}) {
+    setRawText(rawText);
+    clearHistory();
   }
 
   @override
   set value(TextEditingValue newValue) {
     final String oldText = value.text;
     final String newText = newValue.text;
+    final TextSelection oldSel = value.selection;
+
+    final int oldLen = oldText.length;
+    final int newLen = newText.length;
+    final int delta = newLen - oldLen;
+
+    int editStart = oldSel.start;
+    int editEnd = oldSel.end;
+
+    if (editStart < 0) {
+      editStart = 0;
+      while (editStart < oldText.length && editStart < newText.length && oldText[editStart] == newText[editStart]) {
+        editStart++;
+      }
+      editEnd = oldLen;
+    }
+
+    // Select the inserted text on paste/autofill
+    if (!_internalUpdate && delta > 1) {
+      newValue = newValue.copyWith(
+        selection: TextSelection(
+          baseOffset: editStart,
+          extentOffset: editStart + delta,
+        ),
+      );
+    }
+
+    // Smart Paste Poetry Detection on paste is disabled to prevent automatic formatting.
+    // Poetry formatting is now done explicitly via the formatting button.
 
     // Record undo/redo history if the text changed and we are not currently undoing/redoing
     if (newText != oldText && !_isUndoingOrRedoing) {
       _redoStack.clear();
       
+      final historyState = ControllerHistoryState(
+        value: value,
+        spans: _spans,
+        lineFormats: _lineFormats,
+      );
+
       if (_internalUpdate) {
-        // Programmatic changes (like formatting buttons) are committed immediately
-        _undoStack.add(value);
+        // Programmatic changes are committed immediately
+        _undoStack.add(historyState);
         if (_undoStack.length > 100) {
           _undoStack.removeAt(0);
         }
@@ -74,7 +158,7 @@ class FormattingTextEditingController extends TextEditingController {
         final bool isSignificantChange = (newText.length - oldText.length).abs() > 1;
         
         if (!_isTypingSession || isWordBoundary || isSignificantChange) {
-          _undoStack.add(value);
+          _undoStack.add(historyState);
           if (_undoStack.length > 100) {
             _undoStack.removeAt(0);
           }
@@ -93,7 +177,9 @@ class FormattingTextEditingController extends TextEditingController {
       return;
     }
 
+    // Clean citations in brackets [...]
     final String cleanedText = _cleanCitations(newText);
+    TextEditingValue finalValue = newValue;
     
     if (cleanedText != newText) {
       int newBase = newValue.selection.baseOffset;
@@ -106,12 +192,8 @@ class FormattingTextEditingController extends TextEditingController {
       int rawIdx = 0;
       
       while (rawIdx < newText.length && cleanIdx < cleanedText.length) {
-        if (rawIdx == newBase) {
-          mappedBase = cleanIdx;
-        }
-        if (rawIdx == newExtent) {
-          mappedExtent = cleanIdx;
-        }
+        if (rawIdx == newBase) mappedBase = cleanIdx;
+        if (rawIdx == newExtent) mappedExtent = cleanIdx;
         
         if (newText[rawIdx] == cleanedText[cleanIdx]) {
           cleanIdx++;
@@ -124,7 +206,7 @@ class FormattingTextEditingController extends TextEditingController {
       if (rawIdx == newBase) mappedBase = cleanIdx;
       if (rawIdx == newExtent) mappedExtent = cleanIdx;
       
-      newValue = newValue.copyWith(
+      finalValue = newValue.copyWith(
         text: cleanedText,
         selection: TextSelection(
           baseOffset: mappedBase,
@@ -133,60 +215,152 @@ class FormattingTextEditingController extends TextEditingController {
       );
     }
 
-    final oldSel = value.selection;
-    final newSel = newValue.selection;
+    // Sync metadata spans and paragraph formats if text changed
+    if (finalValue.text != oldText) {
+      _updateSpansOnChange(oldText, finalValue.text, oldSel, finalValue.selection);
+      _updateLineFormatsOnChange(oldText, finalValue.text, oldSel, finalValue.selection);
+    }
 
-    // 1. الحظر والمغنطة (Cursor Snap) لمنع المؤشر من الوقوف داخل الوسوم
-    if (newSel.isValid && newSel != oldSel) {
-      final textContent = newValue.text;
-      final ranges = _getTagRangesOfText(textContent);
-      
-      int newBase = newSel.baseOffset;
-      int newExtent = newSel.extentOffset;
-      
-      int snapOffset(int offset) {
-        for (final range in ranges) {
-          if (offset > range.$1 && offset < range.$2) {
-            final distToStart = (offset - range.$1).abs();
-            final distToEnd = (offset - range.$2).abs();
-            return distToStart < distToEnd ? range.$1 : range.$2;
+    super.value = finalValue;
+  }
+
+  // ============================================================
+  // مزامنة التنسيقات عند تعديل النص
+  // ============================================================
+  
+  void _updateSpansOnChange(String oldText, String newText, TextSelection oldSel, TextSelection newSel) {
+    if (oldText == newText) return;
+
+    final int oldLen = oldText.length;
+    final int newLen = newText.length;
+    final int delta = newLen - oldLen;
+
+    int editStart = oldSel.start;
+    int editEnd = oldSel.end;
+
+    if (editStart < 0) {
+      editStart = 0;
+      while (editStart < oldText.length && editStart < newText.length && oldText[editStart] == newText[editStart]) {
+        editStart++;
+      }
+      editEnd = oldLen;
+    }
+
+    final List<StyleSpan> updatedSpans = [];
+
+    for (final span in _spans) {
+      int start = span.start;
+      int end = span.end;
+
+      if (editEnd <= start) {
+        start += delta;
+        end += delta;
+      } else if (editStart >= end) {
+        // Keep as is
+      } else {
+        if (editStart >= start && editEnd <= end) {
+          end += delta;
+        } else {
+          if (editStart < start) {
+            start = editStart + delta;
           }
+          if (editEnd > end) {
+            end = editStart;
+          }
+          if (start < 0) start = 0;
+          if (end < start) end = start;
         }
-        return offset;
       }
 
-      final snappedBase = snapOffset(newBase);
-      final snappedExtent = snapOffset(newExtent);
-      
-      if (snappedBase != newBase || snappedExtent != newExtent) {
-        newValue = newValue.copyWith(
-          selection: TextSelection(
-            baseOffset: snappedBase,
-            extentOffset: snappedExtent,
-          ),
-        );
+      if (end > start) {
+        updatedSpans.add(StyleSpan(start: start, end: end, type: span.type));
       }
     }
 
-    // 2. الحذف الذري (Atomic Deletion) لحذف الوسم بالكامل عند الضغط على Backspace
-    if (newValue.text.length < value.text.length && oldSel.isCollapsed && oldSel.start > 0) {
-      final oldText = value.text;
-      final deletedIndex = oldSel.start - 1;
-      
-      final ranges = _getTagRangesOfText(oldText);
-      for (final range in ranges) {
-        if (deletedIndex >= range.$1 && deletedIndex < range.$2) {
-          final fullNewText = oldText.replaceRange(range.$1, range.$2, '');
-          newValue = TextEditingValue(
-            text: fullNewText,
-            selection: TextSelection.collapsed(offset: range.$1),
-          );
-          break;
+    _spans = updatedSpans;
+  }
+
+  void _updateLineFormatsOnChange(String oldText, String newText, TextSelection oldSel, TextSelection newSel) {
+    final oldLines = oldText.split('\n');
+    final newLines = newText.split('\n');
+    
+    if (oldLines.length == newLines.length) {
+      return;
+    }
+
+    final List<ParagraphFormat> updatedFormats = [];
+    
+    int editedLineIndex = 0;
+    int charCount = 0;
+    for (int i = 0; i < oldLines.length; i++) {
+      if (oldSel.start >= charCount && oldSel.start <= charCount + oldLines[i].length) {
+        editedLineIndex = i;
+        break;
+      }
+      charCount += oldLines[i].length + 1;
+    }
+
+    final lineDiff = newLines.length - oldLines.length;
+    
+    if (lineDiff > 0) {
+      final bool isAtLineStart = oldSel.start == charCount;
+
+      for (int i = 0; i < editedLineIndex; i++) {
+        if (i < _lineFormats.length) {
+          updatedFormats.add(_lineFormats[i]);
+        } else {
+          updatedFormats.add(ParagraphFormat.none);
         }
+      }
+
+      if (isAtLineStart) {
+        // Pressing Enter at the start of the line:
+        // The new empty line(s) get ParagraphFormat.none
+        for (int i = 0; i < lineDiff; i++) {
+          updatedFormats.add(ParagraphFormat.none);
+        }
+        // The original line gets pushed down and retains its format
+        if (editedLineIndex < _lineFormats.length) {
+          updatedFormats.add(_lineFormats[editedLineIndex]);
+        } else {
+          updatedFormats.add(ParagraphFormat.none);
+        }
+      } else {
+        // Pressing Enter in the middle or end of the line:
+        // The original line retains its format
+        if (editedLineIndex < _lineFormats.length) {
+          updatedFormats.add(_lineFormats[editedLineIndex]);
+        } else {
+          updatedFormats.add(ParagraphFormat.none);
+        }
+        // The new empty line(s) get ParagraphFormat.none
+        for (int i = 0; i < lineDiff; i++) {
+          updatedFormats.add(ParagraphFormat.none);
+        }
+      }
+
+      for (int i = editedLineIndex + 1; i < _lineFormats.length; i++) {
+        updatedFormats.add(_lineFormats[i]);
+      }
+    } else {
+      for (int i = 0; i < editedLineIndex + lineDiff + 1; i++) {
+        if (i < _lineFormats.length) {
+          updatedFormats.add(_lineFormats[i]);
+        }
+      }
+      for (int i = editedLineIndex + 1; i < _lineFormats.length; i++) {
+        updatedFormats.add(_lineFormats[i]);
       }
     }
 
-    super.value = newValue;
+    while (updatedFormats.length < newLines.length) {
+      updatedFormats.add(ParagraphFormat.none);
+    }
+    while (updatedFormats.length > newLines.length) {
+      updatedFormats.removeLast();
+    }
+
+    _lineFormats = updatedFormats;
   }
 
   String _cleanCitations(String rawText) {
@@ -199,26 +373,72 @@ class FormattingTextEditingController extends TextEditingController {
     });
   }
 
-  FormattingTextEditingController({String rawText = ''}) {
-    text = _cleanCitations(rawText);
-    clearHistory();
+  // ============================================================
+  // التراجع والإعادة (Undo/Redo)
+  // ============================================================
+
+  void _saveHistoryState() {
+    _redoStack.clear();
+    final currentState = ControllerHistoryState(
+      value: value,
+      spans: _spans,
+      lineFormats: _lineFormats,
+    );
+    if (_undoStack.isNotEmpty) {
+      final last = _undoStack.last;
+      if (last.value.text == currentState.value.text &&
+          _areSpansEqual(last.spans, currentState.spans) &&
+          _areFormatsEqual(last.lineFormats, currentState.lineFormats)) {
+        return; // Skip duplicate
+      }
+    }
+    _undoStack.add(currentState);
+    if (_undoStack.length > 100) {
+      _undoStack.removeAt(0);
+    }
+  }
+
+  bool _areSpansEqual(List<StyleSpan> a, List<StyleSpan> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i].start != b[i].start || a[i].end != b[i].end || a[i].type != b[i].type) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _areFormatsEqual(List<ParagraphFormat> a, List<ParagraphFormat> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   void undo() {
     if (!canUndo) return;
     
     final currentVal = value;
-    _redoStack.add(currentVal);
+    _redoStack.add(ControllerHistoryState(
+      value: currentVal,
+      spans: _spans,
+      lineFormats: _lineFormats,
+    ));
     if (_redoStack.length > 100) {
       _redoStack.removeAt(0);
     }
     
-    final previousVal = _undoStack.removeLast();
+    final previousState = _undoStack.removeLast();
     
     _isUndoingOrRedoing = true;
     _isTypingSession = false;
     _debounceTimer?.cancel();
-    value = previousVal;
+    
+    _spans = previousState.spans;
+    _lineFormats = previousState.lineFormats;
+    value = previousState.value;
+    
     _isUndoingOrRedoing = false;
     
     notifyListeners();
@@ -228,17 +448,25 @@ class FormattingTextEditingController extends TextEditingController {
     if (!canRedo) return;
     
     final currentVal = value;
-    _undoStack.add(currentVal);
+    _undoStack.add(ControllerHistoryState(
+      value: currentVal,
+      spans: _spans,
+      lineFormats: _lineFormats,
+    ));
     if (_undoStack.length > 100) {
       _undoStack.removeAt(0);
     }
     
-    final nextVal = _redoStack.removeLast();
+    final nextState = _redoStack.removeLast();
     
     _isUndoingOrRedoing = true;
     _isTypingSession = false;
     _debounceTimer?.cancel();
-    value = nextVal;
+    
+    _spans = nextState.spans;
+    _lineFormats = nextState.lineFormats;
+    value = nextState.value;
+    
     _isUndoingOrRedoing = false;
     
     notifyListeners();
@@ -271,169 +499,703 @@ class FormattingTextEditingController extends TextEditingController {
     }
   }
 
-  // ----------------------------------------------------------
-  // Getters
-  // ----------------------------------------------------------
-
-  /// النص الخام الكامل (للحفظ في قاعدة البيانات)
-  String get rawText => text;
+  // ============================================================
+  // الترجمة ثنائية الاتجاه (Serialization & Parsing)
+  // ============================================================
 
   /// النص النظيف الحالي (ما يراه المستخدم بدون وسوم)
-  String get cleanText {
-    return text
-        .replaceAll(RegExp(r'\[/?(POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT)\]', caseSensitive: false), '')
-        .replaceAll(RegExp(r'[=~]'), '')
-        .replaceAll(RegExp(r'\*'), '')
-        .replaceAll(RegExp(r'\+\+'), '')
-        .replaceAll(RegExp(r'--'), '');
-  }
+  String get cleanText => text;
 
-  // ----------------------------------------------------------
-  // دالات التحديث الخارجي
-  // ----------------------------------------------------------
+  /// النص الخام الكامل بالوسوم (للحفظ في قاعدة البيانات)
+  String get rawText {
+    final clean = text;
+    if (clean.isEmpty) return '';
 
-  /// تعيين النص الخام
-  void setRawText(String raw) {
-    _internalUpdate = true;
-    text = _cleanCitations(raw);
-    _internalUpdate = false;
-  }
+    final lines = clean.split('\n');
+    final List<String> formattedLines = [];
+    bool inPoemBlock = false;
+    int currentOffset = 0;
 
-  // ----------------------------------------------------------
-  // الحصول على معلومات الفقرة الحالية
-  // ----------------------------------------------------------
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      final lineStart = currentOffset;
+      final lineEnd = currentOffset + line.length;
 
-  /// يجد حدود السطر الحالي الذي يقع فيه المؤشر
-  (int start, int end) _currentLineRange() {
-    final sel = selection;
-    if (!sel.isValid) return (0, 0);
-    final content = text;
+      // Extract inline spans for this line
+      final List<StyleSpan> lineSpans = _spans
+          .where((s) => s.start < lineEnd && s.end > lineStart)
+          .toList();
 
-    int start = sel.baseOffset;
-    while (start > 0 && content[start - 1] != '\n') {
-      start--;
-    }
-    int end = sel.baseOffset;
-    while (end < content.length && content[end] != '\n') {
-      end++;
-    }
-    return (start, end);
-  }
+      // Formulate insertions relative to this line
+      final List<(int index, String tag)> insertions = [];
+      for (final span in lineSpans) {
+        final relStart = (span.start - lineStart).clamp(0, line.length);
+        final relEnd = (span.end - lineStart).clamp(0, line.length);
+        
+        final tagStart = span.type == SpanType.bold ? '[BOLD]' : '[HIGHLIGHT]';
+        final tagEnd = span.type == SpanType.bold ? '[/BOLD]' : '[/HIGHLIGHT]';
 
-  /// يتحقق إذا كان فهرس المحارف يقع داخل كتلة [POEM]
-  bool _isLineInsidePoemBlock(int charIndex) {
-    final content = text;
-    final poemPattern = RegExp(r'\[POEM\]([\s\S]*?)\[/POEM\]', caseSensitive: false);
-    for (final match in poemPattern.allMatches(content)) {
-      if (charIndex >= match.start && charIndex < match.end) {
-        return true;
+        insertions.add((relStart, tagStart));
+        insertions.add((relEnd, tagEnd));
       }
-    }
-    return false;
-  }
 
-  /// يُعيد تنسيق الفقرة الحالية
-  ParagraphFormat get currentParagraphFormat {
-    final range = _currentLineRange();
-    if (range.$1 >= range.$2) return ParagraphFormat.none;
-    final line = text.substring(range.$1, range.$2).trim();
+      // Sort insertions: index ascending, closing tags first
+      insertions.sort((a, b) {
+        if (a.$1 != b.$1) {
+          return a.$1.compareTo(b.$1);
+        }
+        final aIsClosing = a.$2.startsWith('[/');
+        final bIsClosing = b.$2.startsWith('[/');
+        if (aIsClosing && !bIsClosing) return -1;
+        if (!aIsClosing && bIsClosing) return 1;
+        return 0;
+      });
 
-    if (_isLineInsidePoemBlock(range.$1)) {
-      return ParagraphFormat.poem;
-    }
+      // Apply insertions in reverse order to keep indices stable
+      String lineTextWithInline = line;
+      for (int j = insertions.length - 1; j >= 0; j--) {
+        final ins = insertions[j];
+        lineTextWithInline = lineTextWithInline.replaceRange(ins.$1, ins.$1, ins.$2);
+      }
 
-    if ((line.startsWith('[CENTER]') && line.endsWith('[/CENTER]')) ||
-        (line.startsWith('=') && line.endsWith('=') && line.length > 1)) {
-      return ParagraphFormat.center;
-    }
-    if ((line.startsWith('[JUSTIFY]') && line.endsWith('[/JUSTIFY]')) ||
-        (line.startsWith('~') && line.endsWith('~') && line.length > 1)) {
-      return ParagraphFormat.justify;
-    }
-    if ((line.startsWith('[LEFT]') && line.endsWith('[/LEFT]')) ||
-        (line.startsWith('--') && line.endsWith('--') && line.length > 3)) {
-      return ParagraphFormat.left;
-    }
-    if ((line.startsWith('[RIGHT]') && line.endsWith('[/RIGHT]')) ||
-        (line.startsWith('++') && line.endsWith('++') && line.length > 3)) {
-      return ParagraphFormat.right;
-    }
-    return ParagraphFormat.none;
-  }
+      final ParagraphFormat format = i < _lineFormats.length ? _lineFormats[i] : ParagraphFormat.none;
 
-  // ----------------------------------------------------------
-  // تطبيق التنسيقات والوسوم على النص
-  // ----------------------------------------------------------
+      // Handle Poem Block Grouping
+      final isPoemFormat = format == ParagraphFormat.poem || 
+                          format == ParagraphFormat.poemCenter || 
+                          format == ParagraphFormat.poemLeft;
 
-  /// يُبدِّل تنسيق الفقرات المحددة
-  void toggleParagraphFormat(ParagraphFormat format) {
-    final sel = selection;
-    if (!sel.isValid) return;
-
-    final content = text;
-
-    // 1. تحديد بداية ونهاية السطور المحددة بالكامل
-    int start = sel.start;
-    while (start > 0 && content[start - 1] != '\n') {
-      start--;
-    }
-    int end = sel.end;
-    while (end < content.length && content[end] != '\n') {
-      end++;
-    }
-
-    final selectedText = content.substring(start, end);
-    final lines = selectedText.split('\n');
-
-    // للقصيدة الشعرية: يتم تغليف السطور المحددة بالكامل داخل كتلة واحدة
-    if (format == ParagraphFormat.poem) {
-      final trimmed = selectedText.trim();
-      final bool isPoem = trimmed.startsWith('[POEM]') && trimmed.endsWith('[/POEM]');
-
-      String newText;
-      if (isPoem) {
-        // إزالة وسوم القصيدة
-        String inner = trimmed.substring('[POEM]'.length, trimmed.length - '[/POEM]'.length).trim();
-        newText = inner;
+      if (isPoemFormat) {
+        if (!inPoemBlock) {
+          formattedLines.add('[POEM]');
+          inPoemBlock = true;
+        }
+        
+        String poemLine = lineTextWithInline;
+        if (format == ParagraphFormat.poemCenter) {
+          poemLine = '[CENTER]$poemLine[/CENTER]';
+        } else if (format == ParagraphFormat.poemLeft) {
+          poemLine = '[LEFT]$poemLine[/LEFT]';
+        }
+        formattedLines.add(poemLine);
       } else {
-        // مسح أي وسوم فقرات أخرى أولاً
-        final cleanedLines = lines.map((l) => _stripParagraphTags(l)).toList();
-        newText = '[POEM]\n${cleanedLines.join('\n')}\n[/POEM]';
+        if (inPoemBlock) {
+          formattedLines.add('[/POEM]');
+          inPoemBlock = false;
+        }
+
+        String finalLine = lineTextWithInline;
+        if (format == ParagraphFormat.center) {
+          finalLine = '[CENTER]$finalLine[/CENTER]';
+        } else if (format == ParagraphFormat.justify) {
+          finalLine = '[JUSTIFY]$finalLine[/JUSTIFY]';
+        } else if (format == ParagraphFormat.left) {
+          finalLine = '[LEFT]$finalLine[/LEFT]';
+        } else if (format == ParagraphFormat.right) {
+          finalLine = '[RIGHT]$finalLine[/RIGHT]';
+        }
+        formattedLines.add(finalLine);
       }
 
-      final fullNewText = content.replaceRange(start, end, newText);
-      _internalUpdate = true;
-      value = value.copyWith(
-        text: fullNewText,
-        selection: TextSelection(baseOffset: start, extentOffset: start + newText.length),
-      );
-      _internalUpdate = false;
-      notifyListeners();
-      return;
+      currentOffset += line.length + 1; // +1 for \n
     }
 
-    // للتنسيقات العادية (المحاذاة):
-    final bool allHaveFormat = lines.every((l) => _getLineFormat(l) == format);
-    final ParagraphFormat newFormat = allHaveFormat ? ParagraphFormat.none : format;
+    if (inPoemBlock) {
+      formattedLines.add('[/POEM]');
+    }
 
-    final formattedLines = lines.map((l) {
-      final cleaned = _stripParagraphTags(l);
-      return _applyFormatToLine(cleaned, newFormat);
-    }).toList();
+    return formattedLines.join('\n');
+  }
 
-    final newText = formattedLines.join('\n');
-    final fullNewText = content.replaceRange(start, end, newText);
-
+  /// تعيين وتفكيك النص الخام القادم من قاعدة البيانات
+  void setRawText(String raw) {
+    _saveHistoryState();
     _internalUpdate = true;
-    value = value.copyWith(
-      text: fullNewText,
-      selection: TextSelection(baseOffset: start, extentOffset: start + newText.length),
-    );
+    final parsed = parseRawText(raw);
+    _spans = parsed.inlineSpans;
+    _lineFormats = parsed.lineFormats;
+    text = parsed.cleanText;
     _internalUpdate = false;
     notifyListeners();
   }
 
-  /// يُطبِّق/يُزيل التعريض (Bold) على الكلمة أو الجزء المحدد (كـ Switch)
+  /// إدراج قالب القصيدة عند سطر معين وإعادة التحليل والتوجيه
+  void insertPoemTemplateAtLine(int lineIndex, String poemRaw) {
+    final clean = text;
+    final lines = clean.split('\n');
+    final List<String> formattedLines = [];
+    bool inPoemBlock = false;
+    int currentOffset = 0;
+
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      final lineStart = currentOffset;
+      final lineEnd = currentOffset + line.length;
+
+      if (i == lineIndex) {
+        if (inPoemBlock) {
+          formattedLines.add('[/POEM]');
+          inPoemBlock = false;
+        }
+        formattedLines.add(poemRaw);
+        currentOffset += line.length + 1;
+        continue;
+      }
+
+      // Extract inline spans for this line
+      final List<StyleSpan> lineSpans = _spans
+          .where((s) => s.start < lineEnd && s.end > lineStart)
+          .toList();
+
+      // Formulate insertions relative to this line
+      final List<(int index, String tag)> insertions = [];
+      for (final span in lineSpans) {
+        final relStart = (span.start - lineStart).clamp(0, line.length);
+        final relEnd = (span.end - lineStart).clamp(0, line.length);
+        
+        final tagStart = span.type == SpanType.bold ? '[BOLD]' : '[HIGHLIGHT]';
+        final tagEnd = span.type == SpanType.bold ? '[/BOLD]' : '[/HIGHLIGHT]';
+
+        insertions.add((relStart, tagStart));
+        insertions.add((relEnd, tagEnd));
+      }
+
+      // Sort insertions: index ascending, closing tags first
+      insertions.sort((a, b) {
+        if (a.$1 != b.$1) {
+          return a.$1.compareTo(b.$1);
+        }
+        final aIsClosing = a.$2.startsWith('[/');
+        final bIsClosing = b.$2.startsWith('[/');
+        if (aIsClosing && !bIsClosing) return -1;
+        if (!aIsClosing && bIsClosing) return 1;
+        return 0;
+      });
+
+      // Apply insertions in reverse order to keep indices stable
+      String lineTextWithInline = line;
+      for (int j = insertions.length - 1; j >= 0; j--) {
+        final ins = insertions[j];
+        lineTextWithInline = lineTextWithInline.replaceRange(ins.$1, ins.$1, ins.$2);
+      }
+
+      final ParagraphFormat format = i < _lineFormats.length ? _lineFormats[i] : ParagraphFormat.none;
+
+      // Handle Poem Block Grouping
+      final isPoemFormat = format == ParagraphFormat.poem || 
+                          format == ParagraphFormat.poemCenter || 
+                          format == ParagraphFormat.poemLeft;
+
+      if (isPoemFormat) {
+        if (!inPoemBlock) {
+          formattedLines.add('[POEM]');
+          inPoemBlock = true;
+        }
+        
+        String poemLine = lineTextWithInline;
+        if (format == ParagraphFormat.poemCenter) {
+          poemLine = '[CENTER]$poemLine[/CENTER]';
+        } else if (format == ParagraphFormat.poemLeft) {
+          poemLine = '[LEFT]$poemLine[/LEFT]';
+        }
+        formattedLines.add(poemLine);
+      } else {
+        if (inPoemBlock) {
+          formattedLines.add('[/POEM]');
+          inPoemBlock = false;
+        }
+
+        String finalLine = lineTextWithInline;
+        if (format == ParagraphFormat.center) {
+          finalLine = '[CENTER]$finalLine[/CENTER]';
+        } else if (format == ParagraphFormat.justify) {
+          finalLine = '[JUSTIFY]$finalLine[/JUSTIFY]';
+        } else if (format == ParagraphFormat.left) {
+          finalLine = '[LEFT]$finalLine[/LEFT]';
+        } else if (format == ParagraphFormat.right) {
+          finalLine = '[RIGHT]$finalLine[/RIGHT]';
+        }
+        formattedLines.add(finalLine);
+      }
+
+      currentOffset += line.length + 1; // +1 for \n
+    }
+
+    if (inPoemBlock) {
+      formattedLines.add('[/POEM]');
+    }
+
+    final newRaw = formattedLines.join('\n');
+    setRawText(newRaw);
+
+    // Place selection cursor at the first inserted template line
+    final newLines = text.split('\n');
+    int newOffset = 0;
+    for (int i = 0; i < lineIndex && i < newLines.length; i++) {
+      newOffset += newLines[i].length + 1;
+    }
+    selection = TextSelection.collapsed(offset: newOffset);
+  }
+
+  // ============================================================
+  // المحلل المخصص للمدونات (Parser)
+  // ============================================================
+
+  static ParsedArticleContent parseRawText(String raw) {
+    if (raw.isEmpty) {
+      return ParsedArticleContent(cleanText: '', inlineSpans: [], lineFormats: []);
+    }
+
+    final lines = raw.split('\n');
+    final List<String> cleanLines = [];
+    final List<ParagraphFormat> lineFormats = [];
+    final List<StyleSpan> inlineSpans = [];
+
+    bool insidePoem = false;
+    int currentCleanOffset = 0;
+    final poemSeparator = RegExp(r'\s*(?:\*\*\*|\*\s+\*\s+\*|\t|\s{3,})\s*');
+
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      final trimmed = line.trim();
+      final trimmedUpper = trimmed.toUpperCase();
+
+      if (trimmedUpper == '[POEM]') {
+        insidePoem = true;
+        continue;
+      }
+      if (trimmedUpper == '[/POEM]') {
+        insidePoem = false;
+        continue;
+      }
+
+      ParagraphFormat format = insidePoem ? ParagraphFormat.poem : ParagraphFormat.none;
+      String lineText = line;
+      final trimmedLine = lineText.trim();
+      final trimmedLineUpper = trimmedLine.toUpperCase();
+
+      final isCentered = (trimmedLineUpper.startsWith('[CENTER]') && trimmedLineUpper.endsWith('[/CENTER]')) ||
+                         (trimmedLine.startsWith('=') && trimmedLine.endsWith('=') && trimmedLine.length > 1);
+      final isLeft = (trimmedLineUpper.startsWith('[LEFT]') && trimmedLineUpper.endsWith('[/LEFT]')) ||
+                     (trimmedLine.startsWith('--') && trimmedLine.endsWith('--') && trimmedLine.length > 3);
+      final isRight = (trimmedLineUpper.startsWith('[RIGHT]') && trimmedLineUpper.endsWith('[/RIGHT]')) ||
+                      (trimmedLine.startsWith('++') && trimmedLine.endsWith('++') && trimmedLine.length > 3);
+      final isJustify = (trimmedLineUpper.startsWith('[JUSTIFY]') && trimmedLineUpper.endsWith('[/JUSTIFY]')) ||
+                        (trimmedLine.startsWith('~') && trimmedLine.endsWith('~') && trimmedLine.length > 1);
+
+      if (isCentered) {
+        format = insidePoem ? ParagraphFormat.poemCenter : ParagraphFormat.center;
+        if (trimmedLine.startsWith('=')) {
+          lineText = lineText.replaceFirst('=', '');
+          int lastIdx = lineText.lastIndexOf('=');
+          if (lastIdx != -1) {
+            lineText = lineText.substring(0, lastIdx) + lineText.substring(lastIdx + 1);
+          }
+        } else {
+          lineText = lineText.replaceFirst(RegExp(r'\[CENTER\]', caseSensitive: false), '');
+          lineText = lineText.replaceFirst(RegExp(r'\[/CENTER\]', caseSensitive: false), '');
+        }
+      } else if (isJustify) {
+        format = ParagraphFormat.justify;
+        if (trimmedLine.startsWith('~')) {
+          lineText = lineText.replaceFirst('~', '');
+          int lastIdx = lineText.lastIndexOf('~');
+          if (lastIdx != -1) {
+            lineText = lineText.substring(0, lastIdx) + lineText.substring(lastIdx + 1);
+          }
+        } else {
+          lineText = lineText.replaceFirst(RegExp(r'\[JUSTIFY\]', caseSensitive: false), '');
+          lineText = lineText.replaceFirst(RegExp(r'\[/JUSTIFY\]', caseSensitive: false), '');
+        }
+      } else if (isLeft) {
+        format = insidePoem ? ParagraphFormat.poemLeft : ParagraphFormat.left;
+        if (trimmedLine.startsWith('--')) {
+          lineText = lineText.replaceFirst('--', '');
+          int lastIdx = lineText.lastIndexOf('--');
+          if (lastIdx != -1) {
+            lineText = lineText.substring(0, lastIdx) + lineText.substring(lastIdx + 2);
+          }
+        } else {
+          lineText = lineText.replaceFirst(RegExp(r'\[LEFT\]', caseSensitive: false), '');
+          lineText = lineText.replaceFirst(RegExp(r'\[/LEFT\]', caseSensitive: false), '');
+        }
+      } else if (isRight) {
+        format = ParagraphFormat.right;
+        if (trimmedLine.startsWith('++')) {
+          lineText = lineText.replaceFirst('++', '');
+          int lastIdx = lineText.lastIndexOf('++');
+          if (lastIdx != -1) {
+            lineText = lineText.substring(0, lastIdx) + lineText.substring(lastIdx + 2);
+          }
+        } else {
+          lineText = lineText.replaceFirst(RegExp(r'\[RIGHT\]', caseSensitive: false), '');
+          lineText = lineText.replaceFirst(RegExp(r'\[/RIGHT\]', caseSensitive: false), '');
+        }
+      }
+
+      // Smart poetry split on load if line inside poem contains ***
+      if (insidePoem && !isCentered && !isLeft && lineText.contains(poemSeparator)) {
+        final parts = lineText.split(poemSeparator);
+        for (final part in parts) {
+          if (part.trim().isEmpty) continue;
+          final parsedInline = _parseInlineStyles(part, currentCleanOffset);
+          cleanLines.add(parsedInline.cleanText);
+          inlineSpans.addAll(parsedInline.spans);
+          lineFormats.add(ParagraphFormat.poem);
+          currentCleanOffset += parsedInline.cleanText.length + 1;
+        }
+        continue;
+      }
+
+      final parsedInline = _parseInlineStyles(lineText, currentCleanOffset);
+      cleanLines.add(parsedInline.cleanText);
+      inlineSpans.addAll(parsedInline.spans);
+      lineFormats.add(format);
+
+      currentCleanOffset += parsedInline.cleanText.length + 1;
+    }
+
+    return ParsedArticleContent(
+      cleanText: cleanLines.join('\n'),
+      inlineSpans: inlineSpans,
+      lineFormats: lineFormats,
+    );
+  }
+
+  static ParsedInlineText _parseInlineStyles(String text, int globalOffset) {
+    final pattern = RegExp(
+      r'(\[BOLD\])'
+      r'|(\[/BOLD\])'
+      r'|(\[B\])'
+      r'|(\[/B\])'
+      r'|(\[HIGHLIGHT\])'
+      r'|(\[/HIGHLIGHT\])'
+      r'|(\*)',
+      caseSensitive: false,
+    );
+
+    final List<StyleSpan> spans = [];
+    final StringBuffer cleanBuf = StringBuffer();
+
+    final List<int> openBoldOffsets = [];
+    final List<int> openHighlightOffsets = [];
+
+    int lastIndex = 0;
+
+    for (final match in pattern.allMatches(text)) {
+      if (match.start > lastIndex) {
+        cleanBuf.write(text.substring(lastIndex, match.start));
+      }
+
+      final matched = match.group(0)!;
+      final matchedUpper = matched.toUpperCase();
+      final currentCleanLen = cleanBuf.length;
+
+      if (matchedUpper == '[BOLD]' || matchedUpper == '[B]') {
+        openBoldOffsets.add(currentCleanLen);
+      } else if (matchedUpper == '[/BOLD]' || matchedUpper == '[/B]') {
+        if (openBoldOffsets.isNotEmpty) {
+          final start = openBoldOffsets.removeLast();
+          spans.add(StyleSpan(
+            start: globalOffset + start,
+            end: globalOffset + currentCleanLen,
+            type: SpanType.bold,
+          ));
+        }
+      } else if (matchedUpper == '[HIGHLIGHT]') {
+        openHighlightOffsets.add(currentCleanLen);
+      } else if (matchedUpper == '[/HIGHLIGHT]') {
+        if (openHighlightOffsets.isNotEmpty) {
+          final start = openHighlightOffsets.removeLast();
+          spans.add(StyleSpan(
+            start: globalOffset + start,
+            end: globalOffset + currentCleanLen,
+            type: SpanType.highlight,
+          ));
+        }
+      } else if (matched == '*') {
+        if (openBoldOffsets.isNotEmpty) {
+          final start = openBoldOffsets.removeLast();
+          spans.add(StyleSpan(
+            start: globalOffset + start,
+            end: globalOffset + currentCleanLen,
+            type: SpanType.bold,
+          ));
+        } else {
+          openBoldOffsets.add(currentCleanLen);
+        }
+      }
+
+      lastIndex = match.end;
+    }
+
+    if (lastIndex < text.length) {
+      cleanBuf.write(text.substring(lastIndex));
+    }
+
+    final finalCleanLen = cleanBuf.length;
+    for (final start in openBoldOffsets) {
+      spans.add(StyleSpan(
+        start: globalOffset + start,
+        end: globalOffset + finalCleanLen,
+        type: SpanType.bold,
+      ));
+    }
+    for (final start in openHighlightOffsets) {
+      spans.add(StyleSpan(
+        start: globalOffset + start,
+        end: globalOffset + finalCleanLen,
+        type: SpanType.highlight,
+      ));
+    }
+
+    return ParsedInlineText(cleanBuf.toString(), spans);
+  }
+
+  // ============================================================
+  // الحصول على معلومات الفقرة الحالية والتعديل
+  // ============================================================
+
+  ParagraphFormat get currentParagraphFormat {
+    final sel = selection;
+    if (!sel.isValid) return ParagraphFormat.none;
+    
+    final lines = text.split('\n');
+    int currentOffset = 0;
+    for (int i = 0; i < lines.length; i++) {
+      final len = lines[i].length;
+      if (sel.baseOffset >= currentOffset && sel.baseOffset <= currentOffset + len) {
+        if (i < _lineFormats.length) {
+          return _lineFormats[i];
+        }
+        break;
+      }
+      currentOffset += len + 1;
+    }
+    return ParagraphFormat.none;
+  }
+
+  void toggleParagraphFormat(ParagraphFormat format) {
+    final sel = selection;
+    if (!sel.isValid) return;
+
+    _saveHistoryState();
+    final content = text;
+    final lines = content.split('\n');
+
+    int startOffset = sel.start;
+    int endOffset = sel.end;
+
+    int currentOffset = 0;
+    int startLineIdx = -1;
+    int endLineIdx = -1;
+
+    for (int i = 0; i < lines.length; i++) {
+      final len = lines[i].length;
+      if (startOffset >= currentOffset && startOffset <= currentOffset + len) {
+        if (startLineIdx == -1) startLineIdx = i;
+      }
+      if (endOffset >= currentOffset && endOffset <= currentOffset + len) {
+        endLineIdx = i;
+      }
+      currentOffset += len + 1;
+    }
+
+    if (startLineIdx == -1 || endLineIdx == -1) return;
+
+    // We distinguish if we are toggling poetry format or standard alignment format.
+    if (format == ParagraphFormat.poem) {
+      // Toggle poetry format
+      bool allArePoem = true;
+      for (int i = startLineIdx; i <= endLineIdx; i++) {
+        final currentF = i < _lineFormats.length ? _lineFormats[i] : ParagraphFormat.none;
+        final isLinePoem = currentF == ParagraphFormat.poem ||
+                           currentF == ParagraphFormat.poemCenter ||
+                           currentF == ParagraphFormat.poemLeft;
+        if (!isLinePoem) {
+          allArePoem = false;
+          break;
+        }
+      }
+
+      final List<String> updatedLines = [];
+      final List<ParagraphFormat> updatedFormats = [];
+      int selectionEndShift = 0;
+
+      currentOffset = 0;
+      for (int i = 0; i < lines.length; i++) {
+        final line = lines[i];
+        final lineLen = line.length;
+        final lineEnd = currentOffset + lineLen;
+        final bool isSelected = i >= startLineIdx && i <= endLineIdx;
+        ParagraphFormat lineFormat = i < _lineFormats.length ? _lineFormats[i] : ParagraphFormat.none;
+
+        if (isSelected) {
+          if (allArePoem) {
+            // Toggling poetry off
+            if (lineFormat == ParagraphFormat.poem) {
+              lineFormat = ParagraphFormat.none;
+            } else if (lineFormat == ParagraphFormat.poemCenter) {
+              lineFormat = ParagraphFormat.center;
+            } else if (lineFormat == ParagraphFormat.poemLeft) {
+              lineFormat = ParagraphFormat.left;
+            }
+          } else {
+            // Toggling poetry on
+            if (lineFormat == ParagraphFormat.center) {
+              lineFormat = ParagraphFormat.poemCenter;
+            } else if (lineFormat == ParagraphFormat.left) {
+              lineFormat = ParagraphFormat.poemLeft;
+            } else if (lineFormat == ParagraphFormat.poem ||
+                       lineFormat == ParagraphFormat.poemCenter ||
+                       lineFormat == ParagraphFormat.poemLeft) {
+              // already poem, keep it
+            } else {
+              lineFormat = ParagraphFormat.poem;
+            }
+          }
+        }
+
+        final isPoemLine = lineFormat == ParagraphFormat.poem ||
+                           lineFormat == ParagraphFormat.poemCenter ||
+                           lineFormat == ParagraphFormat.poemLeft;
+
+        final poemSeparator = RegExp(r'\s*(?:\*\*\*|\*\s+\*\s+\*|\s+#\s+|//+|\\+|--|\s+-\s+|\t|\s{3,})\s*');
+        if (isPoemLine && line.contains(poemSeparator)) {
+          final parts = line.split(poemSeparator).where((p) => p.trim().isNotEmpty).toList();
+          if (parts.isNotEmpty) {
+            for (int j = 0; j < parts.length; j++) {
+              updatedLines.add(parts[j]);
+              updatedFormats.add(lineFormat);
+            }
+            final addedNewlinesCount = parts.length - 1;
+            if (sel.end > lineEnd) {
+              selectionEndShift += addedNewlinesCount;
+            }
+          } else {
+            updatedLines.add(line);
+            updatedFormats.add(lineFormat);
+          }
+        } else {
+          updatedLines.add(line);
+          updatedFormats.add(lineFormat);
+        }
+
+        currentOffset += lineLen + 1;
+      }
+
+      final newText = updatedLines.join('\n');
+      _lineFormats = updatedFormats;
+
+      _internalUpdate = true;
+      value = value.copyWith(
+        text: newText,
+        selection: TextSelection(
+          baseOffset: sel.baseOffset,
+          extentOffset: sel.extentOffset + selectionEndShift,
+        ),
+      );
+      _internalUpdate = false;
+      notifyListeners();
+    } else {
+      // Toggle standard alignment format (center, left, right, justify)
+      // If we are on a poem line, we want center/left to toggle sub-alignments of the poem.
+      bool allHaveFormat = true;
+      for (int i = startLineIdx; i <= endLineIdx; i++) {
+        final currentF = i < _lineFormats.length ? _lineFormats[i] : ParagraphFormat.none;
+        // Check if the current format matches the target format or its poem equivalent
+        bool hasTargetAlignment = false;
+        if (format == ParagraphFormat.center) {
+          hasTargetAlignment = currentF == ParagraphFormat.center || currentF == ParagraphFormat.poemCenter;
+        } else if (format == ParagraphFormat.left) {
+          hasTargetAlignment = currentF == ParagraphFormat.left || currentF == ParagraphFormat.poemLeft;
+        } else {
+          hasTargetAlignment = currentF == format;
+        }
+
+        if (!hasTargetAlignment) {
+          allHaveFormat = false;
+          break;
+        }
+      }
+
+      final ParagraphFormat newFormat = allHaveFormat ? ParagraphFormat.none : format;
+
+      final List<String> updatedLines = [];
+      final List<ParagraphFormat> updatedFormats = [];
+      int selectionEndShift = 0;
+
+      currentOffset = 0;
+      for (int i = 0; i < lines.length; i++) {
+        final line = lines[i];
+        final lineLen = line.length;
+        final lineEnd = currentOffset + lineLen;
+        
+        final bool isSelected = i >= startLineIdx && i <= endLineIdx;
+        ParagraphFormat lineFormat = i < _lineFormats.length ? _lineFormats[i] : ParagraphFormat.none;
+
+        if (isSelected) {
+          final isCurrentPoem = lineFormat == ParagraphFormat.poem ||
+                                lineFormat == ParagraphFormat.poemCenter ||
+                                lineFormat == ParagraphFormat.poemLeft;
+
+          if (isCurrentPoem) {
+            if (newFormat == ParagraphFormat.none) {
+              lineFormat = ParagraphFormat.poem;
+            } else if (newFormat == ParagraphFormat.center) {
+              lineFormat = ParagraphFormat.poemCenter;
+            } else if (newFormat == ParagraphFormat.left) {
+              lineFormat = ParagraphFormat.poemLeft;
+            }
+          } else {
+            lineFormat = newFormat;
+          }
+        }
+
+        final isPoemLine = lineFormat == ParagraphFormat.poem ||
+                           lineFormat == ParagraphFormat.poemCenter ||
+                           lineFormat == ParagraphFormat.poemLeft;
+
+        final poemSeparator = RegExp(r'\s*(?:\*\*\*|\*\s+\*\s+\*|\t|\s{3,})\s*');
+        if (isPoemLine && line.contains(poemSeparator)) {
+          final parts = line.split(poemSeparator).where((p) => p.trim().isNotEmpty).toList();
+          if (parts.isNotEmpty) {
+            for (int j = 0; j < parts.length; j++) {
+              updatedLines.add(parts[j]);
+              updatedFormats.add(lineFormat);
+            }
+            final addedNewlinesCount = parts.length - 1;
+            if (sel.end > lineEnd) {
+              selectionEndShift += addedNewlinesCount;
+            }
+          } else {
+            updatedLines.add(line);
+            updatedFormats.add(lineFormat);
+          }
+        } else {
+          updatedLines.add(line);
+          updatedFormats.add(lineFormat);
+        }
+
+        currentOffset += lineLen + 1;
+      }
+
+      final newText = updatedLines.join('\n');
+      _lineFormats = updatedFormats;
+
+      _internalUpdate = true;
+      value = value.copyWith(
+        text: newText,
+        selection: TextSelection(
+          baseOffset: sel.baseOffset,
+          extentOffset: sel.extentOffset + selectionEndShift,
+        ),
+      );
+      _internalUpdate = false;
+      notifyListeners();
+    }
+  }
+
   void toggleBoldAtCursor() {
     final currentSel = selection;
     if (!currentSel.isValid) return;
@@ -443,7 +1205,6 @@ class FormattingTextEditingController extends TextEditingController {
     int bEnd = currentSel.end;
 
     if (currentSel.isCollapsed) {
-      // إيجاد حدود الكلمة
       while (bStart > 0 && !_isWordBoundary(content[bStart - 1])) {
         bStart--;
       }
@@ -457,38 +1218,9 @@ class FormattingTextEditingController extends TextEditingController {
     final selectedText = content.substring(bStart, bEnd);
     if (selectedText.trim().isEmpty) return;
 
-    String newText;
-    final upperSelected = selectedText.toUpperCase();
-    final bool hasBoldTag = upperSelected.contains('[BOLD]') || 
-                           upperSelected.contains('[/BOLD]') || 
-                           upperSelected.contains('[B]') || 
-                           upperSelected.contains('[/B]') ||
-                           selectedText.contains('*');
-
-    if (hasBoldTag) {
-      // إزالة التنسيق
-      newText = selectedText
-          .replaceAll(RegExp(r'\[BOLD\]', caseSensitive: false), '')
-          .replaceAll(RegExp(r'\[/BOLD\]', caseSensitive: false), '')
-          .replaceAll(RegExp(r'\[B\]', caseSensitive: false), '')
-          .replaceAll(RegExp(r'\[/B\]', caseSensitive: false), '')
-          .replaceAll('*', '');
-    } else {
-      // إضافة التنسيق
-      newText = '[BOLD]$selectedText[/BOLD]';
-    }
-
-    final fullNewText = content.replaceRange(bStart, bEnd, newText);
-    _internalUpdate = true;
-    value = value.copyWith(
-      text: fullNewText,
-      selection: TextSelection(baseOffset: bStart, extentOffset: bStart + newText.length),
-    );
-    _internalUpdate = false;
-    notifyListeners();
+    _toggleSpan(bStart, bEnd, SpanType.bold);
   }
 
-  /// يُطبِّق/يُزيل التمييز (Highlight) على الكلمة أو الجزء المحدد (كـ Switch)
   void toggleHighlightAtCursor() {
     final currentSel = selection;
     if (!currentSel.isValid) return;
@@ -498,7 +1230,6 @@ class FormattingTextEditingController extends TextEditingController {
     int bEnd = currentSel.end;
 
     if (currentSel.isCollapsed) {
-      // إيجاد حدود الكلمة
       while (bStart > 0 && !_isWordBoundary(content[bStart - 1])) {
         bStart--;
       }
@@ -512,111 +1243,106 @@ class FormattingTextEditingController extends TextEditingController {
     final selectedText = content.substring(bStart, bEnd);
     if (selectedText.trim().isEmpty) return;
 
-    String newText;
-    final upperSelected = selectedText.toUpperCase();
-    final bool hasHighlightTag = upperSelected.contains('[HIGHLIGHT]') || 
-                                 upperSelected.contains('[/HIGHLIGHT]');
+    _toggleSpan(bStart, bEnd, SpanType.highlight);
+  }
 
-    if (hasHighlightTag) {
-      // إزالة التنسيق
-      newText = selectedText
-          .replaceAll(RegExp(r'\[HIGHLIGHT\]', caseSensitive: false), '')
-          .replaceAll(RegExp(r'\[/HIGHLIGHT\]', caseSensitive: false), '');
+  void _toggleSpan(int start, int end, SpanType type) {
+    _saveHistoryState();
+    final List<StyleSpan> overlapping = _spans.where((s) => s.type == type && s.start < end && s.end > start).toList();
+    
+    if (overlapping.isNotEmpty) {
+      // Toggle OFF: remove style from [start, end]
+      final List<StyleSpan> remainingSpans = [];
+      for (final span in _spans) {
+        if (span.type != type) {
+          remainingSpans.add(span);
+          continue;
+        }
+        
+        if (span.end <= start || span.start >= end) {
+          remainingSpans.add(span);
+        } else {
+          if (span.start < start) {
+            remainingSpans.add(StyleSpan(start: span.start, end: start, type: type));
+          }
+          if (span.end > end) {
+            remainingSpans.add(StyleSpan(start: end, end: span.end, type: type));
+          }
+        }
+      }
+      _spans = remainingSpans;
     } else {
-      // إضافة التنسيق
-      newText = '[HIGHLIGHT]$selectedText[/HIGHLIGHT]';
-    }
+      // Prevent overlapping bold and highlight
+      final oppositeType = type == SpanType.bold ? SpanType.highlight : SpanType.bold;
+      final bool hasOpposite = _spans.any((s) => s.type == oppositeType && s.start < end && s.end > start);
+      if (hasOpposite) {
+        return;
+      }
 
-    final fullNewText = content.replaceRange(bStart, bEnd, newText);
-    _internalUpdate = true;
-    value = value.copyWith(
-      text: fullNewText,
-      selection: TextSelection(baseOffset: bStart, extentOffset: bStart + newText.length),
-    );
-    _internalUpdate = false;
+      // Toggle ON: add style to [start, end] and merge with adjacent/overlapping spans
+      final List<StyleSpan> remainingSpans = _spans.where((s) => s.type != type).toList();
+      
+      int newStart = start;
+      int newEnd = end;
+      
+      for (final span in _spans.where((s) => s.type == type)) {
+        if (span.start <= newEnd && span.end >= newStart) {
+          if (span.start < newStart) newStart = span.start;
+          if (span.end > newEnd) newEnd = span.end;
+        } else {
+          remainingSpans.add(span);
+        }
+      }
+      
+      remainingSpans.add(StyleSpan(start: newStart, end: newEnd, type: type));
+      _spans = remainingSpans;
+    }
+    
     notifyListeners();
   }
 
-  // ----------------------------------------------------------
-  // دالات مساعدة
-  // ----------------------------------------------------------
+  void addSpan(int start, int end, SpanType type) {
+    _saveHistoryState();
+    // Prevent overlapping bold and highlight
+    final oppositeType = type == SpanType.bold ? SpanType.highlight : SpanType.bold;
+    final bool hasOpposite = _spans.any((s) => s.type == oppositeType && s.start < end && s.end > start);
+    if (hasOpposite) {
+      return;
+    }
+
+    final List<StyleSpan> remainingSpans = _spans.where((s) => s.type != type).toList();
+    
+    int newStart = start;
+    int newEnd = end;
+    
+    for (final span in _spans.where((s) => s.type == type)) {
+      if (span.start <= newEnd && span.end >= newStart) {
+        if (span.start < newStart) newStart = span.start;
+        if (span.end > newEnd) newEnd = span.end;
+      } else {
+        remainingSpans.add(span);
+      }
+    }
+    
+    remainingSpans.add(StyleSpan(start: newStart, end: newEnd, type: type));
+    _spans = remainingSpans;
+    notifyListeners();
+  }
 
   bool _isWordBoundary(String c) {
-    return c == ' ' || c == '\n' || c == '\t' || c == '\u2003' || c == '\u200B';
+    return c == ' ' || c == '\n' || c == '\t' || c == '\u2003' || c == '\u200B' || c == '،' || c == '.' || c == '؛';
   }
 
-  String _stripParagraphTags(String line) {
-    final trimmed = line.trim();
-    if ((trimmed.startsWith('[CENTER]') && trimmed.endsWith('[/CENTER]')) ||
-        (trimmed.startsWith('=') && trimmed.endsWith('=') && trimmed.length > 1)) {
-      return trimmed.startsWith('=') ? trimmed.substring(1, trimmed.length - 1).trim() : trimmed.substring(8, trimmed.length - 9).trim();
-    }
-    if ((trimmed.startsWith('[JUSTIFY]') && trimmed.endsWith('[/JUSTIFY]')) ||
-        (trimmed.startsWith('~') && trimmed.endsWith('~') && trimmed.length > 1)) {
-      return trimmed.startsWith('~') ? trimmed.substring(1, trimmed.length - 1).trim() : trimmed.substring(9, trimmed.length - 10).trim();
-    }
-    if ((trimmed.startsWith('[LEFT]') && trimmed.endsWith('[/LEFT]')) ||
-        (trimmed.startsWith('--') && trimmed.endsWith('--') && trimmed.length > 3)) {
-      return trimmed.startsWith('-') ? trimmed.substring(2, trimmed.length - 2).trim() : trimmed.substring(6, trimmed.length - 7).trim();
-    }
-    if ((trimmed.startsWith('[RIGHT]') && trimmed.endsWith('[/RIGHT]')) ||
-        (trimmed.startsWith('++') && trimmed.endsWith('++') && trimmed.length > 3)) {
-      return trimmed.startsWith('+') ? trimmed.substring(2, trimmed.length - 2).trim() : trimmed.substring(7, trimmed.length - 8).trim();
-    }
-    return line;
-  }
+  // ============================================================
+  // buildTextSpan: التزيين البصري الأنيق للوسوم والفقرات داخل المحرر
+  // ============================================================
 
-  ParagraphFormat _getLineFormat(String line) {
-    final trimmed = line.trim();
-    if ((trimmed.startsWith('[CENTER]') && trimmed.endsWith('[/CENTER]')) ||
-        (trimmed.startsWith('=') && trimmed.endsWith('=') && trimmed.length > 1)) {
-      return ParagraphFormat.center;
-    }
-    if ((trimmed.startsWith('[JUSTIFY]') && trimmed.endsWith('[/JUSTIFY]')) ||
-        (trimmed.startsWith('~') && trimmed.endsWith('~') && trimmed.length > 1)) {
-      return ParagraphFormat.justify;
-    }
-    if ((trimmed.startsWith('[LEFT]') && trimmed.endsWith('[/LEFT]')) ||
-        (trimmed.startsWith('--') && trimmed.endsWith('--') && trimmed.length > 3)) {
-      return ParagraphFormat.left;
-    }
-    if ((trimmed.startsWith('[RIGHT]') && trimmed.endsWith('[/RIGHT]')) ||
-        (trimmed.startsWith('++') && trimmed.endsWith('++') && trimmed.length > 3)) {
-      return ParagraphFormat.right;
-    }
-    return ParagraphFormat.none;
-  }
-
-  String _applyFormatToLine(String cleanLine, ParagraphFormat format) {
-    final trimmed = cleanLine.trim();
-    if (trimmed.isEmpty) return cleanLine;
-    switch (format) {
-      case ParagraphFormat.none:
-        return trimmed;
-      case ParagraphFormat.center:
-        return '[CENTER]$trimmed[/CENTER]';
-      case ParagraphFormat.justify:
-        return '[JUSTIFY]$trimmed[/JUSTIFY]';
-      case ParagraphFormat.left:
-        return '[LEFT]$trimmed[/LEFT]';
-      case ParagraphFormat.right:
-        return '[RIGHT]$trimmed[/RIGHT]';
-      case ParagraphFormat.poem:
-        return '[POEM]\n$trimmed\n[/POEM]';
-    }
-  }
-
-  // ----------------------------------------------------------
-  // buildTextSpan: التزيين البصري الأنيق للوسوم داخل المحرر مع تظليل البحث
-  // ----------------------------------------------------------
-
-  List<InlineSpan> _buildHighlightedSpans(String segmentText, TextStyle baseStyle, BuildContext context) {
+  List<TextSpan> _applySearchHighlight(String segmentText, TextStyle baseStyle, BuildContext context) {
     if (_highlightQuery == null || _highlightQuery!.trim().isEmpty) {
       return [TextSpan(text: segmentText, style: baseStyle)];
     }
 
     final query = _highlightQuery!.trim();
-    // إزالة التشكيل لبناء نمط البحث غير الحساس للتشكيل
     final baseWord = query.replaceAll(RegExp(r'[\u064B-\u0652]'), '');
     if (baseWord.isEmpty) {
       return [TextSpan(text: segmentText, style: baseStyle)];
@@ -625,7 +1351,7 @@ class FormattingTextEditingController extends TextEditingController {
     final regexPattern = baseWord.split('').map((char) => RegExp.escape(char)).join(r'[\u064B-\u0652]*');
     final regex = RegExp(regexPattern, caseSensitive: false);
 
-    final List<InlineSpan> spans = [];
+    final List<TextSpan> spans = [];
     int lastIndex = 0;
 
     for (final match in regex.allMatches(segmentText)) {
@@ -638,8 +1364,8 @@ class FormattingTextEditingController extends TextEditingController {
       spans.add(TextSpan(
         text: match.group(0),
         style: baseStyle.copyWith(
-          backgroundColor: Colors.yellow.withValues(alpha: 0.5),
-          color: Colors.black, // لضمان وضوح النص المظلل في أي ثيم
+          backgroundColor: Colors.yellow.withValues(alpha: 0.6),
+          color: Colors.black,
         ),
       ));
       lastIndex = match.end;
@@ -655,256 +1381,134 @@ class FormattingTextEditingController extends TextEditingController {
     return spans;
   }
 
-  TextStyle _getTagChipStyle(String tag, BuildContext context, TextStyle defaultStyle) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cleanTag = tag.toUpperCase().replaceAll('[', '').replaceAll(']', '').replaceAll('/', '');
-    
-    Color bg;
-    Color fg;
-    
-    switch (cleanTag) {
-      case 'POEM':
-        bg = isDark ? const Color(0xFF4C1D95) : const Color(0xFFF3E8FF); // Purple
-        fg = isDark ? const Color(0xFFDDD6FE) : const Color(0xFF7C3AED);
-        break;
-      case 'BOLD':
-      case 'B':
-        bg = isDark ? const Color(0xFF1E3A8A) : const Color(0xFFDBEAFE); // Blue
-        fg = isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8);
-        break;
-      case 'HIGHLIGHT':
-        bg = isDark ? const Color(0xFF78350F) : const Color(0xFFFEF08A); // Amber/Yellow
-        fg = isDark ? const Color(0xFFFDE68A) : const Color(0xFFB45309);
-        break;
-      case 'CENTER':
-      case 'JUSTIFY':
-      case 'LEFT':
-      case 'RIGHT':
-        bg = isDark ? const Color(0xFF064E3B) : const Color(0xFFD1FAE5); // Emerald/Green
-        fg = isDark ? const Color(0xFF6EE7B7) : const Color(0xFF047857);
-        break;
-      default:
-        bg = isDark ? const Color(0xFF374151) : const Color(0xFFF3F4F6); // Grey
-        fg = isDark ? const Color(0xFFD1D5DB) : const Color(0xFF4B5563);
-        break;
-    }
-    
-    return defaultStyle.copyWith(
-      backgroundColor: bg,
-      color: fg,
-      fontSize: 13,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 0.5,
-    );
-  }
-
   @override
   TextSpan buildTextSpan({
     required BuildContext context,
     TextStyle? style,
     required bool withComposing,
   }) {
-    final fullText = text;
-    if (fullText.isEmpty) {
-      return TextSpan(text: fullText, style: style);
+    final defaultStyle = style ?? const TextStyle();
+    final cleanText = text;
+    if (cleanText.isEmpty) {
+      return TextSpan(text: cleanText, style: defaultStyle);
     }
 
-    final defaultStyle = style ?? const TextStyle();
-    
-    // وسوم رمادية خفيفة (للقديمة غير المطورة)
-    final tagStyle = defaultStyle.copyWith(
-      color: AppColors.getTextPrimary(context).withValues(alpha: 0.35),
-      fontSize: 14,
-      fontWeight: FontWeight.normal,
-    );
-
-    final List<InlineSpan> children = [];
+    final List<TextSpan> lineSpans = [];
+    final lines = cleanText.split('\n');
+    int currentOffset = 0;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // التعبيرات المنتظمة لالتقاط الكتل والوسوم
-    final pattern = RegExp(
-      r'(\[POEM\][\s\S]*?\[/POEM\])'
-      r'|(\[BOLD\][\s\S]*?\[/BOLD\])'
-      r'|(\[B\][\s\S]*?\[/B\])'
-      r'|(\[HIGHLIGHT\][\s\S]*?\[/HIGHLIGHT\])'
-      r'|(\[CENTER\][\s\S]*?\[/CENTER\])'
-      r'|(\[JUSTIFY\][\s\S]*?\[/JUSTIFY\])'
-      r'|(\[LEFT\][\s\S]*?\[/LEFT\])'
-      r'|(\[RIGHT\][\s\S]*?\[/RIGHT\])'
-      r'|(\*.*?\*)'
-      r'|(=.*?=)'
-      r'|(~.*?~)'
-      r'|(--.*?--)'
-      r'|(\+\+.*?\+\+)',
-      caseSensitive: false,
-    );
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      final lineStart = currentOffset;
+      final lineEnd = currentOffset + line.length;
 
-    int lastIndex = 0;
+      // Extract inline spans that overlap with this line range
+      final List<StyleSpan> lineInlineSpans = _spans
+          .where((s) => s.start < lineEnd && s.end > lineStart)
+          .toList();
 
-    for (final match in pattern.allMatches(fullText)) {
-      // إضافة النص العادي قبل الوسم
-      if (match.start > lastIndex) {
-        children.addAll(_buildHighlightedSpans(
-          fullText.substring(lastIndex, match.start),
-          defaultStyle,
-          context,
-        ));
-      }
+      // Determine paragraph styling based on format
+      final ParagraphFormat format = i < _lineFormats.length ? _lineFormats[i] : ParagraphFormat.none;
+      TextStyle paragraphStyle = defaultStyle;
 
-      final matchedText = match.group(0)!;
-      final matchedUpper = matchedText.toUpperCase();
-
-      if (matchedUpper.startsWith('[POEM]')) {
-        final tagLength = '[POEM]'.length;
-        final innerText = matchedText.substring(tagLength, matchedText.length - (tagLength + 1));
-        children.add(TextSpan(text: '[POEM]', style: _getTagChipStyle('[POEM]', context, defaultStyle)));
-        children.addAll(_buildHighlightedSpans(
-          innerText,
-          defaultStyle.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppColors.primary.withValues(alpha: 0.85),
+      switch (format) {
+        case ParagraphFormat.center:
+        case ParagraphFormat.poemCenter:
+          paragraphStyle = paragraphStyle.copyWith(
+            backgroundColor: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.25) : const Color(0xFFD1FAE5),
+            color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF047857),
+            fontWeight: FontWeight.bold,
+          );
+          break;
+        case ParagraphFormat.justify:
+          paragraphStyle = paragraphStyle.copyWith(
+            backgroundColor: isDark ? const Color(0xFF1E3A8A).withValues(alpha: 0.15) : const Color(0xFFDBEAFE),
+            color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8),
+          );
+          break;
+        case ParagraphFormat.left:
+        case ParagraphFormat.poemLeft:
+          paragraphStyle = paragraphStyle.copyWith(
+            backgroundColor: isDark ? const Color(0xFF374151).withValues(alpha: 0.25) : const Color(0xFFF3F4F6),
+            color: isDark ? const Color(0xFFD1D5DB) : const Color(0xFF4B5563),
+          );
+          break;
+        case ParagraphFormat.right:
+          paragraphStyle = paragraphStyle.copyWith(
+            backgroundColor: isDark ? const Color(0xFF1E293B).withValues(alpha: 0.2) : const Color(0xFFE2E8F0),
+          );
+          break;
+        case ParagraphFormat.poem:
+          paragraphStyle = paragraphStyle.copyWith(
+            backgroundColor: isDark ? const Color(0xFF4C1D95).withValues(alpha: 0.15) : const Color(0xFFF3E8FF),
+            color: isDark ? const Color(0xFFDDD6FE) : const Color(0xFF7C3AED),
             fontStyle: FontStyle.italic,
-          ),
-          context,
-        ));
-        children.add(TextSpan(text: '[/POEM]', style: _getTagChipStyle('[/POEM]', context, defaultStyle)));
-      } else if (matchedUpper.startsWith('[BOLD]')) {
-        final tagLength = '[BOLD]'.length;
-        final innerText = matchedText.substring(tagLength, matchedText.length - (tagLength + 1));
-        children.add(TextSpan(text: '[BOLD]', style: _getTagChipStyle('[BOLD]', context, defaultStyle)));
-        children.addAll(_buildHighlightedSpans(
-          innerText,
-          defaultStyle.copyWith(fontWeight: FontWeight.w900),
-          context,
-        ));
-        children.add(TextSpan(text: '[/BOLD]', style: _getTagChipStyle('[/BOLD]', context, defaultStyle)));
-      } else if (matchedUpper.startsWith('[HIGHLIGHT]')) {
-        final tagLength = '[HIGHLIGHT]'.length;
-        final innerText = matchedText.substring(tagLength, matchedText.length - (tagLength + 1));
-        children.add(TextSpan(text: '[HIGHLIGHT]', style: _getTagChipStyle('[HIGHLIGHT]', context, defaultStyle)));
-        children.addAll(_buildHighlightedSpans(
-          innerText,
-          defaultStyle.copyWith(
-            backgroundColor: isDark ? const Color(0xFF78350F).withValues(alpha: 0.5) : const Color(0xFFFEF08A),
-            color: isDark ? const Color(0xFFFFFBEB) : const Color(0xFF1E293B),
-          ),
-          context,
-        ));
-        children.add(TextSpan(text: '[/HIGHLIGHT]', style: _getTagChipStyle('[/HIGHLIGHT]', context, defaultStyle)));
-      } else if (matchedUpper.startsWith('[B]')) {
-        final tagLength = '[B]'.length;
-        final innerText = matchedText.substring(tagLength, matchedText.length - (tagLength + 1));
-        children.add(TextSpan(text: '[B]', style: _getTagChipStyle('[B]', context, defaultStyle)));
-        children.addAll(_buildHighlightedSpans(
-          innerText,
-          defaultStyle.copyWith(fontWeight: FontWeight.w900),
-          context,
-        ));
-        children.add(TextSpan(text: '[/B]', style: _getTagChipStyle('[/B]', context, defaultStyle)));
-      } else if (matchedUpper.startsWith('[CENTER]')) {
-        final tagLength = '[CENTER]'.length;
-        final innerText = matchedText.substring(tagLength, matchedText.length - (tagLength + 1));
-        children.add(TextSpan(text: '[CENTER]', style: _getTagChipStyle('[CENTER]', context, defaultStyle)));
-        children.addAll(_buildHighlightedSpans(
-          innerText,
-          defaultStyle.copyWith(
-            color: AppColors.primary,
-            decoration: TextDecoration.underline,
-          ),
-          context,
-        ));
-        children.add(TextSpan(text: '[/CENTER]', style: _getTagChipStyle('[/CENTER]', context, defaultStyle)));
-      } else if (matchedUpper.startsWith('[JUSTIFY]')) {
-        final tagLength = '[JUSTIFY]'.length;
-        final innerText = matchedText.substring(tagLength, matchedText.length - (tagLength + 1));
-        children.add(TextSpan(text: '[JUSTIFY]', style: _getTagChipStyle('[JUSTIFY]', context, defaultStyle)));
-        children.addAll(_buildHighlightedSpans(
-          innerText,
-          defaultStyle.copyWith(decoration: TextDecoration.underline),
-          context,
-        ));
-        children.add(TextSpan(text: '[/JUSTIFY]', style: _getTagChipStyle('[/JUSTIFY]', context, defaultStyle)));
-      } else if (matchedUpper.startsWith('[LEFT]')) {
-        final tagLength = '[LEFT]'.length;
-        final innerText = matchedText.substring(tagLength, matchedText.length - (tagLength + 1));
-        children.add(TextSpan(text: '[LEFT]', style: _getTagChipStyle('[LEFT]', context, defaultStyle)));
-        children.addAll(_buildHighlightedSpans(
-          innerText,
-          defaultStyle.copyWith(fontStyle: FontStyle.italic),
-          context,
-        ));
-        children.add(TextSpan(text: '[/LEFT]', style: _getTagChipStyle('[/LEFT]', context, defaultStyle)));
-      } else if (matchedUpper.startsWith('[RIGHT]')) {
-        final tagLength = '[RIGHT]'.length;
-        final innerText = matchedText.substring(tagLength, matchedText.length - (tagLength + 1));
-        children.add(TextSpan(text: '[RIGHT]', style: _getTagChipStyle('[RIGHT]', context, defaultStyle)));
-        children.addAll(_buildHighlightedSpans(
-          innerText,
-          defaultStyle.copyWith(fontWeight: FontWeight.w500),
-          context,
-        ));
-        children.add(TextSpan(text: '[/RIGHT]', style: _getTagChipStyle('[/RIGHT]', context, defaultStyle)));
-      } else if (matchedText.startsWith('*')) {
-        final innerText = matchedText.substring(1, matchedText.length - 1);
-        children.add(TextSpan(text: '*', style: tagStyle));
-        children.addAll(_buildHighlightedSpans(
-          innerText,
-          defaultStyle.copyWith(fontWeight: FontWeight.w900),
-          context,
-        ));
-        children.add(TextSpan(text: '*', style: tagStyle));
-      } else if (matchedText.startsWith('=')) {
-        final innerText = matchedText.substring(1, matchedText.length - 1);
-        children.add(TextSpan(text: '=', style: tagStyle));
-        children.addAll(_buildHighlightedSpans(
-          innerText,
-          defaultStyle.copyWith(
-            color: AppColors.primary,
-            decoration: TextDecoration.underline,
-          ),
-          context,
-        ));
-        children.add(TextSpan(text: '=', style: tagStyle));
-      } else if (matchedText.startsWith('~')) {
-        final innerText = matchedText.substring(1, matchedText.length - 1);
-        children.add(TextSpan(text: '~', style: tagStyle));
-        children.addAll(_buildHighlightedSpans(
-          innerText,
-          defaultStyle.copyWith(decoration: TextDecoration.underline),
-          context,
-        ));
-        children.add(TextSpan(text: '~', style: tagStyle));
-      } else if (matchedText.startsWith('--')) {
-        final innerText = matchedText.substring(2, matchedText.length - 2);
-        children.add(TextSpan(text: '--', style: tagStyle));
-        children.addAll(_buildHighlightedSpans(
-          innerText,
-          defaultStyle.copyWith(fontStyle: FontStyle.italic),
-          context,
-        ));
-        children.add(TextSpan(text: '--', style: tagStyle));
-      } else if (matchedText.startsWith('++')) {
-        final innerText = matchedText.substring(2, matchedText.length - 2);
-        children.add(TextSpan(text: '++', style: tagStyle));
-        children.addAll(_buildHighlightedSpans(
-          innerText,
-          defaultStyle.copyWith(fontWeight: FontWeight.w500),
-          context,
-        ));
-        children.add(TextSpan(text: '++', style: tagStyle));
+          );
+          break;
+        case ParagraphFormat.none:
+          break;
       }
 
-      lastIndex = match.end;
-    }
+      // Build inline spans for this line
+      final List<TextSpan> inlineSpansForLine = [];
+      int lastLineIndex = 0;
 
-    if (lastIndex < fullText.length) {
-      children.addAll(_buildHighlightedSpans(
-        fullText.substring(lastIndex),
-        defaultStyle,
-        context,
+      // Sort spans inside the line by start offset
+      lineInlineSpans.sort((a, b) => a.start.compareTo(b.start));
+
+      for (final span in lineInlineSpans) {
+        final relStart = (span.start - lineStart).clamp(0, line.length);
+        final relEnd = (span.end - lineStart).clamp(0, line.length);
+
+        if (relStart > lastLineIndex) {
+          inlineSpansForLine.addAll(_applySearchHighlight(
+            line.substring(lastLineIndex, relStart),
+            paragraphStyle,
+            context,
+          ));
+        }
+
+        TextStyle spanStyle = paragraphStyle;
+        if (span.type == SpanType.bold) {
+          spanStyle = spanStyle.copyWith(fontWeight: FontWeight.w900);
+        } else if (span.type == SpanType.highlight) {
+          spanStyle = spanStyle.copyWith(
+            backgroundColor: isDark ? const Color(0xFF78350F).withValues(alpha: 0.6) : const Color(0xFFFEF08A),
+            color: isDark ? const Color(0xFFFFFBEB) : const Color(0xFF1E293B),
+          );
+        }
+
+        if (relEnd > relStart) {
+          inlineSpansForLine.addAll(_applySearchHighlight(
+            line.substring(relStart, relEnd),
+            spanStyle,
+            context,
+          ));
+        }
+
+        lastLineIndex = relEnd;
+      }
+
+      if (lastLineIndex < line.length) {
+        inlineSpansForLine.addAll(_applySearchHighlight(
+          line.substring(lastLineIndex),
+          paragraphStyle,
+          context,
+        ));
+      }
+
+      lineSpans.add(TextSpan(
+        children: inlineSpansForLine,
       ));
+
+      if (i < lines.length - 1) {
+        lineSpans.add(TextSpan(text: '\n', style: defaultStyle));
+      }
+
+      currentOffset += line.length + 1;
     }
 
-    return TextSpan(children: children, style: defaultStyle);
+    return TextSpan(children: lineSpans, style: defaultStyle);
   }
 }

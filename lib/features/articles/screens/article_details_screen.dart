@@ -12,7 +12,13 @@ import 'package:sijilli/core/extensions/context_l10n.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../../core/providers/settings_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/providers/theme_provider.dart';
 import '../widgets/comment_section.dart';
+import '../widgets/collapsible_content.dart';
+import 'package:sijilli/features/articles/widgets/tag_chip.dart';
+import 'package:sijilli/features/articles/widgets/tag_selector_sheet.dart';
+import 'package:sijilli/core/utils/image_saver_util.dart';
+
 class ArticleDetailsScreen extends StatefulWidget {
   final Article article;
   final bool openComments;
@@ -35,9 +41,7 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    _scrollController.addListener(_saveScrollPosition);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _restoreScrollPosition();
       Provider.of<ArticleProvider>(context, listen: false).fetchComments(widget.article.id);
       if (widget.openComments) {
         _showCommentsSheet();
@@ -70,49 +74,14 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
 
   @override
   void dispose() {
-    _scrollController.removeListener(_saveScrollPosition);
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _saveScrollPosition() async {
-    final provider = Provider.of<ArticleProvider>(context, listen: false);
-    final updatedArticle = provider.articles.firstWhere(
-      (a) => a.id == widget.article.id,
-      orElse: () => widget.article,
-    );
-    if (updatedArticle.wordCount > 400 && _scrollController.hasClients) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setDouble('article_scroll_pos_${widget.article.id}', _scrollController.offset);
-    }
-  }
-
-  void _restoreScrollPosition() async {
-    final provider = Provider.of<ArticleProvider>(context, listen: false);
-    final updatedArticle = provider.articles.firstWhere(
-      (a) => a.id == widget.article.id,
-      orElse: () => widget.article,
-    );
-    if (updatedArticle.wordCount > 400) {
-      final prefs = await SharedPreferences.getInstance();
-      final double? offset = prefs.getDouble('article_scroll_pos_${widget.article.id}');
-      if (offset != null && offset > 0 && _scrollController.hasClients) {
-        await Future.delayed(const Duration(milliseconds: 150));
-        if (_scrollController.hasClients) {
-          final maxScroll = _scrollController.position.maxScrollExtent;
-          final targetOffset = offset.clamp(0.0, maxScroll);
-          _scrollController.jumpTo(targetOffset);
-        }
-      }
-    }
-  }
-
-  @override
+  }  @override
   Widget build(BuildContext context) {
     final provider = Provider.of<ArticleProvider>(context);
     final settingsProvider = Provider.of<SettingsProvider>(context);
-    final useTraditionalArabic = settingsProvider.useTraditionalArabic;
-    final fontFamily = useTraditionalArabic ? 'Traditional_Arabic' : null;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final fontFamily = settingsProvider.articleFontFamily;
 
     final updatedArticle = provider.articles.firstWhere(
       (a) => a.id == widget.article.id,
@@ -134,23 +103,81 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
           child: CustomScrollView(
             controller: _scrollController,
             slivers: [
-              // AppBar & Image Header
+              // AppBar (Standard pinned toolbar)
               SliverAppBar(
-                expandedHeight: hasImage 
-                    ? (_isImageExpanded ? 300.0 : 100.0) 
-                    : kToolbarHeight,
                 pinned: true,
                 backgroundColor: AppColors.getBackground(context),
                 foregroundColor: AppColors.getTextPrimary(context),
                 actions: [
                   IconButton(
-                    tooltip: 'تغيير خط القراءة (Traditional Arabic)',
+                    tooltip: context.l10n.readingFontTooltip,
                     icon: Icon(
-                      useTraditionalArabic ? Icons.font_download : Icons.font_download_outlined,
-                      color: useTraditionalArabic ? AppColors.primary : null,
+                      Icons.font_download,
+                      color: fontFamily != 'Default' ? AppColors.primary : null,
                     ),
                     onPressed: () {
-                      settingsProvider.setUseTraditionalArabic(!useTraditionalArabic);
+                      showModalBottomSheet(
+                        context: context,
+                        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                        ),
+                        builder: (context) {
+                          return SafeArea(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(height: 16),
+                                Container(
+                                  width: 40,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  context.l10n.readingFontTooltip,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                const Divider(),
+                                Flexible(
+                                  child: ListView(
+                                    shrinkWrap: true,
+                                    children: themeProvider.availableFonts.map((font) {
+                                      final isSelected = fontFamily == font;
+                                      return ListTile(
+                                        title: Text(
+                                          font == 'Default' ? context.l10n.defaultFontStyle : font,
+                                          style: TextStyle(
+                                            fontFamily: font == 'Default' ? null : font,
+                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                            color: isSelected ? AppColors.primary : null,
+                                          ),
+                                        ),
+                                        trailing: isSelected 
+                                            ? const Icon(Icons.check_circle, color: AppColors.primary)
+                                            : null,
+                                        onTap: () async {
+                                          await settingsProvider.setArticleFontFamily(font);
+                                          if (context.mounted) {
+                                            Navigator.pop(context);
+                                          }
+                                        },
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
                     },
                   ),
                   if (isAuthor || updatedArticle.isPublished)
@@ -193,66 +220,6 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                       },
                     ),
                 ],
-                flexibleSpace: FlexibleSpaceBar(
-                  background: hasImage
-                      ? GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _isImageExpanded = !_isImageExpanded;
-                            });
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            width: double.infinity,
-                            height: _isImageExpanded ? 300.0 : 100.0,
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                Image.network(
-                                  'https://sijilli.pockethost.io/api/files/articles/${updatedArticle.id}/${updatedArticle.image}',
-                                  fit: BoxFit.cover,
-                                ),
-                                // Gradient overlay to ensure back button is visible
-                                Container(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [
-                                        Colors.black.withValues(alpha: 0.6),
-                                        Colors.transparent,
-                                      ],
-                                      stops: const [0.0, 0.3],
-                                    ),
-                                  ),
-                                ),
-                                if (!_isImageExpanded)
-                                  Positioned(
-                                    bottom: 8,
-                                    right: 16,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black54,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 16),
-                                          const SizedBox(width: 4),
-                                          Text(context.l10n.expandImage, style: const TextStyle(color: Colors.white, fontSize: 10)),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        )
-                      : null,
-                ),
               ),
   
               // Article Content
@@ -262,30 +229,158 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-  
-                      // Text Content
-                      isAuthor
-                          ? GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => AddArticleScreen(article: updatedArticle),
+                      if (hasImage) ...[
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _isImageExpanded = !_isImageExpanded;
+                            });
+                          },
+                          child: AnimatedSize(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                            child: Stack(
+                              alignment: Alignment.bottomCenter,
+                              children: [
+                                Container(
+                                  width: double.infinity,
+                                  height: _isImageExpanded ? null : 120.0,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
-                                );
-                              },
-                              child: ArticleContentRenderer(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Image.network(
+                                      'https://sijilli.pockethost.io/api/files/articles/${updatedArticle.id}/${updatedArticle.image}',
+                                      fit: _isImageExpanded ? BoxFit.contain : BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                                if (_isImageExpanded)
+                                  Positioned(
+                                    bottom: 12,
+                                    right: 12,
+                                    child: Material(
+                                      color: Colors.black.withValues(alpha: 0.5),
+                                      borderRadius: BorderRadius.circular(20),
+                                      child: InkWell(
+                                        onTap: () async {
+                                          final imageUrl = 'https://sijilli.pockethost.io/api/files/articles/${updatedArticle.id}/${updatedArticle.image}';
+                                          final success = await ImageSaverUtil.saveImageFromUrl(imageUrl, '${updatedArticle.id}_image.jpg');
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text(success 
+                                                    ? 'تم حفظ الصورة في ألبوم الصور بنجاح 🖼️' 
+                                                    : 'فشل حفظ الصورة ❌'),
+                                              ),
+                                            );
+                                          }
+                                        },
+                                        borderRadius: BorderRadius.circular(20),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          child: const Icon(
+                                            Icons.arrow_downward,
+                                            size: 24,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      // Text Content
+                      CollapsibleContent(
+                        buttonText: context.l10n.fullArticle,
+                        child: isAuthor
+                            ? GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => AddArticleScreen(article: updatedArticle),
+                                    ),
+                                  );
+                                },
+                                child: ArticleContentRenderer(
+                                  text: updatedArticle.text,
+                                  fontFamily: fontFamily,
+                                ),
+                              )
+                            : ArticleContentRenderer(
                                 text: updatedArticle.text,
                                 fontFamily: fontFamily,
                               ),
-                            )
-                          : ArticleContentRenderer(
-                              text: updatedArticle.text,
-                              fontFamily: fontFamily,
-                            ),
+                      ),
+                      
+                      if (updatedArticle.tags.isNotEmpty || isAuthor) ...[
+                        const SizedBox(height: 24),
+                        Wrap(
+                          spacing: 8.0,
+                          runSpacing: 8.0,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            ...updatedArticle.tags.map((tag) => TagChip(tag: tag)),
+                            if (isAuthor)
+                              GestureDetector(
+                                onTap: () {
+                                  TagSelectorSheet.show(
+                                    context,
+                                    initialSelectedTagIds: updatedArticle.tagIds,
+                                    onSelectionChanged: (selectedTagIds, selectedTags) async {
+                                      await context.read<ArticleProvider>().updateArticle(
+                                        id: updatedArticle.id,
+                                        tagIds: selectedTagIds,
+                                      );
+                                    },
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: AppColors.primary.withValues(alpha: 0.3),
+                                      width: 1.0,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.add,
+                                        size: 13,
+                                        color: AppColors.primary,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        updatedArticle.tags.isEmpty 
+                                            ? context.l10n.addCategory 
+                                            : context.l10n.editCategory,
+                                        style: const TextStyle(
+                                          color: AppColors.primary,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          height: 1.1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
                       
                       // Metadata Block at the bottom
-                      const SizedBox(height: 48),
+                      const SizedBox(height: 24),
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
@@ -361,12 +456,15 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                                   provider.toggleLike(innerArticle.id, currentUserId, likerName: likerName);
                                 } : null,
                               ),
-                              Text(
-                                '${innerArticle.likes.length}',
-                                style: TextStyle(
-                                  fontSize: AppDimens.textSizeM,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.getTextSecondary(context),
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4.0),
+                                child: Text(
+                                  '${innerArticle.likes.length}',
+                                  style: TextStyle(
+                                    fontSize: AppDimens.textSizeM,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.getTextSecondary(context),
+                                  ),
                                 ),
                               ),
                               const Spacer(),
@@ -374,7 +472,12 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                                 onTap: _showCommentsSheet,
                                 borderRadius: BorderRadius.circular(8),
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
+                                  padding: const EdgeInsets.only(
+                                    left: 4.0,
+                                    right: 4.0,
+                                    top: 10.0,
+                                    bottom: 6.0,
+                                  ),
                                   child: Text(
                                     'عدد التعليقات: ${provider.getCommentsForArticle(innerArticle.id).length}',
                                     style: TextStyle(

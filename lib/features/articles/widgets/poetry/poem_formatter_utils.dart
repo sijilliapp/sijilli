@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:sijilli/core/extensions/context_l10n.dart';
+import '../../../../core/constants/app_colors.dart';
 
 class PoemFormatterUtils {
   static const String poemTagStart = '[POEM]';
@@ -81,9 +85,11 @@ class PoemFormatterUtils {
     final bRegex = RegExp(r'\[B\](.*?)\[/B\]', caseSensitive: false, dotAll: true);
     final highlightRegex = RegExp(r'\[HIGHLIGHT\](.*?)\[/HIGHLIGHT\]', caseSensitive: false, dotAll: true);
     final starRegex = RegExp(r'\*(.*?)\*', caseSensitive: false, dotAll: true);
+    final mdLinkRegex = RegExp(r'\[([^\]]+?)\]\((https?:\/\/[^\s\)]+?)\)', caseSensitive: false);
+    final plainUrlRegex = RegExp(r'(https?:\/\/[^\s\)]+)', caseSensitive: false);
 
     Match? earliestMatch;
-    int earliestType = 0; // 1: BOLD, 2: B, 3: HIGHLIGHT, 4: *
+    int earliestType = 0; // 1: BOLD, 2: B, 3: HIGHLIGHT, 4: *, 5: MD_LINK, 6: PLAIN_URL
 
     final boldMatch = boldRegex.firstMatch(text);
     if (boldMatch != null) {
@@ -109,6 +115,18 @@ class PoemFormatterUtils {
       earliestType = 4;
     }
 
+    final mdLinkMatch = mdLinkRegex.firstMatch(text);
+    if (mdLinkMatch != null && (earliestMatch == null || mdLinkMatch.start < earliestMatch.start)) {
+      earliestMatch = mdLinkMatch;
+      earliestType = 5;
+    }
+
+    final plainUrlMatch = plainUrlRegex.firstMatch(text);
+    if (plainUrlMatch != null && (earliestMatch == null || plainUrlMatch.start < earliestMatch.start)) {
+      earliestMatch = plainUrlMatch;
+      earliestType = 6;
+    }
+
     if (earliestMatch == null) {
       return [TextSpan(text: text, style: currentStyle)];
     }
@@ -119,25 +137,94 @@ class PoemFormatterUtils {
       spans.addAll(parseInlineText(text.substring(0, earliestMatch.start), currentStyle, context));
     }
 
-    final innerText = earliestMatch.group(1) ?? '';
-    TextStyle innerStyle = currentStyle;
-    
     if (earliestType == 1 || earliestType == 2 || earliestType == 4) {
-      innerStyle = currentStyle.copyWith(fontWeight: FontWeight.bold);
+      final innerText = earliestMatch.group(1) ?? '';
+      final innerStyle = currentStyle.copyWith(fontWeight: FontWeight.w900); // Super bold for maximum contrast against w600 base
+      spans.addAll(parseInlineText(innerText, innerStyle, context));
     } else if (earliestType == 3) {
-      innerStyle = currentStyle.copyWith(
+      final innerText = earliestMatch.group(1) ?? '';
+      final innerStyle = currentStyle.copyWith(
         backgroundColor: highlightBg,
         color: highlightText,
       );
+      spans.addAll(parseInlineText(innerText, innerStyle, context));
+    } else if (earliestType == 5) {
+      final linkText = earliestMatch.group(1) ?? '';
+      final linkUrl = earliestMatch.group(2) ?? '';
+      final linkStyle = currentStyle.copyWith(
+        color: AppColors.primary,
+        decoration: TextDecoration.underline,
+      );
+      spans.add(
+        TextSpan(
+          children: parseInlineText(linkText, linkStyle, context),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () {
+              _showLeaveAppDialog(context, linkUrl);
+            },
+        ),
+      );
+    } else if (earliestType == 6) {
+      final linkUrl = earliestMatch.group(0) ?? '';
+      final linkStyle = currentStyle.copyWith(
+        color: AppColors.primary,
+        decoration: TextDecoration.underline,
+      );
+      spans.add(
+        TextSpan(
+          text: linkUrl,
+          style: linkStyle,
+          recognizer: TapGestureRecognizer()
+            ..onTap = () {
+              _showLeaveAppDialog(context, linkUrl);
+            },
+        ),
+      );
     }
-
-    spans.addAll(parseInlineText(innerText, innerStyle, context));
 
     if (earliestMatch.end < text.length) {
       spans.addAll(parseInlineText(text.substring(earliestMatch.end), currentStyle, context));
     }
 
     return spans;
+  }
+
+  static void _showLeaveAppDialog(BuildContext context, String url) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(context.l10n.leaveAppDialogTitle),
+          content: Text(context.l10n.leaveAppDialogMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(context.l10n.no),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(dialogContext);
+                try {
+                  final uri = Uri.parse(url);
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                } catch (e) {
+                  debugPrint('Could not launch URL: $e');
+                }
+              },
+              child: Text(
+                context.l10n.yes,
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   /// Flattens and splits inline spans into individual styled word spans.

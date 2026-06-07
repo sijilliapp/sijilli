@@ -387,7 +387,7 @@ class _CommentSectionState extends State<CommentSection> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       // حقل الكتابة
                       Expanded(

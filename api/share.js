@@ -20,10 +20,22 @@ function fetchJson(url) {
 
 function stripFormatting(text) {
   if (!text) return '';
-  let cleanText = text.replace(/\[\/?(POEM|CENTER|JUSTIFY|LEFT|RIGHT|B)\]/ig, '');
+  
+  // 1. Remove markdown images
+  let cleanText = text.replace(/!\[.*?\]\((https?:\/\/\S+?)\)/ig, '');
+  
+  // 2. Remove formatting tags
+  cleanText = cleanText.replace(/\[\/?(POEM|CENTER|JUSTIFY|LEFT|RIGHT|B)\]/ig, '');
   cleanText = cleanText.replace(/==|~~|--|\+\+|\*/g, '');
+  
   const lines = cleanText.split('\n');
-  const cleanedLines = lines.map(line => {
+  const cleanedLines = [];
+  
+  const imageRegex = /^(?:https?:\/\/\S+?\.(?:jpg|jpeg|png|webp|gif|bmp)(?:\?\S*)?)$/i;
+  const unsplashRegex = /^(?:https?:\/\/images\.unsplash\.com\/\S+|https?:\/\/unsplash\.com\/photo-\S+)$/i;
+  const youtubeRegex = /^(?:https?:\/\/)?(?:www\.)?(?:m\.)?(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:\S*)?$/i;
+
+  for (const line of lines) {
     let trimmed = line.trim();
     if (trimmed.length > 1) {
       if ((trimmed.startsWith('=') && trimmed.endsWith('=')) ||
@@ -33,9 +45,60 @@ function stripFormatting(text) {
         trimmed = trimmed.substring(1, trimmed.length - 1).trim();
       }
     }
-    return trimmed;
-  });
+    
+    // Skip lines that contain only a media link (images or youtube) to keep preview descriptions clean
+    if (imageRegex.test(trimmed) || unsplashRegex.test(trimmed) || youtubeRegex.test(trimmed)) {
+      continue;
+    }
+    
+    cleanedLines.push(trimmed);
+  }
+  
   return cleanedLines.join('\n').trim();
+}
+
+function extractFirstMediaUrl(text) {
+  if (!text) return null;
+  const lines = text.split('\n');
+  
+  const markdownRegex = /!\[.*?\]\((https?:\/\/\S+?)\)/i;
+  const imageRegex = /^(?:https?:\/\/\S+?\.(?:jpg|jpeg|png|webp|gif|bmp)(?:\?\S*)?)$/i;
+  const unsplashRegex = /^(?:https?:\/\/images\.unsplash\.com\/\S+|https?:\/\/unsplash\.com\/photo-\S+)$/i;
+  const youtubeRegex = /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // 1. Check markdown image
+    const markdownMatch = trimmed.match(markdownRegex);
+    if (markdownMatch) {
+      return markdownMatch[1];
+    }
+
+    // Remove alignment tags to inspect raw URL
+    let cleanLine = trimmed;
+    if (cleanLine.length > 1) {
+      if (cleanLine.startsWith('=') && cleanLine.endsWith('=')) {
+        cleanLine = cleanLine.substring(1, cleanLine.length - 1).trim();
+      } else if (cleanLine.toUpperCase().startsWith('[CENTER]') && cleanLine.toUpperCase().endsWith('[/CENTER]')) {
+        cleanLine = cleanLine.substring(8, cleanLine.length - 9).trim();
+      }
+    }
+
+    // 2. Check direct image
+    if (imageRegex.test(cleanLine) || unsplashRegex.test(cleanLine)) {
+      return cleanLine;
+    }
+
+    // 3. Check YouTube URL
+    const youtubeMatch = cleanLine.match(youtubeRegex);
+    if (youtubeMatch) {
+      const videoId = youtubeMatch[1];
+      return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+    }
+  }
+  return null;
 }
 
 function getTitle(text) {
@@ -78,7 +141,7 @@ module.exports = async (req, res) => {
       const description = getDescription(article.text);
       const imageUrl = article.image 
         ? `https://sijilli.pockethost.io/api/files/articles/${article.id}/${article.image}`
-        : '';
+        : (extractFirstMediaUrl(article.text) || '');
       const url = `https://sijilli.com/${username}/${articleId}`;
 
       const metaTags = `

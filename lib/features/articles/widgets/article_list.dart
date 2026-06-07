@@ -11,6 +11,7 @@ class ArticleList extends StatelessWidget {
   final bool isInitialLoading;
   final bool isFetchingMore;
   final bool hasMore;
+  final String? errorMessage;
   final VoidCallback onLoadMore;
   final Future<void> Function() onRefresh;
 
@@ -20,6 +21,7 @@ class ArticleList extends StatelessWidget {
     required this.isInitialLoading,
     required this.isFetchingMore,
     required this.hasMore,
+    this.errorMessage,
     required this.onLoadMore,
     required this.onRefresh,
   });
@@ -42,11 +44,40 @@ class ArticleList extends StatelessWidget {
         itemCount: articles.length + (hasMore ? 1 : 0),
         itemBuilder: (context, index) {
           if (index == articles.length) {
-            // Reached the end, trigger load more if not already loading
-            if (!isFetchingMore && !isInitialLoading) {
+            // Reached the end, trigger load more if not already loading and no error
+            if (!isFetchingMore && !isInitialLoading && errorMessage == null) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 onLoadMore();
               });
+            }
+            // Show retry button if error occurred
+            if (errorMessage != null) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      errorMessage!,
+                      style: const TextStyle(color: Colors.red, fontSize: 13),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: onLoadMore,
+                      icon: const Icon(Icons.refresh, size: 16),
+                      label: const Text('إعادة المحاولة', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              );
             }
             // Only show bottom spinner if we are actively fetching more
             if (isFetchingMore) {

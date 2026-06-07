@@ -38,4 +38,13 @@ class LocalArticle extends HiveObject {
   
   @HiveField(10)
   String? highlightsMetadataJson;
+
+  @HiveField(11)
+  String postStatus = 'published';
+
+  @HiveField(12)
+  DateTime? deletedAt;
+
+  @HiveField(13)
+  String? tagsJson;
 }

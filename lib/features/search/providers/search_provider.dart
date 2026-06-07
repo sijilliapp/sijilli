@@ -228,7 +228,16 @@ class SearchProvider extends ChangeNotifier {
     _moderation = moderation;
     _config = config;
     
-    if (userChanged) {
+    if (user == null) {
+      _exploreAppointments = [];
+      _followedAppointments = [];
+      _userSearchResults = [];
+      _userStatuses = {};
+      _query = '';
+      _currentPage = 1;
+      _hasMoreUsers = false;
+      notifyListeners();
+    } else if (userChanged) {
       debugPrint('🔄 [SearchProvider] User context changed, refreshing content...');
       _fetchDefaultContent();
     }

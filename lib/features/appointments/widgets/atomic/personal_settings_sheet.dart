@@ -88,15 +88,21 @@ class _PersonalSettingsSheetState extends State<PersonalSettingsSheet> {
                   ),
                 ),
                 // التصنيفات المتاحة
-                ...catProvider.categories.map((cat) => Padding(
-                  padding: const EdgeInsets.only(left: AppDimens.spaceS),
-                  child: ChoiceChip(
-                    label: Text(cat.name),
-                    selected: _selectedCategories?.id == cat.id,
-                    selectedColor: AppColors.primary.withValues(alpha: 0.2),
-                    onSelected: (val) => setState(() => _selectedCategories = cat),
-                  ),
-                )),
+                ...catProvider.categories.map((cat) {
+                  final isSelected = _selectedCategories?.id == cat.id;
+                  return Padding(
+                    padding: const EdgeInsets.only(left: AppDimens.spaceS),
+                    child: GestureDetector(
+                      onLongPress: () => _showEditCategoryDialog(context, cat, isSelected),
+                      child: ChoiceChip(
+                        label: Text(cat.name),
+                        selected: isSelected,
+                        selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                        onSelected: (val) => setState(() => _selectedCategories = cat),
+                      ),
+                    ),
+                  );
+                }),
                 // إضافة تصنيف جديد
                 ActionChip(
                   avatar: const Icon(Icons.add, size: 16, color: AppColors.primary),
@@ -385,6 +391,70 @@ class _PersonalSettingsSheetState extends State<PersonalSettingsSheet> {
               }
             },
             child: Text(context.l10n.add),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditCategoryDialog(BuildContext context, AppointmentCategory cat, bool isSelected) {
+    final controller = TextEditingController(text: cat.name);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('تعديل التصنيف'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(hintText: 'اسم التصنيف'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  title: const Text('حذف التصنيف'),
+                  content: Text('هل أنت متأكد من حذف التصنيف "${cat.name}"؟'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext, false),
+                      child: const Text('إلغاء'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext, true),
+                      child: const Text('حذف', style: TextStyle(color: Colors.red)),
+                    ),
+                  ],
+                ),
+              );
+              if (confirm == true) {
+                if (context.mounted) {
+                  await context.read<CategoryProvider>().deleteCategory(cat.id);
+                  if (isSelected) {
+                    setState(() => _selectedCategories = null);
+                  }
+                  if (ctx.mounted) Navigator.pop(ctx);
+                }
+              }
+            },
+            child: const Text('حذف', style: TextStyle(color: Colors.red)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (controller.text.isNotEmpty && controller.text != cat.name) {
+                final updated = await context.read<CategoryProvider>().updateCategory(cat.id, controller.text);
+                if (updated != null && isSelected) {
+                  setState(() => _selectedCategories = updated);
+                }
+              }
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('حفظ'),
           ),
         ],
       ),

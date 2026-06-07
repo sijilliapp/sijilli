@@ -50,6 +50,33 @@ class NotificationProvider extends ChangeNotifier {
         }
         _notifications = [];
         _pendingFollowsCount = 0;
+
+        // Reset preferences to default values on logout
+        _notifyAll = true;
+        _notifyFollows = true;
+        _notifyInvites = true;
+        _notifyActive = true;
+        _notifyOneDayBefore = true;
+        _notifyVisits = true;
+        _notifyBookmarks = true;
+        _notifyBeforeOffset = true;
+        _notifyBeforeOffsetMinutes = 15;
+
+        // Wipe preferences from SharedPreferences
+        SharedPreferences.getInstance().then((prefs) {
+          prefs.remove(_keyNotifyAll);
+          prefs.remove(_keyNotifyFollows);
+          prefs.remove(_keyNotifyInvites);
+          prefs.remove(_keyNotifyActive);
+          prefs.remove(_keyNotifyOneDayBefore);
+          prefs.remove(_keyNotifyVisits);
+          prefs.remove(_keyNotifyBookmarks);
+          prefs.remove(_keyNotifyBeforeOffset);
+          prefs.remove(_keyNotifyBeforeOffsetMinutes);
+        }).catchError((e) {
+          print('⚠️ Failed to clear notification preferences: $e');
+        });
+
         // Delay notifyListeners to avoid build phase conflicts
         Future.microtask(() => notifyListeners());
       }
@@ -62,6 +89,10 @@ class NotificationProvider extends ChangeNotifier {
   static const String _keyNotifyInvites = 'notify_invites';
   static const String _keyNotifyActive = 'notify_active';
   static const String _keyNotifyOneDayBefore = 'notify_one_day_before';
+  static const String _keyNotifyVisits = 'notify_visits';
+  static const String _keyNotifyBookmarks = 'notify_bookmarks';
+  static const String _keyNotifyBeforeOffset = 'notify_before_offset';
+  static const String _keyNotifyBeforeOffsetMinutes = 'notify_before_offset_minutes';
 
   // Settings State
   bool _notifyAll = true;
@@ -69,12 +100,20 @@ class NotificationProvider extends ChangeNotifier {
   bool _notifyInvites = true;
   bool _notifyActive = true;
   bool _notifyOneDayBefore = true;
+  bool _notifyVisits = true;
+  bool _notifyBookmarks = true;
+  bool _notifyBeforeOffset = true;
+  int _notifyBeforeOffsetMinutes = 15;
 
   bool get notifyAll => _notifyAll;
   bool get notifyFollows => _notifyFollows;
   bool get notifyInvites => _notifyInvites;
   bool get notifyActive => _notifyActive;
   bool get notifyOneDayBefore => _notifyOneDayBefore;
+  bool get notifyVisits => _notifyVisits;
+  bool get notifyBookmarks => _notifyBookmarks;
+  bool get notifyBeforeOffset => _notifyBeforeOffset;
+  int get notifyBeforeOffsetMinutes => _notifyBeforeOffsetMinutes;
   
   // Counts
   int get unreadCount => _notifications.where((n) => !n.isRead).length;
@@ -143,7 +182,11 @@ class NotificationProvider extends ChangeNotifier {
     _notifyFollows = prefs.getBool(_keyNotifyFollows) ?? true;
     _notifyInvites = prefs.getBool(_keyNotifyInvites) ?? true;
     _notifyActive = prefs.getBool(_keyNotifyActive) ?? true;
-    _notifyOneDayBefore = prefs.getBool(_keyNotifyOneDayBefore) ?? false; // Default false for extra reminder? Or true? User asked for option.
+    _notifyOneDayBefore = prefs.getBool(_keyNotifyOneDayBefore) ?? true;
+    _notifyVisits = prefs.getBool(_keyNotifyVisits) ?? true;
+    _notifyBookmarks = prefs.getBool(_keyNotifyBookmarks) ?? true;
+    _notifyBeforeOffset = prefs.getBool(_keyNotifyBeforeOffset) ?? true;
+    _notifyBeforeOffsetMinutes = prefs.getInt(_keyNotifyBeforeOffsetMinutes) ?? 15;
     notifyListeners();
   }
 
@@ -179,6 +222,34 @@ class NotificationProvider extends ChangeNotifier {
     _notifyOneDayBefore = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyNotifyOneDayBefore, value);
+    notifyListeners();
+  }
+
+  Future<void> setNotifyVisits(bool value) async {
+    _notifyVisits = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyNotifyVisits, value);
+    notifyListeners();
+  }
+
+  Future<void> setNotifyBookmarks(bool value) async {
+    _notifyBookmarks = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyNotifyBookmarks, value);
+    notifyListeners();
+  }
+
+  Future<void> setNotifyBeforeOffset(bool value) async {
+    _notifyBeforeOffset = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyNotifyBeforeOffset, value);
+    notifyListeners();
+  }
+
+  Future<void> setNotifyBeforeOffsetMinutes(int value) async {
+    _notifyBeforeOffsetMinutes = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_keyNotifyBeforeOffsetMinutes, value);
     notifyListeners();
   }
 
@@ -298,9 +369,11 @@ class NotificationProvider extends ChangeNotifier {
               case NotificationType.approvalRequest:
                 shouldShow = _notifyInvites;
                 break;
+              case NotificationType.visit:
+                shouldShow = _notifyVisits;
+                break;
               case NotificationType.reminder:
               case NotificationType.system:
-              case NotificationType.visit:
                 shouldShow = true; // Default match active/other?
                 break;
               default:
@@ -435,21 +508,24 @@ class NotificationProvider extends ChangeNotifier {
     );
   }
 
-  /// Sync reminders for a list of appointments
-  Future<void> syncReminders(List<Appointment> appointments) async {
+  /// Sync reminders for a list of appointments and bookmarked appointments
+  Future<void> syncReminders(
+    List<Appointment> appointments,
+    List<Appointment> bookmarkedAppointments,
+  ) async {
     if (!_notifyAll) {
-       await _localNotificationsPlugin.cancelAll(); // Or just don't schedule new? 
-       // Better to cancel all if master is off.
+       await _localNotificationsPlugin.cancelAll(); // Better to cancel all if master is off.
        return;
     }
 
+    // 1. Process regular active appointments
     for (final appt in appointments) {
        // Skip cancelled or past
        if (appt.isCancelled || appt.isPast) {
          continue;
        }
        
-       // 1. Active Reminder (At start time)
+       // A. Active Reminder (At start time)
        if (_notifyActive) {
           await scheduleReminder(
             id: appt.id.hashCode,
@@ -461,10 +537,10 @@ class NotificationProvider extends ChangeNotifier {
          await cancelid(appt.id.hashCode);
        }
 
-       // 2. One Day Prior Reminder
+       // B. One Day Prior Reminder
        if (_notifyOneDayBefore) {
           final oneDayPrior = appt.startAt.subtract(const Duration(days: 1));
-           await scheduleReminder(
+          await scheduleReminder(
             id: '${appt.id}_1day'.hashCode,
             title: 'تذكير موعد غداً',
             body: 'غداً موعدك: ${appt.title}',
@@ -472,6 +548,73 @@ class NotificationProvider extends ChangeNotifier {
           );
        } else {
          await cancelid('${appt.id}_1day'.hashCode);
+       }
+
+       // C. Custom Offset Reminder
+       if (_notifyBeforeOffset) {
+          final offsetTime = appt.startAt.subtract(Duration(minutes: _notifyBeforeOffsetMinutes));
+          await scheduleReminder(
+            id: '${appt.id}_offset'.hashCode,
+            title: 'تذكير بقرب الموعد',
+            body: 'يبدأ موعدك: ${appt.title} خلال $_notifyBeforeOffsetMinutes دقيقة',
+            scheduledTime: offsetTime,
+          );
+       } else {
+         await cancelid('${appt.id}_offset'.hashCode);
+       }
+    }
+
+    // 2. Process bookmarked/saved appointments
+    for (final appt in bookmarkedAppointments) {
+       // Skip cancelled or past
+       if (appt.isCancelled || appt.isPast) {
+         continue;
+       }
+
+       // If bookmarked notifications are enabled
+       if (_notifyBookmarks) {
+         // A. Active Reminder (At start time)
+         if (_notifyActive) {
+            await scheduleReminder(
+              id: 'saved_${appt.id}'.hashCode,
+              title: 'تذكير موعد محفوظ',
+              body: 'حان موعد: ${appt.title}',
+              scheduledTime: appt.startAt,
+            );
+         } else {
+           await cancelid('saved_${appt.id}'.hashCode);
+         }
+
+         // B. One Day Prior Reminder
+         if (_notifyOneDayBefore) {
+            final oneDayPrior = appt.startAt.subtract(const Duration(days: 1));
+            await scheduleReminder(
+              id: 'saved_${appt.id}_1day'.hashCode,
+              title: 'تذكير موعد محفوظ غداً',
+              body: 'غداً موعدك: ${appt.title}',
+              scheduledTime: oneDayPrior,
+            );
+         } else {
+           await cancelid('saved_${appt.id}_1day'.hashCode);
+         }
+
+         // C. Custom Offset Reminder
+         if (_notifyBeforeOffset) {
+            final offsetTime = appt.startAt.subtract(Duration(minutes: _notifyBeforeOffsetMinutes));
+            await scheduleReminder(
+              id: 'saved_${appt.id}_offset'.hashCode,
+              title: 'تذكير بقرب الموعد المحفوظ',
+              body: 'يبدأ موعدك: ${appt.title} خلال $_notifyBeforeOffsetMinutes دقيقة',
+              scheduledTime: offsetTime,
+            );
+         } else {
+           await cancelid('saved_${appt.id}_offset'.hashCode);
+         }
+       } else {
+         // Cancel all bookmarked reminders
+         await cancelid('saved_${appt.id}'.hashCode);
+         await cancelid('saved_${appt.id}_1day'.hashCode);
+         await cancelid('saved_${appt.id}_offset'.hashCode);
        }
     }
   }

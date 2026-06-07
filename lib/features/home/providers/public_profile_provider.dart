@@ -116,6 +116,7 @@ class PublicProfileProvider extends ChangeNotifier {
       // تسجيل الدخول على الملف الشخصي لزيادة عداد الزيارات محلياً
       try {
         await LocalDbService.instance.incrementUserClickCount(user.id);
+        await LocalDbService.instance.saveUserLastVisit(user.id);
       } catch (e) {
         debugPrint('Error tracking profile click locally: $e');
       }
@@ -313,5 +314,10 @@ class PublicProfileProvider extends ChangeNotifier {
     _isFriend = false;
     _error = null;
     _searchQuery = '';
+  }
+
+  void clear() {
+    reset();
+    notifyListeners();
   }
 }

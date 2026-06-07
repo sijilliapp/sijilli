@@ -2,9 +2,11 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../models/article.dart';
 import '../../../models/comment.dart';
 import '../../../models/notification.dart';
+import '../../../models/appointment.dart';
 import '../../../core/local/local_db_service.dart';
 import '../services/pb_article_service.dart';
 import '../services/pb_comment_service.dart';
@@ -15,8 +17,18 @@ class ArticleProvider extends ChangeNotifier {
   final PbArticleService _articleService = PbArticleService();
   
   List<Article> _articles = [];
+  List<Article> _archivedArticles = [];
+  List<Article> _trashedArticles = [];
   bool _isLoading = false;
   String? _errorMessage;
+  
+  List<String> _activeFilterTagIds = [];
+  List<String> get activeFilterTagIds => _activeFilterTagIds;
+
+  void setActiveFilterTagIds(List<String> tagIds) {
+    _activeFilterTagIds = tagIds;
+    notifyListeners();
+  }
   
   final PbCommentService _commentService = PbCommentService();
   final Map<String, List<Comment>> _articleComments = {};
@@ -31,8 +43,30 @@ class ArticleProvider extends ChangeNotifier {
   bool _hasMore = true;
   static const int _perPage = 20;
 
-  ArticleProvider() {
-    _loadLocalArticles();
+  String? _currentUserId;
+
+  ArticleProvider();
+
+  void update(String? userId) {
+    if (_currentUserId != userId) {
+      _currentUserId = userId;
+      
+      // Wipe state when user changes or logs out to prevent data mix-up
+      _articles = [];
+      _archivedArticles = [];
+      _trashedArticles = [];
+      _articleComments.clear();
+      _activeFilterTagIds = [];
+      _errorMessage = null;
+      _currentPage = 1;
+      _hasMore = true;
+      
+      if (userId != null) {
+        _loadLocalArticles();
+      } else {
+        notifyListeners();
+      }
+    }
   }
 
   Future<void> _loadLocalArticles() async {
@@ -51,13 +85,80 @@ class ArticleProvider extends ChangeNotifier {
     _articles.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
   }
 
-  List<Article> get articles => _articles;
-  List<Article> getUserArticles(String authorId) => _articles.where((a) => a.authorId == authorId).toList();
+  List<Article> get articles => _articles.where((a) {
+        final isMe = a.authorId == _currentUserId;
+        if (isMe) {
+          return a.postStatus == PostStatus.published || 
+                 a.postStatus == PostStatus.draft || 
+                 a.postStatus == PostStatus.written;
+        } else {
+          return a.postStatus == PostStatus.published;
+        }
+      }).toList();
+  List<Article> get archivedArticles => _archivedArticles;
+  List<Article> get trashedArticles => _trashedArticles;
+  List<Article> getUserArticles(String authorId) {
+    final isMe = authorId == _currentUserId;
+    return _articles.where((a) {
+      if (a.authorId != authorId) return false;
+      if (isMe) {
+        return a.postStatus == PostStatus.published || 
+               a.postStatus == PostStatus.draft || 
+               a.postStatus == PostStatus.written;
+      } else {
+        return a.postStatus == PostStatus.published;
+      }
+    }).toList();
+  }
   bool get isLoading => _isLoading;
   bool get isInitialLoading => _isLoading && _currentPage == 1 && _articles.isEmpty;
   bool get isFetchingMore => _isLoading && _currentPage > 1;
   String? get errorMessage => _errorMessage;
   bool get hasMore => _hasMore;
+
+  Future<void> fetchArchivedArticles() async {
+    if (_currentUserId == null) return;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final fetched = await _articleService.getArticles(
+        authorId: _currentUserId,
+        onlyPublished: false,
+        postStatus: 'archived',
+      );
+      _archivedArticles = fetched;
+      _errorMessage = null;
+    } catch (e) {
+      _errorMessage = 'Failed to load archived articles: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchTrashedArticles() async {
+    if (_currentUserId == null) return;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final fetched = await _articleService.getArticles(
+        authorId: _currentUserId,
+        onlyPublished: false,
+        postStatus: 'trash',
+      );
+      _trashedArticles = fetched;
+      _errorMessage = null;
+    } catch (e) {
+      _errorMessage = 'Failed to load trashed articles: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
   /// Fetch public articles
   Future<void> fetchPublicArticles({bool refresh = false}) async {
@@ -182,11 +283,11 @@ class ArticleProvider extends ChangeNotifier {
     }
   }
 
-  /// Add a new article
-  Future<Article?> addArticle({
+  Future<Article> addArticle({
     required String text,
     bool isPublished = true,
     bool isDraft = false,
+    List<String>? tagIds,
     File? imageFile,
     bool silent = false,
   }) async {
@@ -202,11 +303,11 @@ class ArticleProvider extends ChangeNotifier {
         id: tempId,
         authorId: await LocalDbService.instance.box.then((b) => b?.get('current_user')?.userId) ?? '',
         text: text,
-        isPublished: isPublished,
-        isDraft: isDraft,
+        postStatus: isPublished ? PostStatus.published : (isDraft ? PostStatus.draft : PostStatus.written),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         likes: [],
+        tagIds: tagIds ?? [],
         // For offline display without image
       );
       
@@ -225,6 +326,7 @@ class ArticleProvider extends ChangeNotifier {
           text: text,
           isPublished: isPublished,
           isDraft: isDraft,
+          tagIds: tagIds,
           imageFile: multipartFile,
         );
 
@@ -250,12 +352,12 @@ class ArticleProvider extends ChangeNotifier {
     }
   }
 
-  /// Update an existing article
   Future<Article?> updateArticle({
     required String id,
     String? text,
     bool? isPublished,
     bool? isDraft,
+    List<String>? tagIds,
     File? imageFile,
     bool removeImage = false,
     bool silent = false,
@@ -266,28 +368,58 @@ class ArticleProvider extends ChangeNotifier {
       notifyListeners();
     }
 
+    final isTemp = id.startsWith('temp_');
+
     try {
       http.MultipartFile? multipartFile;
       if (imageFile != null) {
         multipartFile = await http.MultipartFile.fromPath('image', imageFile.path);
       }
 
-      final updatedArticle = await _articleService.updateArticle(
-        id: id,
-        text: text,
-        isPublished: isPublished,
-        isDraft: isDraft,
-        imageFile: multipartFile,
-        removeImage: removeImage,
-      );
+      Article updatedArticle;
+      if (isTemp) {
+        updatedArticle = await _articleService.createArticle(
+          text: text ?? '',
+          isPublished: isPublished ?? false,
+          isDraft: isDraft ?? true,
+          tagIds: tagIds,
+          imageFile: multipartFile,
+        );
+      } else {
+        updatedArticle = await _articleService.updateArticle(
+          id: id,
+          text: text,
+          isPublished: isPublished,
+          isDraft: isDraft,
+          tagIds: tagIds,
+          imageFile: multipartFile,
+          removeImage: removeImage,
+        );
+      }
 
       final index = _articles.indexWhere((a) => a.id == id);
       if (index != -1) {
         _articles[index] = updatedArticle;
+      } else {
+        _articles.insert(0, updatedArticle);
       }
+      _sortArticles();
       await LocalDbService.instance.saveArticles(_articles);
       return updatedArticle;
     } catch (e) {
+      if (isTemp) {
+        final index = _articles.indexWhere((a) => a.id == id);
+        if (index != -1) {
+          final existing = _articles[index];
+          final localUpdated = existing.copyWith(
+            text: text ?? existing.text,
+            tagIds: tagIds ?? existing.tagIds,
+          );
+          _articles[index] = localUpdated;
+          await LocalDbService.instance.saveArticles(_articles);
+          return localUpdated;
+        }
+      }
       _errorMessage = 'Failed to update article: $e';
       return null;
     } finally {
@@ -366,13 +498,20 @@ class ArticleProvider extends ChangeNotifier {
     }
   }
 
-  /// Delete Article
+  /// Soft Delete Article
   Future<bool> deleteArticle(String articleId) async {
     final index = _articles.indexWhere((a) => a.id == articleId);
     if (index == -1) return false;
 
+    final target = _articles[index];
+    final updatedTarget = target.copyWith(
+      postStatus: PostStatus.trash,
+      deletedAt: DateTime.now().toUtc(),
+    );
+
     // Optimistic UI update
-    final deletedArticle = _articles.removeAt(index);
+    _articles.removeAt(index);
+    _trashedArticles.insert(0, updatedTarget);
     await LocalDbService.instance.saveArticles(_articles);
     notifyListeners();
 
@@ -380,14 +519,138 @@ class ArticleProvider extends ChangeNotifier {
       if (!articleId.startsWith('temp_')) {
         await _articleService.deleteArticle(articleId);
       }
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('draft_cursor_base_$articleId');
+      await prefs.remove('draft_cursor_extent_$articleId');
       return true;
     } catch (e) {
       // Revert if API fails
-      _articles.insert(index, deletedArticle);
+      _articles.insert(index, target);
+      _trashedArticles.removeWhere((a) => a.id == articleId);
       await LocalDbService.instance.saveArticles(_articles);
       _errorMessage = 'Failed to delete article: $e';
       notifyListeners();
       return false;
+    }
+  }
+
+  /// Restore Article from Trash
+  Future<bool> restoreArticle(String articleId) async {
+    final index = _trashedArticles.indexWhere((a) => a.id == articleId);
+    if (index == -1) return false;
+
+    final target = _trashedArticles[index];
+    final restoredTarget = target.copyWith(
+      postStatus: PostStatus.published,
+      deletedAt: null,
+    );
+
+    // Optimistic UI update
+    _trashedArticles.removeAt(index);
+    _articles.insert(0, restoredTarget);
+    _sortArticles();
+    await LocalDbService.instance.saveArticles(_articles);
+    notifyListeners();
+
+    try {
+      await _articleService.restoreArticle(articleId);
+      return true;
+    } catch (e) {
+      // Revert if API fails
+      _articles.removeWhere((a) => a.id == articleId);
+      _trashedArticles.insert(index, target);
+      await LocalDbService.instance.saveArticles(_articles);
+      _errorMessage = 'Failed to restore article: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Permanently delete Article
+  Future<bool> hardDeleteArticle(String articleId) async {
+    final index = _trashedArticles.indexWhere((a) => a.id == articleId);
+    if (index == -1) return false;
+
+    final target = _trashedArticles[index];
+
+    // Optimistic UI update
+    _trashedArticles.removeAt(index);
+    notifyListeners();
+
+    try {
+      await _articleService.hardDeleteArticle(articleId);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('draft_cursor_base_$articleId');
+      await prefs.remove('draft_cursor_extent_$articleId');
+      return true;
+    } catch (e) {
+      // Revert if API fails
+      _trashedArticles.insert(index, target);
+      _errorMessage = 'Failed to permanently delete article: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Toggle Archive Article Status
+  Future<bool> toggleArchiveArticle(String articleId, bool archive) async {
+    if (archive) {
+      final index = _articles.indexWhere((a) => a.id == articleId);
+      if (index == -1) return false;
+
+      final target = _articles[index];
+      final updatedTarget = target.copyWith(postStatus: PostStatus.archived);
+
+      // Optimistic UI update
+      _articles.removeAt(index);
+      _archivedArticles.insert(0, updatedTarget);
+      await LocalDbService.instance.saveArticles(_articles);
+      notifyListeners();
+
+      try {
+        await _articleService.updateArticle(
+          id: articleId,
+          postStatus: 'archived',
+        );
+        return true;
+      } catch (e) {
+        // Revert
+        _articles.insert(index, target);
+        _archivedArticles.removeWhere((a) => a.id == articleId);
+        await LocalDbService.instance.saveArticles(_articles);
+        _errorMessage = 'Failed to archive article: $e';
+        notifyListeners();
+        return false;
+      }
+    } else {
+      final index = _archivedArticles.indexWhere((a) => a.id == articleId);
+      if (index == -1) return false;
+
+      final target = _archivedArticles[index];
+      final restoredTarget = target.copyWith(postStatus: PostStatus.published);
+
+      // Optimistic UI update
+      _archivedArticles.removeAt(index);
+      _articles.insert(0, restoredTarget);
+      _sortArticles();
+      await LocalDbService.instance.saveArticles(_articles);
+      notifyListeners();
+
+      try {
+        await _articleService.updateArticle(
+          id: articleId,
+          postStatus: 'published',
+        );
+        return true;
+      } catch (e) {
+        // Revert
+        _articles.removeWhere((a) => a.id == articleId);
+        _archivedArticles.insert(index, target);
+        await LocalDbService.instance.saveArticles(_articles);
+        _errorMessage = 'Failed to restore archived article: $e';
+        notifyListeners();
+        return false;
+      }
     }
   }
 

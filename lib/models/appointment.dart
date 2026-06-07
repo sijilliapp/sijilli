@@ -1,6 +1,5 @@
 import 'user.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:hijri/hijri_calendar.dart';
 import '../core/utils/json_utils.dart';
 import 'article.dart';
@@ -80,10 +79,14 @@ class AppointmentCategory {
   }
 }
 
-/// حالة نشر الموعد (أين يتواجد)
+/// حالة نشر الموعد أو المقال (أين يتواجد)
 enum PostStatus {
+  /// مكتوب (أول مراحل ولادة المقال، غير منشور ولا مسودة ولا مؤرشف ولا محذوف)
+  written,
   /// منشور (في السجل والوارد)
   published,
+  /// مسودة
+  draft,
   /// مؤرشف (في الأرشيف)
   archived,
   /// في المحذوفات
@@ -93,6 +96,8 @@ enum PostStatus {
 
   static PostStatus fromString(String status) {
     switch (status) {
+      case 'written': return PostStatus.written;
+      case 'draft': return PostStatus.draft;
       case 'archived': return PostStatus.archived;
       case 'trash': return PostStatus.trash;
       case 'bookmarked': return PostStatus.bookmarked;
@@ -327,6 +332,10 @@ class Appointment {
   /// مقياس التصحيح الذي تم بناءً عليه حساب الوقت الفيزيائي لهذا الموعد 
   /// (يعتمد على صاحب الصفحة التي يتم استعراض الموعد فيها)
   final int contextAdjustment;
+
+  // ====================== المقال المرتبط ======================
+  Article? get linkedArticle => currentUserInvitation?.linkedArticle ?? viewerInvitation?.linkedArticle;
+  String? get linkedArticleId => currentUserInvitation?.linkedArticleId ?? viewerInvitation?.linkedArticleId;
 
   // ====================== بيانات المضيف المساعدة ======================
   String? get hostName => host?.name;

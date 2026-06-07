@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimens.dart';
+import '../../../../core/providers/theme_provider.dart';
 import 'poem_formatter_utils.dart';
 
 class PoemView extends StatelessWidget {
@@ -21,20 +22,18 @@ class PoemView extends StatelessWidget {
     double maxAjezWidth = 0.0;
     double maxCenteredWidth = 0.0;
     
-    final isTraditionalArabic = fontFamily == 'Traditional_Arabic';
-    final double fontSize = isTraditionalArabic
-        ? AppDimens.textSize * 1.5
-        : AppDimens.textSize;
-    final double lineHeight = isTraditionalArabic ? 1.3 : 1.8;
-    final FontWeight fontWeight = isTraditionalArabic ? FontWeight.normal : FontWeight.w600;
+    final double fontSize = AppDimens.textSize;
+    final double lineHeight = 1.8;
+    final FontWeight fontWeight = FontWeight.w600;
     
-    final textStyle = TextStyle(
+    final baseStyle = TextStyle(
       fontSize: fontSize, // Base size 16
       height: lineHeight,
       color: AppColors.getTextPrimary(context),
       fontWeight: fontWeight,
-      fontFamily: fontFamily,
     );
+
+    final textStyle = ThemeProvider.getTextStyleForFont(fontFamily ?? 'Default', baseStyle);
 
     int poetryLineIndex = 0;
     // Calculate max exact widths
@@ -201,7 +200,7 @@ class PoemView extends StatelessWidget {
               }
               
               final parsedCentered = PoemFormatterUtils.parseInlineText(line, textStyle.copyWith(
-                fontWeight: isTraditionalArabic ? FontWeight.normal : FontWeight.bold,
+                fontWeight: FontWeight.bold,
                 color: AppColors.getTextPrimary(context),
               ), context);
               

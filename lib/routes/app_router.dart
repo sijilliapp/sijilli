@@ -54,7 +54,19 @@ class AppRouter {
         final parts = cleanPath.split('/');
         if (parts.length >= 2) {
           final username = parts[0];
-          final articleId = parts[1];
+          final secondPart = parts[1];
+          
+          if (secondPart.toLowerCase() == 'articles' || secondPart.toLowerCase() == 'art') {
+            return MaterialPageRoute(
+              settings: settings,
+              builder: (context) => PublicProfileScreen(
+                usernameOrId: username,
+                initialTabIndex: 1,
+              ),
+            );
+          }
+          
+          final articleId = secondPart;
           return MaterialPageRoute(
             settings: settings,
             builder: (context) => PublicArticleScreen(

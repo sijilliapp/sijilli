@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import '../../models/user.dart';
 import '../../models/appointment.dart';
 import '../../models/article.dart';
+import '../../models/tag.dart';
 // Explicit import for extension
 import 'schemas/user_schema.dart';
 import 'schemas/appointment_schema.dart';
@@ -259,6 +260,13 @@ class LocalDbService {
     await rBox?.clear();
     await appBox?.clear();
     await aBox?.clear();
+
+    try {
+      final draftBox = await Hive.openBox('appointment_drafts');
+      await draftBox.clear();
+    } catch (e) {
+      debugPrint('⚠️ Failed to clear appointment_drafts: $e');
+    }
   }
 
   // ====================== Helpers (User) ======================
@@ -433,19 +441,42 @@ class LocalDbService {
       ..likes = a.likes
       ..authorJson = a.author != null ? a.author!.toJsonString() : null
       ..poetryMetadataJson = a.poetryMetadata != null ? jsonEncode(a.poetryMetadata) : null
-      ..highlightsMetadataJson = a.highlightsMetadata != null ? jsonEncode(a.highlightsMetadata) : null;
+      ..highlightsMetadataJson = a.highlightsMetadata != null ? jsonEncode(a.highlightsMetadata) : null
+      ..postStatus = a.postStatus.toString()
+      ..deletedAt = a.deletedAt
+      ..tagsJson = jsonEncode({
+        'tagIds': a.tagIds,
+        'tags': a.tags.map((t) => t.toJson()).toList(),
+      });
   }
 
   Article _toModelArticle(LocalArticle la) {
+    List<String> tagIds = [];
+    List<Tag> tags = [];
+    if (la.tagsJson != null && la.tagsJson!.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(la.tagsJson!);
+        if (decoded is Map) {
+          tagIds = (decoded['tagIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+          tags = (decoded['tags'] as List<dynamic>?)?.map((e) => Tag.fromJson(Map<String, dynamic>.from(e))).toList() ?? [];
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error decoding tags from local DB: $e');
+      }
+    }
+
     return Article(
       id: la.id,
       authorId: la.authorId,
       text: la.text,
-      isPublished: la.isPublished,
+      postStatus: PostStatus.fromString(la.postStatus),
+      deletedAt: la.deletedAt,
       createdAt: la.createdAt,
       updatedAt: la.updatedAt,
       image: la.image,
       likes: la.likes,
+      tagIds: tagIds,
+      tags: tags,
       author: la.authorJson != null ? UserModel.fromJson(jsonDecode(la.authorJson!)) : null,
       poetryMetadata: la.poetryMetadataJson != null ? jsonDecode(la.poetryMetadataJson!) : null,
       highlightsMetadata: la.highlightsMetadataJson != null ? jsonDecode(la.highlightsMetadataJson!) : null,
@@ -531,6 +562,30 @@ class LocalDbService {
       return Map<String, int>.from(clicksMap);
     } catch (e) {
       debugPrint('❌ Error getting user click counts: $e');
+      return {};
+    }
+  }
+
+  Future<void> saveUserLastVisit(String userId) async {
+    try {
+      final prefBox = await Hive.openBox<dynamic>('app_preferences');
+      final visitsMap = prefBox.get('user_last_visits', defaultValue: <dynamic, dynamic>{});
+      final Map<String, int> typedMap = Map<String, int>.from(visitsMap);
+      
+      typedMap[userId] = DateTime.now().millisecondsSinceEpoch;
+      await prefBox.put('user_last_visits', typedMap);
+    } catch (e) {
+      debugPrint('❌ Error saving user last visit: $e');
+    }
+  }
+
+  Future<Map<String, int>> getUserLastVisits() async {
+    try {
+      final prefBox = await Hive.openBox<dynamic>('app_preferences');
+      final visitsMap = prefBox.get('user_last_visits', defaultValue: <dynamic, dynamic>{});
+      return Map<String, int>.from(visitsMap);
+    } catch (e) {
+      debugPrint('❌ Error getting user last visits: $e');
       return {};
     }
   }

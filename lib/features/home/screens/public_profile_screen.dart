@@ -15,13 +15,16 @@ import 'package:sijilli/features/profile/providers/moderation_provider.dart';
 import 'package:sijilli/core/widgets/auth_wrapper.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import 'package:sijilli/core/utils/web_utils.dart';
+import 'package:sijilli/core/widgets/loaders/loading_screen.dart';
 
 class PublicProfileScreen extends StatefulWidget {
   final String usernameOrId;
+  final int initialTabIndex;
 
   const PublicProfileScreen({
     super.key,
     required this.usernameOrId,
+    this.initialTabIndex = 0,
   });
 
   @override
@@ -37,7 +40,11 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> with SingleTi
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: 2, 
+      vsync: this, 
+      initialIndex: widget.initialTabIndex,
+    );
     _tabController.addListener(() {
       if (mounted) {
         setState(() {
@@ -98,8 +105,17 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> with SingleTi
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: isLoading
+          ? AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              leading: const BackButton(color: AppColors.primary),
+            )
+          : null,
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : error != null
               ? Scaffold(
                   appBar: AppBar(
@@ -159,204 +175,246 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> with SingleTi
                     ),
                   ),
                 )
-              : NestedScrollView(
-                  headerSliverBuilder: (context, innerBoxIsScrolled) {
-                    return [
-                      SliverAppBar(
-                        pinned: true,
-                        floating: false,
-                        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                        surfaceTintColor: Theme.of(context).scaffoldBackgroundColor,
-                        scrolledUnderElevation: 5.0,
-                        shadowColor: Colors.black12,
-                        leading: const BackButton(color: AppColors.primary),
-                        title: _isSearching
-                          ? TextField(
-                              controller: _searchController,
-                              focusNode: _searchFocusNode,
-                              autofocus: true,
-                              decoration: InputDecoration(
-                                hintText: context.l10n.search,
-                                border: InputBorder.none,
-                                isDense: true,
-                                contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                                hintStyle: TextStyle(color: Colors.grey.shade400),
-                              ),
-                              style: const TextStyle(fontSize: 16),
-                              onChanged: (value) {
-                                profileProvider.filterAppointments(value);
-                              },
-                            )
-                          : null,
-                        actions: [
-                          if (_isSearching)
-                            IconButton(
-                              icon: const Icon(Icons.close, color: Colors.grey),
-                              onPressed: () {
-                                setState(() {
-                                  _isSearching = false;
-                                  _searchController.clear();
-                                  profileProvider.filterAppointments('');
-                                });
-                              },
-                            )
-                          else ...[
-                            if (_tabController.index == 0 && canView)
-                              IconButton(
-                                icon: const Icon(Icons.search, color: AppColors.primary),
-                                onPressed: () {
-                                  setState(() {
-                                    _isSearching = true;
-                                  });
-                                },
-                              ),
-                            if (user != null && user.id != Provider.of<AuthProvider>(context, listen: false).user?.id)
-                              Consumer<ModerationProvider>(
-                                builder: (context, moderation, _) {
-                                  final isBlocked = moderation.isUserBlocked(user.id);
-                                  final currentUser = Provider.of<AuthProvider>(context, listen: false).user;
-                                  if (currentUser == null) {
-                                    return IconButton(
-                                      icon: const Icon(Icons.more_vert, color: AppColors.primary),
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(builder: (context) => const AuthWrapper()),
-                                        );
-                                      },
-                                    );
-                                  }
-                                  return PopupMenuButton<String>(
-                                    icon: const Icon(Icons.more_vert, color: AppColors.primary),
-                                    onSelected: (val) async {
-                                      if (val == 'block') {
-                                        if (isBlocked) {
-                                          await moderation.unblockUser(user.id);
-                                        } else {
-                                          final confirm = await showDialog<bool>(
-                                            context: context,
-                                            builder: (context) => AlertDialog(
-                                              title: Text(context.l10n.blockUser),
-                                              content: Text(context.l10n.blockConfirmDesc),
-                                              actions: [
-                                                TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.l10n.cancel)),
-                                                TextButton(onPressed: () => Navigator.pop(context, true), child: Text(context.l10n.blockUser, style: const TextStyle(color: Colors.red))),
-                                              ],
-                                            ),
-                                          );
-                                          if (confirm == true) {
-                                            await moderation.blockUser(user);
-                                            if (mounted) Navigator.pop(context);
-                                          }
-                                        }
-                                      } else if (val == 'report') {
-                                        final reason = await showDialog<String>(
-                                          context: context,
-                                          builder: (context) {
-                                            final controller = TextEditingController();
-                                            return AlertDialog(
-                                              title: Text(context.l10n.reportAccount),
-                                              content: TextField(
-                                                controller: controller,
-                                                decoration: InputDecoration(hintText: context.l10n.reportReason),
-                                                maxLines: 3,
-                                              ),
-                                              actions: [
-                                                TextButton(onPressed: () => Navigator.pop(context), child: Text(context.l10n.cancel)),
-                                                TextButton(onPressed: () => Navigator.pop(context, controller.text), child: Text(context.l10n.send)),
-                                              ],
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    final double screenWidth = constraints.maxWidth;
+                    final bool isDesktop = screenWidth > 800;
+
+                    Widget mainContent = NestedScrollView(
+                      headerSliverBuilder: (context, innerBoxIsScrolled) {
+                        return [
+                          SliverAppBar(
+                            pinned: true,
+                            floating: false,
+                            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                            surfaceTintColor: Theme.of(context).scaffoldBackgroundColor,
+                            scrolledUnderElevation: 5.0,
+                            shadowColor: Colors.black12,
+                            leading: const BackButton(color: AppColors.primary),
+                            title: _isSearching
+                              ? TextField(
+                                  controller: _searchController,
+                                  focusNode: _searchFocusNode,
+                                  autofocus: true,
+                                  decoration: InputDecoration(
+                                    hintText: context.l10n.search,
+                                    border: InputBorder.none,
+                                    isDense: true,
+                                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                                    hintStyle: TextStyle(color: Colors.grey.shade400),
+                                  ),
+                                  style: const TextStyle(fontSize: 16),
+                                  onChanged: (value) {
+                                    profileProvider.filterAppointments(value);
+                                  },
+                                )
+                              : null,
+                            actions: [
+                              if (_isSearching)
+                                IconButton(
+                                  icon: const Icon(Icons.close, color: Colors.grey),
+                                  onPressed: () {
+                                    setState(() {
+                                      _isSearching = false;
+                                      _searchController.clear();
+                                      profileProvider.filterAppointments('');
+                                    });
+                                  },
+                                )
+                              else ...[
+                                if (_tabController.index == 0 && canView)
+                                  IconButton(
+                                    icon: const Icon(Icons.search, color: AppColors.primary),
+                                    onPressed: () {
+                                      setState(() {
+                                        _isSearching = true;
+                                      });
+                                    },
+                                  ),
+                                if (user != null && user.id != Provider.of<AuthProvider>(context, listen: false).user?.id)
+                                  Consumer<ModerationProvider>(
+                                    builder: (context, moderation, _) {
+                                      final isBlocked = moderation.isUserBlocked(user.id);
+                                      final currentUser = Provider.of<AuthProvider>(context, listen: false).user;
+                                      if (currentUser == null) {
+                                        return IconButton(
+                                          icon: const Icon(Icons.more_vert, color: AppColors.primary),
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(builder: (context) => const AuthWrapper()),
                                             );
                                           },
                                         );
-                                        if (reason != null && reason.isNotEmpty) {
-                                          await moderation.reportContent(
-                                            subjectType: 'user',
-                                            subjectId: user.id,
-                                            reason: reason,
-                                          );
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.reportThanks)));
-                                          }
-                                        }
                                       }
+                                      return PopupMenuButton<String>(
+                                        icon: const Icon(Icons.more_vert, color: AppColors.primary),
+                                        onSelected: (val) async {
+                                          if (val == 'block') {
+                                            if (isBlocked) {
+                                              await moderation.unblockUser(user.id);
+                                            } else {
+                                              final confirm = await showDialog<bool>(
+                                                context: context,
+                                                builder: (context) => AlertDialog(
+                                                  title: Text(context.l10n.blockUser),
+                                                  content: Text(context.l10n.blockConfirmDesc),
+                                                  actions: [
+                                                    TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.l10n.cancel)),
+                                                    TextButton(onPressed: () => Navigator.pop(context, true), child: Text(context.l10n.blockUser, style: const TextStyle(color: Colors.red))),
+                                                  ],
+                                                ),
+                                              );
+                                              if (confirm == true) {
+                                                await moderation.blockUser(user);
+                                                if (mounted) Navigator.pop(context);
+                                              }
+                                            }
+                                          } else if (val == 'report') {
+                                            final reason = await showDialog<String>(
+                                              context: context,
+                                              builder: (context) {
+                                                final controller = TextEditingController();
+                                                return AlertDialog(
+                                                  title: Text(context.l10n.reportAccount),
+                                                  content: TextField(
+                                                    controller: controller,
+                                                    decoration: InputDecoration(hintText: context.l10n.reportReason),
+                                                    maxLines: 3,
+                                                  ),
+                                                  actions: [
+                                                    TextButton(onPressed: () => Navigator.pop(context), child: Text(context.l10n.cancel)),
+                                                    TextButton(onPressed: () => Navigator.pop(context, controller.text), child: Text(context.l10n.send)),
+                                                  ],
+                                                );
+                                              },
+                                            );
+                                            if (reason != null && reason.isNotEmpty) {
+                                              await moderation.reportContent(
+                                                subjectType: 'user',
+                                                subjectId: user.id,
+                                                reason: reason,
+                                              );
+                                              if (context.mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.reportThanks)));
+                                              }
+                                            }
+                                          }
+                                        },
+                                        itemBuilder: (context) => [
+                                          PopupMenuItem(
+                                            value: 'block',
+                                            child: Row(
+                                              children: [
+                                                Icon(isBlocked ? Icons.person_add : Icons.block, color: isBlocked ? Colors.green : Colors.red, size: 20),
+                                                const SizedBox(width: 8),
+                                                Text(isBlocked ? context.l10n.unblock : context.l10n.blockUser, style: TextStyle(color: isBlocked ? Colors.green : Colors.red)),
+                                              ],
+                                            ),
+                                          ),
+                                          PopupMenuItem(
+                                            value: 'report',
+                                            child: Row(
+                                              children: [
+                                                const Icon(Icons.report_problem_outlined, size: 20),
+                                                const SizedBox(width: 8),
+                                                Text(context.l10n.reportAccount),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      );
                                     },
-                                    itemBuilder: (context) => [
-                                      PopupMenuItem(
-                                        value: 'block',
-                                        child: Row(
-                                          children: [
-                                            Icon(isBlocked ? Icons.person_add : Icons.block, color: isBlocked ? Colors.green : Colors.red, size: 20),
-                                            const SizedBox(width: 8),
-                                            Text(isBlocked ? context.l10n.unblock : context.l10n.blockUser, style: TextStyle(color: isBlocked ? Colors.green : Colors.red)),
-                                          ],
-                                        ),
-                                      ),
-                                      PopupMenuItem(
-                                        value: 'report',
-                                        child: Row(
-                                          children: [
-                                            const Icon(Icons.report_problem_outlined, size: 20),
-                                            const SizedBox(width: 8),
-                                            Text(context.l10n.reportAccount),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                },
+                                  ),
+                              ],
+                            ],
+                          ),
+                          if (!_isSearching)
+                            SliverToBoxAdapter(
+                              child: ProfileHeader(
+                                user: user,
+                                isPublicView: true,
+                                streamLink: appointments.firstWhere(
+                                  (a) => a.isNow && a.streamLink != null && a.streamLink!.isNotEmpty,
+                                  orElse: () => Appointment(id: '', title: '', hostId: '', startAt: DateTime.now(), date: DateTime.now(), time: '', createdAt: DateTime.now(), updatedAt: DateTime.now()),
+                                ).streamLink,
+                                customStatus: appointments.any((a) => a.isNow && !a.isCancelled && !a.isUserDeleted) 
+                                    ? AvatarStatus.active 
+                                    : (appointments.any((a) => a.currentUserInvitation?.postStatus == PostStatus.published && a.isUpcoming && !a.isCancelled && !a.isUserDeleted) 
+                                        ? AvatarStatus.upcoming 
+                                        : AvatarStatus.none),
                               ),
+                            ),
+                          
+                          SliverPersistentHeader(
+                            pinned: true,
+                            delegate: SliverFolderHeaderDelegate(
+                              child: FolderTabBar(
+                                tabController: _tabController,
+                                tabTitles: [context.l10n.appointments, context.l10n.articles],
+                                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                              ),
+                            ),
+                          ),
+                        ];
+                      },
+                      body: Container(
+                        color: Theme.of(context).scaffoldBackgroundColor,
+                        child: TabBarView(
+                          physics: const NeverScrollableScrollPhysics(),
+                          controller: _tabController,
+                          children: [
+                            canView 
+                              ? ProfileAppointmentsTab(
+                                  appointments: appointments,
+                                  user: user,
+                                  onRefresh: _handleRefresh,
+                                )
+                              : const ProfileEmptyState(),
+                            canView ? ProfileArticlesTab(
+                                    userId: user?.id ?? '',
+                                    isCurrentUser: isMe,
+                                  ) : const ProfileEmptyState(),
                           ],
-                        ],
-                      ),
-                      if (!_isSearching)
-                        SliverToBoxAdapter(
-                          child: ProfileHeader(
-                            user: user,
-                            isPublicView: true,
-                            streamLink: appointments.firstWhere(
-                              (a) => a.isNow && a.streamLink != null && a.streamLink!.isNotEmpty,
-                              orElse: () => Appointment(id: '', title: '', hostId: '', startAt: DateTime.now(), date: DateTime.now(), time: '', createdAt: DateTime.now(), updatedAt: DateTime.now()),
-                            ).streamLink,
-                            customStatus: appointments.any((a) => a.isNow && !a.isCancelled && !a.isUserDeleted) 
-                                ? AvatarStatus.active 
-                                : (appointments.any((a) => a.currentUserInvitation?.postStatus == PostStatus.published && a.isUpcoming && !a.isCancelled && !a.isUserDeleted) 
-                                    ? AvatarStatus.upcoming 
-                                    : AvatarStatus.none),
-                          ),
-                        ),
-                      
-                      SliverPersistentHeader(
-                        pinned: true,
-                        delegate: SliverFolderHeaderDelegate(
-                          child: FolderTabBar(
-                            tabController: _tabController,
-                            tabTitles: [context.l10n.appointments, context.l10n.articles],
-                            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                          ),
                         ),
                       ),
-                    ];
+                    );
+
+                    if (isDesktop) {
+                      return Container(
+                        color: Theme.of(context).scaffoldBackgroundColor,
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 800),
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(vertical: 24.0),
+                              decoration: BoxDecoration(
+                                color: AppColors.getCardBackground(context),
+                                borderRadius: BorderRadius.circular(24),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.04),
+                                    blurRadius: 24,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
+                                border: Border.all(
+                                  color: AppColors.getBorder(context).withOpacity(0.5),
+                                  width: 1,
+                                ),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(24),
+                                child: mainContent,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
+                    return mainContent;
                   },
-                  body: Container(
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    child: TabBarView(
-                      physics: const NeverScrollableScrollPhysics(),
-                      controller: _tabController,
-                      children: [
-                        canView 
-                          ? ProfileAppointmentsTab(
-                              appointments: appointments,
-                              user: user,
-                              onRefresh: _handleRefresh,
-                            )
-                          : const ProfileEmptyState(),
-                        canView ? ProfileArticlesTab(
-                                userId: user?.id ?? '',
-                                isCurrentUser: isMe,
-                              ) : const ProfileEmptyState(),
-                      ],
-                    ),
-                  ),
                 ),
       );
     },

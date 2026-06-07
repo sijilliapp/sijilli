@@ -163,4 +163,23 @@ class ThemeProvider extends ChangeNotifier {
       return base;
     }
   }
+
+  static TextStyle getTextStyleForFont(String fontName, TextStyle baseStyle) {
+    if (fontName == 'Default' || fontName.isEmpty) {
+      return baseStyle.copyWith(fontFamily: null);
+    }
+    String googleFontName = fontName;
+    if (fontName == 'Alyamama') {
+      googleFontName = 'Readex Pro';
+    }
+    try {
+      return GoogleFonts.getFont(
+        googleFontName,
+        textStyle: baseStyle,
+      );
+    } catch (e) {
+      debugPrint('⚠️ Error loading Google Font $googleFontName: $e');
+      return baseStyle;
+    }
+  }
 }

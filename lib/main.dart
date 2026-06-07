@@ -5,30 +5,32 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter/services.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timeago/timeago.dart' as timeago;
-import 'core/services/pocketbase_client.dart';
-import 'core/constants/app_colors.dart';
-import 'core/constants/app_dimens.dart';
-import 'core/widgets/auth_wrapper.dart';
-import 'core/local/local_db_service.dart';
-import 'features/auth/providers/auth_provider.dart';
-import 'features/appointments/providers/appointment_provider.dart';
-import 'features/appointments/providers/category_provider.dart';
-import 'features/profile/providers/user_status_provider.dart';
-import 'features/profile/providers/moderation_provider.dart';
-import 'features/notifications/providers/notification_provider.dart';
-import 'features/search/providers/search_provider.dart';
+import 'package:sijilli/core/services/pocketbase_client.dart';
+import 'package:sijilli/core/constants/app_colors.dart';
+import 'package:sijilli/core/constants/app_dimens.dart';
+import 'package:sijilli/core/widgets/auth_wrapper.dart';
+import 'package:sijilli/core/local/local_db_service.dart';
+import 'package:sijilli/features/auth/providers/auth_provider.dart';
+import 'package:sijilli/features/appointments/providers/appointment_provider.dart';
+import 'package:sijilli/features/appointments/providers/category_provider.dart';
+import 'package:sijilli/features/profile/providers/user_status_provider.dart';
+import 'package:sijilli/features/profile/providers/moderation_provider.dart';
+import 'package:sijilli/features/notifications/providers/notification_provider.dart';
+import 'package:sijilli/features/search/providers/search_provider.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import 'package:sijilli/l10n/app_localizations.dart';
-import 'features/home/providers/public_profile_provider.dart';
-import 'core/providers/theme_provider.dart';
-import 'core/providers/locale_provider.dart';
-import 'core/providers/settings_provider.dart';
-import 'core/providers/global_config_provider.dart';
+import 'package:sijilli/features/home/providers/public_profile_provider.dart';
+import 'package:sijilli/core/providers/theme_provider.dart';
+import 'package:sijilli/core/providers/locale_provider.dart';
+import 'package:sijilli/core/providers/settings_provider.dart';
+import 'package:sijilli/core/providers/global_config_provider.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
-import 'routes/app_router.dart';
-import 'features/auth/services/user_activity_service.dart';
-import 'features/admin/providers/admin_provider.dart';
-import 'features/articles/providers/article_provider.dart';
+import 'package:sijilli/routes/app_router.dart';
+import 'package:sijilli/features/auth/services/user_activity_service.dart';
+import 'package:sijilli/features/admin/providers/admin_provider.dart';
+import 'package:sijilli/features/articles/providers/article_provider.dart';
+import 'package:sijilli/features/articles/providers/tag_provider.dart';
+
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
@@ -138,12 +140,26 @@ class SijilliApp extends StatelessWidget {
           create: (context) => AuthProvider()..initialize(),
         ),
         // إدارة صلاحيات وإعدادات المشرف العام
-        ChangeNotifierProvider(
+        ChangeNotifierProxyProvider<AuthProvider, AdminProvider>(
           create: (context) => AdminProvider(),
+          update: (context, auth, admin) {
+            if (auth.user?.id == null || !(auth.user?.isAdmin ?? false)) {
+              admin?.clear();
+            }
+            return admin ?? AdminProvider();
+          },
         ),
-        // إدارة نظام الحظر والتبليغ
-        ChangeNotifierProvider(
+        // إدارة نظام الحظر والتبليغ - تعتمد على حالة المصادقة
+        ChangeNotifierProxyProvider<AuthProvider, ModerationProvider>(
           create: (context) => ModerationProvider(),
+          update: (context, auth, moderation) {
+            if (auth.user?.id == null) {
+              moderation?.clear();
+            } else {
+              moderation?.updateAuth(auth.user?.id);
+            }
+            return moderation ?? ModerationProvider();
+          },
         ),
         // إدارة حالة المواعيد - تعتمد على حالة المصادقة ونظام الحظر
         ChangeNotifierProxyProvider2<AuthProvider, ModerationProvider, AppointmentProvider>(
@@ -158,13 +174,23 @@ class SijilliApp extends StatelessWidget {
             return appointment ?? AppointmentProvider();
           },
         ),
-        // إدارة التصنيفات
-        ChangeNotifierProvider(
-          create: (context) => CategoryProvider()..fetchCategories(),
+        // إدارة التصنيفات - تعتمد على حالة المصادقة
+        ChangeNotifierProxyProvider<AuthProvider, CategoryProvider>(
+          create: (context) => CategoryProvider(),
+          update: (context, auth, categoryProvider) {
+            categoryProvider?.updateAuth(auth.user?.id);
+            return categoryProvider ?? CategoryProvider();
+          },
         ),
-        // إدارة حالات المستخدمين (Avatar Status)
-        ChangeNotifierProvider(
+        // إدارة حالات المستخدمين (Avatar Status) - تعتمد على حالة المصادقة
+        ChangeNotifierProxyProvider<AuthProvider, UserStatusProvider>(
           create: (context) => UserStatusProvider(),
+          update: (context, auth, statusProvider) {
+            if (auth.user?.id == null) {
+              statusProvider?.clear();
+            }
+            return statusProvider ?? UserStatusProvider();
+          },
         ),
         // إدارة الإشعارات
         ChangeNotifierProxyProvider<AuthProvider, NotificationProvider>(
@@ -182,13 +208,31 @@ class SijilliApp extends StatelessWidget {
             return search ?? SearchProvider();
           },
         ),
-        // إدارة بيانات الملفات الشخصية العامة
-        ChangeNotifierProvider(
+        // إدارة بيانات الملفات الشخصية العامة - تعتمد على حالة المصادقة
+        ChangeNotifierProxyProvider<AuthProvider, PublicProfileProvider>(
           create: (context) => PublicProfileProvider(),
+          update: (context, auth, profile) {
+            if (auth.user?.id == null) {
+              profile?.clear();
+            }
+            return profile ?? PublicProfileProvider();
+          },
         ),
-        // إدارة المقالات
-        ChangeNotifierProvider(
+        // إدارة الأوسام - تعتمد على حالة المصادقة
+        ChangeNotifierProxyProvider<AuthProvider, TagProvider>(
+          create: (context) => TagProvider(),
+          update: (context, auth, tags) {
+            tags?.updateAuth(auth.user?.id);
+            return tags ?? TagProvider();
+          },
+        ),
+        // إدارة المقالات - تعتمد على حالة المصادقة
+        ChangeNotifierProxyProvider<AuthProvider, ArticleProvider>(
           create: (context) => ArticleProvider(),
+          update: (context, auth, articles) {
+            articles?.update(auth.user?.id);
+            return articles ?? ArticleProvider();
+          },
         ),
         // إدارة الثيم والخطوط (تم تحميلها مسبقاً)
         ChangeNotifierProvider.value(
@@ -198,9 +242,15 @@ class SijilliApp extends StatelessWidget {
         ChangeNotifierProvider.value(
           value: localeProvider,
         ),
-        // إدارة الإعدادات العامة
-        ChangeNotifierProvider.value(
-          value: settingsProvider,
+        // إدارة الإعدادات العامة - تعتمد على حالة المصادقة لتهيئة الحسابات
+        ChangeNotifierProxyProvider<AuthProvider, SettingsProvider>(
+          create: (context) => settingsProvider,
+          update: (context, auth, settings) {
+            if (auth.user?.id == null) {
+              settings?.clearSettings();
+            }
+            return settings ?? settingsProvider;
+          },
         ),
       ],
       child: Consumer2<ThemeProvider, LocaleProvider>(

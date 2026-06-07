@@ -27,13 +27,16 @@ class LocalArticleAdapter extends TypeAdapter<LocalArticle> {
       ..likes = (fields[7] as List).cast<String>()
       ..authorJson = fields[8] as String?
       ..poetryMetadataJson = fields[9] as String?
-      ..highlightsMetadataJson = fields[10] as String?;
+      ..highlightsMetadataJson = fields[10] as String?
+      ..postStatus = fields[11] as String
+      ..deletedAt = fields[12] as DateTime?
+      ..tagsJson = fields[13] as String?;
   }
 
   @override
   void write(BinaryWriter writer, LocalArticle obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(14)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -55,7 +58,13 @@ class LocalArticleAdapter extends TypeAdapter<LocalArticle> {
       ..writeByte(9)
       ..write(obj.poetryMetadataJson)
       ..writeByte(10)
-      ..write(obj.highlightsMetadataJson);
+      ..write(obj.highlightsMetadataJson)
+      ..writeByte(11)
+      ..write(obj.postStatus)
+      ..writeByte(12)
+      ..write(obj.deletedAt)
+      ..writeByte(13)
+      ..write(obj.tagsJson);
   }
 
   @override

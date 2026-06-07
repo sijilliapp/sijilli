@@ -142,7 +142,11 @@ class StandardPolicy extends AppointmentCardPolicy {
         appointment: appointment,
         onUserSelected: (user) {
           Navigator.pop(context);
-          context.read<AppointmentProvider>().inviteGuest(appointment.id, user.id);
+          if (user.id.startsWith('phone_')) {
+            context.read<AppointmentProvider>().inviteGuestByPhone(appointment.id, user.phone!, user.name);
+          } else {
+            context.read<AppointmentProvider>().inviteGuest(appointment.id, user);
+          }
         },
       ),
     );

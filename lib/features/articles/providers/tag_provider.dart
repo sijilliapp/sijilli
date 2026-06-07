@@ -1,0 +1,91 @@
+import 'package:flutter/material.dart';
+import '../services/pb_tag_service.dart';
+import '../../../models/tag.dart';
+
+class TagProvider extends ChangeNotifier {
+  final PbTagService _tagService = PbTagService();
+  
+  List<Tag> _tags = [];
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  List<Tag> get tags => _tags;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+
+  String? _currentUserId;
+
+  void updateAuth(String? userId) {
+    if (_currentUserId != userId) {
+      _currentUserId = userId;
+      _tags = [];
+      _errorMessage = null;
+      if (userId != null) {
+        fetchTags();
+      } else {
+        notifyListeners();
+      }
+    }
+  }
+
+  /// Get tags for the user
+  Future<void> fetchTags() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _tags = await _tagService.getUserTags();
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Add a new tag
+  Future<Tag?> addTag(String name, String colorHex) async {
+    try {
+      final newTag = await _tagService.createTag(name: name, colorHex: colorHex);
+      _tags.add(newTag);
+      _tags.sort((a, b) => a.name.compareTo(b.name));
+      notifyListeners();
+      return newTag;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// Update a tag
+  Future<Tag?> updateTag(String id, String name, String colorHex) async {
+    try {
+      final updatedTag = await _tagService.updateTag(tagId: id, name: name, colorHex: colorHex);
+      final index = _tags.indexWhere((t) => t.id == id);
+      if (index != -1) {
+        _tags[index] = updatedTag;
+      }
+      _tags.sort((a, b) => a.name.compareTo(b.name));
+      notifyListeners();
+      return updatedTag;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// Delete a tag
+  Future<void> deleteTag(String id) async {
+    try {
+      await _tagService.deleteTag(id);
+      _tags.removeWhere((t) => t.id == id);
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+}

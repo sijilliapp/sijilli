@@ -457,6 +457,19 @@
   "notifyActiveDesc": "Alert when appointment time arrives",
   "reminderOneDayBefore": "One Day Reminder",
   "notifyOneDayBeforeDesc": "Send alert 24 hours before appointment",
+  "readerInflux": "Visitor Influx",
+  "notifyReaderInfluxDesc": "Notifications when someone reads or visits your articles",
+  "notifyBookmarks": "Saved Appointments Alerts",
+  "notifyBookmarksDesc": "Get notified when bookmarked appointments are approaching",
+  "notifyBeforeOffset": "Remind me before start",
+  "notifyBeforeOffsetDesc": "Set a custom time to get notified before appointments",
+  "minutes10": "10 minutes before",
+  "minutes15": "15 minutes before",
+  "minutes30": "30 minutes before",
+  "hour1": "1 hour before",
+  "hours2": "2 hours before",
+  "addCategory": "Add Category",
+  "editCategory": "Edit",
   "privacyIntroTitle": "1. Introduction",
   "privacyIntroContent": "At \"Sijilli\" app, we are committed to protecting your personal data and clarifying how it is collected and used. This app is dedicated to social networking and appointment organization, and your privacy is our top priority.\n\nنحن في تطبيق \"سجلي\" نلتزم بحماية بياناتك الشخصية وتوضيح كيفية جمعها واستخدامها. هذا التطبيق مخصص للتواصل الاجتماعي وتنظيم المواعيد، وخصوصيتك هي أولويتنا القصوى.",
   "privacyDataTitle": "2. Information We Collect",
@@ -852,5 +865,28 @@
   "messageStatusUpdateSuccess": "Message status updated successfully",
   "messageStatusUpdateFailed": "Failed to update message status",
   "errorArticleNotPublished": "This article is not currently published.",
-  "adminPanelDesc": "Manage and customize system settings and registration"
+  "adminPanelDesc": "Manage and customize system settings and registration",
+  "all": "All",
+  "published": "Published",
+  "draft": "Draft",
+  "archived": "Archived",
+  "deleted": "Deleted",
+  "no": "No",
+  "leaveAppDialogTitle": "Leave App",
+  "leaveAppDialogMessage": "Do you want to leave the app to open the link?",
+  "articleCategoriesHint": "Article categories... (Tap to select)",
+  "articleCategoryTooltip": "Article Category",
+  "articleCategoryLabel": "Tag",
+  "readingFont": "Reading font: {font}",
+  "@readingFont": {
+    "placeholders": {
+      "font": {
+        "type": "String"
+      }
+    }
+  },
+  "readingFontTooltip": "Change reading font",
+  "fullArticle": "Full Article...",
+  "noCategoryAddedYet": "No category has been added to the article yet"
 }
+

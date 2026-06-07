@@ -54,16 +54,48 @@ class _FollowsScreenState extends State<FollowsScreen> {
 
   UnsubscribeFunc? _unsubscribeFunc;
 
+  Future<void> _loadLocalAccredited() async {
+    try {
+      final cached = await LocalDbService.instance.getFollowedUsers();
+      if (cached.isNotEmpty && mounted) {
+        final lastVisits = await LocalDbService.instance.getUserLastVisits();
+        cached.sort((a, b) {
+          final aTime = lastVisits[a.id] ?? 0;
+          final bTime = lastVisits[b.id] ?? 0;
+          
+          if (aTime != bTime) {
+            return bTime.compareTo(aTime); // تنازلي (الأحدث زيارة أولاً)
+          }
+          
+          final aApproved = a.isApproved || a.isAdmin;
+          final bApproved = b.isApproved || b.isAdmin;
+          if (aApproved && !bApproved) return -1;
+          if (!aApproved && bApproved) return 1;
+          
+          return a.name.compareTo(b.name);
+        });
+
+        setState(() {
+          _accredited = cached;
+          _isLoading = false; // Show cached data immediately!
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading local accredited users: $e');
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     _isCurrentUser = widget.userId == authProvider.user?.id;
-    _fetchAll();
-    _loadRecentSearches();
     if (_isCurrentUser) {
+      _loadLocalAccredited();
       _subscribeToRealtime();
     }
+    _fetchAll();
+    _loadRecentSearches();
   }
 
   Future<void> _loadRecentSearches() async {
@@ -95,7 +127,8 @@ class _FollowsScreenState extends State<FollowsScreen> {
   }
 
   Future<void> _fetchAll({bool silent = false}) async {
-    if (!silent) setState(() => _isLoading = true);
+    final bool useSilent = silent || (_isCurrentUser && _accredited.isNotEmpty);
+    if (!useSilent) setState(() => _isLoading = true);
     if (mounted) {
       setState(() {
         _showAllAccredited = false;
@@ -137,23 +170,23 @@ class _FollowsScreenState extends State<FollowsScreen> {
         }
       }
 
-      // جلب عداد الدخول والزيارات للملفات الشخصية لترتيب المعتمدين
-      final clickCounts = await LocalDbService.instance.getUserClickCounts();
+      // جلب تواريخ آخر زيارة للملفات الشخصية لترتيب المعتمدين
+      final lastVisits = await LocalDbService.instance.getUserLastVisits();
       
-      // ترتيب المعتمدين: المقبولين (Approved/Admin) أولاً، ثم الأكثر دخولاً/زيارةً بالترتيب التنازلي
+      // ترتيب المعتمدين: الأحدث زيارة أولاً، ثم المعتمدين/المشرفين أولاً، ثم الترتيب الأبجدي
       accreditedList.sort((a, b) {
+        final aTime = lastVisits[a.id] ?? 0;
+        final bTime = lastVisits[b.id] ?? 0;
+        
+        if (aTime != bTime) {
+          return bTime.compareTo(aTime); // تنازلي (الأحدث زيارة أولاً)
+        }
+        
         final aApproved = a.isApproved || a.isAdmin;
         final bApproved = b.isApproved || b.isAdmin;
         
         if (aApproved && !bApproved) return -1;
         if (!aApproved && bApproved) return 1;
-        
-        final aClicks = clickCounts[a.id] ?? 0;
-        final bClicks = clickCounts[b.id] ?? 0;
-        
-        if (aClicks != bClicks) {
-          return bClicks.compareTo(aClicks); // تنازلي (الأكثر دخولاً أولاً)
-        }
         
         return a.name.compareTo(b.name);
       });
@@ -198,6 +231,11 @@ class _FollowsScreenState extends State<FollowsScreen> {
           _suggestedUsers = suggestions;
           _isLoading = false;
         });
+
+        // 💾 Save to local DB cache for next launches
+        if (_isCurrentUser) {
+          LocalDbService.instance.saveFollowedUsers(accreditedList);
+        }
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);

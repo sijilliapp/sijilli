@@ -3,21 +3,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsProvider extends ChangeNotifier {
   static const String keyMagneticScroll = 'magnetic_scroll_enabled';
-  static const String keyUseTraditionalArabic = 'use_traditional_arabic';
+  static const String keyArticleFontFamily = 'article_font_family';
   static const String keyShowLocationInfo = 'show_location_info';
   
   bool _isMagneticScrollEnabled = true;
-  bool _useTraditionalArabic = false;
+  String _articleFontFamily = 'Default';
   bool _showLocationInfo = true;
 
   bool get isMagneticScrollEnabled => _isMagneticScrollEnabled;
-  bool get useTraditionalArabic => _useTraditionalArabic;
+  String get articleFontFamily => _articleFontFamily;
   bool get showLocationInfo => _showLocationInfo;
 
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     _isMagneticScrollEnabled = prefs.getBool(keyMagneticScroll) ?? true;
-    _useTraditionalArabic = prefs.getBool(keyUseTraditionalArabic) ?? false;
+    _articleFontFamily = prefs.getString(keyArticleFontFamily) ?? 'Default';
     _showLocationInfo = prefs.getBool(keyShowLocationInfo) ?? true;
     notifyListeners();
   }
@@ -32,14 +32,14 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setBool(keyMagneticScroll, enabled);
   }
 
-  Future<void> setUseTraditionalArabic(bool enabled) async {
-    if (_useTraditionalArabic == enabled) return;
+  Future<void> setArticleFontFamily(String font) async {
+    if (_articleFontFamily == font) return;
 
-    _useTraditionalArabic = enabled;
+    _articleFontFamily = font;
     notifyListeners();
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(keyUseTraditionalArabic, enabled);
+    await prefs.setString(keyArticleFontFamily, font);
   }
 
   Future<void> setShowLocationInfo(bool enabled) async {
@@ -50,5 +50,19 @@ class SettingsProvider extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(keyShowLocationInfo, enabled);
+  }
+
+  Future<void> clearSettings() async {
+    _isMagneticScrollEnabled = true;
+    _articleFontFamily = 'Default';
+    _showLocationInfo = true;
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(keyMagneticScroll);
+      await prefs.remove(keyArticleFontFamily);
+      await prefs.remove(keyShowLocationInfo);
+    } catch (_) {}
   }
 }

@@ -406,19 +406,54 @@ class AppointmentProvider extends ChangeNotifier {
     return completer.future;
   }
 
-  Future<void> createAppointment(Appointment appointment, {List<String>? inviteeIds, String? inviteTitle, String? inviteMessage}) async {
+  Future<void> createAppointment(
+    Appointment appointment, {
+    List<UserModel>? invitees,
+    String? inviteTitle,
+    String? inviteMessage,
+  }) async {
     // Optimistic Update: Add to list immediately
     final tempId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
-    final tempAppt = appointment.copyWith(id: tempId);
+
+    // Construct optimistic participants list
+    final tempParticipants = invitees?.map((u) {
+      final isPhone = u.id.startsWith('phone_');
+      return Invitation(
+        id: 'temp_inv_${u.id}_${DateTime.now().millisecondsSinceEpoch}',
+        appointmentId: tempId,
+        userId: isPhone ? '' : u.id,
+        user: isPhone ? null : u,
+        status: InvitationStatus.pending,
+        postStatus: PostStatus.published,
+        invitedPhone: isPhone ? u.phone : null,
+        invitedName: isPhone ? u.name : null,
+      );
+    }).toList() ?? [];
+
+    final tempAppt = appointment.copyWith(
+      id: tempId,
+      participants: tempParticipants,
+    );
     
     _appointments.add(tempAppt);
     _sortAppointments();
     notifyListeners(); // Update UI instantly
 
     try {
+      final inviteeIds = invitees
+          ?.where((u) => !u.id.startsWith('phone_'))
+          .map((u) => u.id)
+          .toList();
+          
+      final phoneInvitees = invitees
+          ?.where((u) => u.id.startsWith('phone_'))
+          .map((u) => {'phone': u.phone ?? '', 'name': u.name})
+          .toList();
+
       final newAppt = await _apptService.createAppointment(
         appointment, 
         inviteeIds: inviteeIds,
+        phoneInvitees: phoneInvitees,
         inviteTitle: inviteTitle,
         inviteMessage: inviteMessage,
       );
@@ -426,7 +461,13 @@ class AppointmentProvider extends ChangeNotifier {
       // Replace temp with real
       final index = _appointments.indexWhere((a) => a.id == tempId);
       if (index != -1) {
-        _appointments[index] = newAppt;
+        // Keep the participants from tempAppt if newAppt doesn't have them in expand yet
+        final mergedAppt = newAppt.copyWith(
+          participants: newAppt.participants != null && newAppt.participants!.isNotEmpty
+              ? newAppt.participants
+              : _appointments[index].participants,
+        );
+        _appointments[index] = mergedAppt;
       }
       _sortAppointments();
       _errorMessage = null;
@@ -816,13 +857,66 @@ class AppointmentProvider extends ChangeNotifier {
   }
 
   /// دعوة مستخدم للموعد
-  Future<void> inviteGuest(String appointmentId, String userId, {String? title, String? message}) async {
+  Future<void> inviteGuest(String appointmentId, UserModel guest, {String? title, String? message}) async {
+    final index = _appointments.indexWhere((a) => a.id == appointmentId);
+    Appointment? originalAppt;
+    if (index != -1) {
+      originalAppt = _appointments[index];
+      final tempInv = Invitation(
+        id: 'temp_inv_${guest.id}_${DateTime.now().millisecondsSinceEpoch}',
+        appointmentId: appointmentId,
+        userId: guest.id,
+        user: guest,
+        status: InvitationStatus.pending,
+        postStatus: PostStatus.published,
+      );
+      final updatedParticipants = List<Invitation>.from(originalAppt.participants ?? [])..add(tempInv);
+      _appointments[index] = originalAppt.copyWith(participants: updatedParticipants);
+      notifyListeners();
+    }
+
     try {
-      await _invitationService.inviteGuest(appointmentId, userId, title: title, message: message);
+      await _invitationService.inviteGuest(appointmentId, guest.id, title: title, message: message);
       await fetchAppointments();
     } catch (e) {
+      if (index != -1 && originalAppt != null) {
+        _appointments[index] = originalAppt;
+      }
       _errorMessage = 'Failed to send invite: $e';
       notifyListeners();
+    }
+  }
+
+  /// دعوة ضيف عبر الهاتف للموعد
+  Future<void> inviteGuestByPhone(String appointmentId, String phone, String name) async {
+    final index = _appointments.indexWhere((a) => a.id == appointmentId);
+    Appointment? originalAppt;
+    if (index != -1) {
+      originalAppt = _appointments[index];
+      final tempInv = Invitation(
+        id: 'temp_inv_phone_${phone}_${DateTime.now().millisecondsSinceEpoch}',
+        appointmentId: appointmentId,
+        userId: '',
+        status: InvitationStatus.pending,
+        postStatus: PostStatus.published,
+        invitedPhone: phone,
+        invitedName: name,
+      );
+      final updatedParticipants = List<Invitation>.from(originalAppt.participants ?? [])..add(tempInv);
+      _appointments[index] = originalAppt.copyWith(participants: updatedParticipants);
+      notifyListeners();
+    }
+
+    try {
+      await _invitationService.inviteGuestByPhone(appointmentId, phone, name);
+      await fetchAppointments();
+    } catch (e) {
+      if (index != -1 && originalAppt != null) {
+        _appointments[index] = originalAppt;
+      }
+      _errorMessage = 'Failed to send invite: $e';
+      notifyListeners();
+      rethrow;
     }
   }
 

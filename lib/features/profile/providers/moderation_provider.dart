@@ -16,8 +16,27 @@ class ModerationProvider with ChangeNotifier {
   List<String> get idsBlockingMe => _idsBlockingMe;
   bool get isLoading => _isLoading;
 
-  ModerationProvider() {
-    fetchBlockedUsers();
+  String? _currentUserId;
+
+  ModerationProvider();
+
+  void updateAuth(String? userId) {
+    if (_currentUserId != userId) {
+      _currentUserId = userId;
+      if (userId != null) {
+        fetchBlockedUsers();
+      } else {
+        clear();
+      }
+    }
+  }
+
+  void clear() {
+    _blockedUsers = [];
+    _idsBlockingMe = [];
+    _currentUserId = null;
+    _isLoading = false;
+    notifyListeners();
   }
 
   Future<void> fetchBlockedUsers() async {

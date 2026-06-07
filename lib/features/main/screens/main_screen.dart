@@ -8,6 +8,7 @@ import 'package:sijilli/features/home/screens/home_screen.dart';
 import 'package:sijilli/features/search/screens/search_screen.dart';
 import 'package:sijilli/features/add/screens/add_event_screen.dart';
 import 'package:sijilli/features/articles/screens/add_article_screen.dart';
+import 'package:sijilli/features/articles/providers/article_provider.dart';
 import 'package:sijilli/features/notifications/screens/notifications_screen.dart';
 import 'package:sijilli/features/settings/screens/settings_screen.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
@@ -32,12 +33,18 @@ class MainScreenState extends State<MainScreen> {
         
         // Sync reminders initially
         final apptProvider = context.read<AppointmentProvider>();
-        context.read<NotificationProvider>().syncReminders(apptProvider.appointments);
+        context.read<NotificationProvider>().syncReminders(
+          apptProvider.appointments,
+          apptProvider.bookmarkedAppointments,
+        );
         
         // Listen for future updates
         apptProvider.addListener(() {
           if (mounted) {
-             context.read<NotificationProvider>().syncReminders(apptProvider.appointments);
+             context.read<NotificationProvider>().syncReminders(
+               apptProvider.appointments,
+               apptProvider.bookmarkedAppointments,
+             );
           }
         });
       }
@@ -115,7 +122,11 @@ class MainScreenState extends State<MainScreen> {
               // إذا كان المستخدم في تبويب المقالات، نفتح شاشة إضافة مقال
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AddArticleScreen()),
+                MaterialPageRoute(
+                  builder: (context) => AddArticleScreen(
+                    initialTagIds: context.read<ArticleProvider>().activeFilterTagIds,
+                  ),
+                ),
               );
               return;
             }

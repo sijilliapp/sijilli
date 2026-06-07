@@ -2330,6 +2330,84 @@ abstract class AppLocalizations {
   /// **'إرسال تنبيه قبل الموعد بـ 24 ساعة'**
   String get notifyOneDayBeforeDesc;
 
+  /// No description provided for @readerInflux.
+  ///
+  /// In ar, this message translates to:
+  /// **'توافد القراء'**
+  String get readerInflux;
+
+  /// No description provided for @notifyReaderInfluxDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'إشعارات عند قراءة أو زيارة مقالاتك'**
+  String get notifyReaderInfluxDesc;
+
+  /// No description provided for @notifyBookmarks.
+  ///
+  /// In ar, this message translates to:
+  /// **'تنبيهات المواعيد المحفوظة'**
+  String get notifyBookmarks;
+
+  /// No description provided for @notifyBookmarksDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'تلقي تنبيهات للمواعيد المضافة في المحفوظات'**
+  String get notifyBookmarksDesc;
+
+  /// No description provided for @notifyBeforeOffset.
+  ///
+  /// In ar, this message translates to:
+  /// **'تذكير قبل الموعد بمدة'**
+  String get notifyBeforeOffset;
+
+  /// No description provided for @notifyBeforeOffsetDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'تحديد وقت مسبق للتذكير بالمواعيد'**
+  String get notifyBeforeOffsetDesc;
+
+  /// No description provided for @minutes10.
+  ///
+  /// In ar, this message translates to:
+  /// **'10 دقائق قبل الموعد'**
+  String get minutes10;
+
+  /// No description provided for @minutes15.
+  ///
+  /// In ar, this message translates to:
+  /// **'15 دقيقة قبل الموعد'**
+  String get minutes15;
+
+  /// No description provided for @minutes30.
+  ///
+  /// In ar, this message translates to:
+  /// **'30 دقيقة قبل الموعد'**
+  String get minutes30;
+
+  /// No description provided for @hour1.
+  ///
+  /// In ar, this message translates to:
+  /// **'ساعة واحدة قبل الموعد'**
+  String get hour1;
+
+  /// No description provided for @hours2.
+  ///
+  /// In ar, this message translates to:
+  /// **'ساعتان قبل الموعد'**
+  String get hours2;
+
+  /// No description provided for @addCategory.
+  ///
+  /// In ar, this message translates to:
+  /// **'إضافة تصنيف'**
+  String get addCategory;
+
+  /// No description provided for @editCategory.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعديل'**
+  String get editCategory;
+
   /// No description provided for @privacyIntroTitle.
   ///
   /// In ar, this message translates to:
@@ -3691,6 +3769,96 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'إدارة وتخصيص إعدادات النظام والتسجيل'**
   String get adminPanelDesc;
+
+  /// No description provided for @all.
+  ///
+  /// In ar, this message translates to:
+  /// **'الكل'**
+  String get all;
+
+  /// No description provided for @published.
+  ///
+  /// In ar, this message translates to:
+  /// **'منشور'**
+  String get published;
+
+  /// No description provided for @draft.
+  ///
+  /// In ar, this message translates to:
+  /// **'مسودة'**
+  String get draft;
+
+  /// No description provided for @archived.
+  ///
+  /// In ar, this message translates to:
+  /// **'مؤرشف'**
+  String get archived;
+
+  /// No description provided for @deleted.
+  ///
+  /// In ar, this message translates to:
+  /// **'محذوف'**
+  String get deleted;
+
+  /// No description provided for @no.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا'**
+  String get no;
+
+  /// No description provided for @leaveAppDialogTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'مغادرة التطبيق'**
+  String get leaveAppDialogTitle;
+
+  /// No description provided for @leaveAppDialogMessage.
+  ///
+  /// In ar, this message translates to:
+  /// **'هل تود مغادرة التطبيق للانتقال للرابط؟'**
+  String get leaveAppDialogMessage;
+
+  /// No description provided for @articleCategoriesHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'تصنيفات المقال... (اضغط للاختيار)'**
+  String get articleCategoriesHint;
+
+  /// No description provided for @articleCategoryTooltip.
+  ///
+  /// In ar, this message translates to:
+  /// **'تصنيف المقال'**
+  String get articleCategoryTooltip;
+
+  /// No description provided for @articleCategoryLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'تصنيف'**
+  String get articleCategoryLabel;
+
+  /// No description provided for @readingFont.
+  ///
+  /// In ar, this message translates to:
+  /// **'خط القراءة: {font}'**
+  String readingFont(String font);
+
+  /// No description provided for @readingFontTooltip.
+  ///
+  /// In ar, this message translates to:
+  /// **'تغيير خط القراءة'**
+  String get readingFontTooltip;
+
+  /// No description provided for @fullArticle.
+  ///
+  /// In ar, this message translates to:
+  /// **'المقال كاملاً...'**
+  String get fullArticle;
+
+  /// No description provided for @noCategoryAddedYet.
+  ///
+  /// In ar, this message translates to:
+  /// **'لم يتم إضافة تصنيف للمقال بعد'**
+  String get noCategoryAddedYet;
 }
 
 class _AppLocalizationsDelegate

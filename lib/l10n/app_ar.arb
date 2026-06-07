@@ -482,6 +482,19 @@
   "notifyActiveDesc": "التنبيه عند حلول وقت الموعد",
   "reminderOneDayBefore": "تذكير قبل يوم",
   "notifyOneDayBeforeDesc": "إرسال تنبيه قبل الموعد بـ 24 ساعة",
+  "readerInflux": "توافد القراء",
+  "notifyReaderInfluxDesc": "إشعارات عند قراءة أو زيارة مقالاتك",
+  "notifyBookmarks": "تنبيهات المواعيد المحفوظة",
+  "notifyBookmarksDesc": "تلقي تنبيهات للمواعيد المضافة في المحفوظات",
+  "notifyBeforeOffset": "تذكير قبل الموعد بمدة",
+  "notifyBeforeOffsetDesc": "تحديد وقت مسبق للتذكير بالمواعيد",
+  "minutes10": "10 دقائق قبل الموعد",
+  "minutes15": "15 دقيقة قبل الموعد",
+  "minutes30": "30 دقيقة قبل الموعد",
+  "hour1": "ساعة واحدة قبل الموعد",
+  "hours2": "ساعتان قبل الموعد",
+  "addCategory": "إضافة تصنيف",
+  "editCategory": "تعديل",
   "privacyIntroTitle": "1. مقدمة (Introduction)",
   "privacyIntroContent": "نحن في تطبيق \"سجلي\" نلتزم بحماية بياناتك الشخصية وتوضيح كيفية جمعها واستخدامها. هذا التطبيق مخصص للتواصل الاجتماعي وتنظيم المواعيد، وخصوصيتك هي أولويتنا القصوى.\n\nAt \"Sijilli\" app, we are committed to protecting your personal data and clarifying how it is collected and used. This app is dedicated to social networking and appointment organization, and your privacy is our top priority.",
   "privacyDataTitle": "2. البيانات التي نجمعها (Information We Collect)",
@@ -887,5 +900,27 @@
   "messageStatusUpdateSuccess": "تم تحديث حالة الرسالة بنجاح",
   "messageStatusUpdateFailed": "فشل تحديث حالة الرسالة",
   "errorArticleNotPublished": "هذا المقال غير منشور حالياً.",
-  "adminPanelDesc": "إدارة وتخصيص إعدادات النظام والتسجيل"
+  "adminPanelDesc": "إدارة وتخصيص إعدادات النظام والتسجيل",
+  "all": "الكل",
+  "published": "منشور",
+  "draft": "مسودة",
+  "archived": "مؤرشف",
+  "deleted": "محذوف",
+  "no": "لا",
+  "leaveAppDialogTitle": "مغادرة التطبيق",
+  "leaveAppDialogMessage": "هل تود مغادرة التطبيق للانتقال للرابط؟",
+  "articleCategoriesHint": "تصنيفات المقال... (اضغط للاختيار)",
+  "articleCategoryTooltip": "تصنيف المقال",
+  "articleCategoryLabel": "تصنيف",
+  "readingFont": "خط القراءة: {font}",
+  "@readingFont": {
+    "placeholders": {
+      "font": {
+        "type": "String"
+      }
+    }
+  },
+  "readingFontTooltip": "تغيير خط القراءة",
+  "fullArticle": "المقال كاملاً...",
+  "noCategoryAddedYet": "لم يتم إضافة تصنيف للمقال بعد"
 }

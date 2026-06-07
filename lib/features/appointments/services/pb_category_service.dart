@@ -50,6 +50,23 @@ class PbCategoryService {
     }
   }
 
+  /// تحديث تصنيف للمستخدم
+  Future<AppointmentCategory> updateCategory(String id, String name, {String? color, String? icon}) async {
+    try {
+      final body = {
+        'name': name,
+        if (color != null) 'color': color,
+        if (icon != null) 'icon': icon,
+      };
+
+      final record = await _pb.collection(collectionName).update(id, body: body);
+      return AppointmentCategory.fromJson(record.toJson());
+    } catch (e) {
+      print('⚠️ Failed to update category: $e');
+      rethrow;
+    }
+  }
+
   /// حذف تصنيف
   Future<void> deleteCategory(String id) async {
     try {

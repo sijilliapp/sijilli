@@ -1301,6 +1301,46 @@ class AppLocalizationsAr extends AppLocalizations {
   String get notifyOneDayBeforeDesc => 'إرسال تنبيه قبل الموعد بـ 24 ساعة';
 
   @override
+  String get readerInflux => 'توافد القراء';
+
+  @override
+  String get notifyReaderInfluxDesc => 'إشعارات عند قراءة أو زيارة مقالاتك';
+
+  @override
+  String get notifyBookmarks => 'تنبيهات المواعيد المحفوظة';
+
+  @override
+  String get notifyBookmarksDesc =>
+      'تلقي تنبيهات للمواعيد المضافة في المحفوظات';
+
+  @override
+  String get notifyBeforeOffset => 'تذكير قبل الموعد بمدة';
+
+  @override
+  String get notifyBeforeOffsetDesc => 'تحديد وقت مسبق للتذكير بالمواعيد';
+
+  @override
+  String get minutes10 => '10 دقائق قبل الموعد';
+
+  @override
+  String get minutes15 => '15 دقيقة قبل الموعد';
+
+  @override
+  String get minutes30 => '30 دقيقة قبل الموعد';
+
+  @override
+  String get hour1 => 'ساعة واحدة قبل الموعد';
+
+  @override
+  String get hours2 => 'ساعتان قبل الموعد';
+
+  @override
+  String get addCategory => 'إضافة تصنيف';
+
+  @override
+  String get editCategory => 'تعديل';
+
+  @override
   String get privacyIntroTitle => '1. مقدمة (Introduction)';
 
   @override
@@ -2068,4 +2108,51 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get adminPanelDesc => 'إدارة وتخصيص إعدادات النظام والتسجيل';
+
+  @override
+  String get all => 'الكل';
+
+  @override
+  String get published => 'منشور';
+
+  @override
+  String get draft => 'مسودة';
+
+  @override
+  String get archived => 'مؤرشف';
+
+  @override
+  String get deleted => 'محذوف';
+
+  @override
+  String get no => 'لا';
+
+  @override
+  String get leaveAppDialogTitle => 'مغادرة التطبيق';
+
+  @override
+  String get leaveAppDialogMessage => 'هل تود مغادرة التطبيق للانتقال للرابط؟';
+
+  @override
+  String get articleCategoriesHint => 'تصنيفات المقال... (اضغط للاختيار)';
+
+  @override
+  String get articleCategoryTooltip => 'تصنيف المقال';
+
+  @override
+  String get articleCategoryLabel => 'تصنيف';
+
+  @override
+  String readingFont(String font) {
+    return 'خط القراءة: $font';
+  }
+
+  @override
+  String get readingFontTooltip => 'تغيير خط القراءة';
+
+  @override
+  String get fullArticle => 'المقال كاملاً...';
+
+  @override
+  String get noCategoryAddedYet => 'لم يتم إضافة تصنيف للمقال بعد';
 }

@@ -47,6 +47,22 @@ class AdminProvider extends ChangeNotifier {
   /// الحصول على عدد الرسائل الجديدة
   int get newMessagesCount => _messages.where((m) => m.status == 'new').length;
 
+  /// تنظيف كافة البيانات عند تسجيل الخروج
+  void clear() {
+    _messages = [];
+    _reports = [];
+    _userSearchResults = [];
+    _recentRegisteredUsers = [];
+    _adminUsers = [];
+    _isLoading = false;
+    _isFetchingMessages = false;
+    _isFetchingReports = false;
+    _isSearchingUsers = false;
+    _isFetchingRecentRegistered = false;
+    _isFetchingAdmins = false;
+    notifyListeners();
+  }
+
   /// جلب المستخدمين المسجلين مؤخراً
   Future<void> fetchRecentlyRegistered() async {
     _isFetchingRecentRegistered = true;

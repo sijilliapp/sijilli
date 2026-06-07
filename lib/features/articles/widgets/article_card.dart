@@ -6,12 +6,14 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimens.dart';
 import '../../../models/article.dart';
+import '../../../models/appointment.dart';
 import '../providers/article_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../../core/widgets/sheets/app_action_sheet.dart';
 import '../../profile/providers/moderation_provider.dart';
+import 'tag_selector_sheet.dart';
 
 class ArticleCard extends StatelessWidget {
   final Article article;
@@ -45,93 +47,57 @@ class ArticleCard extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             onLongPress: () {
+              final articleProvider = context.read<ArticleProvider>();
               AppActionSheet.show(
                 context,
                 actions: [
-                  if (isAuthor)
-                    if (article.isPublished)
-                      AppActionItem(
-                        label: 'إلغاء المشاركة',
-                        icon: Icons.unpublished_outlined,
-                        isDestructive: true,
-                        onTap: () async {
-                          context.read<ArticleProvider>().togglePublishStatus(article.id, false);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('تم إلغاء نشر المقال وإيقاف المشاركة 🛑'),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          }
-                        },
-                      )
-                    else
-                      AppActionItem(
-                        label: 'مشاركة ونشر المقال',
-                        icon: Icons.share,
-                        onTap: () async {
-                          final username = article.author?.username ?? 'user';
-                          final url = 'https://sijilli.com/$username/${article.id}';
-                          
-                          // Auto-publish if not already published
-                          if (!article.isPublished) {
-                            context.read<ArticleProvider>().togglePublishStatus(article.id, true);
-                          }
-
-                          if (kIsWeb) {
-                            await Clipboard.setData(ClipboardData(text: url));
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('تم نسخ رابط المقال إلى الحافظة ونشره تلقائياً 🚀'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            }
-                          } else {
-                            // ignore: deprecated_member_use
-                            await Share.share(url, subject: article.title);
-                          }
-                        },
-                      )
-                  else if (article.isPublished)
+                  if (article.postStatus == PostStatus.trash) ...[
                     AppActionItem(
-                      label: 'مشاركة المقال',
-                      icon: Icons.share,
+                      label: 'استعادة المقال',
+                      icon: Icons.restore_from_trash_outlined,
                       onTap: () async {
-                        final username = article.author?.username ?? 'user';
-                        final url = 'https://sijilli.com/$username/${article.id}';
-
-                        if (kIsWeb) {
-                          await Clipboard.setData(ClipboardData(text: url));
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('تم نسخ رابط المشاركة إلى الحافظة 🔗'),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          }
-                        } else {
-                          // ignore: deprecated_member_use
-                          await Share.share(url, subject: article.title);
+                        await articleProvider.restoreArticle(article.id);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('تم استعادة المقال بنجاح 🔄')),
+                          );
                         }
                       },
                     ),
-                  AppActionItem(
-                    label: context.l10n.copy,
-                    icon: Icons.copy,
-                    onTap: () async {
-                      await Clipboard.setData(ClipboardData(text: article.plainText));
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(context.l10n.articleCopied(article.title))),
+                    AppActionItem(
+                      label: 'حذف نهائي',
+                      icon: Icons.delete_forever_outlined,
+                      isDestructive: true,
+                      onTap: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (dialogContext) => AlertDialog(
+                            title: const Text('حذف المقال نهائياً'),
+                            content: Text('هل أنت متأكد من حذف مقال "${article.title}" بشكل نهائي؟ لا يمكن التراجع عن هذا الإجراء.'),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(context.l10n.cancel)),
+                              TextButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('حذف نهائي', style: TextStyle(color: Colors.red))),
+                            ],
+                          ),
                         );
-                      }
-                    },
-                  ),
-                  if (isAuthor || context.read<AuthProvider>().user?.isAdmin == true)
+                        if (confirm == true) {
+                          await articleProvider.hardDeleteArticle(article.id);
+                        }
+                      },
+                    ),
+                  ] else if (article.postStatus == PostStatus.archived) ...[
+                    AppActionItem(
+                      label: 'إلغاء الأرشفة',
+                      icon: Icons.unarchive_outlined,
+                      onTap: () async {
+                        await articleProvider.toggleArchiveArticle(article.id, false);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('تم إلغاء أرشفة المقال بنجاح 📂')),
+                          );
+                        }
+                      },
+                    ),
                     AppActionItem(
                       label: context.l10n.delete,
                       icon: Icons.delete_outline,
@@ -148,47 +114,163 @@ class ArticleCard extends StatelessWidget {
                             ],
                           ),
                         );
-                        if (confirm == true && context.mounted) {
-                          context.read<ArticleProvider>().deleteArticle(article.id);
-                        }
-                      },
-                    )
-                  else
-                    AppActionItem(
-                      label: context.l10n.report,
-                      icon: Icons.report_problem_outlined,
-                      isDestructive: true,
-                      onTap: () async {
-                        final reason = await showDialog<String>(
-                          context: context,
-                          builder: (context) {
-                            final controller = TextEditingController();
-                            return AlertDialog(
-                              title: Text(context.l10n.report),
-                              content: TextField(
-                                controller: controller,
-                                decoration: InputDecoration(hintText: context.l10n.reportReason),
-                                maxLines: 3,
-                              ),
-                              actions: [
-                                TextButton(onPressed: () => Navigator.pop(context), child: Text(context.l10n.cancel)),
-                                TextButton(onPressed: () => Navigator.pop(context, controller.text), child: Text(context.l10n.send)),
-                              ],
-                            );
-                          },
-                        );
-                        if (reason != null && reason.isNotEmpty && context.mounted) {
-                          await context.read<ModerationProvider>().reportContent(
-                            subjectType: 'article',
-                            subjectId: article.id,
-                            reason: reason,
-                          );
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.reportSent)));
-                          }
+                        if (confirm == true) {
+                          await articleProvider.deleteArticle(article.id);
                         }
                       },
                     ),
+                  ] else ...[
+                    if (isAuthor) ...[
+                      if (article.isPublished)
+                        AppActionItem(
+                          label: 'إلغاء المشاركة',
+                          icon: Icons.unpublished_outlined,
+                          isDestructive: true,
+                          onTap: () async {
+                            articleProvider.togglePublishStatus(article.id, false);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('تم إلغاء نشر المقال وإيقاف المشاركة 🛑'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          },
+                        )
+                      else
+                        AppActionItem(
+                          label: 'مشاركة ونشر المقال',
+                          icon: Icons.share,
+                          onTap: () async {
+                            final username = article.author?.username ?? 'user';
+                            final url = 'https://sijilli.com/$username/${article.id}';
+                            
+                            if (!article.isPublished) {
+                              articleProvider.togglePublishStatus(article.id, true);
+                            }
+
+                            if (kIsWeb) {
+                              await Clipboard.setData(ClipboardData(text: url));
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('تم نسخ رابط المقال إلى الحافظة ونشره تلقائياً 🚀'),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            } else {
+                              await Share.share(url, subject: article.title);
+                            }
+                          },
+                        ),
+                      AppActionItem(
+                        label: 'أرشفة المقال',
+                        icon: Icons.archive_outlined,
+                        onTap: () async {
+                          await articleProvider.toggleArchiveArticle(article.id, true);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('تم أرشفة المقال بنجاح 📦')),
+                            );
+                          }
+                        },
+                      ),
+                    ] else if (article.isPublished)
+                      AppActionItem(
+                        label: 'مشاركة المقال',
+                        icon: Icons.share,
+                        onTap: () async {
+                          final username = article.author?.username ?? 'user';
+                          final url = 'https://sijilli.com/$username/${article.id}';
+
+                          if (kIsWeb) {
+                            await Clipboard.setData(ClipboardData(text: url));
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('تم نسخ رابط المشاركة إلى الحافظة 🔗'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          } else {
+                            await Share.share(url, subject: article.title);
+                          }
+                        },
+                      ),
+                    AppActionItem(
+                      label: context.l10n.copy,
+                      icon: Icons.copy,
+                      onTap: () async {
+                        await Clipboard.setData(ClipboardData(text: article.pureText));
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(context.l10n.articleCopied(article.title))),
+                          );
+                        }
+                      },
+                    ),
+                    if (isAuthor || context.read<AuthProvider>().user?.isAdmin == true)
+                      AppActionItem(
+                        label: context.l10n.delete,
+                        icon: Icons.delete_outline,
+                        isDestructive: true,
+                        onTap: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (dialogContext) => AlertDialog(
+                              title: Text(context.l10n.confirmDeleteArticle),
+                              content: Text(context.l10n.confirmDeleteArticleMsg(article.title)),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(context.l10n.cancel)),
+                                TextButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(context.l10n.delete, style: const TextStyle(color: Colors.red))),
+                              ],
+                            ),
+                          );
+                          if (confirm == true) {
+                            await articleProvider.deleteArticle(article.id);
+                          }
+                        },
+                      )
+                    else
+                      AppActionItem(
+                        label: context.l10n.report,
+                        icon: Icons.report_problem_outlined,
+                        isDestructive: true,
+                        onTap: () async {
+                          final reason = await showDialog<String>(
+                            context: context,
+                            builder: (context) {
+                              final controller = TextEditingController();
+                              return AlertDialog(
+                                title: Text(context.l10n.report),
+                                content: TextField(
+                                  controller: controller,
+                                  decoration: InputDecoration(hintText: context.l10n.reportReason),
+                                  maxLines: 3,
+                                ),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(context), child: Text(context.l10n.cancel)),
+                                  TextButton(onPressed: () => Navigator.pop(context, controller.text), child: Text(context.l10n.send)),
+                                ],
+                              );
+                            },
+                          );
+                          if (reason != null && reason.isNotEmpty && context.mounted) {
+                            await context.read<ModerationProvider>().reportContent(
+                              subjectType: 'article',
+                              subjectId: article.id,
+                              reason: reason,
+                            );
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.reportSent)));
+                            }
+                          }
+                        },
+                      ),
+                  ]
                 ],
               );
             },
@@ -231,26 +313,6 @@ class ArticleCard extends StatelessWidget {
                                   fontFamily: Theme.of(context).textTheme.bodyMedium?.fontFamily,
                                 ),
                                 children: [
-                                  if (article.isDraft)
-                                    WidgetSpan(
-                                      alignment: PlaceholderAlignment.middle,
-                                      child: Container(
-                                        margin: const EdgeInsets.only(left: 6.0),
-                                        padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
-                                        decoration: BoxDecoration(
-                                          border: Border.all(color: AppColors.warning, width: 1),
-                                          borderRadius: BorderRadius.circular(4.0),
-                                        ),
-                                        child: const Text(
-                                          'مسودة',
-                                          style: TextStyle(
-                                            color: AppColors.warning,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
                                   TextSpan(
                                     text: article.title.isNotEmpty ? article.title : 'بدون عنوان',
                                   ),
@@ -258,89 +320,140 @@ class ArticleCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          if (isAuthor && article.isPublished) ...[
+                          if (isAuthor && article.postStatus != PostStatus.written) ...[
                             const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
-                              decoration: BoxDecoration(
-                                color: AppColors.success.withValues(alpha: 0.15),
-                                border: Border.all(color: AppColors.success, width: 1),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Text(
-                                'منشور',
-                                style: TextStyle(
-                                  color: AppColors.success,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
+                            _buildStatusCapsule(context, article.postStatus),
                           ],
                         ],
                       ),
-                      
                       const SizedBox(height: 8),
                       
                       // Footer: Metadata
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                timeago.format(article.createdAt, locale: context.l10n.localeName),
-                                style: TextStyle(
-                                  fontSize: AppDimens.textSizeS,
-                                  color: AppColors.getTextSecondary(context),
-                                ),
+                          Expanded(
+                            child: Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: timeago.format(article.createdAt, locale: context.l10n.localeName),
+                                  ),
+                                  const TextSpan(text: '  •  '),
+                                  TextSpan(
+                                    text: context.l10n.readTimeMins(article.estimatedReadingTimeMinutes),
+                                  ),
+                                  if (article.tags.isNotEmpty) ...[
+                                    const TextSpan(text: '  •  '),
+                                    ...article.tags.map((t) => WidgetSpan(
+                                      alignment: PlaceholderAlignment.middle,
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                                        child: Tooltip(
+                                          message: t.name,
+                                          child: Container(
+                                            width: 6.0,
+                                            height: 6.0,
+                                            decoration: BoxDecoration(
+                                              color: t.color,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    )),
+                                  ] else if (isAuthor) ...[
+                                    const TextSpan(text: '  •  '),
+                                    WidgetSpan(
+                                      alignment: PlaceholderAlignment.middle,
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          TagSelectorSheet.show(
+                                            context,
+                                            initialSelectedTagIds: article.tagIds,
+                                            onSelectionChanged: (selectedTagIds, selectedTags) async {
+                                              await context.read<ArticleProvider>().updateArticle(
+                                                id: article.id,
+                                                tagIds: selectedTagIds,
+                                              );
+                                            },
+                                          );
+                                        },
+                                        child: MouseRegion(
+                                          cursor: SystemMouseCursors.click,
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(
+                                                Icons.add,
+                                                size: 11,
+                                                color: AppColors.primary,
+                                              ),
+                                              const SizedBox(width: 1),
+                                              Text(
+                                                context.l10n.articleCategoryLabel,
+                                                style: TextStyle(
+                                                  fontSize: AppDimens.textSizeS,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: AppColors.primary,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
-                              const SizedBox(width: 8),
-                              Text('•', style: TextStyle(color: AppColors.getTextSecondary(context), fontSize: AppDimens.textSizeS)),
-                              const SizedBox(width: 8),
-                              Text(
-                                context.l10n.readTimeMins(article.estimatedReadingTimeMinutes),
-                                style: TextStyle(
-                                  fontSize: AppDimens.textSizeS,
-                                  color: AppColors.getTextSecondary(context),
-                                ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: AppDimens.textSizeS,
+                                color: AppColors.getTextSecondary(context),
                               ),
-                            ],
+                            ),
                           ),
                           // Likes & Comments Counters
                           Directionality(
                             textDirection: TextDirection.ltr,
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 const SizedBox(width: 5), // Nudge away from the edge to align with Switch
                                 Icon(
                                   article.likes.contains(currentUserId) ? Icons.favorite : Icons.favorite_border,
-                                  size: 16,
-                                  color: article.likes.contains(currentUserId) ? AppColors.error : AppColors.getTextSecondary(context),
+                                  size: 14,
+                                  color: AppColors.getTextSecondary(context),
                                 ),
                                 const SizedBox(width: 4),
-                                Text(
-                                  article.likes.length.toString(),
-                                  style: TextStyle(
-                                    fontSize: AppDimens.textSizeS,
-                                    color: AppColors.getTextSecondary(context),
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2.0),
+                                  child: Text(
+                                    article.likes.length.toString(),
+                                    style: TextStyle(
+                                      fontSize: AppDimens.textSizeS,
+                                      color: AppColors.getTextSecondary(context),
+                                    ),
                                   ),
                                 ),
                                 if (commentsCount > 0) ...[
                                   const SizedBox(width: 12),
                                   Icon(
                                     Icons.comment_outlined,
-                                    size: 16,
+                                    size: 14,
                                     color: AppColors.getTextSecondary(context),
                                   ),
                                   const SizedBox(width: 4),
-                                  Text(
-                                    commentsCount.toString(),
-                                    style: TextStyle(
-                                      fontSize: AppDimens.textSizeS,
-                                      color: AppColors.getTextSecondary(context),
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 2.0),
+                                    child: Text(
+                                      commentsCount.toString(),
+                                      style: TextStyle(
+                                        fontSize: AppDimens.textSizeS,
+                                        color: AppColors.getTextSecondary(context),
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -355,6 +468,52 @@ class ArticleCard extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusCapsule(BuildContext context, PostStatus status) {
+    if (status == PostStatus.written) {
+      return const SizedBox.shrink();
+    }
+    Color color;
+    String label;
+    switch (status) {
+      case PostStatus.published:
+        color = AppColors.success;
+        label = context.l10n.published;
+        break;
+      case PostStatus.draft:
+        color = Colors.grey;
+        label = context.l10n.draft;
+        break;
+      case PostStatus.archived:
+        color = Colors.blue;
+        label = context.l10n.archived;
+        break;
+      case PostStatus.trash:
+        color = AppColors.error;
+        label = context.l10n.deleted;
+        break;
+      default:
+        color = AppColors.success;
+        label = context.l10n.published;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        border: Border.all(color: color, width: 1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );

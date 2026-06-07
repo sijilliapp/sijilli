@@ -277,27 +277,19 @@ class _UserInviteeSheetState extends State<UserInviteeSheet> {
         final phone = selectedContact.phones.first.number;
         final name = selectedContact.displayName;
 
-        // Perform the invitation
         if (mounted) {
-          setState(() => _isLoading = true);
-          try {
-            await _invitationService.inviteGuestByPhone(widget.appointment.id, phone, name);
-            if (mounted) {
-              Navigator.pop(context); // Close the invitee sheet
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('تم إرسال دعوة لـ $name ($phone) في انتظار انضمامه لسجلي.'),
-                  backgroundColor: AppColors.success,
-                )
-              );
-            }
-          } catch (e) {
-             if (mounted) {
-               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('فشل إرسال الدعوة: $e')));
-             }
-          } finally {
-            if (mounted) setState(() => _isLoading = false);
-          }
+          final phoneUser = UserModel(
+            id: 'phone_$phone',
+            username: name,
+            email: '',
+            name: name,
+            phone: phone,
+            created: DateTime.now(),
+            updated: DateTime.now(),
+            joiningDate: DateTime.now(),
+          );
+          Navigator.pop(context); // Close the invitee sheet
+          widget.onUserSelected(phoneUser);
         }
       }
     } catch (e) {
@@ -408,26 +400,19 @@ class _UserInviteeSheetState extends State<UserInviteeSheet> {
                         final contact = _filteredLocalContacts[index - _users.length];
                         return _ContactTile(
                           contact: contact,
-                          onSelected: (phone, name) async {
-                            setState(() => _isLoading = true);
-                            try {
-                              await _invitationService.inviteGuestByPhone(widget.appointment.id, phone, name);
-                              if (mounted) {
-                                Navigator.pop(context);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('تم إرسال دعوة لـ $name ($phone)'),
-                                    backgroundColor: AppColors.success,
-                                  )
-                                );
-                              }
-                            } catch (e) {
-                               if (mounted) {
-                                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('فشل إرسال الدعوة: $e')));
-                               }
-                            } finally {
-                              if (mounted) setState(() => _isLoading = false);
-                            }
+                          onSelected: (phone, name) {
+                            final phoneUser = UserModel(
+                              id: 'phone_$phone',
+                              username: name,
+                              email: '',
+                              name: name,
+                              phone: phone,
+                              created: DateTime.now(),
+                              updated: DateTime.now(),
+                              joiningDate: DateTime.now(),
+                            );
+                            Navigator.pop(context); // Close sheet
+                            widget.onUserSelected(phoneUser);
                           },
                         );
                       }

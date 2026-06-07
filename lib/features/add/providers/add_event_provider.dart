@@ -905,10 +905,9 @@ class AddEventProvider extends ChangeNotifier {
 
     try {
       _ignoreConflictCheck = true; // Set early to prevent flicker during createAppointment rebuilds
-      final List<String> inviteeIds = _selectedUsers.map((u) => u.id).toList().cast<String>();
       await appointmentProvider.createAppointment(
         newAppt, 
-        inviteeIds: inviteeIds,
+        invitees: _selectedUsers,
         inviteTitle: inviteTitle,
         inviteMessage: inviteMessage,
       );

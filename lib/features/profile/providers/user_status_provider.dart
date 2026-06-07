@@ -61,4 +61,12 @@ class UserStatusProvider extends ChangeNotifier {
     _statuses[userId] = status;
     notifyListeners();
   }
+
+  void clear() {
+    _statuses.clear();
+    _fetchingIds.clear();
+    _requestQueue.clear();
+    _isProcessing = false;
+    notifyListeners();
+  }
 }

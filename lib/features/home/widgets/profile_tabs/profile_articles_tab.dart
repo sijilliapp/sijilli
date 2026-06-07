@@ -5,6 +5,10 @@ import '../private_profile_wall.dart';
 import '../../../articles/providers/article_provider.dart';
 import '../../../articles/widgets/article_list.dart';
 import '../../../articles/screens/add_article_screen.dart';
+import '../../../articles/widgets/tag_chip.dart';
+import '../../../../models/tag.dart';
+import 'package:sijilli/models/article.dart';
+import 'package:sijilli/models/appointment.dart';
 import '../../../../core/constants/app_colors.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
@@ -26,6 +30,8 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
   bool _isSearchVisible = false;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  bool _showSystemFilters = false;
+  String? _activeSystemStatus; // null, 'published', 'draft'
 
   @override
   void initState() {
@@ -61,11 +67,38 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
     return Consumer<ArticleProvider>(
       builder: (context, provider, child) {
         final userArticles = provider.getUserArticles(widget.userId);
+
+        // Extract unique tags present in these articles
+        final articlesTags = userArticles.expand((a) => a.tags).toList();
+        final uniqueTagsMap = <String, Tag>{};
+        for (var tag in articlesTags) {
+          uniqueTagsMap[tag.id] = tag;
+        }
+        final availableTags = uniqueTagsMap.values.toList();
+
+        final activeTagIds = provider.activeFilterTagIds;
+
+        // 1. Filter by tags if selected (AND logic)
+        var filteredByTag = userArticles;
+        if (activeTagIds.isNotEmpty) {
+          filteredByTag = userArticles.where((a) => 
+            activeTagIds.every((id) => a.tagIds.contains(id))
+          ).toList();
+        }
+
+        // 1.5. Filter by system status if active (only when on "All" category)
+        if (activeTagIds.isEmpty && _activeSystemStatus != null && widget.isCurrentUser) {
+          if (_activeSystemStatus == 'published') {
+            filteredByTag = filteredByTag.where((a) => a.postStatus == PostStatus.published).toList();
+          } else if (_activeSystemStatus == 'draft') {
+            filteredByTag = filteredByTag.where((a) => a.postStatus == PostStatus.draft).toList();
+          }
+        }
         
         final query = _normalizeArabic(_searchQuery);
         final filteredArticles = _searchQuery.isEmpty 
-            ? userArticles 
-            : userArticles.where((a) => 
+            ? filteredByTag 
+            : filteredByTag.where((a) => 
                 _normalizeArabic(a.title).contains(query) || 
                 _normalizeArabic(a.text).contains(query)).toList();
         
@@ -78,7 +111,7 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '${context.l10n.articles} (${userArticles.length})',
+                    '${context.l10n.articles} (${filteredArticles.length})',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -105,7 +138,9 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const AddArticleScreen(),
+                                builder: (context) => AddArticleScreen(
+                                  initialTagIds: activeTagIds,
+                                ),
                               ),
                             );
                           },
@@ -129,12 +164,174 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
                   ),
                 ),
               ),
+            if (availableTags.isNotEmpty) ...[
+              Container(
+                height: 28,
+                margin: const EdgeInsets.only(bottom: 6.0),
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  itemCount: availableTags.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      final isAllSelected = activeTagIds.isEmpty;
+                      return Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: GestureDetector(
+                          onTap: () {
+                            if (isAllSelected && widget.isCurrentUser) {
+                              setState(() {
+                                _showSystemFilters = !_showSystemFilters;
+                                if (!_showSystemFilters) {
+                                  _activeSystemStatus = null;
+                                }
+                              });
+                            } else {
+                              setState(() {
+                                _showSystemFilters = false;
+                                _activeSystemStatus = null;
+                              });
+                              provider.setActiveFilterTagIds([]);
+                            }
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
+                            decoration: BoxDecoration(
+                              color: isAllSelected 
+                                  ? AppColors.primary 
+                                  : (Theme.of(context).brightness == Brightness.dark 
+                                      ? Colors.white12 
+                                      : Colors.grey.shade100),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isAllSelected 
+                                    ? AppColors.primary 
+                                    : (Theme.of(context).brightness == Brightness.dark 
+                                        ? Colors.white24 
+                                        : Colors.grey.shade300),
+                                width: 1.0,
+                              ),
+                            ),
+                            child: Center(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    context.l10n.all,
+                                    style: TextStyle(
+                                      color: isAllSelected 
+                                          ? Colors.white 
+                                          : (Theme.of(context).brightness == Brightness.dark 
+                                              ? Colors.white70 
+                                              : Colors.black87),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      height: 1.1,
+                                    ),
+                                  ),
+                                  if (isAllSelected && widget.isCurrentUser) ...[
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      _showSystemFilters ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                      size: 12,
+                                      color: Colors.white70,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
+                    final tag = availableTags[index - 1];
+                    final isSelected = activeTagIds.contains(tag.id);
+
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 8.0),
+                      child: TagChip(
+                        tag: tag,
+                        isSelected: isSelected,
+                        onTap: () {
+                          setState(() {
+                            _showSystemFilters = false;
+                            _activeSystemStatus = null;
+                          });
+                          if (activeTagIds.length == 1 && isSelected) {
+                            provider.setActiveFilterTagIds([]);
+                          } else {
+                            provider.setActiveFilterTagIds([tag.id]);
+                          }
+                        },
+                        onLongPress: () {
+                          setState(() {
+                            _showSystemFilters = false;
+                            _activeSystemStatus = null;
+                          });
+                          final newIds = List<String>.from(activeTagIds);
+                          if (isSelected) {
+                            newIds.remove(tag.id);
+                          } else {
+                            newIds.add(tag.id);
+                          }
+                          provider.setActiveFilterTagIds(newIds);
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+            if (activeTagIds.isEmpty && _showSystemFilters && widget.isCurrentUser) ...[
+              Container(
+                height: 28,
+                margin: const EdgeInsets.only(bottom: 6.0),
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  children: [
+                    _buildSystemFilterChip(
+                      label: context.l10n.published,
+                      isActive: _activeSystemStatus == 'published',
+                      activeColor: AppColors.success,
+                      onTap: () {
+                        setState(() {
+                          if (_activeSystemStatus == 'published') {
+                            _activeSystemStatus = null;
+                          } else {
+                            _activeSystemStatus = 'published';
+                          }
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    _buildSystemFilterChip(
+                      label: context.l10n.draft,
+                      isActive: _activeSystemStatus == 'draft',
+                      activeColor: Colors.grey,
+                      onTap: () {
+                        setState(() {
+                          if (_activeSystemStatus == 'draft') {
+                            _activeSystemStatus = null;
+                          } else {
+                            _activeSystemStatus = 'draft';
+                          }
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
             Expanded(
               child: ArticleList(
                 articles: filteredArticles,
                 isInitialLoading: provider.isInitialLoading,
                 isFetchingMore: provider.isFetchingMore,
                 hasMore: provider.hasMore,
+                errorMessage: provider.errorMessage,
                 onLoadMore: () {
                   provider.fetchUserArticles(
                     widget.userId,
@@ -158,5 +355,57 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Widget _buildSystemFilterChip({
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+    Color activeColor = AppColors.primary,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
+        decoration: BoxDecoration(
+          color: isActive 
+              ? activeColor.withValues(alpha: 0.15)
+              : (isDark ? Colors.white10 : Colors.grey.shade50),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isActive 
+                ? activeColor 
+                : (isDark ? Colors.white24 : Colors.grey.shade300),
+            width: 1.0,
+          ),
+        ),
+        child: Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isActive ? Icons.check : Icons.circle,
+                size: 8,
+                color: isActive ? activeColor : (isDark ? Colors.white30 : Colors.grey.shade400),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isActive 
+                      ? (isDark ? Colors.white : activeColor)
+                      : (isDark ? Colors.white70 : Colors.black87),
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  height: 1.1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

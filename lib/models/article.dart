@@ -1,12 +1,14 @@
 import 'package:sijilli/core/utils/json_utils.dart';
 import 'package:sijilli/models/user.dart';
+import 'package:sijilli/models/appointment.dart';
+import 'package:sijilli/models/tag.dart';
 
 class Article {
   final String id;
   final String authorId;
   final String text;
-  final bool isPublished;
-  final bool isDraft;
+  final PostStatus postStatus;
+  final DateTime? deletedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
   final String? image;
@@ -14,6 +16,8 @@ class Article {
   // Relations
   final UserModel? author;
   final List<String> likes; // مصفوفة بأسماء أو أرقام المعجبين
+  final List<String> tagIds;
+  final List<Tag> tags;
   
   // Poetry & Correction Metadata placeholders
   final Map<String, dynamic>? poetryMetadata;
@@ -23,16 +27,21 @@ class Article {
     required this.id,
     required this.authorId,
     required this.text,
-    required this.isPublished,
-    this.isDraft = false,
+    required this.postStatus,
+    this.deletedAt,
     required this.createdAt,
     required this.updatedAt,
     this.image,
     this.author,
     this.likes = const [],
+    this.tagIds = const [],
+    this.tags = const [],
     this.poetryMetadata,
     this.highlightsMetadata,
   });
+
+  bool get isPublished => postStatus == PostStatus.published;
+  bool get isDraft => postStatus == PostStatus.draft;
 
   /// Computed Title: استخراج أول الكلمات لتكون عنوان المقال
   String get title {
@@ -61,6 +70,36 @@ class Article {
     return stripFormatting(text);
   }
   
+  /// نص المقال مجرد تماماً من وسوم سجلي وتنسيقاتها دون أي تدخل (مثل دمج الأشطر بـ ***)
+  String get pureText {
+    return cleanRawText(text);
+  }
+
+  static String cleanRawText(String input) {
+    if (input.isEmpty) return '';
+
+    String res = input;
+    // 1. Remove all BBCode tags
+    res = res.replaceAll(RegExp(r'\[/?(POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT|POEM_LEFT|POEM_CENTER)\]', caseSensitive: false), '');
+    
+    // 2. Remove line alignment/poetry shortcuts at start/end of lines
+    final lines = res.split('\n');
+    final cleanedLines = lines.map((l) {
+      String trimmed = l.trim();
+      if (trimmed.length > 1) {
+        if ((trimmed.startsWith('=') && trimmed.endsWith('=')) ||
+            (trimmed.startsWith('~') && trimmed.endsWith('~')) ||
+            (trimmed.startsWith('-') && trimmed.endsWith('-')) ||
+            (trimmed.startsWith('+') && trimmed.endsWith('+'))) {
+          trimmed = trimmed.substring(1, trimmed.length - 1).trim();
+        }
+      }
+      return trimmed;
+    });
+
+    return cleanedLines.join('\n').trim();
+  }
+  
   int get wordCount {
     if (text.trim().isEmpty) return 0;
     String cleanText = stripFormatting(text);
@@ -70,12 +109,79 @@ class Article {
   static String stripFormatting(String input) {
     if (input.isEmpty) return '';
     
-    // إزالة وسوم التنسيق المباشرة
-    String cleanText = input.replaceAll(RegExp(r'\[/?(POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT)\]', caseSensitive: false), '');
-    // إزالة النجمات (للبنط العريض) وعلامات التنسيق المزدوجة القديمة
+    String text = input;
+    
+    // 1. معالجة قصائد الشعر أولاً وتحويلها لصيغة الصدر والعجز المقروءة: صدر *** عجز
+    final poemPattern = RegExp(r'\[POEM\]([\s\S]*?)\[/POEM\]', caseSensitive: false);
+    text = text.replaceAllMapped(poemPattern, (match) {
+      final poemContent = match.group(1) ?? '';
+      final lines = poemContent.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+      final List<String> processedLines = [];
+      
+      String? pendingSadr;
+      
+      for (final line in lines) {
+        final lineUpper = line.toUpperCase();
+        
+        final isCentered = (lineUpper.startsWith('[CENTER]') && lineUpper.endsWith('[/CENTER]')) ||
+                           (line.startsWith('=') && line.endsWith('=') && line.length > 1);
+        final isLeft = (lineUpper.startsWith('[LEFT]') && lineUpper.endsWith('[/LEFT]')) ||
+                       (line.startsWith('--') && line.endsWith('--') && line.length > 3);
+        
+        // التحقق إذا كان سطر الشعر عبارة عن كلمة واحدة أو أقل (توقيع أو سطر يتيم قصير)
+        String cleanForWordCheck = line
+            .replaceAll(RegExp(r'\[/?(BOLD|B|HIGHLIGHT|CENTER|JUSTIFY|LEFT|RIGHT)\]', caseSensitive: false), '')
+            .replaceAll(RegExp(r'[=~\-\+\*]'), '')
+            .trim();
+        final isSingleWord = cleanForWordCheck.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length <= 1;
+
+        if (isCentered || isLeft || isSingleWord) {
+          // إذا كان هناك صدر معلق، نضعه أولاً كسطر مستقل
+          if (pendingSadr != null) {
+            processedLines.add(pendingSadr);
+            pendingSadr = null;
+          }
+          
+          // تنظيف السطر الموسط أو الأيسر من علاماته
+          String cleanLine = line;
+          if (isCentered) {
+            if (cleanLine.startsWith('=')) {
+              cleanLine = cleanLine.substring(1, cleanLine.length - 1).trim();
+            } else {
+              cleanLine = cleanLine.substring(8, cleanLine.length - 9).trim();
+            }
+          } else if (isLeft) {
+            if (cleanLine.startsWith('-')) {
+              cleanLine = cleanLine.substring(2, cleanLine.length - 2).trim();
+            } else {
+              cleanLine = cleanLine.substring(6, cleanLine.length - 7).trim();
+            }
+          }
+          processedLines.add(cleanLine);
+        } else {
+          // سطر شعر عادي (صدر أو عجز)
+          if (pendingSadr == null) {
+            pendingSadr = line;
+          } else {
+            processedLines.add('$pendingSadr __POEM_SEP__ $line');
+            pendingSadr = null;
+          }
+        }
+      }
+      
+      if (pendingSadr != null) {
+        processedLines.add(pendingSadr);
+      }
+      
+      return processedLines.join('\n');
+    });
+    
+    // 2. إزالة بقية وسوم التنسيق المباشرة (عريض، محاذاة، تظليل)
+    String cleanText = text.replaceAll(RegExp(r'\[/?(POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT)\]', caseSensitive: false), '');
+    // إزالة النجمات وعلامات التنسيق المزدوجة القديمة
     cleanText = cleanText.replaceAll(RegExp(r'==|~~|--|\+\+|\*'), '');
     
-    // تنظيف علامات المحاذاة الفردية إذا كانت في بداية ونهاية السطر (مثل =مقال=)
+    // 3. تنظيف علامات المحاذاة الفردية إذا كانت في بداية ونهاية السطر (مثل =مقال=)
     final lines = cleanText.split('\n');
     final cleanedLines = lines.map((l) {
       String trimmed = l.trim();
@@ -90,7 +196,7 @@ class Article {
       return trimmed;
     });
     
-    return cleanedLines.join('\n').trim();
+    return cleanedLines.join('\n').replaceAll('__POEM_SEP__', '***').trim();
   }
 
   /// مدة القراءة المقدرة (استناداً إلى 100 كلمة في الدقيقة كمتوسط)
@@ -133,18 +239,47 @@ class Article {
     final Map<String, dynamic>? userJson = userData is Map<String, dynamic> ? userData : null;
 
     final likesList = (json['likes'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+    final tagsList = (json['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+
+    List<Tag> resolvedTags = [];
+    if (expand != null && expand.containsKey('tags')) {
+      final tagsData = expand['tags'];
+      if (tagsData is List) {
+        resolvedTags = tagsData.map((t) => Tag.fromJson(t as Map<String, dynamic>)).toList();
+      } else if (tagsData is Map<String, dynamic>) {
+        resolvedTags = [Tag.fromJson(tagsData)];
+      }
+    }
+
+    PostStatus status = PostStatus.published;
+    final pbStatusStr = JsonUtils.parseString(json['post_status']);
+    if (pbStatusStr != null && pbStatusStr.isNotEmpty) {
+      status = PostStatus.fromString(pbStatusStr);
+    } else {
+      final isPublishedOld = JsonUtils.parseBool(json['is_published']);
+      final isDraftOld = JsonUtils.parseBool(json['is_draft']);
+      if (isPublishedOld) {
+        status = PostStatus.published;
+      } else if (isDraftOld) {
+        status = PostStatus.draft;
+      } else {
+        status = PostStatus.written;
+      }
+    }
 
     return Article(
       id: JsonUtils.parseString(json['id']) ?? '',
       authorId: JsonUtils.parseString(json['author']) ?? '',
       text: JsonUtils.parseString(json['text']) ?? '',
-      isPublished: JsonUtils.parseBool(json['is_published']),
-      isDraft: JsonUtils.parseBool(json['is_draft']),
+      postStatus: status,
+      deletedAt: JsonUtils.parseDateTime(json['deleted_at']),
       createdAt: JsonUtils.parseDateTime(json['created']) ?? DateTime.now(),
       updatedAt: JsonUtils.parseDateTime(json['updated']) ?? DateTime.now(),
       image: JsonUtils.parseString(json['image']),
       author: userJson != null ? UserModel.fromJson(userJson) : null,
       likes: likesList,
+      tagIds: tagsList,
+      tags: resolvedTags,
       poetryMetadata: json['poetry_metadata'] as Map<String, dynamic>?,
       highlightsMetadata: json['highlights_metadata'] as List<dynamic>?,
     );
@@ -155,12 +290,15 @@ class Article {
       'id': id,
       'author': authorId,
       'text': text,
+      'post_status': postStatus.toString(),
+      'deleted_at': deletedAt?.toUtc().toIso8601String(),
       'is_published': isPublished,
       'is_draft': isDraft,
       'created': createdAt.toUtc().toIso8601String(),
       'updated': updatedAt.toUtc().toIso8601String(),
       'image': image,
       'likes': likes,
+      'tags': tagIds,
       'poetry_metadata': poetryMetadata,
       'highlights_metadata': highlightsMetadata,
     };
@@ -170,6 +308,8 @@ class Article {
     String? id,
     String? authorId,
     String? text,
+    PostStatus? postStatus,
+    DateTime? deletedAt,
     bool? isPublished,
     bool? isDraft,
     DateTime? createdAt,
@@ -177,20 +317,31 @@ class Article {
     String? image,
     UserModel? author,
     List<String>? likes,
+    List<String>? tagIds,
+    List<Tag>? tags,
     Map<String, dynamic>? poetryMetadata,
     List<dynamic>? highlightsMetadata,
   }) {
+    PostStatus resolvedStatus = postStatus ?? this.postStatus;
+    if (isPublished != null) {
+      resolvedStatus = isPublished ? PostStatus.published : PostStatus.written;
+    } else if (isDraft != null) {
+      resolvedStatus = isDraft ? PostStatus.draft : PostStatus.written;
+    }
+
     return Article(
       id: id ?? this.id,
       authorId: authorId ?? this.authorId,
       text: text ?? this.text,
-      isPublished: isPublished ?? this.isPublished,
-      isDraft: isDraft ?? this.isDraft,
+      postStatus: resolvedStatus,
+      deletedAt: deletedAt ?? this.deletedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       image: image ?? this.image,
       author: author ?? this.author,
       likes: likes ?? this.likes,
+      tagIds: tagIds ?? this.tagIds,
+      tags: tags ?? this.tags,
       poetryMetadata: poetryMetadata ?? this.poetryMetadata,
       highlightsMetadata: highlightsMetadata ?? this.highlightsMetadata,
     );

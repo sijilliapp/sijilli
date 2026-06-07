@@ -1276,6 +1276,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notifyOneDayBeforeDesc => 'Send alert 24 hours before appointment';
 
   @override
+  String get readerInflux => 'Visitor Influx';
+
+  @override
+  String get notifyReaderInfluxDesc =>
+      'Notifications when someone reads or visits your articles';
+
+  @override
+  String get notifyBookmarks => 'Saved Appointments Alerts';
+
+  @override
+  String get notifyBookmarksDesc =>
+      'Get notified when bookmarked appointments are approaching';
+
+  @override
+  String get notifyBeforeOffset => 'Remind me before start';
+
+  @override
+  String get notifyBeforeOffsetDesc =>
+      'Set a custom time to get notified before appointments';
+
+  @override
+  String get minutes10 => '10 minutes before';
+
+  @override
+  String get minutes15 => '15 minutes before';
+
+  @override
+  String get minutes30 => '30 minutes before';
+
+  @override
+  String get hour1 => '1 hour before';
+
+  @override
+  String get hours2 => '2 hours before';
+
+  @override
+  String get addCategory => 'Add Category';
+
+  @override
+  String get editCategory => 'Edit';
+
+  @override
   String get privacyIntroTitle => '1. Introduction';
 
   @override
@@ -2046,4 +2088,53 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get adminPanelDesc =>
       'Manage and customize system settings and registration';
+
+  @override
+  String get all => 'All';
+
+  @override
+  String get published => 'Published';
+
+  @override
+  String get draft => 'Draft';
+
+  @override
+  String get archived => 'Archived';
+
+  @override
+  String get deleted => 'Deleted';
+
+  @override
+  String get no => 'No';
+
+  @override
+  String get leaveAppDialogTitle => 'Leave App';
+
+  @override
+  String get leaveAppDialogMessage =>
+      'Do you want to leave the app to open the link?';
+
+  @override
+  String get articleCategoriesHint => 'Article categories... (Tap to select)';
+
+  @override
+  String get articleCategoryTooltip => 'Article Category';
+
+  @override
+  String get articleCategoryLabel => 'Tag';
+
+  @override
+  String readingFont(String font) {
+    return 'Reading font: $font';
+  }
+
+  @override
+  String get readingFontTooltip => 'Change reading font';
+
+  @override
+  String get fullArticle => 'Full Article...';
+
+  @override
+  String get noCategoryAddedYet =>
+      'No category has been added to the article yet';
 }

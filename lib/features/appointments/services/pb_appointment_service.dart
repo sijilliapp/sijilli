@@ -87,7 +87,14 @@ class PbAppointmentService {
   }
 
   /// إنشاء موعد جديد (سجل واحد رئيسي - Master Record)
-  Future<Appointment> createAppointment(Appointment appointment, {List<String>? inviteeIds, String? inviteTitle, String? inviteMessage, int contextAdjustment = 0}) async {
+  Future<Appointment> createAppointment(
+    Appointment appointment, {
+    List<String>? inviteeIds,
+    List<Map<String, String>>? phoneInvitees,
+    String? inviteTitle,
+    String? inviteMessage,
+    int contextAdjustment = 0,
+  }) async {
     try {
       final userId = _pb.authStore.record?.id;
       if (userId == null) throw Exception('User not authenticated');
@@ -140,6 +147,24 @@ class PbAppointmentService {
               relatedId: apptId,
             );
           } catch (e) {}
+        }
+      }
+
+      if (phoneInvitees != null) {
+        for (final guest in phoneInvitees) {
+          final phone = guest['phone'];
+          final name = guest['name'] ?? '';
+          if (phone != null && phone.isNotEmpty) {
+            await _pb.collection(collectionInvitations).create(body: {
+              'appointment': apptId,
+              'invited_phone': phone,
+              'invited_name': name,
+              'user': null,
+              'status': 'pending',
+              'post_status': 'published',
+              'privacy': appointment.privacy,
+            });
+          }
         }
       }
 

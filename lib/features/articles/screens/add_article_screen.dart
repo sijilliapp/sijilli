@@ -6,20 +6,26 @@ import 'package:image_cropper/image_cropper.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'dart:ui' as ui;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/local/local_db_service.dart';
 import '../../../models/article.dart';
+import '../../../models/tag.dart';
 import '../providers/article_provider.dart';
+import '../providers/tag_provider.dart';
 import '../widgets/formatting_text_controller.dart';
 import '../widgets/article_content_renderer.dart';
+import '../widgets/tag_selector_sheet.dart';
+import '../widgets/tag_chip.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import '../../../core/providers/global_config_provider.dart';
 import '../services/quran_service.dart';
 
 class AddArticleScreen extends StatefulWidget {
   final Article? article;
+  final List<String>? initialTagIds;
   
-  const AddArticleScreen({super.key, this.article});
+  const AddArticleScreen({super.key, this.article, this.initialTagIds});
 
   @override
   State<AddArticleScreen> createState() => _AddArticleScreenState();
@@ -42,20 +48,72 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
   String _lastRawText = '';
   bool _hasText = false;
 
+  Future<Article?>? _autosaveFuture;
+  bool _isCreating = false;
+  List<String> _selectedTagIds = [];
+  TextSelection? _lastSelection;
+  Offset? _lastPointerDownOffset;
+  late final ScrollController _editorScrollController;
+
   @override
   void initState() {
     super.initState();
+    _editorScrollController = ScrollController();
     _textController = FormattingTextEditingController(
       rawText: widget.article?.text ?? '',
     );
     _hasText = _textController.rawText.trim().isNotEmpty;
     _lastRawText = _textController.rawText;
     _isPublished = widget.article?.isPublished ?? false;
+    _selectedTagIds = widget.article?.tagIds ?? widget.initialTagIds ?? [];
 
     _textController.addListener(_unifiedTextListener);
 
     if (widget.article == null) {
       _loadDraft();
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<TagProvider>().fetchTags();
+        _restoreCursorPosition();
+      }
+    });
+  }
+
+  void _saveCursorPosition() async {
+    final selection = _textController.selection;
+    if (selection != _lastSelection) {
+      _lastSelection = selection;
+      if (selection.baseOffset >= 0) {
+        final draftId = widget.article?.id ?? _draftArticleId ?? 'local_draft';
+        final isDraft = widget.article == null || widget.article!.isDraft;
+        if (isDraft) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setInt('draft_cursor_base_$draftId', selection.baseOffset);
+          await prefs.setInt('draft_cursor_extent_$draftId', selection.extentOffset);
+        }
+      }
+    }
+  }
+
+  void _restoreCursorPosition() async {
+    final isDraft = widget.article == null || widget.article!.isDraft;
+    if (!isDraft) return;
+
+    final draftId = widget.article?.id ?? _draftArticleId ?? 'local_draft';
+    final prefs = await SharedPreferences.getInstance();
+    final base = prefs.getInt('draft_cursor_base_$draftId');
+    final extent = prefs.getInt('draft_cursor_extent_$draftId');
+
+    if (base != null && extent != null && mounted) {
+      final textLength = _textController.text.length;
+      if (base <= textLength && extent <= textLength) {
+        setState(() {
+          _textController.selection = TextSelection(baseOffset: base, extentOffset: extent);
+        });
+        _textFocusNode.requestFocus();
+      }
     }
   }
 
@@ -66,6 +124,21 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
         _textController.setRawText(draft);
         _textController.clearHistory();
       });
+
+      // Restore cursor position for local_draft
+      final prefs = await SharedPreferences.getInstance();
+      final base = prefs.getInt('draft_cursor_base_local_draft');
+      final extent = prefs.getInt('draft_cursor_extent_local_draft');
+      if (base != null && extent != null && mounted) {
+        final textLength = _textController.text.length;
+        if (base <= textLength && extent <= textLength) {
+          setState(() {
+            _textController.selection = TextSelection(baseOffset: base, extentOffset: extent);
+          });
+          _textFocusNode.requestFocus();
+        }
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.articleDraftRestored)),
       );
@@ -101,11 +174,15 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
     final paragraphs = text.split('\n');
     final formattedParagraphs = <String>[];
 
-    for (var para in paragraphs) {
+    for (int i = 0; i < paragraphs.length; i++) {
+      var para = paragraphs[i];
       if (para.trim().isEmpty) {
         formattedParagraphs.add(para);
         continue;
       }
+
+      final format = i < _textController.lineFormats.length ? _textController.lineFormats[i] : ParagraphFormat.none;
+      final isFormattedLine = format != ParagraphFormat.none;
 
       if (isParagraphEnglish(para)) {
         // --- ENGLISH PARAGRAPH ---
@@ -122,7 +199,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
         para = replaceWithCount(para, RegExp(r'([,.;:?!])(?=[^\s,.;:?!"\d])'), (match) => '${match.group(1)} ');
 
         // 4. Indentation for English paragraphs
-        if (para.isNotEmpty && !para.startsWith(RegExp(r'[\s\u2003=~\[]'))) {
+        if (!isFormattedLine && para.isNotEmpty && !para.startsWith(RegExp(r'[\s\u2003=~\[]'))) {
           para = '\u2003$para';
           changesCount++;
         }
@@ -199,7 +276,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
         para = replaceWithCount(para, RegExp(r'(?<=\s|^)و([\u064B-\u0652]*)\s+'), (match) => 'و${match.group(1)}');
 
         // 6. Indentation
-        if (para.isNotEmpty && !para.startsWith(RegExp(r'[\s\u2003=~\[]'))) {
+        if (!isFormattedLine && para.isNotEmpty && !para.startsWith(RegExp(r'[\s\u2003=~\[]'))) {
           para = '\u2003$para';
           changesCount++;
         }
@@ -348,16 +425,19 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
     
     if (match != null) {
       final String formattedNum = QuranService.toEasternNumerals(match.verseNumber.toString());
-      final String formattedText = '[BOLD]﴿${match.uthmaniText}﴾[/BOLD] [${match.surahName}: $formattedNum]';
+      final String cleanVerse = '﴿${match.uthmaniText}﴾';
+      final String citation = ' [${match.surahName}: $formattedNum]';
+      final String insertText = '$cleanVerse$citation';
       
       final String currentText = _textController.text;
-      final String newText = currentText.replaceRange(selection.start, selection.end, formattedText);
+      final String newText = currentText.replaceRange(selection.start, selection.end, insertText);
       
       setState(() {
         _textController.updateValueProgrammatically(TextEditingValue(
           text: newText,
-          selection: TextSelection.collapsed(offset: selection.start + formattedText.length),
+          selection: TextSelection.collapsed(offset: selection.start + insertText.length),
         ));
+        _textController.addSpan(selection.start, selection.start + cleanVerse.length, SpanType.bold);
       });
       _textFocusNode.requestFocus();
     } else {
@@ -532,6 +612,8 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
   }
 
   void _unifiedTextListener() {
+    _saveCursorPosition();
+
     // نتتبع rawText للـ autosave
     final bool currentHasText = _textController.rawText.trim().isNotEmpty;
     if (currentHasText != _hasText) {
@@ -552,35 +634,68 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
         });
       }
 
-      if (widget.article == null && _draftArticleId == null) {
+      if (widget.article == null && _draftArticleId == null && !_isCreating) {
         if (_debounce?.isActive ?? false) _debounce!.cancel();
         _debounce = Timer(const Duration(milliseconds: 1500), () async {
-          if (_textController.rawText.trim().isNotEmpty && mounted) {
+          if (_textController.rawText.trim().isNotEmpty && mounted && !_isCreating && _draftArticleId == null) {
+            _isCreating = true;
             final provider = context.read<ArticleProvider>();
-            final draft = await provider.addArticle(
-              text: _textController.rawText,
-              isPublished: _isPublished,
-              isDraft: true,
-              silent: true,
-            );
-            if (draft != null && mounted) {
-              _draftArticleId = draft.id;
-              LocalDbService.instance.clearArticleDraft();
-            }
+            final Future<Article?> saveOperation = () async {
+              try {
+                final draft = await provider.addArticle(
+                  text: _textController.rawText,
+                  isPublished: _isPublished,
+                  isDraft: true,
+                  silent: true,
+                  tagIds: _selectedTagIds,
+                );
+                if (draft != null && mounted) {
+                  final oldId = 'local_draft';
+                  final newId = draft.id;
+                  _draftArticleId = newId;
+                  LocalDbService.instance.clearArticleDraft();
+
+                  // Migrate cursor position SharedPreferences keys
+                  final prefs = await SharedPreferences.getInstance();
+                  final base = prefs.getInt('draft_cursor_base_$oldId');
+                  final extent = prefs.getInt('draft_cursor_extent_$oldId');
+                  if (base != null && extent != null) {
+                    await prefs.setInt('draft_cursor_base_$newId', base);
+                    await prefs.setInt('draft_cursor_extent_$newId', extent);
+                    await prefs.remove('draft_cursor_base_$oldId');
+                    await prefs.remove('draft_cursor_extent_$oldId');
+                  }
+                }
+                return draft;
+              } finally {
+                _isCreating = false;
+                _autosaveFuture = null;
+              }
+            }();
+            _autosaveFuture = saveOperation;
+            await saveOperation;
           }
         });
       } else {
         if (_debounce?.isActive ?? false) _debounce!.cancel();
-        _debounce = Timer(const Duration(milliseconds: 1500), () {
+        _debounce = Timer(const Duration(milliseconds: 1500), () async {
           final id = widget.article?.id ?? _draftArticleId;
           if (id != null && _textController.rawText.trim().isNotEmpty && mounted) {
-            context.read<ArticleProvider>().updateArticle(
+            final updated = await context.read<ArticleProvider>().updateArticle(
               id: id,
               text: _textController.rawText,
               isPublished: _isPublished,
               isDraft: true,
               silent: true,
+              tagIds: _selectedTagIds,
             );
+            if (updated != null && mounted) {
+              if (_draftArticleId == id && _draftArticleId != updated.id) {
+                setState(() {
+                  _draftArticleId = updated.id;
+                });
+              }
+            }
           }
         });
       }
@@ -593,6 +708,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
     _textController.removeListener(_unifiedTextListener);
     _textController.dispose();
     _textFocusNode.dispose();
+    _editorScrollController.dispose();
     super.dispose();
   }
 
@@ -633,20 +749,26 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
       final selection = _textController.selection;
       
       String newText;
-      int newCursorPosition;
+      int pasteStart;
+      int pasteEnd;
       
       if (selection.isValid) {
         newText = text.replaceRange(selection.start, selection.end, textToPaste);
-        newCursorPosition = selection.start + textToPaste.length;
+        pasteStart = selection.start;
+        pasteEnd = selection.start + textToPaste.length;
       } else {
+        pasteStart = text.length;
         newText = text + textToPaste;
-        newCursorPosition = newText.length;
+        pasteEnd = newText.length;
       }
       
       setState(() {
         _textController.updateValueProgrammatically(TextEditingValue(
           text: newText,
-          selection: TextSelection.collapsed(offset: newCursorPosition),
+          selection: TextSelection(
+            baseOffset: pasteStart,
+            extentOffset: pasteEnd,
+          ),
         ));
       });
       _textFocusNode.requestFocus();
@@ -665,7 +787,6 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
       if (image != null) {
         final croppedFile = await ImageCropper().cropImage(
           sourcePath: image.path,
-          aspectRatio: const CropAspectRatio(ratioX: 16, ratioY: 9),
           compressQuality: 60, // Reduces size to < 100KB typically
           compressFormat: ImageCompressFormat.jpg,
           uiSettings: [
@@ -673,11 +794,26 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
               toolbarTitle: context.l10n.editArticleCover,
               toolbarColor: AppColors.primary,
               toolbarWidgetColor: Colors.white,
-              initAspectRatio: CropAspectRatioPreset.ratio16x9,
+              initAspectRatio: CropAspectRatioPreset.original,
               lockAspectRatio: false,
+              aspectRatioPresets: [
+                CropAspectRatioPreset.original,
+                CropAspectRatioPreset.square,
+                CropAspectRatioPreset.ratio3x2,
+                CropAspectRatioPreset.ratio4x3,
+                CropAspectRatioPreset.ratio16x9,
+              ],
             ),
             IOSUiSettings(
               title: context.l10n.editArticleCover,
+              aspectRatioLockEnabled: false,
+              aspectRatioPresets: [
+                CropAspectRatioPreset.original,
+                CropAspectRatioPreset.square,
+                CropAspectRatioPreset.ratio3x2,
+                CropAspectRatioPreset.ratio4x3,
+                CropAspectRatioPreset.ratio16x9,
+              ],
             ),
           ],
         );
@@ -696,6 +832,12 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
   void _submit() async {
     if (_textController.rawText.trim().isEmpty) return;
 
+    _debounce?.cancel();
+    if (_autosaveFuture != null) {
+      setState(() => _isLoading = true);
+      await _autosaveFuture;
+    }
+
     setState(() => _isLoading = true);
 
     final provider = context.read<ArticleProvider>();
@@ -710,6 +852,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
         isDraft: false,
         imageFile: _selectedImage,
         removeImage: _deleteExistingImage,
+        tagIds: _selectedTagIds,
       );
     } else {
       resultArticle = await provider.addArticle(
@@ -717,6 +860,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
         isPublished: _isPublished,
         isDraft: false,
         imageFile: _selectedImage,
+        tagIds: _selectedTagIds,
       );
     }
 
@@ -726,6 +870,17 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
       if (widget.article == null) {
         await LocalDbService.instance.clearArticleDraft();
       }
+
+      // Clear cursor position keys
+      final prefs = await SharedPreferences.getInstance();
+      final draftId = widget.article?.id ?? _draftArticleId ?? 'local_draft';
+      await prefs.remove('draft_cursor_base_$draftId');
+      await prefs.remove('draft_cursor_extent_$draftId');
+      if (widget.article == null || widget.article?.id != _draftArticleId) {
+        await prefs.remove('draft_cursor_base_local_draft');
+        await prefs.remove('draft_cursor_extent_local_draft');
+      }
+
       if (mounted) Navigator.pop(context);
     } else {
       if (mounted) {
@@ -758,6 +913,15 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
               if (widget.article == null) {
                 await LocalDbService.instance.clearArticleDraft();
               }
+
+              // Clear cursor position keys
+              final prefs = await SharedPreferences.getInstance();
+              final draftId = widget.article?.id ?? _draftArticleId ?? 'local_draft';
+              await prefs.remove('draft_cursor_base_$draftId');
+              await prefs.remove('draft_cursor_extent_$draftId');
+              await prefs.remove('draft_cursor_base_local_draft');
+              await prefs.remove('draft_cursor_extent_local_draft');
+
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text(context.l10n.formClearedSuccessfully)),
@@ -771,39 +935,346 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
     );
   }
 
+  int? _getCorrectedOffset(Offset localPosition) {
+    final text = _textController.text;
+    if (text.isEmpty) return null;
+
+    final RenderBox? renderBox = _textFocusNode.context?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return null;
+
+    final double paddingLeft = 16.0;
+    final double paddingTop = 16.0;
+    final double paddingRight = 16.0;
+    
+    final double scrollY = _editorScrollController.hasClients ? _editorScrollController.offset : 0.0;
+    
+    final double x = localPosition.dx - paddingLeft;
+    final double y = localPosition.dy - paddingTop + scrollY;
+
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          fontSize: 18,
+          height: 1.5,
+          color: AppColors.getTextPrimary(context),
+        ),
+      ),
+      textDirection: Localizations.localeOf(context).languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr,
+      textAlign: TextAlign.start,
+    );
+
+    final double maxWidth = renderBox.size.width - (paddingLeft + paddingRight);
+    if (maxWidth <= 0) return null;
+    
+    textPainter.layout(maxWidth: maxWidth);
+
+    // Get line metrics
+    final lineMetrics = textPainter.computeLineMetrics();
+    if (lineMetrics.isEmpty) return null;
+
+    // Find which line the tap y-coordinate belongs to
+    int tapLineIdx = -1;
+    double currentY = 0;
+    for (int i = 0; i < lineMetrics.length; i++) {
+      final lineH = lineMetrics[i].height;
+      if (y >= currentY && y <= currentY + lineH) {
+        tapLineIdx = i;
+        break;
+      }
+      currentY += lineH;
+    }
+
+    if (tapLineIdx == -1) {
+      if (y > currentY) {
+        return text.length;
+      }
+      return null;
+    }
+
+    // Get the default resolved position for this offset
+    final TextPosition resolvedPosition = textPainter.getPositionForOffset(Offset(x, y));
+    final int originalResolvedOffset = resolvedPosition.offset;
+
+    // Helper to find the visual line index of a vertical caret coordinate
+    int getVisualLineIdxForY(double yCoordinate) {
+      double curY = 0;
+      for (int i = 0; i < lineMetrics.length; i++) {
+        final lineH = lineMetrics[i].height;
+        if (yCoordinate >= curY && yCoordinate < curY + lineH) {
+          return i;
+        }
+        curY += lineH;
+      }
+      if (yCoordinate >= curY) {
+        return lineMetrics.length - 1;
+      }
+      return 0;
+    }
+
+    // Find visual line of original resolved offset using caret dy position
+    final double originalResolvedCaretY = textPainter.getOffsetForCaret(resolvedPosition, Rect.zero).dy;
+    final int originalResolvedLineIdx = getVisualLineIdxForY(originalResolvedCaretY);
+
+    if (originalResolvedLineIdx > tapLineIdx) {
+      // Compute center of tapLineIdx
+      double tapLineCenterY = 0;
+      for (int i = 0; i < tapLineIdx; i++) {
+        tapLineCenterY += lineMetrics[i].height;
+      }
+      tapLineCenterY += lineMetrics[tapLineIdx].height / 2;
+
+      final int leftOffset = textPainter.getPositionForOffset(Offset(0, tapLineCenterY)).offset;
+      final int rightOffset = textPainter.getPositionForOffset(Offset(maxWidth, tapLineCenterY)).offset;
+      int correctedOffset = leftOffset > rightOffset ? leftOffset : rightOffset;
+      
+      // Apply newline correction to the corrected offset as well
+      if (correctedOffset > 0 && text.codeUnitAt(correctedOffset - 1) == 10) {
+        correctedOffset--;
+      }
+
+      return correctedOffset;
+    }
+
+    return null;
+  }
+
+  String _generatePoemTemplate({
+    required bool hasTitle,
+    required String titleText,
+    required String poetName,
+    required String poetLocation,
+    required String poemType,
+    required bool hasSeparators,
+  }) {
+    final List<String> lines = [];
+    lines.add('[POEM]');
+    
+    if (hasTitle && titleText.trim().isNotEmpty) {
+      lines.add('= ${titleText.trim()} =');
+    }
+    
+    if (poetLocation == 'top' && poetName.trim().isNotEmpty) {
+      lines.add('= للشاعر: ${poetName.trim()} =');
+    }
+    
+    if (poemType == 'classical') {
+      lines.add('البيت الأول صدر');
+      lines.add('البيت الأول عجز');
+      if (hasSeparators) {
+        lines.add('= * * * =');
+      } else {
+        lines.add('');
+      }
+      lines.add('البيت الثاني صدر');
+      lines.add('البيت الثاني عجز');
+    } else if (poemType == 'quatrain') {
+      lines.add('الشطر الأول');
+      lines.add('الشطر الثاني');
+      lines.add('الشطر الثالث');
+      lines.add('الشطر الرابع');
+      if (hasSeparators) {
+        lines.add('= * * * =');
+      } else {
+        lines.add('');
+      }
+      lines.add('الشطر الخامس');
+      lines.add('الشطر السادس');
+      lines.add('الشطر السابع');
+      lines.add('الشطر الثامن');
+    } else if (poemType == 'quintain') {
+      lines.add('السطر الأول');
+      lines.add('السطر الثاني');
+      lines.add('السطر الثالث');
+      lines.add('السطر الرابع');
+      lines.add('السطر الخامس');
+      if (hasSeparators) {
+        lines.add('= * * * =');
+      } else {
+        lines.add('');
+      }
+      lines.add('السطر السادس');
+      lines.add('السطر السابع');
+      lines.add('السطر الثامن');
+      lines.add('السطر التاسع');
+      lines.add('السطر العاشر');
+    } else {
+      lines.add('السطر الشعري الأول');
+      lines.add('السطر الشعري الثاني');
+      lines.add('السطر الشعري الثالث');
+    }
+    
+    if (poetLocation == 'bottom' && poetName.trim().isNotEmpty) {
+      lines.add('-- للشاعر: ${poetName.trim()} --');
+    }
+    
+    lines.add('[/POEM]');
+    return lines.join('\n');
+  }
+
+  void _showPoemSetupDialog(BuildContext context, int lineIndex) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return const PoemSetupDialog();
+      },
+    ).then((result) {
+      if (result != null && result is Map<String, dynamic>) {
+        final hasTitle = result['hasTitle'] as bool;
+        final titleText = result['titleText'] as String;
+        final poetName = result['poetName'] as String;
+        final poetLocation = result['poetLocation'] as String;
+        final poemType = result['poemType'] as String;
+        final hasSeparators = result['hasSeparators'] as bool;
+
+        final template = _generatePoemTemplate(
+          hasTitle: hasTitle,
+          titleText: titleText,
+          poetName: poetName,
+          poetLocation: poetLocation,
+          poemType: poemType,
+          hasSeparators: hasSeparators,
+        );
+
+        setState(() {
+          _textController.insertPoemTemplateAtLine(lineIndex, template);
+        });
+        _textFocusNode.requestFocus();
+      }
+    });
+  }
+
+  void _handlePoemToolbarAction() {
+    // PoemSetupDialog is temporarily disabled until further notice.
+    _textController.toggleParagraphFormat(ParagraphFormat.poem);
+    _textFocusNode.requestFocus();
+  }
+
+  Widget _buildCategoriesBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Consumer<TagProvider>(
+      builder: (context, tagProvider, child) {
+        final List<Tag> selectedTags = [];
+        for (final id in _selectedTagIds) {
+          final tag = tagProvider.tags.firstWhere(
+            (t) => t.id == id,
+            orElse: () => Tag(id: id, name: id, colorHex: '6B7280', userId: ''),
+          );
+          selectedTags.add(tag);
+        }
+
+        final voidCallback = () {
+          TagSelectorSheet.show(
+            context,
+            initialSelectedTagIds: _selectedTagIds,
+            onSelectionChanged: (selectedIds, tags) {
+              setState(() {
+                _selectedTagIds = selectedIds;
+              });
+            },
+          );
+        };
+
+        return Container(
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            border: Border(
+              bottom: BorderSide(
+                color: isDark ? Colors.white10 : Colors.grey.shade200,
+                width: 1.0,
+              ),
+            ),
+          ),
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Row(
+              children: [
+                IconButton(
+                  tooltip: context.l10n.articleCategoryTooltip,
+                  icon: const Icon(Icons.label_outline),
+                  color: AppColors.primary,
+                  onPressed: voidCallback,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: InkWell(
+                    onTap: voidCallback,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: selectedTags.isEmpty
+                          ? Text(
+                              context.l10n.noCategoryAddedYet,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isDark ? Colors.white30 : Colors.grey.shade400,
+                              ),
+                            )
+                          : SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              physics: const BouncingScrollPhysics(),
+                              child: Row(
+                                children: selectedTags.map((tag) {
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                    child: TagChip(
+                                      tag: tag,
+                                      onTap: voidCallback,
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.getBackground(context),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        foregroundColor: AppColors.getTextPrimary(context),
-        systemOverlayStyle: Theme.of(context).brightness == Brightness.dark 
-            ? SystemUiOverlayStyle.light 
-            : SystemUiOverlayStyle.dark,
-        actions: [
-          if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
-            )
-          else ...[
-            if (_hasText || _selectedImage != null)
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(44.0),
+        child: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          foregroundColor: AppColors.getTextPrimary(context),
+          systemOverlayStyle: Theme.of(context).brightness == Brightness.dark 
+              ? SystemUiOverlayStyle.light 
+              : SystemUiOverlayStyle.dark,
+          actions: [
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+              )
+            else ...[
+              if (_hasText || _selectedImage != null)
+                TextButton(
+                  onPressed: _clearDraft,
+                  child: Text(context.l10n.clear, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                ),
               TextButton(
-                onPressed: _clearDraft,
-                child: Text(context.l10n.clear, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                onPressed: _hasText ? _submit : null,
+                child: Text(context.l10n.save, style: TextStyle(color: _hasText ? AppColors.primary : Colors.grey, fontWeight: FontWeight.bold)),
               ),
-            TextButton(
-              onPressed: _hasText ? _submit : null,
-              child: Text(context.l10n.save, style: TextStyle(color: _hasText ? AppColors.primary : Colors.grey, fontWeight: FontWeight.bold)),
-            ),
-          ]
-        ],
+            ]
+          ],
+        ),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          _buildCategoriesBar(),
           // Text Formatting Toolbar
           Container(
             color: AppColors.getCardBackground(context),
@@ -909,10 +1380,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                                         ),
                                       ),
                                     ),
-                                    onPressed: () {
-                                      _textController.toggleParagraphFormat(ParagraphFormat.poem);
-                                      _textFocusNode.requestFocus();
-                                    },
+                                    onPressed: _handlePoemToolbarAction,
                                   );
                                 },
                               ),
@@ -1237,7 +1705,10 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                         color: AppColors.getBackground(context),
                         child: SingleChildScrollView(
                           padding: const EdgeInsets.all(16.0),
-                          child: ArticleContentRenderer(text: _textController.text),
+                          child: ListenableBuilder(
+                            listenable: _textController,
+                            builder: (context, _) => ArticleContentRenderer(text: _textController.rawText),
+                          ),
                         ),
                       ),
                     ),
@@ -1250,28 +1721,45 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                 // 1. Scroll conflict made touch-hold selection in the first line unreliable.
                 // 2. Keyboard avoidance computed wrong offsets for the first few lines.
                 Expanded(
-                  child: TextField(
-                    controller: _textController,
-                    focusNode: _textFocusNode,
-                    maxLines: null,
-                    expands: true,
-                    keyboardType: TextInputType.multiline,
-                    textAlignVertical: TextAlignVertical.top,
-                    textDirection: Localizations.localeOf(context).languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr,
-                    selectionWidthStyle: ui.BoxWidthStyle.tight,
-                    selectionHeightStyle: ui.BoxHeightStyle.tight,
-                    style: TextStyle(
-                      fontSize: 18,
-                      height: 1.5,
-                      color: AppColors.getTextPrimary(context),
+                  child: Listener(
+                    onPointerDown: (event) {
+                      _lastPointerDownOffset = event.localPosition;
+                    },
+                    child: TextField(
+                      controller: _textController,
+                      focusNode: _textFocusNode,
+                      scrollController: _editorScrollController,
+                      maxLines: null,
+                      expands: true,
+                      keyboardType: TextInputType.multiline,
+                      textAlignVertical: TextAlignVertical.top,
+                      textDirection: Localizations.localeOf(context).languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr,
+                      selectionWidthStyle: ui.BoxWidthStyle.tight,
+                      selectionHeightStyle: ui.BoxHeightStyle.tight,
+                      style: TextStyle(
+                        fontSize: 18,
+                        height: 1.5,
+                        color: AppColors.getTextPrimary(context),
+                      ),
+                      onTap: () {
+                        if (_lastPointerDownOffset != null && mounted) {
+                          final corrected = _getCorrectedOffset(_lastPointerDownOffset!);
+                          if (corrected != null) {
+                            setState(() {
+                              _textController.selection = TextSelection.collapsed(offset: corrected);
+                            });
+                          }
+                          _lastPointerDownOffset = null;
+                        }
+                      },
+                      decoration: InputDecoration(
+                        hintText: context.l10n.writeArticleHint,
+                        hintStyle: TextStyle(color: AppColors.getHintColor(context)),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.all(16.0),
+                      ),
+                      maxLength: context.read<GlobalConfigProvider>().articleMaxChars,
                     ),
-                    decoration: InputDecoration(
-                      hintText: context.l10n.writeArticleHint,
-                      hintStyle: TextStyle(color: AppColors.getHintColor(context)),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.all(16.0),
-                    ),
-                    maxLength: context.read<GlobalConfigProvider>().articleMaxChars,
                   ),
                 ),
               ],
@@ -1400,6 +1888,205 @@ class _MagicFormattingProgressDialogState extends State<_MagicFormattingProgress
           ),
         ],
       ),
+    );
+  }
+}
+
+class PoemSetupDialog extends StatefulWidget {
+  const PoemSetupDialog({super.key});
+
+  @override
+  State<PoemSetupDialog> createState() => _PoemSetupDialogState();
+}
+
+class _PoemSetupDialogState extends State<PoemSetupDialog> {
+  bool _hasTitle = false;
+  final TextEditingController _titleController = TextEditingController();
+  
+  String _poemType = 'classical'; // 'classical', 'quatrain', 'quintain', 'free'
+  String _poetLocation = 'none'; // 'none', 'top', 'bottom'
+  final TextEditingController _poetNameController = TextEditingController();
+  
+  bool _hasSeparators = true;
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _poetNameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+      title: const Row(
+        children: [
+          Text('📜 ', style: TextStyle(fontSize: 24)),
+          Text(
+            'إعداد قالب القصيدة',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
+          ),
+        ],
+      ),
+      content: SingleChildScrollView(
+        child: SizedBox(
+          width: 320,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 1. هل يوجد عنوان للقصيدة؟
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                activeColor: AppColors.primary,
+                title: const Text(
+                  'هل يوجد عنوان للقصيدة؟',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                ),
+                value: _hasTitle,
+                onChanged: (val) => setState(() => _hasTitle = val),
+              ),
+              AnimatedCrossFade(
+                firstChild: const SizedBox.shrink(),
+                secondChild: Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: TextField(
+                    controller: _titleController,
+                    decoration: InputDecoration(
+                      hintText: 'أدخل عنوان القصيدة...',
+                      filled: true,
+                      fillColor: isDark ? Colors.white10 : Colors.grey.shade50,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.grey.shade300),
+                      ),
+                    ),
+                  ),
+                ),
+                crossFadeState: _hasTitle ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                duration: const Duration(milliseconds: 200),
+              ),
+              const Divider(),
+              // 2. نوع القصيدة
+              const Text(
+                'نوع القصيدة / القالب الفني:',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: _poemType,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: isDark ? Colors.white10 : Colors.grey.shade50,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'classical', child: Text('عمودية (شطرين: صدر وعجز)')),
+                  DropdownMenuItem(value: 'quatrain', child: Text('رباعية (مجموعات ٤ أشطر)')),
+                  DropdownMenuItem(value: 'quintain', child: Text('خماسية (مجموعات ٥ أشطر)')),
+                  DropdownMenuItem(value: 'free', child: Text('حرة / تفعيلة (سطر تلو الآخر)')),
+                ],
+                onChanged: (val) {
+                  if (val != null) setState(() => _poemType = val);
+                },
+              ),
+              const SizedBox(height: 12),
+              const Divider(),
+              // 3. اسم الشاعر وموقعه
+              const Text(
+                'اسم الشاعر وموقعه:',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: _poetLocation,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: isDark ? Colors.white10 : Colors.grey.shade50,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'none', child: Text('لا يوجد اسم شاعر')),
+                  DropdownMenuItem(value: 'top', child: Text('في الأعلى (قبل الأبيات)')),
+                  DropdownMenuItem(value: 'bottom', child: Text('في الأسفل (توقيع يسار)')),
+                ],
+                onChanged: (val) {
+                  if (val != null) setState(() => _poetLocation = val);
+                },
+              ),
+              AnimatedCrossFade(
+                firstChild: const SizedBox.shrink(),
+                secondChild: Padding(
+                  padding: const EdgeInsets.only(top: 12.0),
+                  child: TextField(
+                    controller: _poetNameController,
+                    decoration: InputDecoration(
+                      hintText: 'أدخل اسم الشاعر...',
+                      filled: true,
+                      fillColor: isDark ? Colors.white10 : Colors.grey.shade50,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.grey.shade300),
+                      ),
+                    ),
+                  ),
+                ),
+                crossFadeState: _poetLocation != 'none' ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                duration: const Duration(milliseconds: 200),
+              ),
+              const Divider(),
+              // 4. هل هناك فواصل؟
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                activeColor: AppColors.primary,
+                title: const Text(
+                  'إضافة فواصل بين الأبيات؟ (* * *)',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                ),
+                value: _hasSeparators,
+                onChanged: (val) => setState(() => _hasSeparators = val),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(
+            'إلغاء',
+            style: TextStyle(color: isDark ? Colors.grey : Colors.grey.shade600),
+          ),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          onPressed: () {
+            Navigator.pop(context, {
+              'hasTitle': _hasTitle,
+              'titleText': _titleController.text,
+              'poetName': _poetNameController.text,
+              'poetLocation': _poetLocation,
+              'poemType': _poemType,
+              'hasSeparators': _hasSeparators,
+            });
+          },
+          child: const Text('إدراج القالب', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        ),
+      ],
     );
   }
 }

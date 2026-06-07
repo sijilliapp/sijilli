@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:sijilli/core/constants/app_colors.dart';
 import 'package:sijilli/core/constants/app_dimens.dart';
 import 'package:sijilli/features/appointments/providers/appointment_provider.dart';
+import 'package:sijilli/features/notifications/providers/notification_provider.dart';
 import 'package:sijilli/features/appointments/widgets/cards/base_appointment_card.dart';
 import 'package:sijilli/features/appointments/widgets/cards/policies/public_policy.dart';
 
@@ -14,6 +15,23 @@ class SavedAppointmentsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('المحفوظات'), 
+        actions: [
+          Consumer<NotificationProvider>(
+            builder: (context, notifProvider, _) {
+              final isEnabled = notifProvider.notifyBookmarks;
+              return IconButton(
+                tooltip: isEnabled ? 'تعطيل تنبيهات المحفوظات' : 'تفعيل تنبيهات المحفوظات',
+                icon: Icon(
+                  isEnabled ? Icons.notifications_active : Icons.notifications_off_outlined,
+                  color: isEnabled ? Colors.white : Colors.white60,
+                ),
+                onPressed: () {
+                  notifProvider.setNotifyBookmarks(!isEnabled);
+                },
+              );
+            },
+          ),
+        ],
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(

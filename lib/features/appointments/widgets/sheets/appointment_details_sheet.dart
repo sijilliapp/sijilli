@@ -594,7 +594,11 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
               print('👤 [قائمة الدعوة] تم اختيار المستخدم: ${user.id}');
               Navigator.pop(context);
               try {
-                await context.read<AppointmentProvider>().inviteGuest(_appointment.id, user.id);
+                if (user.id.startsWith('phone_')) {
+                  await context.read<AppointmentProvider>().inviteGuestByPhone(_appointment.id, user.phone!, user.name);
+                } else {
+                  await context.read<AppointmentProvider>().inviteGuest(_appointment.id, user);
+                }
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
