@@ -11,6 +11,7 @@ import 'package:sijilli/models/article.dart';
 import 'package:sijilli/models/appointment.dart';
 import '../../../../core/constants/app_colors.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
+import '../../../../core/services/pocketbase_client.dart';
 
 class ProfileArticlesTab extends StatefulWidget {
   final String userId;
@@ -32,6 +33,8 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
   String _searchQuery = '';
   bool _showSystemFilters = false;
   String? _activeSystemStatus; // null, 'published', 'draft'
+  List<Tag> _allPublishedTags = [];
+  bool _isLoadingTags = true;
 
   @override
   void initState() {
@@ -42,7 +45,72 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
             refresh: true,
             isCurrentUser: widget.isCurrentUser,
           );
+      _fetchPublishedTags();
     });
+  }
+
+  Future<void> _fetchPublishedTags() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoadingTags = true;
+    });
+
+    try {
+      final pb = PocketBaseClient.instance.pb;
+
+      // 1. Fetch tags of all published articles for this user (only tags field)
+      final String filter = widget.isCurrentUser
+          ? 'author = "${widget.userId}" && (post_status = "published" || post_status = "draft" || post_status = "written" || post_status = "")'
+          : 'author = "${widget.userId}" && (post_status = "published" || (post_status = "" && is_published = true))';
+      
+      final articlesRecords = await pb.collection('articles').getFullList(
+        filter: filter,
+        fields: 'tags',
+      );
+
+      final Set<String> publishedTagIds = {};
+      for (var record in articlesRecords) {
+        final List<dynamic> tagList = record.data['tags'] ?? [];
+        for (var tagId in tagList) {
+          publishedTagIds.add(tagId.toString());
+        }
+      }
+
+      if (publishedTagIds.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _allPublishedTags = [];
+            _isLoadingTags = false;
+          });
+        }
+        return;
+      }
+
+      // 2. Fetch all tags belonging to the author
+      final tagsRecords = await pb.collection('tags').getFullList(
+        filter: 'user = "${widget.userId}"',
+        sort: 'name',
+      );
+
+      final List<Tag> tags = tagsRecords
+          .map((record) => Tag.fromJson(record.toJson()))
+          .where((tag) => publishedTagIds.contains(tag.id))
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _allPublishedTags = tags;
+          _isLoadingTags = false;
+        });
+      }
+    } catch (e) {
+      print('Error fetching published tags: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingTags = false;
+        });
+      }
+    }
   }
 
   String _normalizeArabic(String text) {
@@ -68,13 +136,18 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
       builder: (context, provider, child) {
         final userArticles = provider.getUserArticles(widget.userId);
 
-        // Extract unique tags present in these articles
-        final articlesTags = userArticles.expand((a) => a.tags).toList();
-        final uniqueTagsMap = <String, Tag>{};
-        for (var tag in articlesTags) {
-          uniqueTagsMap[tag.id] = tag;
+        // Extract unique tags present in these articles as a fallback during loading
+        final List<Tag> availableTags;
+        if (_isLoadingTags) {
+          final articlesTags = userArticles.expand((a) => a.tags).toList();
+          final uniqueTagsMap = <String, Tag>{};
+          for (var tag in articlesTags) {
+            uniqueTagsMap[tag.id] = tag;
+          }
+          availableTags = uniqueTagsMap.values.toList();
+        } else {
+          availableTags = _allPublishedTags;
         }
-        final availableTags = uniqueTagsMap.values.toList();
 
         final activeTagIds = provider.activeFilterTagIds;
 
@@ -338,11 +411,14 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
                     isCurrentUser: widget.isCurrentUser,
                   );
                 },
-                onRefresh: () => provider.fetchUserArticles(
-                  widget.userId,
-                  refresh: true,
-                  isCurrentUser: widget.isCurrentUser,
-                ),
+                onRefresh: () {
+                  _fetchPublishedTags();
+                  return provider.fetchUserArticles(
+                    widget.userId,
+                    refresh: true,
+                    isCurrentUser: widget.isCurrentUser,
+                  );
+                },
               ),
             ),
           ],
