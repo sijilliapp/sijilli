@@ -11,6 +11,10 @@ echo "Cloning Flutter SDK..."
 git clone https://github.com/flutter/flutter.git --depth 1 -b stable $HOME/flutter
 export PATH="$PATH:$HOME/flutter/bin"
 
+# 1.5. Disable Swift Package Manager for Flutter to fall back to CocoaPods
+echo "Disabling Swift Package Manager in Flutter..."
+flutter config --no-enable-swift-package-manager
+
 # 2. Precache Flutter artifacts for iOS
 echo "Precaching Flutter iOS artifacts..."
 flutter precache --ios

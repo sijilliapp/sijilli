@@ -1,6 +1,8 @@
 PODS:
   - device_calendar (0.0.1):
     - Flutter
+  - device_info_plus (0.0.1):
+    - Flutter
   - fast_contacts (0.0.1):
     - Flutter
   - Flutter (1.0.0)
@@ -40,6 +42,7 @@ PODS:
 
 DEPENDENCIES:
   - device_calendar (from `.symlinks/plugins/device_calendar/ios`)
+  - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - fast_contacts (from `.symlinks/plugins/fast_contacts/ios`)
   - Flutter (from `Flutter`)
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
@@ -63,6 +66,8 @@ SPEC REPOS:
 EXTERNAL SOURCES:
   device_calendar:
     :path: ".symlinks/plugins/device_calendar/ios"
+  device_info_plus:
+    :path: ".symlinks/plugins/device_info_plus/ios"
   fast_contacts:
     :path: ".symlinks/plugins/fast_contacts/ios"
   Flutter:
@@ -96,6 +101,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   device_calendar: b55b2c5406cfba45c95a59f9059156daee1f74ed
+  device_info_plus: 21fcca2080fbcd348be798aa36c3e5ed849eefbe
   fast_contacts: 85bd59ea48f7f26e9de6818da94171b29b006c3e
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_local_notifications: a5a732f069baa862e728d839dd2ebb904737effb
