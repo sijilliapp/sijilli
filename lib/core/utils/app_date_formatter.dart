@@ -113,6 +113,14 @@ class AppDateFormatter {
     return '${formatFullDate(date, locale)}  -  ${formatTime12h(date, locale)}';
   }
 
+  /// Format: ٢ مايو ٢٠٢٦ | ٣:٤٠ مساءً (Arabic) or 2 May 2026 | 3:40 PM (English)
+  static String formatArticleDateTime(DateTime date, [String locale = 'ar']) {
+    final datePart = DateFormat('d MMMM y', locale).format(date);
+    final timePart = formatTime12h(date, locale);
+    final result = '$datePart | $timePart';
+    return locale == 'ar' ? toEasternArabicDigits(result) : result;
+  }
+
   /// Relative time (e.g., "منذ ساعة", "منذ يومين")
   static String timeAgo(DateTime date, String locale, [AppLocalizations? l10n]) {
     final now = DateTime.now().toUtc();

@@ -13,6 +13,7 @@ import '../../home/screens/public_profile_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/article_provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import '../../../core/utils/app_date_formatter.dart';
 import '../../../core/utils/web_utils.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/providers/theme_provider.dart';
@@ -369,7 +370,7 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
         Row(
           children: [
             Text(
-              timeago.format(_article!.createdAt, locale: context.l10n.localeName),
+              AppDateFormatter.formatArticleDateTime(_article!.createdAt, context.l10n.localeName),
               style: TextStyle(
                 fontSize: 12,
                 color: AppColors.getTextSecondary(context),

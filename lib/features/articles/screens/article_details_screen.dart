@@ -10,6 +10,7 @@ import '../widgets/article_content_renderer.dart';
 import 'add_article_screen.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import '../../../core/utils/app_date_formatter.dart';
 import '../../../core/providers/settings_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/providers/theme_provider.dart';
@@ -408,7 +409,7 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                                 Icon(Icons.calendar_today_outlined, size: 18, color: AppColors.getTextSecondary(context)),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'تاريخ النشر: ${timeago.format(updatedArticle.createdAt, locale: Localizations.localeOf(context).languageCode)}',
+                                  'تاريخ النشر: ${AppDateFormatter.formatArticleDateTime(updatedArticle.createdAt, Localizations.localeOf(context).languageCode)}',
                                   style: TextStyle(fontSize: 14, color: AppColors.getTextSecondary(context)),
                                 ),
                               ],
@@ -421,7 +422,7 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                                   Icon(Icons.edit_calendar_outlined, size: 18, color: AppColors.getTextSecondary(context)),
                                   const SizedBox(width: 8),
                                   Text(
-                                    context.l10n.lastEdited(timeago.format(updatedArticle.updatedAt, locale: Localizations.localeOf(context).languageCode)),
+                                    context.l10n.lastEdited(AppDateFormatter.formatArticleDateTime(updatedArticle.updatedAt, Localizations.localeOf(context).languageCode)),
                                     style: TextStyle(fontSize: 14, color: AppColors.getTextSecondary(context)),
                                   ),
                                 ],
