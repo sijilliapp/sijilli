@@ -73,6 +73,12 @@ class PoemFormatterUtils {
     return formattedLines.join('\n');
   }
 
+  static String _stripLeftoverTags(String text) {
+    return text
+        .replaceAll(RegExp(r'\[/?(?:BOLD|HIGHLIGHT|B|POEM|CENTER|JUSTIFY|LEFT|RIGHT)/?\]', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\[/', caseSensitive: false), '');
+  }
+
   /// Recursively parses formatting tags and returns a list of styled spans.
   static List<InlineSpan> parseInlineText(String text, TextStyle currentStyle, BuildContext context) {
     if (text.isEmpty) return [];
@@ -81,9 +87,9 @@ class PoemFormatterUtils {
     final highlightBg = isDark ? const Color(0xFF78350F).withValues(alpha: 0.5) : const Color(0xFFFEF08A);
     final highlightText = isDark ? const Color(0xFFFFFBEB) : const Color(0xFF1E293B);
 
-    final boldRegex = RegExp(r'\[BOLD\](.*?)\[/BOLD\]', caseSensitive: false, dotAll: true);
-    final bRegex = RegExp(r'\[B\](.*?)\[/B\]', caseSensitive: false, dotAll: true);
-    final highlightRegex = RegExp(r'\[HIGHLIGHT\](.*?)\[/HIGHLIGHT\]', caseSensitive: false, dotAll: true);
+    final boldRegex = RegExp(r'\[BOLD\](.*?)\[(?:/BOLD|BOLD/)\]', caseSensitive: false, dotAll: true);
+    final bRegex = RegExp(r'\[B\](.*?)\[(?:/B|B/)\]', caseSensitive: false, dotAll: true);
+    final highlightRegex = RegExp(r'\[HIGHLIGHT\](.*?)\[(?:/HIGHLIGHT|HIGHLIGHT/)\]', caseSensitive: false, dotAll: true);
     final starRegex = RegExp(r'\*(.*?)\*', caseSensitive: false, dotAll: true);
     final mdLinkRegex = RegExp(r'\[([^\]]+?)\]\((https?:\/\/[^\s\)]+?)\)', caseSensitive: false);
     final plainUrlRegex = RegExp(r'(https?:\/\/[^\s\)]+)', caseSensitive: false);
@@ -128,7 +134,7 @@ class PoemFormatterUtils {
     }
 
     if (earliestMatch == null) {
-      return [TextSpan(text: text, style: currentStyle)];
+      return [TextSpan(text: _stripLeftoverTags(text), style: currentStyle)];
     }
 
     final List<InlineSpan> spans = [];

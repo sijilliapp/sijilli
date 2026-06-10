@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sijilli/features/articles/widgets/formatting_text_controller.dart';
 import 'package:sijilli/models/article.dart';
 import 'package:flutter/material.dart';
+import 'package:sijilli/features/articles/widgets/poetry/poem_formatter_utils.dart';
 
 void main() {
   group('Article Strip Formatting Tests', () {
@@ -44,6 +45,12 @@ void main() {
           'أنا ابن جلا وطلاع الثنايا *** متى أضع العمامة تعرفوني'
         ),
       );
+    });
+
+    test('Should strip alternate closing tags and orphaned/broken tags', () {
+      const raw = 'هذا [BOLD]نص عريض[BOLD/] و[HIGHLIGHT]نص ملون[HIGHLIGHT/] ومفتوح [BOLD] وباقي [/';
+      final clean = Article.stripFormatting(raw);
+      expect(clean, equals('هذا نص عريض ونص ملون ومفتوح  وباقي'));
     });
   });
 
@@ -297,6 +304,53 @@ void main() {
       expect(controller.lineFormats[0], equals(ParagraphFormat.none));
       expect(controller.lineFormats[1], equals(ParagraphFormat.poem));
       expect(controller.lineFormats[2], equals(ParagraphFormat.poem));
+    });
+  });
+
+  group('PoemFormatterUtils Inline Parsing Tests', () {
+    testWidgets('Should parse alternate closing formats and clean raw tags in InlineSpans', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) {
+                // Test alternate closing formats
+                final spans1 = PoemFormatterUtils.parseInlineText(
+                  'هذا [BOLD]نص عريض[BOLD/] و[HIGHLIGHT]نص ملون[HIGHLIGHT/]',
+                  const TextStyle(),
+                  context,
+                );
+
+                expect(spans1.length, equals(4)); // "هذا ", "نص عريض" (bold), " و", "نص ملون" (highlight)
+                expect(spans1[0].toPlainText(), equals('هذا '));
+                expect(spans1[1].toPlainText(), equals('نص عريض'));
+                expect(spans1[2].toPlainText(), equals(' و'));
+                expect(spans1[3].toPlainText(), equals('نص ملون'));
+
+                // Verify styles applied
+                final boldSpan = spans1[1] as TextSpan;
+                expect(boldSpan.style?.fontWeight, equals(FontWeight.w900));
+
+                final highlightSpan = spans1[3] as TextSpan;
+                expect(highlightSpan.style?.backgroundColor, isNotNull);
+
+                // Test orphaned/malformed tag and broken bracket stripping
+                final spans2 = PoemFormatterUtils.parseInlineText(
+                  'هذا [BOLD][BOLD/] ومفتوح [BOLD] وباقي [/ وكل شيء [HIGHLIGHT]',
+                  const TextStyle(),
+                  context,
+                );
+
+                // With everything stripped, the plain text representation of the spans should contain no tags or brackets
+                final plainText = spans2.map((s) => s.toPlainText()).join();
+                expect(plainText, equals('هذا  ومفتوح  وباقي  وكل شيء '));
+
+                return const SizedBox();
+              },
+            ),
+          ),
+        ),
+      );
     });
   });
 }

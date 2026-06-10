@@ -24,8 +24,9 @@ function stripFormatting(text) {
   // 1. Remove markdown images
   let cleanText = text.replace(/!\[.*?\]\((https?:\/\/\S+?)\)/ig, '');
   
-  // 2. Remove formatting tags
-  cleanText = cleanText.replace(/\[\/?(POEM|CENTER|JUSTIFY|LEFT|RIGHT|B)\]/ig, '');
+  // 2. Remove formatting tags (including BOLD, HIGHLIGHT, and alternate closing tag formats)
+  cleanText = cleanText.replace(/\[\/?(POEM|CENTER|JUSTIFY|LEFT|RIGHT|B|BOLD|HIGHLIGHT)\/?\]/ig, '');
+  cleanText = cleanText.replace(/\[\//ig, '');
   cleanText = cleanText.replace(/==|~~|--|\+\+|\*/g, '');
   
   const lines = cleanText.split('\n');

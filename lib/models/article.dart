@@ -79,8 +79,8 @@ class Article {
     if (input.isEmpty) return '';
 
     String res = input;
-    // 1. Remove all BBCode tags
-    res = res.replaceAll(RegExp(r'\[/?(POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT|POEM_LEFT|POEM_CENTER)\]', caseSensitive: false), '');
+    // 1. Remove all BBCode tags (including alternate closing tag formats like [BOLD/])
+    res = res.replaceAll(RegExp(r'\[/?(POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT|POEM_LEFT|POEM_CENTER)/?\]', caseSensitive: false), '');
     
     // 2. Remove line alignment/poetry shortcuts at start/end of lines
     final lines = res.split('\n');
@@ -130,7 +130,7 @@ class Article {
         
         // التحقق إذا كان سطر الشعر عبارة عن كلمة واحدة أو أقل (توقيع أو سطر يتيم قصير)
         String cleanForWordCheck = line
-            .replaceAll(RegExp(r'\[/?(BOLD|B|HIGHLIGHT|CENTER|JUSTIFY|LEFT|RIGHT)\]', caseSensitive: false), '')
+            .replaceAll(RegExp(r'\[/?(BOLD|B|HIGHLIGHT|CENTER|JUSTIFY|LEFT|RIGHT)/?\]', caseSensitive: false), '')
             .replaceAll(RegExp(r'[=~\-\+\*]'), '')
             .trim();
         final isSingleWord = cleanForWordCheck.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length <= 1;
@@ -176,8 +176,9 @@ class Article {
       return processedLines.join('\n');
     });
     
-    // 2. إزالة بقية وسوم التنسيق المباشرة (عريض، محاذاة، تظليل)
-    String cleanText = text.replaceAll(RegExp(r'\[/?(POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT)\]', caseSensitive: false), '');
+    // 2. إزالة بقية وسوم التنسيق المباشرة (عريض، محاذاة، تظليل) مع وسوم الإغلاق البديلة والوسوم المفتوحة/المكسورة
+    String cleanText = text.replaceAll(RegExp(r'\[/?(POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT)/?\]', caseSensitive: false), '');
+    cleanText = cleanText.replaceAll(RegExp(r'\[/', caseSensitive: false), '');
     // إزالة النجمات وعلامات التنسيق المزدوجة القديمة
     cleanText = cleanText.replaceAll(RegExp(r'==|~~|--|\+\+|\*'), '');
     
