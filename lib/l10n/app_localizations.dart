@@ -3859,6 +3859,12 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'لم يتم إضافة تصنيف للمقال بعد'**
   String get noCategoryAddedYet;
+
+  /// No description provided for @duplicate.
+  ///
+  /// In ar, this message translates to:
+  /// **'مكرر'**
+  String get duplicate;
 }
 
 class _AppLocalizationsDelegate

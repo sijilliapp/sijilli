@@ -2155,4 +2155,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get noCategoryAddedYet => 'لم يتم إضافة تصنيف للمقال بعد';
+
+  @override
+  String get duplicate => 'مكرر';
 }

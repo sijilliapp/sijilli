@@ -2137,4 +2137,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get noCategoryAddedYet =>
       'No category has been added to the article yet';
+
+  @override
+  String get duplicate => 'Duplicate';
 }

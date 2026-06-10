@@ -166,15 +166,37 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
           } else if (_activeSystemStatus == 'draft') {
             filteredByTag = filteredByTag.where((a) => a.postStatus == PostStatus.draft).toList();
           } else if (_activeSystemStatus == 'duplicate') {
-            final contentGroups = <String, List<Article>>{};
+            final articleWordSets = <String, Set<String>>{};
             for (final a in filteredByTag) {
               final normalized = _normalizeArabic(a.title + '\n' + a.pureText);
-              contentGroups.putIfAbsent(normalized, () => []).add(a);
+              final words = normalized.split(' ').where((w) => w.isNotEmpty).toSet();
+              articleWordSets[a.id] = words;
             }
-            final duplicateIds = contentGroups.values
-                .where((list) => list.length > 1)
-                .expand((list) => list.map((a) => a.id))
-                .toSet();
+
+            final duplicateIds = <String>{};
+            final n = filteredByTag.length;
+            for (int i = 0; i < n; i++) {
+              final id1 = filteredByTag[i].id;
+              final words1 = articleWordSets[id1]!;
+              if (words1.isEmpty) continue;
+
+              for (int j = i + 1; j < n; j++) {
+                final id2 = filteredByTag[j].id;
+                final words2 = articleWordSets[id2]!;
+                if (words2.isEmpty) continue;
+
+                // Jaccard similarity: intersection / union
+                final intersectionCount = words1.intersection(words2).length;
+                final unionCount = words1.length + words2.length - intersectionCount;
+                final similarity = unionCount > 0 ? intersectionCount / unionCount : 0.0;
+
+                // 85% similarity captures loose duplicates (with slight word variations)
+                if (similarity >= 0.85) {
+                  duplicateIds.add(id1);
+                  duplicateIds.add(id2);
+                }
+              }
+            }
             filteredByTag = filteredByTag.where((a) => duplicateIds.contains(a.id)).toList();
           }
         }

@@ -54,12 +54,12 @@ void main() {
       expect(clean, equals('هذا نص عريض ونص ملون ومفتوح  وباقي'));
     });
 
-    test('Should identify duplicate articles using local normalization logic', () {
+    test('Should identify duplicate articles using local normalization and Jaccard similarity logic', () {
       final articles = [
         Article(
           id: '1',
           authorId: 'user1',
-          text: 'هذا نص المقال الأول',
+          text: 'هذا نص المقال الأول الجميل والواضح جداً والذي يحتوي على كلمات كثيرة ومتنوعة لنختبر بها نسبة التشابه المرنة وتسامح خوارزمية جاكارد المخصصة',
           postStatus: PostStatus.published,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
@@ -67,7 +67,7 @@ void main() {
         Article(
           id: '2',
           authorId: 'user1',
-          text: 'هذا نص المقال الثاني',
+          text: 'هذا نص المقال الثاني المختلف تماماً عن الباقي والذي يتحدث عن موضوع غير مشابه بالمرة ولا يشبه مقالنا الأول لا من قريب ولا من بعيد',
           postStatus: PostStatus.published,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
@@ -75,7 +75,15 @@ void main() {
         Article(
           id: '3',
           authorId: 'user1',
-          text: 'هذا نص المقال الأول', // Duplicate of 1
+          text: 'هذا نص المقال الأول الجميل والواضح جداً والذي يحتوي على كلمات كثيرة ومتنوعة لنختبر بها نسبة التشابه المرنة وتسامح خوارزمية جاكارد المخصصة', // Exact duplicate of 1
+          postStatus: PostStatus.draft,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+        Article(
+          id: '4',
+          authorId: 'user1',
+          text: 'هذا نص المقال الأول الجميل والواضح جداً والذي يحتوي على كلمات كثيرة ومتنوعة لنختبر بها نسبة التشابه المرنة وتسامح خوارزمية جاكارد المخصصة بل وأكثر', // Loose duplicate of 1 (differs by a word or two)
           postStatus: PostStatus.draft,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
@@ -94,20 +102,40 @@ void main() {
         return normalized.toLowerCase();
       }
 
-      final contentGroups = <String, List<Article>>{};
+      final articleWordSets = <String, Set<String>>{};
       for (final a in articles) {
         final normalized = normalize(a.title + '\n' + a.pureText);
-        contentGroups.putIfAbsent(normalized, () => []).add(a);
+        final words = normalized.split(' ').where((w) => w.isNotEmpty).toSet();
+        articleWordSets[a.id] = words;
       }
 
-      final duplicateIds = contentGroups.values
-          .where((list) => list.length > 1)
-          .expand((list) => list.map((a) => a.id))
-          .toSet();
+      final duplicateIds = <String>{};
+      final n = articles.length;
+      for (int i = 0; i < n; i++) {
+        final id1 = articles[i].id;
+        final words1 = articleWordSets[id1]!;
+        if (words1.isEmpty) continue;
+
+        for (int j = i + 1; j < n; j++) {
+          final id2 = articles[j].id;
+          final words2 = articleWordSets[id2]!;
+          if (words2.isEmpty) continue;
+
+          final intersectionCount = words1.intersection(words2).length;
+          final unionCount = words1.length + words2.length - intersectionCount;
+          final similarity = unionCount > 0 ? intersectionCount / unionCount : 0.0;
+
+          if (similarity >= 0.85) {
+            duplicateIds.add(id1);
+            duplicateIds.add(id2);
+          }
+        }
+      }
 
       expect(duplicateIds.contains('1'), isTrue);
       expect(duplicateIds.contains('3'), isTrue);
-      expect(duplicateIds.contains('2'), isFalse);
+      expect(duplicateIds.contains('4'), isTrue); // Loose duplicate should be matched
+      expect(duplicateIds.contains('2'), isFalse); // Different article should NOT be matched
     });
   });
 
