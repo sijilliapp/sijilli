@@ -887,6 +887,7 @@
   },
   "readingFontTooltip": "Change reading font",
   "fullArticle": "Full Article...",
-  "noCategoryAddedYet": "No category has been added to the article yet"
+  "noCategoryAddedYet": "No category has been added to the article yet",
+  "duplicate": "Duplicate"
 }
 

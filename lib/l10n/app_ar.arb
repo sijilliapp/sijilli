@@ -922,5 +922,6 @@
   },
   "readingFontTooltip": "تغيير خط القراءة",
   "fullArticle": "المقال كاملاً...",
-  "noCategoryAddedYet": "لم يتم إضافة تصنيف للمقال بعد"
+  "noCategoryAddedYet": "لم يتم إضافة تصنيف للمقال بعد",
+  "duplicate": "مكرر"
 }

@@ -165,6 +165,17 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
             filteredByTag = filteredByTag.where((a) => a.postStatus == PostStatus.published).toList();
           } else if (_activeSystemStatus == 'draft') {
             filteredByTag = filteredByTag.where((a) => a.postStatus == PostStatus.draft).toList();
+          } else if (_activeSystemStatus == 'duplicate') {
+            final contentGroups = <String, List<Article>>{};
+            for (final a in filteredByTag) {
+              final normalized = _normalizeArabic(a.title + '\n' + a.pureText);
+              contentGroups.putIfAbsent(normalized, () => []).add(a);
+            }
+            final duplicateIds = contentGroups.values
+                .where((list) => list.length > 1)
+                .expand((list) => list.map((a) => a.id))
+                .toSet();
+            filteredByTag = filteredByTag.where((a) => duplicateIds.contains(a.id)).toList();
           }
         }
         
@@ -390,6 +401,21 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
                             _activeSystemStatus = null;
                           } else {
                             _activeSystemStatus = 'draft';
+                          }
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    _buildSystemFilterChip(
+                      label: context.l10n.duplicate,
+                      isActive: _activeSystemStatus == 'duplicate',
+                      activeColor: Colors.redAccent,
+                      onTap: () {
+                        setState(() {
+                          if (_activeSystemStatus == 'duplicate') {
+                            _activeSystemStatus = null;
+                          } else {
+                            _activeSystemStatus = 'duplicate';
                           }
                         });
                       },

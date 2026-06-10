@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sijilli/features/articles/widgets/formatting_text_controller.dart';
 import 'package:sijilli/models/article.dart';
+import 'package:sijilli/models/appointment.dart';
 import 'package:flutter/material.dart';
 import 'package:sijilli/features/articles/widgets/poetry/poem_formatter_utils.dart';
 
@@ -51,6 +52,62 @@ void main() {
       const raw = 'هذا [BOLD]نص عريض[BOLD/] و[HIGHLIGHT]نص ملون[HIGHLIGHT/] ومفتوح [BOLD] وباقي [/';
       final clean = Article.stripFormatting(raw);
       expect(clean, equals('هذا نص عريض ونص ملون ومفتوح  وباقي'));
+    });
+
+    test('Should identify duplicate articles using local normalization logic', () {
+      final articles = [
+        Article(
+          id: '1',
+          authorId: 'user1',
+          text: 'هذا نص المقال الأول',
+          postStatus: PostStatus.published,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+        Article(
+          id: '2',
+          authorId: 'user1',
+          text: 'هذا نص المقال الثاني',
+          postStatus: PostStatus.published,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+        Article(
+          id: '3',
+          authorId: 'user1',
+          text: 'هذا نص المقال الأول', // Duplicate of 1
+          postStatus: PostStatus.draft,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      ];
+
+      String normalize(String text) {
+        String normalized = text.replaceAll(RegExp(r'[\u064B-\u065F\u0670]'), '');
+        normalized = normalized.replaceAll('\u0640', '');
+        normalized = normalized.replaceAll(RegExp(r'\[/?(POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT)\]', caseSensitive: false), ' ');
+        normalized = normalized.replaceAll(RegExp(r'[=~*\n\r]'), ' ');
+        normalized = normalized.replaceAll(RegExp(r'[أإآ]'), 'ا');
+        normalized = normalized.replaceAll('ة', 'ه');
+        normalized = normalized.replaceAll('ى', 'ي');
+        normalized = normalized.replaceAll(RegExp(r'\s+'), ' ').trim();
+        return normalized.toLowerCase();
+      }
+
+      final contentGroups = <String, List<Article>>{};
+      for (final a in articles) {
+        final normalized = normalize(a.title + '\n' + a.pureText);
+        contentGroups.putIfAbsent(normalized, () => []).add(a);
+      }
+
+      final duplicateIds = contentGroups.values
+          .where((list) => list.length > 1)
+          .expand((list) => list.map((a) => a.id))
+          .toSet();
+
+      expect(duplicateIds.contains('1'), isTrue);
+      expect(duplicateIds.contains('3'), isTrue);
+      expect(duplicateIds.contains('2'), isFalse);
     });
   });
 
