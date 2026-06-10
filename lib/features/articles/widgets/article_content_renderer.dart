@@ -7,6 +7,7 @@ import '../../../core/providers/theme_provider.dart';
 import '../../../core/utils/image_saver_util.dart';
 import 'poetry/poem_view.dart';
 import 'poetry/poem_formatter_utils.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 class ArticleContentRenderer extends StatelessWidget {
   final String text;
@@ -378,6 +379,8 @@ class YoutubePreviewCard extends StatefulWidget {
 class _YoutubePreviewCardState extends State<YoutubePreviewCard> {
   late List<String> _thumbnailUrls;
   int _currentUrlIndex = 0;
+  bool _isPlaying = false;
+  YoutubePlayerController? _controller;
 
   @override
   void initState() {
@@ -389,6 +392,12 @@ class _YoutubePreviewCardState extends State<YoutubePreviewCard> {
     ];
   }
 
+  @override
+  void dispose() {
+    _controller?.close();
+    super.dispose();
+  }
+
   void _handleImageError() {
     if (_currentUrlIndex < _thumbnailUrls.length - 1) {
       setState(() {
@@ -397,123 +406,181 @@ class _YoutubePreviewCardState extends State<YoutubePreviewCard> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final thumbnailUrl = _thumbnailUrls[_currentUrlIndex];
+  Future<void> _openInYoutubeApp() async {
+    final youtubeUrl = 'https://www.youtube.com/watch?v=${widget.videoId}';
+    final uri = Uri.parse(youtubeUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر فتح رابط يوتيوب')),
+        );
+      }
+    }
+  }
 
-    return AspectRatio(
+  Widget _buildPlayer() {
+    _controller ??= YoutubePlayerController.fromVideoId(
+      videoId: widget.videoId,
+      autoPlay: true,
+      params: const YoutubePlayerParams(
+        showFullscreenButton: true,
+        mute: false,
+        showControls: true,
+      ),
+    );
+    
+    return YoutubePlayer(
+      controller: _controller!,
       aspectRatio: 16 / 9,
-      child: GestureDetector(
-        onTap: () async {
-          final youtubeUrl = 'https://www.youtube.com/watch?v=${widget.videoId}';
-          final uri = Uri.parse(youtubeUrl);
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-          } else {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('تعذر فتح رابط يوتيوب')),
-              );
-            }
-          }
-        },
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            CachedNetworkImage(
-              imageUrl: thumbnailUrl,
-              fit: BoxFit.cover,
-              placeholder: (context, url) => Container(
-                color: Colors.black87,
-                child: const Center(
-                  child: CircularProgressIndicator(color: Colors.white),
-                ),
+    );
+  }
+
+  Widget _buildPreview() {
+    final thumbnailUrl = _thumbnailUrls[_currentUrlIndex];
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _isPlaying = true;
+        });
+      },
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          CachedNetworkImage(
+            imageUrl: thumbnailUrl,
+            fit: BoxFit.cover,
+            placeholder: (context, url) => Container(
+              color: Colors.black87,
+              child: const Center(
+                child: CircularProgressIndicator(color: Colors.white),
               ),
-              errorWidget: (context, url, error) {
-                if (_currentUrlIndex < _thumbnailUrls.length - 1) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) => _handleImageError());
-                  return Container(
-                    color: Colors.black87,
-                    child: const Center(
-                      child: CircularProgressIndicator(color: Colors.white),
-                    ),
-                  );
-                }
-                
+            ),
+            errorWidget: (context, url, error) {
+              if (_currentUrlIndex < _thumbnailUrls.length - 1) {
+                WidgetsBinding.instance.addPostFrameCallback((_) => _handleImageError());
                 return Container(
                   color: Colors.black87,
-                  child: const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.video_library_outlined, color: Colors.white54, size: 48),
-                      SizedBox(height: 8),
-                      Text(
-                        'عرض الفيديو على يوتيوب',
-                        style: TextStyle(color: Colors.white70, fontSize: 14),
-                      ),
-                    ],
+                  child: const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
                   ),
                 );
-              },
-            ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.2),
-                    Colors.black.withOpacity(0.6),
+              }
+              
+              return Container(
+                color: Colors.black87,
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.video_library_outlined, color: Colors.white54, size: 48),
+                    SizedBox(height: 8),
+                    Text(
+                      'تشغيل الفيديو',
+                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                    ),
                   ],
                 ),
-              ),
-            ),
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade600.withOpacity(0.9),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
-                          blurRadius: 15,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.play_arrow,
-                      color: Colors.white,
-                      size: 36,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      'تشغيل الفيديو',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
+              );
+            },
+          ),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withOpacity(0.2),
+                  Colors.black.withOpacity(0.6),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade600.withOpacity(0.9),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 15,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.play_arrow,
+                    color: Colors.white,
+                    size: 36,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'تشغيل الفيديو',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AspectRatio(
+          aspectRatio: 16 / 9,
+          child: _isPlaying ? _buildPlayer() : _buildPreview(),
+        ),
+        const SizedBox(height: 6),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton.icon(
+                onPressed: _openInYoutubeApp,
+                icon: const Icon(Icons.open_in_new, size: 14, color: Colors.red),
+                label: Text(
+                  'فتح في تطبيق يوتيوب',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.getTextSecondary(context),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

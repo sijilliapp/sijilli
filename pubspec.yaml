@@ -46,6 +46,7 @@ dependencies:
   latlong2: ^0.9.1
   device_info_plus: ^12.4.0
   crypto: ^3.0.7
+  youtube_player_iframe: ^6.0.2
 dependency_overrides:
   timezone: ^0.10.1
 
