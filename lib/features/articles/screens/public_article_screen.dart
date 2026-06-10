@@ -21,6 +21,7 @@ import '../../../core/widgets/loaders/loading_screen.dart';
 import 'package:sijilli/features/articles/widgets/tag_chip.dart';
 import '../widgets/collapsible_content.dart';
 import 'package:sijilli/core/utils/image_saver_util.dart';
+import '../../../core/utils/article_printer.dart';
 
 class PublicArticleScreen extends StatefulWidget {
   final String username;
@@ -472,7 +473,38 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
         ],
         
         const SizedBox(height: 20),
-        
+
+        // Print Button
+        OutlinedButton.icon(
+          onPressed: () async {
+            if (_article == null) return;
+            try {
+              await ArticlePrinter.printArticle(context, _article!);
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('حدث خطأ أثناء محاولة الطباعة: $e'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            }
+          },
+          icon: const Icon(Icons.print_outlined),
+          label: const Text('طباعة المقال (A4)'),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            foregroundColor: AppColors.primary,
+            side: const BorderSide(color: AppColors.primary),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
         // شريط التفاعل (الإعجاب والتعليقات)
         const Divider(),
         Consumer<ArticleProvider>(

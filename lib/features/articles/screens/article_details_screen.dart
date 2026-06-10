@@ -19,6 +19,7 @@ import '../widgets/collapsible_content.dart';
 import 'package:sijilli/features/articles/widgets/tag_chip.dart';
 import 'package:sijilli/features/articles/widgets/tag_selector_sheet.dart';
 import 'package:sijilli/core/utils/image_saver_util.dart';
+import '../../../core/utils/article_printer.dart';
 
 class ArticleDetailsScreen extends StatefulWidget {
   final Article article;
@@ -429,6 +430,35 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                               ),
                             ],
                           ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Print Button
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          try {
+                            await ArticlePrinter.printArticle(context, updatedArticle);
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('حدث خطأ أثناء محاولة الطباعة: $e'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        icon: const Icon(Icons.print_outlined),
+                        label: const Text('طباعة المقال (A4)'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 24),

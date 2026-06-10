@@ -36,6 +36,8 @@ dependencies:
   device_calendar: ^4.3.2
   permission_handler: ^11.3.1
   fast_contacts: ^5.0.1
+  pdf: ^3.10.8
+  printing: ^5.11.1
 
   intl: ^0.20.2
   http: ^1.2.1
@@ -78,3 +80,4 @@ flutter:
   assets:
     - assets/logo/
     - assets/quran/quran.json
+    - assets/fonts/
