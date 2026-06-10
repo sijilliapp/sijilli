@@ -19,7 +19,7 @@ class ArticlePrinter {
     } catch (e) {
       fm.debugPrint('⚠️ Failed to load NotoSansArabic from assets: $e. Falling back to Google Fonts.');
       try {
-        arabicFont = await PdfGoogleFonts.notoSansArabic();
+        arabicFont = await PdfGoogleFonts.notoSansArabicRegular();
       } catch (e2) {
         fm.debugPrint('⚠️ Failed to load font from Google Fonts: $e2. Using Helvetica default.');
         arabicFont = pw.Font.helvetica();
