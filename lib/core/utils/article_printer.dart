@@ -54,8 +54,28 @@ class ArticlePrinter {
           );
         },
         build: (pw.Context context) {
-          // Render only the formatted article text (including the first line/title)
-          return _parseArticleText(article.text, arabicFont);
+          final title = article.title;
+          
+          return [
+            // Centered and Bold Title at the top
+            pw.Align(
+              alignment: pw.Alignment.center,
+              child: pw.Text(
+                title,
+                textAlign: pw.TextAlign.center,
+                style: pw.TextStyle(
+                  font: arabicFont,
+                  fontSize: 18,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.grey900,
+                ),
+              ),
+            ),
+            pw.SizedBox(height: 20),
+
+            // Formatted body of the article (excluding the title to prevent duplication)
+            ..._parseArticleText(article.textWithoutTitle, arabicFont),
+          ];
         },
       ),
     );
@@ -65,52 +85,6 @@ class ArticlePrinter {
       onLayout: (PdfPageFormat format) async => pdf.save(),
       name: 'مقال - ${article.title}',
     );
-  }
-
-  /// Splits text into Arabic and English segments so that correct fonts are applied
-  /// to avoid missing character glyphs (like English characters/parentheses rendering as blocks).
-  static List<pw.InlineSpan> _buildMixedTextSpans(String text, pw.Font arabicFont, pw.TextStyle baseStyle) {
-    final RegExp arabicRegExp = RegExp(
-      r'([\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u0660-\u0669]+)',
-    );
-
-    final List<pw.InlineSpan> spans = [];
-    final matches = arabicRegExp.allMatches(text);
-
-    int lastEnd = 0;
-    for (final match in matches) {
-      if (match.start > lastEnd) {
-        final nonArabicText = text.substring(lastEnd, match.start);
-        spans.add(
-          pw.TextSpan(
-            text: nonArabicText,
-            style: baseStyle.copyWith(font: pw.Font.helvetica()),
-          ),
-        );
-      }
-
-      final arabicText = match.group(0)!;
-      spans.add(
-        pw.TextSpan(
-          text: arabicText,
-          style: baseStyle.copyWith(font: arabicFont),
-        ),
-      );
-
-      lastEnd = match.end;
-    }
-
-    if (lastEnd < text.length) {
-      final remaining = text.substring(lastEnd);
-      spans.add(
-        pw.TextSpan(
-          text: remaining,
-          style: baseStyle.copyWith(font: pw.Font.helvetica()),
-        ),
-      );
-    }
-
-    return spans;
   }
 
   /// Parses Sijilli markup tags (like [POEM]) and returns a list of PDF widgets.
@@ -210,7 +184,7 @@ class ArticlePrinter {
         continue;
       }
 
-      final textStyle = pw.TextStyle(fontSize: 13, height: 1.6);
+      final textStyle = pw.TextStyle(font: font, fontSize: 13, height: 1.6);
       final inlineSpans = _parsePdfInlineText(cleanLine, textStyle, font);
 
       widgets.add(
@@ -300,7 +274,7 @@ class ArticlePrinter {
     }
 
     if (earliestMatch == null) {
-      return _buildMixedTextSpans(stripTags(text), font, currentStyle);
+      return [pw.TextSpan(text: stripTags(text), style: currentStyle)];
     }
 
     final List<pw.InlineSpan> spans = [];
@@ -326,14 +300,24 @@ class ArticlePrinter {
         color: PdfColors.blue700,
         decoration: pw.TextDecoration.underline,
       );
-      spans.addAll(_buildMixedTextSpans('$linkText ($linkUrl)', font, linkStyle));
+      spans.add(
+        pw.TextSpan(
+          text: '$linkText ($linkUrl)',
+          style: linkStyle,
+        ),
+      );
     } else if (earliestType == 6) {
       final linkUrl = earliestMatch.group(0) ?? '';
       final linkStyle = currentStyle.copyWith(
         color: PdfColors.blue700,
         decoration: pw.TextDecoration.underline,
       );
-      spans.addAll(_buildMixedTextSpans(linkUrl, font, linkStyle));
+      spans.add(
+        pw.TextSpan(
+          text: linkUrl,
+          style: linkStyle,
+        ),
+      );
     }
 
     if (earliestMatch.end < text.length) {
@@ -351,17 +335,8 @@ class ArticlePrinter {
 
     String? pendingSadr;
 
-    pw.Widget buildPoemLineRich(String text, pw.TextAlign textAlign, pw.TextStyle style) {
-      return pw.RichText(
-        text: pw.TextSpan(
-          children: _buildMixedTextSpans(text, font, style),
-        ),
-        textAlign: textAlign,
-      );
-    }
-
     pw.Widget buildPoemRow(String sadr, String ajez) {
-      final style = pw.TextStyle(fontSize: 12, height: 1.5);
+      final style = pw.TextStyle(font: font, fontSize: 11, height: 1.5);
       return pw.Padding(
         padding: const pw.EdgeInsets.symmetric(vertical: 4),
         child: pw.Row(
@@ -369,22 +344,30 @@ class ArticlePrinter {
           children: [
             // Sadr (RTL: right side is mapped first)
             pw.Expanded(
-              child: buildPoemLineRich(sadr, pw.TextAlign.right, style),
+              child: pw.Text(
+                sadr,
+                textAlign: pw.TextAlign.right,
+                style: style,
+              ),
             ),
-            pw.SizedBox(width: 16),
+            pw.SizedBox(width: 20),
             // Inter-column divider symbol
             pw.Text(
               '***',
               style: pw.TextStyle(
-                font: pw.Font.helvetica(),
-                fontSize: 9,
+                font: font,
+                fontSize: 10,
                 color: PdfColors.grey500,
               ),
             ),
-            pw.SizedBox(width: 16),
+            pw.SizedBox(width: 20),
             // Ajez (RTL: left side)
             pw.Expanded(
-              child: buildPoemLineRich(ajez, pw.TextAlign.left, style),
+              child: pw.Text(
+                ajez,
+                textAlign: pw.TextAlign.left,
+                style: style,
+              ),
             ),
           ],
         ),
@@ -392,18 +375,22 @@ class ArticlePrinter {
     }
 
     pw.Widget buildSinglePoemLine(String line, pw.TextAlign align, bool isCentered) {
-      final style = pw.TextStyle(
-        fontSize: 12,
-        height: 1.5,
-        fontWeight: isCentered ? pw.FontWeight.bold : pw.FontWeight.normal,
-      );
       return pw.Padding(
         padding: const pw.EdgeInsets.symmetric(vertical: 4),
         child: pw.Align(
           alignment: align == pw.TextAlign.center
               ? pw.Alignment.center
               : (align == pw.TextAlign.left ? pw.Alignment.centerLeft : pw.Alignment.centerRight),
-          child: buildPoemLineRich(line, align, style),
+          child: pw.Text(
+            line,
+            textAlign: align,
+            style: pw.TextStyle(
+              font: font,
+              fontSize: 11,
+              height: 1.5,
+              fontWeight: isCentered ? pw.FontWeight.bold : pw.FontWeight.normal,
+            ),
+          ),
         ),
       );
     }
@@ -456,12 +443,12 @@ class ArticlePrinter {
       poemWidgets.add(buildSinglePoemLine(pendingSadr, pw.TextAlign.right, false));
     }
 
-    // Centered block with maximum width of 400pt to keep Sadr and Ajez side-by-side columns centered
-    // and naturally spaced without borders or backgrounds.
+    // Centered block with maximum width of 450pt to keep Sadr and Ajez side-by-side columns centered
+    // on the A4 page (width 595 - margins 80 = 515 max printable width).
     return pw.Align(
       alignment: pw.Alignment.center,
       child: pw.Container(
-        width: 380,
+        width: 450,
         margin: const pw.EdgeInsets.symmetric(vertical: 14),
         child: pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.stretch,
