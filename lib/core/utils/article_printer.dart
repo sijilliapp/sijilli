@@ -26,6 +26,7 @@ class ArticlePrinter {
     }
 
     final pdf = pw.Document();
+    final List<pw.Font> fontFallbackList = [pw.Font.helvetica()];
 
     pdf.addPage(
       pw.MultiPage(
@@ -65,6 +66,7 @@ class ArticlePrinter {
                 textAlign: pw.TextAlign.center,
                 style: pw.TextStyle(
                   font: arabicFont,
+                  fontFallback: fontFallbackList,
                   fontSize: 18,
                   fontWeight: pw.FontWeight.bold,
                   color: PdfColors.grey900,
@@ -74,7 +76,7 @@ class ArticlePrinter {
             pw.SizedBox(height: 20),
 
             // Formatted body of the article (excluding the title to prevent duplication)
-            ..._parseArticleText(article.textWithoutTitle, arabicFont),
+            ..._parseArticleText(article.textWithoutTitle, arabicFont, fontFallbackList),
           ];
         },
       ),
@@ -88,7 +90,7 @@ class ArticlePrinter {
   }
 
   /// Parses Sijilli markup tags (like [POEM]) and returns a list of PDF widgets.
-  static List<pw.Widget> _parseArticleText(String text, pw.Font font) {
+  static List<pw.Widget> _parseArticleText(String text, pw.Font font, List<pw.Font> fontFallback) {
     final List<pw.Widget> widgets = [];
     
     // Clean citations in brackets [...] of diacritics to prevent font rendering/ligature distortion
@@ -106,12 +108,12 @@ class ArticlePrinter {
     for (final match in poemPattern.allMatches(cleanedText)) {
       final preText = cleanedText.substring(lastMatchEnd, match.start).trim();
       if (preText.isNotEmpty) {
-        widgets.addAll(_parseParagraphs(preText, font));
+        widgets.addAll(_parseParagraphs(preText, font, fontFallback));
       }
 
       final poemContent = match.group(1)?.trim() ?? '';
       if (poemContent.isNotEmpty) {
-        widgets.add(_buildPdfPoem(poemContent, font));
+        widgets.add(_buildPdfPoem(poemContent, font, fontFallback));
       }
 
       lastMatchEnd = match.end;
@@ -119,18 +121,18 @@ class ArticlePrinter {
 
     final postText = cleanedText.substring(lastMatchEnd).trim();
     if (postText.isNotEmpty) {
-      widgets.addAll(_parseParagraphs(postText, font));
+      widgets.addAll(_parseParagraphs(postText, font, fontFallback));
     }
 
     if (widgets.isEmpty && cleanedText.isNotEmpty) {
-      widgets.addAll(_parseParagraphs(cleanedText, font));
+      widgets.addAll(_parseParagraphs(cleanedText, font, fontFallback));
     }
 
     return widgets;
   }
 
   /// Parses regular paragraphs and paragraph alignments.
-  static List<pw.Widget> _parseParagraphs(String blockText, pw.Font font) {
+  static List<pw.Widget> _parseParagraphs(String blockText, pw.Font font, List<pw.Font> fontFallback) {
     final List<pw.Widget> widgets = [];
     final lines = blockText.split('\n');
 
@@ -184,7 +186,12 @@ class ArticlePrinter {
         continue;
       }
 
-      final textStyle = pw.TextStyle(font: font, fontSize: 13, height: 1.6);
+      final textStyle = pw.TextStyle(
+        font: font,
+        fontFallback: fontFallback,
+        fontSize: 13,
+        height: 1.6,
+      );
       final inlineSpans = _parsePdfInlineText(cleanLine, textStyle, font);
 
       widgets.add(
@@ -329,14 +336,19 @@ class ArticlePrinter {
 
   /// Parses and groups poetry lines inside [POEM] tags, rendering Sadr and Ajez side-by-side
   /// and centering the poem block elegantly on the A4 page.
-  static pw.Widget _buildPdfPoem(String poemText, pw.Font font) {
+  static pw.Widget _buildPdfPoem(String poemText, pw.Font font, List<pw.Font> fontFallback) {
     final lines = poemText.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
     final List<pw.Widget> poemWidgets = [];
 
     String? pendingSadr;
 
     pw.Widget buildPoemRow(String sadr, String ajez) {
-      final style = pw.TextStyle(font: font, fontSize: 11, height: 1.5);
+      final style = pw.TextStyle(
+        font: font,
+        fontFallback: fontFallback,
+        fontSize: 11,
+        height: 1.5,
+      );
       return pw.Padding(
         padding: const pw.EdgeInsets.symmetric(vertical: 4),
         child: pw.Row(
@@ -356,6 +368,7 @@ class ArticlePrinter {
               '***',
               style: pw.TextStyle(
                 font: font,
+                fontFallback: fontFallback,
                 fontSize: 10,
                 color: PdfColors.grey500,
               ),
@@ -386,6 +399,7 @@ class ArticlePrinter {
             textAlign: align,
             style: pw.TextStyle(
               font: font,
+              fontFallback: fontFallback,
               fontSize: 11,
               height: 1.5,
               fontWeight: isCentered ? pw.FontWeight.bold : pw.FontWeight.normal,
