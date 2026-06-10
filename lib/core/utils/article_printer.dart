@@ -11,10 +11,21 @@ class ArticlePrinter {
 
   /// Generates a clean A4 PDF of the article and opens the native system print dialog.
   static Future<void> printArticle(fm.BuildContext context, Article article) async {
-    // 1. Load the Arabic font from assets
-    final ByteData fontData = await rootBundle.load('assets/fonts/NotoSansArabic-Regular.ttf');
-    final pw.Font arabicFont = pw.Font.ttf(fontData);
-    final pw.Font arabicFontBold = arabicFont; // Reusing regular font for styling
+    // 1. Load the Arabic font from assets with dynamic Google Fonts fallback
+    pw.Font arabicFont;
+    try {
+      final ByteData fontData = await rootBundle.load('assets/fonts/NotoSansArabic-Regular.ttf');
+      arabicFont = pw.Font.ttf(fontData);
+    } catch (e) {
+      fm.debugPrint('⚠️ Failed to load NotoSansArabic from assets: $e. Falling back to Google Fonts.');
+      try {
+        arabicFont = await PdfGoogleFonts.notoSansArabic();
+      } catch (e2) {
+        fm.debugPrint('⚠️ Failed to load font from Google Fonts: $e2. Using Helvetica default.');
+        arabicFont = pw.Font.helvetica();
+      }
+    }
+    final pw.Font arabicFontBold = arabicFont; // Reusing font for styling
 
     final pdf = pw.Document();
 
