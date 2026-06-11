@@ -480,19 +480,9 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
               const Spacer(),
             const SizedBox(width: 16),
             GestureDetector(
-              onTap: () async {
-                if (_article == null) return;
-                try {
-                  await ArticlePrinter.printArticle(context, _article!);
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('حدث خطأ أثناء محاولة الطباعة: $e'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  }
+              onTap: () {
+                if (_article != null) {
+                  _showPrintOptionsSheet(context, _article!);
                 }
               },
               child: Container(
@@ -635,6 +625,123 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
         ),
         child: content,
       ),
+    );
+  }
+
+  void _showPrintOptionsSheet(BuildContext context, Article article) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        bool useTwoColumns = false;
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'خيارات الطباعة',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).textTheme.titleLarge?.color,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Theme.of(context).dividerColor.withOpacity(0.1),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          RadioListTile<bool>(
+                            value: false,
+                            groupValue: useTwoColumns,
+                            activeColor: AppColors.primary,
+                            title: const Text(
+                              'عمود واحد (افتراضي)',
+                              style: TextStyle(fontSize: 14),
+                            ),
+                            subtitle: const Text(
+                              'طباعة المقال في عمود واحد كامل الصفحة',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            onChanged: (val) {
+                              if (val != null) setSheetState(() => useTwoColumns = val);
+                            },
+                          ),
+                          const Divider(height: 1),
+                          RadioListTile<bool>(
+                            value: true,
+                            groupValue: useTwoColumns,
+                            activeColor: AppColors.primary,
+                            title: const Text(
+                              'عمودان (تنسيق صحيفة)',
+                              style: TextStyle(fontSize: 14),
+                            ),
+                            subtitle: const Text(
+                              'تقسيم المقال لعمودين متوازيين لتوفير الورق وتسهيل القراءة',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            onChanged: (val) {
+                              if (val != null) setSheetState(() => useTwoColumns = val);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        try {
+                          await ArticlePrinter.printArticle(context, article, useTwoColumns: useTwoColumns);
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('حدث خطأ أثناء محاولة الطباعة: $e'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'بدء الطباعة',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

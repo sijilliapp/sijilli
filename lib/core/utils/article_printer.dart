@@ -11,7 +11,10 @@ class ArticlePrinter {
   ArticlePrinter._();
 
   /// Generates a clean A4 PDF of the article text only and opens the native system print dialog.
-  static Future<void> printArticle(fm.BuildContext context, Article article) async {
+  static Future<void> printArticle(fm.BuildContext context, Article article, {bool useTwoColumns = false}) async {
+    // Detect if the article text contains Arabic characters (defaulting to RTL)
+    final bool isArabic = RegExp(r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]').hasMatch(article.text);
+
     // 1. Get user's active font from settings
     String selectedFont = 'Default';
     try {
@@ -82,11 +85,11 @@ class ArticlePrinter {
         pdf.addPage(
           pw.MultiPage(
             pageFormat: pageFormat,
-            textDirection: pw.TextDirection.rtl, // RTL flow
+            textDirection: isArabic ? pw.TextDirection.rtl : pw.TextDirection.ltr, // RTL flow for Arabic, LTR for English
             footer: (pw.Context context) {
               final username = article.author?.username ?? '';
               return pw.Container(
-                alignment: pw.Alignment.centerRight,
+                alignment: isArabic ? pw.Alignment.centerRight : pw.Alignment.centerLeft,
                 margin: const pw.EdgeInsets.only(top: 10),
                 padding: const pw.EdgeInsets.only(top: 5),
                 decoration: const pw.BoxDecoration(
@@ -106,7 +109,62 @@ class ArticlePrinter {
             },
             build: (pw.Context context) {
               final title = article.title;
-              
+              final articleBodyWidgets = _parseArticleText(
+                article.textWithoutTitle,
+                arabicFont,
+                fontFallbackList,
+                useTwoColumns: useTwoColumns,
+              );
+
+              if (useTwoColumns && articleBodyWidgets.isNotEmpty) {
+                final cols = _splitWidgets(articleBodyWidgets);
+                final col1 = cols[0];
+                final col2 = cols[1];
+
+                return [
+                  // Centered and Bold Title at the top (spans across both columns)
+                  pw.Align(
+                    alignment: pw.Alignment.center,
+                    child: pw.Text(
+                      title,
+                      textAlign: pw.TextAlign.center,
+                      style: pw.TextStyle(
+                        font: arabicFont,
+                        fontFallback: fontFallbackList,
+                        fontSize: 18,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.grey900,
+                      ),
+                    ),
+                  ),
+                  pw.SizedBox(height: 20),
+
+                  // Two columns layout (partition order is right-to-left for Arabic, left-to-right for English)
+                  pw.Partitions(
+                    children: [
+                      pw.Partition(
+                        child: pw.Padding(
+                          padding: pw.EdgeInsets.only(left: isArabic ? 10 : 0, right: isArabic ? 0 : 10),
+                          child: pw.Column(
+                            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+                            children: col1,
+                          ),
+                        ),
+                      ),
+                      pw.Partition(
+                        child: pw.Padding(
+                          padding: pw.EdgeInsets.only(right: isArabic ? 10 : 0, left: isArabic ? 0 : 10),
+                          child: pw.Column(
+                            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+                            children: col2,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ];
+              }
+
               return [
                 // Centered and Bold Title at the top
                 pw.Align(
@@ -126,7 +184,7 @@ class ArticlePrinter {
                 pw.SizedBox(height: 20),
 
                 // Formatted body of the article (excluding the title to prevent duplication)
-                ..._parseArticleText(article.textWithoutTitle, arabicFont, fontFallbackList),
+                ...articleBodyWidgets,
               ];
             },
           ),
@@ -138,8 +196,58 @@ class ArticlePrinter {
     );
   }
 
+  /// Helper to split a list of widgets into two balanced columns by character weight.
+  static List<List<pw.Widget>> _splitWidgets(List<pw.Widget> widgets) {
+    final List<pw.Widget> col1 = [];
+    final List<pw.Widget> col2 = [];
+    
+    int totalLen = 0;
+    final List<int> lengths = [];
+    
+    for (final widget in widgets) {
+      int len = 50; // default weight
+      if (widget is pw.Text) {
+        len = widget.text.text.length;
+      } else if (widget is pw.RichText) {
+        len = widget.text.toString().length;
+      } else if (widget is pw.Paragraph) {
+        len = widget.text.text.length;
+      } else if (widget is pw.Header) {
+        len = widget.text.text.length + 100; // give more weight to headers
+      } else if (widget is pw.Container) {
+        len = 150; 
+      }
+      lengths.add(len);
+      totalLen += len;
+    }
+    
+    int currentLen = 0;
+    int splitIndex = widgets.length ~/ 2;
+    
+    for (int i = 0; i < widgets.length; i++) {
+      currentLen += lengths[i];
+      if (currentLen >= totalLen / 2) {
+        splitIndex = i;
+        break;
+      }
+    }
+    
+    if (splitIndex < 0) splitIndex = 0;
+    if (splitIndex >= widgets.length) splitIndex = widgets.length - 1;
+    
+    for (int i = 0; i < widgets.length; i++) {
+      if (i <= splitIndex) {
+        col1.add(widgets[i]);
+      } else {
+        col2.add(widgets[i]);
+      }
+    }
+    
+    return [col1, col2];
+  }
+
   /// Parses Sijilli markup tags (like [POEM]) and returns a list of PDF widgets.
-  static List<pw.Widget> _parseArticleText(String text, pw.Font font, List<pw.Font> fontFallback) {
+  static List<pw.Widget> _parseArticleText(String text, pw.Font font, List<pw.Font> fontFallback, {bool useTwoColumns = false}) {
     final List<pw.Widget> widgets = [];
     
     // Clean citations in brackets [...] of diacritics to prevent font rendering/ligature distortion
@@ -157,12 +265,12 @@ class ArticlePrinter {
     for (final match in poemPattern.allMatches(cleanedText)) {
       final preText = cleanedText.substring(lastMatchEnd, match.start).trim();
       if (preText.isNotEmpty) {
-        widgets.addAll(_parseParagraphs(preText, font, fontFallback));
+        widgets.addAll(_parseParagraphs(preText, font, fontFallback, useTwoColumns: useTwoColumns));
       }
 
       final poemContent = match.group(1)?.trim() ?? '';
       if (poemContent.isNotEmpty) {
-        widgets.add(_buildPdfPoem(poemContent, font, fontFallback));
+        widgets.add(_buildPdfPoem(poemContent, font, fontFallback, useTwoColumns: useTwoColumns));
       }
 
       lastMatchEnd = match.end;
@@ -170,18 +278,18 @@ class ArticlePrinter {
 
     final postText = cleanedText.substring(lastMatchEnd).trim();
     if (postText.isNotEmpty) {
-      widgets.addAll(_parseParagraphs(postText, font, fontFallback));
+      widgets.addAll(_parseParagraphs(postText, font, fontFallback, useTwoColumns: useTwoColumns));
     }
 
     if (widgets.isEmpty && cleanedText.isNotEmpty) {
-      widgets.addAll(_parseParagraphs(cleanedText, font, fontFallback));
+      widgets.addAll(_parseParagraphs(cleanedText, font, fontFallback, useTwoColumns: useTwoColumns));
     }
 
     return widgets;
   }
 
   /// Parses regular paragraphs and paragraph alignments.
-  static List<pw.Widget> _parseParagraphs(String blockText, pw.Font font, List<pw.Font> fontFallback) {
+  static List<pw.Widget> _parseParagraphs(String blockText, pw.Font font, List<pw.Font> fontFallback, {bool useTwoColumns = false}) {
     final List<pw.Widget> widgets = [];
     final lines = blockText.split('\n');
 
@@ -192,7 +300,9 @@ class ArticlePrinter {
         continue;
       }
 
-      pw.TextAlign textAlign = pw.TextAlign.right;
+      // Detect directionality per line: Arabic right-aligned by default, English left-aligned
+      final bool isLineArabic = RegExp(r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]').hasMatch(line);
+      pw.TextAlign textAlign = isLineArabic ? pw.TextAlign.right : pw.TextAlign.left;
       String cleanLine = line.trim();
       final cleanLineUpper = cleanLine.toUpperCase();
 
@@ -238,8 +348,8 @@ class ArticlePrinter {
       final textStyle = pw.TextStyle(
         font: font,
         fontFallback: fontFallback,
-        fontSize: 13,
-        height: 1.6,
+        fontSize: useTwoColumns ? 11.0 : 13.0, // slightly smaller font in columns
+        height: useTwoColumns ? 1.5 : 1.6,
       );
       final inlineSpans = _parsePdfInlineText(cleanLine, textStyle, font);
 
@@ -385,7 +495,7 @@ class ArticlePrinter {
 
   /// Parses and groups poetry lines inside [POEM] tags, rendering Sadr and Ajez side-by-side
   /// and centering the poem block elegantly on the A4 page.
-  static pw.Widget _buildPdfPoem(String poemText, pw.Font font, List<pw.Font> fontFallback) {
+  static pw.Widget _buildPdfPoem(String poemText, pw.Font font, List<pw.Font> fontFallback, {bool useTwoColumns = false}) {
     final lines = poemText.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
     final List<pw.Widget> poemWidgets = [];
 
@@ -427,10 +537,10 @@ class ArticlePrinter {
       final style = pw.TextStyle(
         font: font,
         fontFallback: fontFallback,
-        fontSize: 10,
+        fontSize: useTwoColumns ? 8 : 10,
         height: 1.5,
       );
-      const double colWidth = 150.0;
+      final double colWidth = useTwoColumns ? 75.0 : 150.0;
       return pw.Padding(
         padding: const pw.EdgeInsets.symmetric(vertical: 4),
         child: pw.Row(
@@ -442,7 +552,7 @@ class ArticlePrinter {
               style: pw.TextStyle(
                 font: font,
                 fontFallback: fontFallback,
-                fontSize: 10,
+                fontSize: useTwoColumns ? 8 : 10,
                 color: PdfColors.grey500,
               ),
             ),
@@ -465,7 +575,7 @@ class ArticlePrinter {
             style: pw.TextStyle(
               font: font,
               fontFallback: fontFallback,
-              fontSize: 10,
+              fontSize: useTwoColumns ? 8 : 10,
               height: 1.5,
               fontWeight: isCentered ? pw.FontWeight.bold : pw.FontWeight.normal,
             ),
@@ -522,12 +632,12 @@ class ArticlePrinter {
       poemWidgets.add(buildSinglePoemLine(pendingSadr, pw.TextAlign.right, false));
     }
 
-    // Centered block with balanced width of 360pt to keep Sadr and Ajez columns nicely centered
+    // Centered block with balanced width of 360pt (180pt in two-column mode) to keep Sadr and Ajez columns nicely centered
     // with margins/indentation relative to main paragraphs.
     return pw.Align(
       alignment: pw.Alignment.center,
       child: pw.Container(
-        width: 360,
+        width: useTwoColumns ? 180 : 360,
         margin: const pw.EdgeInsets.symmetric(vertical: 14),
         child: pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.stretch,
