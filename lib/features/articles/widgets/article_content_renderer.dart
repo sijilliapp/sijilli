@@ -8,6 +8,7 @@ import '../../../core/utils/image_saver_util.dart';
 import 'poetry/poem_view.dart';
 import 'poetry/poem_formatter_utils.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
+import '../../../core/utils/bidi_utils.dart';
 
 class ArticleContentRenderer extends StatelessWidget {
   final String text;
@@ -274,7 +275,7 @@ class ArticleContentRenderer extends StatelessWidget {
     if (widgets.isEmpty && cleanedText.isNotEmpty) {
       widgets.addAll(_renderTextBlock(context, cleanedText));
     }
-    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final isArabic = BidiUtils.isRtl(text, fallbackToRtl: Localizations.localeOf(context).languageCode == 'ar');
 
     return Directionality(
       textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,

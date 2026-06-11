@@ -6,14 +6,15 @@ import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 import 'package:sijilli/core/providers/settings_provider.dart';
 import 'package:sijilli/models/article.dart';
+import 'package:sijilli/core/utils/bidi_utils.dart';
 
 class ArticlePrinter {
   ArticlePrinter._();
 
   /// Generates a clean A4 PDF of the article text only and opens the native system print dialog.
   static Future<void> printArticle(fm.BuildContext context, Article article, {bool useTwoColumns = false}) async {
-    // Detect if the article text contains Arabic characters (defaulting to RTL)
-    final bool isArabic = RegExp(r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]').hasMatch(article.text);
+    // Detect if the article text is RTL (Arabic)
+    final bool isArabic = BidiUtils.isRtl(article.text);
 
     // 1. Get user's active font from settings
     String selectedFont = 'Default';
@@ -100,9 +101,10 @@ class ArticlePrinter {
                 child: pw.Text(
                   'http://sijilli.com/$username',
                   style: pw.TextStyle(
-                    font: pw.Font.helvetica(),
+                    font: pw.Font.helveticaOblique(),
                     fontSize: 9,
                     color: PdfColors.grey600,
+                    fontStyle: pw.FontStyle.italic,
                   ),
                 ),
               );
@@ -126,19 +128,19 @@ class ArticlePrinter {
                     children: [
                       pw.Partition(
                         child: pw.Padding(
-                          padding: pw.EdgeInsets.only(left: isArabic ? 10 : 0, right: isArabic ? 0 : 10),
+                          padding: const pw.EdgeInsets.symmetric(horizontal: 16),
                           child: pw.Column(
                             crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-                            children: col1,
+                            children: isArabic ? col2 : col1, // RTL column order for Arabic
                           ),
                         ),
                       ),
                       pw.Partition(
                         child: pw.Padding(
-                          padding: pw.EdgeInsets.only(right: isArabic ? 10 : 0, left: isArabic ? 0 : 10),
+                          padding: const pw.EdgeInsets.symmetric(horizontal: 16),
                           child: pw.Column(
                             crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-                            children: col2,
+                            children: isArabic ? col1 : col2, // RTL column order for Arabic
                           ),
                         ),
                       ),
@@ -227,8 +229,11 @@ class ArticlePrinter {
   static List<pw.Widget> _parseArticleText(String text, pw.Font font, List<pw.Font> fontFallback, {bool useTwoColumns = false}) {
     final List<pw.Widget> widgets = [];
     
+    // Strip markdown images: ![alt](url)
+    final textWithoutMarkdownImages = text.replaceAll(RegExp(r'!\[.*?\]\(.*?\)'), '');
+
     // Clean citations in brackets [...] of diacritics to prevent font rendering/ligature distortion
-    final cleanedText = text.replaceAllMapped(RegExp(r'\[([^\]]+?)\]'), (match) {
+    final cleanedText = textWithoutMarkdownImages.replaceAllMapped(RegExp(r'\[([^\]]+?)\]'), (match) {
       final content = match.group(1)!;
       final cleanedContent = content
           .replaceAll('ٱ', 'ا')
@@ -247,7 +252,7 @@ class ArticlePrinter {
 
       final poemContent = match.group(1)?.trim() ?? '';
       if (poemContent.isNotEmpty) {
-        widgets.add(_buildPdfPoem(poemContent, font, fontFallback, useTwoColumns: useTwoColumns));
+        widgets.addAll(_buildPdfPoem(poemContent, font, fontFallback, useTwoColumns: useTwoColumns));
       }
 
       lastMatchEnd = match.end;
@@ -348,6 +353,18 @@ class ArticlePrinter {
   static bool _isMediaLine(String line) {
     final trimmed = line.trim();
     if (trimmed.startsWith('![') && trimmed.endsWith(')')) return true;
+    if (trimmed.contains('/api/files/')) return true;
+
+    final lower = trimmed.toLowerCase();
+    if (lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg') ||
+        lower.endsWith('.png') ||
+        lower.endsWith('.webp') ||
+        lower.endsWith('.gif') ||
+        lower.endsWith('.bmp')) {
+      return true;
+    }
+
     if (trimmed.startsWith('https://') &&
         (trimmed.contains('youtube.com') ||
             trimmed.contains('youtu.be') ||
@@ -470,9 +487,9 @@ class ArticlePrinter {
     return spans;
   }
 
-  /// Parses and groups poetry lines inside [POEM] tags, rendering Sadr and Ajez side-by-side
-  /// and centering the poem block elegantly on the A4 page.
-  static pw.Widget _buildPdfPoem(String poemText, pw.Font font, List<pw.Font> fontFallback, {bool useTwoColumns = false}) {
+  /// Parses and groups poetry lines inside [POEM] tags, rendering Sadr and Ajez as individual
+  /// page-breakable elements with an intertwined layout (matching the screen view).
+  static List<pw.Widget> _buildPdfPoem(String poemText, pw.Font font, List<pw.Font> fontFallback, {bool useTwoColumns = false}) {
     final lines = poemText.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
     final List<pw.Widget> poemWidgets = [];
 
@@ -492,7 +509,7 @@ class ArticlePrinter {
 
       // Estimate natural width: average Arabic char is ~0.55 of font size in width.
       const double charWidthFactor = 0.55;
-      final double estimatedNaturalWidth = text.length * (style.fontSize ?? 10) * charWidthFactor;
+      final double estimatedNaturalWidth = text.length * (style.fontSize ?? 10.0) * charWidthFactor;
       final double targetWidth = estimatedNaturalWidth > columnWidth ? estimatedNaturalWidth : columnWidth;
 
       return pw.SizedBox(
@@ -510,51 +527,72 @@ class ArticlePrinter {
       );
     }
 
-    pw.Widget buildPoemRow(String sadr, String ajez) {
+    void addPoemRow(String sadr, String ajez) {
       final style = pw.TextStyle(
         font: font,
         fontFallback: fontFallback,
-        fontSize: useTwoColumns ? 8 : 10,
+        fontSize: useTwoColumns ? 10.5 : 11.5,
         height: 1.5,
       );
-      final double colWidth = useTwoColumns ? 75.0 : 150.0;
-      return pw.Padding(
-        padding: const pw.EdgeInsets.symmetric(vertical: 4),
-        child: pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-          children: [
-            buildJustifiedPoemLine(sadr, style, colWidth),
-            pw.Text(
-              '***',
-              style: pw.TextStyle(
-                font: font,
-                fontFallback: fontFallback,
-                fontSize: useTwoColumns ? 8 : 10,
-                color: PdfColors.grey500,
-              ),
+      final double containerWidth = useTwoColumns ? 200.0 : 360.0;
+      final double hemistichWidth = useTwoColumns ? 120.0 : 200.0;
+
+      // Sadr (right-aligned in container)
+      poemWidgets.add(
+        pw.Padding(
+          padding: const pw.EdgeInsets.symmetric(vertical: 3),
+          child: pw.Align(
+            alignment: pw.Alignment.center,
+            child: pw.Container(
+              width: containerWidth,
+              alignment: pw.Alignment.centerRight,
+              child: buildJustifiedPoemLine(sadr, style, hemistichWidth),
             ),
-            buildJustifiedPoemLine(ajez, style, colWidth),
-          ],
+          ),
+        ),
+      );
+
+      // Ajez (left-aligned in container)
+      poemWidgets.add(
+        pw.Padding(
+          padding: const pw.EdgeInsets.symmetric(vertical: 3),
+          child: pw.Align(
+            alignment: pw.Alignment.center,
+            child: pw.Container(
+              width: containerWidth,
+              alignment: pw.Alignment.centerLeft,
+              child: buildJustifiedPoemLine(ajez, style, hemistichWidth),
+            ),
+          ),
         ),
       );
     }
 
-    pw.Widget buildSinglePoemLine(String line, pw.TextAlign align, bool isCentered) {
-      return pw.Padding(
-        padding: const pw.EdgeInsets.symmetric(vertical: 4),
-        child: pw.Align(
-          alignment: align == pw.TextAlign.center
-              ? pw.Alignment.center
-              : (align == pw.TextAlign.left ? pw.Alignment.centerLeft : pw.Alignment.centerRight),
-          child: pw.Text(
-            line,
-            textAlign: align,
-            style: pw.TextStyle(
-              font: font,
-              fontFallback: fontFallback,
-              fontSize: useTwoColumns ? 8 : 10,
-              height: 1.5,
-              fontWeight: isCentered ? pw.FontWeight.bold : pw.FontWeight.normal,
+    void addSinglePoemLine(String line, pw.TextAlign align, bool isCentered) {
+      final style = pw.TextStyle(
+        font: font,
+        fontFallback: fontFallback,
+        fontSize: useTwoColumns ? 10.5 : 11.5,
+        height: 1.5,
+        fontWeight: isCentered ? pw.FontWeight.bold : pw.FontWeight.normal,
+      );
+      final double containerWidth = useTwoColumns ? 200.0 : 360.0;
+
+      poemWidgets.add(
+        pw.Padding(
+          padding: const pw.EdgeInsets.symmetric(vertical: 3),
+          child: pw.Align(
+            alignment: pw.Alignment.center,
+            child: pw.Container(
+              width: containerWidth,
+              alignment: align == pw.TextAlign.center
+                  ? pw.Alignment.center
+                  : (align == pw.TextAlign.left ? pw.Alignment.centerLeft : pw.Alignment.centerRight),
+              child: pw.Text(
+                line,
+                textAlign: align,
+                style: style,
+              ),
             ),
           ),
         ),
@@ -573,7 +611,7 @@ class ArticlePrinter {
 
       if (isCentered || isSingleWord) {
         if (pendingSadr != null) {
-          poemWidgets.add(buildSinglePoemLine(pendingSadr, pw.TextAlign.right, false));
+          addSinglePoemLine(pendingSadr, pw.TextAlign.right, false);
           pendingSadr = null;
         }
 
@@ -594,34 +632,22 @@ class ArticlePrinter {
           cleanText = cleanWordCheck;
         }
 
-        poemWidgets.add(buildSinglePoemLine(cleanText, align, isCentered));
+        addSinglePoemLine(cleanText, align, isCentered);
       } else {
         if (pendingSadr == null) {
           pendingSadr = line;
         } else {
-          poemWidgets.add(buildPoemRow(pendingSadr, line));
+          addPoemRow(pendingSadr, line);
           pendingSadr = null;
         }
       }
     }
 
     if (pendingSadr != null) {
-      poemWidgets.add(buildSinglePoemLine(pendingSadr, pw.TextAlign.right, false));
+      addSinglePoemLine(pendingSadr, pw.TextAlign.right, false);
     }
 
-    // Centered block with balanced width of 360pt (180pt in two-column mode) to keep Sadr and Ajez columns nicely centered
-    // with margins/indentation relative to main paragraphs.
-    return pw.Align(
-      alignment: pw.Alignment.center,
-      child: pw.Container(
-        width: useTwoColumns ? 180 : 360,
-        margin: const pw.EdgeInsets.symmetric(vertical: 14),
-        child: pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-          children: poemWidgets,
-        ),
-      ),
-    );
+    return poemWidgets;
   }
 
   /// Helper to load the fallback font NotoSansArabic from assets or Google Fonts.

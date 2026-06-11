@@ -8,6 +8,7 @@ import 'package:timeago/timeago.dart' as timeago;
 import '../../../models/article.dart';
 import '../../../models/comment.dart';
 import '../providers/article_provider.dart';
+import '../../../core/utils/bidi_utils.dart';
 
 class CommentSection extends StatefulWidget {
   final Article article;
@@ -346,9 +347,9 @@ class _CommentSectionState extends State<CommentSection> {
                                       ),
                                       const SizedBox(height: 6),
                                       
-                                      // نص التعليق
                                       Text(
                                         comment.content,
+                                        textDirection: BidiUtils.getDirection(comment.content, fallback: isArabic ? TextDirection.rtl : TextDirection.ltr),
                                         style: TextStyle(
                                           fontSize: 14,
                                           height: 1.4,

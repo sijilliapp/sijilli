@@ -20,6 +20,7 @@ import '../widgets/tag_chip.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import '../../../core/providers/global_config_provider.dart';
 import '../services/quran_service.dart';
+import '../../../core/utils/bidi_utils.dart';
 
 class AddArticleScreen extends StatefulWidget {
   final Article? article;
@@ -960,7 +961,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
           color: AppColors.getTextPrimary(context),
         ),
       ),
-      textDirection: Localizations.localeOf(context).languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr,
+      textDirection: BidiUtils.getDirection(text, fallback: Localizations.localeOf(context).languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr),
       textAlign: TextAlign.start,
     );
 
@@ -1733,7 +1734,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                       expands: true,
                       keyboardType: TextInputType.multiline,
                       textAlignVertical: TextAlignVertical.top,
-                      textDirection: Localizations.localeOf(context).languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr,
+                      textDirection: BidiUtils.getDirection(_textController.text, fallback: Localizations.localeOf(context).languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr),
                       selectionWidthStyle: ui.BoxWidthStyle.tight,
                       selectionHeightStyle: ui.BoxHeightStyle.tight,
                       style: TextStyle(
