@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:provider/provider.dart';
+import 'package:sijilli/core/providers/settings_provider.dart';
 import 'package:sijilli/models/article.dart';
 
 class ArticlePrinter {
@@ -10,81 +12,128 @@ class ArticlePrinter {
 
   /// Generates a clean A4 PDF of the article text only and opens the native system print dialog.
   static Future<void> printArticle(fm.BuildContext context, Article article) async {
-    // 1. Load the Arabic font from assets with dynamic Google Fonts fallback
-    pw.Font arabicFont;
+    // 1. Get user's active font from settings
+    String selectedFont = 'Default';
     try {
-      final ByteData fontData = await rootBundle.load('assets/fonts/NotoSansArabic-Regular.ttf');
-      arabicFont = pw.Font.ttf(fontData);
+      final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+      selectedFont = settingsProvider.articleFontFamily;
     } catch (e) {
-      fm.debugPrint('⚠️ Failed to load NotoSansArabic from assets: $e. Falling back to Google Fonts.');
-      try {
-        arabicFont = await PdfGoogleFonts.notoSansArabicRegular();
-      } catch (e2) {
-        fm.debugPrint('⚠️ Failed to load font from Google Fonts: $e2. Using Helvetica default.');
-        arabicFont = pw.Font.helvetica();
-      }
+      fm.debugPrint('⚠️ Failed to read articleFontFamily from settings: $e');
     }
 
-    final pdf = pw.Document();
+    // 2. Load the corresponding PDF font dynamically
+    pw.Font arabicFont;
+    if (selectedFont == 'Manal High') {
+      try {
+        final ByteData fontData = await rootBundle.load('assets/fonts/Manal_High.ttf');
+        arabicFont = pw.Font.ttf(fontData);
+      } catch (e) {
+        fm.debugPrint('⚠️ Failed to load Manal_High: $e');
+        arabicFont = await _loadFallbackFont();
+      }
+    } else if (selectedFont == 'Manal Bold') {
+      try {
+        final ByteData fontData = await rootBundle.load('assets/fonts/Manal_Bold.ttf');
+        arabicFont = pw.Font.ttf(fontData);
+      } catch (e) {
+        fm.debugPrint('⚠️ Failed to load Manal_Bold: $e');
+        arabicFont = await _loadFallbackFont();
+      }
+    } else if (selectedFont == 'Tajawal') {
+      try {
+        arabicFont = await PdfGoogleFonts.tajawalRegular();
+      } catch (e) {
+        fm.debugPrint('⚠️ Failed to load Tajawal from Google Fonts: $e');
+        arabicFont = await _loadFallbackFont();
+      }
+    } else if (selectedFont == 'Amiri') {
+      try {
+        arabicFont = await PdfGoogleFonts.amiriRegular();
+      } catch (e) {
+        fm.debugPrint('⚠️ Failed to load Amiri from Google Fonts: $e');
+        arabicFont = await _loadFallbackFont();
+      }
+    } else if (selectedFont == 'Al Amiri') {
+      try {
+        arabicFont = await PdfGoogleFonts.amiriQuranRegular();
+      } catch (e) {
+        fm.debugPrint('⚠️ Failed to load Amiri Quran from Google Fonts: $e');
+        arabicFont = await _loadFallbackFont();
+      }
+    } else {
+      arabicFont = await _loadFallbackFont();
+    }
+
     final List<pw.Font> fontFallbackList = [pw.Font.helvetica()];
 
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.symmetric(horizontal: 40, vertical: 40),
-        textDirection: pw.TextDirection.rtl, // RTL flow
-        footer: (pw.Context context) {
-          final username = article.author?.username ?? '';
-          return pw.Container(
-            alignment: pw.Alignment.centerRight,
-            margin: const pw.EdgeInsets.only(top: 20),
-            padding: const pw.EdgeInsets.only(top: 5),
-            decoration: const pw.BoxDecoration(
-              border: pw.Border(
-                top: pw.BorderSide(color: PdfColors.grey300, width: 0.5),
-              ),
-            ),
-            child: pw.Text(
-              'http://sijilli.com/$username',
-              style: pw.TextStyle(
-                font: pw.Font.helvetica(),
-                fontSize: 9,
-                color: PdfColors.grey600,
-              ),
-            ),
-          );
-        },
-        build: (pw.Context context) {
-          final title = article.title;
-          
-          return [
-            // Centered and Bold Title at the top
-            pw.Align(
-              alignment: pw.Alignment.center,
-              child: pw.Text(
-                title,
-                textAlign: pw.TextAlign.center,
-                style: pw.TextStyle(
-                  font: arabicFont,
-                  fontFallback: fontFallbackList,
-                  fontSize: 18,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.grey900,
-                ),
-              ),
-            ),
-            pw.SizedBox(height: 20),
-
-            // Formatted body of the article (excluding the title to prevent duplication)
-            ..._parseArticleText(article.textWithoutTitle, arabicFont, fontFallbackList),
-          ];
-        },
-      ),
-    );
-
-    // 4. Trigger print
+    // 4. Trigger print with dynamic PDF generation based on page size selected in system dialog
     await Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async => pdf.save(),
+      onLayout: (PdfPageFormat format) async {
+        final pdf = pw.Document();
+        
+        // Define page format: respect selected size but enforce standard 0.75" (54 points) margins
+        final pageFormat = format.copyWith(
+          marginLeft: 54,
+          marginRight: 54,
+          marginTop: 54,
+          marginBottom: 54,
+        );
+
+        pdf.addPage(
+          pw.MultiPage(
+            pageFormat: pageFormat,
+            textDirection: pw.TextDirection.rtl, // RTL flow
+            footer: (pw.Context context) {
+              final username = article.author?.username ?? '';
+              return pw.Container(
+                alignment: pw.Alignment.centerRight,
+                margin: const pw.EdgeInsets.only(top: 10),
+                padding: const pw.EdgeInsets.only(top: 5),
+                decoration: const pw.BoxDecoration(
+                  border: pw.Border(
+                    top: pw.BorderSide(color: PdfColors.grey300, width: 0.5),
+                  ),
+                ),
+                child: pw.Text(
+                  'http://sijilli.com/$username',
+                  style: pw.TextStyle(
+                    font: pw.Font.helvetica(),
+                    fontSize: 9,
+                    color: PdfColors.grey600,
+                  ),
+                ),
+              );
+            },
+            build: (pw.Context context) {
+              final title = article.title;
+              
+              return [
+                // Centered and Bold Title at the top
+                pw.Align(
+                  alignment: pw.Alignment.center,
+                  child: pw.Text(
+                    title,
+                    textAlign: pw.TextAlign.center,
+                    style: pw.TextStyle(
+                      font: arabicFont,
+                      fontFallback: fontFallbackList,
+                      fontSize: 18,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.grey900,
+                    ),
+                  ),
+                ),
+                pw.SizedBox(height: 20),
+
+                // Formatted body of the article (excluding the title to prevent duplication)
+                ..._parseArticleText(article.textWithoutTitle, arabicFont, fontFallbackList),
+              ];
+            },
+          ),
+        );
+
+        return pdf.save();
+      },
       name: 'مقال - ${article.title}',
     );
   }
@@ -342,28 +391,52 @@ class ArticlePrinter {
 
     String? pendingSadr;
 
+    // Helper to justify a single hemistich (Sadr or Ajez) to a fixed column width,
+    // scaling it down if the text exceeds the column width to prevent wrapping.
+    pw.Widget buildJustifiedPoemLine(String text, pw.TextStyle style, double columnWidth) {
+      final words = text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+      if (words.length <= 1) {
+        return pw.Text(
+          text,
+          textAlign: pw.TextAlign.center,
+          style: style,
+        );
+      }
+
+      // Estimate natural width: average Arabic char is ~0.55 of font size in width.
+      const double charWidthFactor = 0.55;
+      final double estimatedNaturalWidth = text.length * (style.fontSize ?? 10) * charWidthFactor;
+      final double targetWidth = estimatedNaturalWidth > columnWidth ? estimatedNaturalWidth : columnWidth;
+
+      return pw.SizedBox(
+        width: columnWidth,
+        child: pw.FittedBox(
+          fit: pw.BoxFit.scaleDown,
+          child: pw.SizedBox(
+            width: targetWidth,
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: words.map((word) => pw.Text(word, style: style)).toList(),
+            ),
+          ),
+        ),
+      );
+    }
+
     pw.Widget buildPoemRow(String sadr, String ajez) {
       final style = pw.TextStyle(
         font: font,
         fontFallback: fontFallback,
-        fontSize: 11,
+        fontSize: 10,
         height: 1.5,
       );
+      const double colWidth = 150.0;
       return pw.Padding(
         padding: const pw.EdgeInsets.symmetric(vertical: 4),
         child: pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
-            // Sadr (RTL: right side is mapped first)
-            pw.Expanded(
-              child: pw.Text(
-                sadr,
-                textAlign: pw.TextAlign.right,
-                style: style,
-              ),
-            ),
-            pw.SizedBox(width: 20),
-            // Inter-column divider symbol
+            buildJustifiedPoemLine(sadr, style, colWidth),
             pw.Text(
               '***',
               style: pw.TextStyle(
@@ -373,15 +446,7 @@ class ArticlePrinter {
                 color: PdfColors.grey500,
               ),
             ),
-            pw.SizedBox(width: 20),
-            // Ajez (RTL: left side)
-            pw.Expanded(
-              child: pw.Text(
-                ajez,
-                textAlign: pw.TextAlign.left,
-                style: style,
-              ),
-            ),
+            buildJustifiedPoemLine(ajez, style, colWidth),
           ],
         ),
       );
@@ -400,7 +465,7 @@ class ArticlePrinter {
             style: pw.TextStyle(
               font: font,
               fontFallback: fontFallback,
-              fontSize: 11,
+              fontSize: 10,
               height: 1.5,
               fontWeight: isCentered ? pw.FontWeight.bold : pw.FontWeight.normal,
             ),
@@ -457,12 +522,12 @@ class ArticlePrinter {
       poemWidgets.add(buildSinglePoemLine(pendingSadr, pw.TextAlign.right, false));
     }
 
-    // Centered block with maximum width of 450pt to keep Sadr and Ajez side-by-side columns centered
-    // on the A4 page (width 595 - margins 80 = 515 max printable width).
+    // Centered block with balanced width of 360pt to keep Sadr and Ajez columns nicely centered
+    // with margins/indentation relative to main paragraphs.
     return pw.Align(
       alignment: pw.Alignment.center,
       child: pw.Container(
-        width: 450,
+        width: 360,
         margin: const pw.EdgeInsets.symmetric(vertical: 14),
         child: pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.stretch,
@@ -470,5 +535,19 @@ class ArticlePrinter {
         ),
       ),
     );
+  }
+
+  /// Helper to load the fallback font NotoSansArabic from assets or Google Fonts.
+  static Future<pw.Font> _loadFallbackFont() async {
+    try {
+      final ByteData fontData = await rootBundle.load('assets/fonts/NotoSansArabic-Regular.ttf');
+      return pw.Font.ttf(fontData);
+    } catch (e) {
+      try {
+        return await PdfGoogleFonts.notoSansArabicRegular();
+      } catch (e2) {
+        return pw.Font.helvetica();
+      }
+    }
   }
 }

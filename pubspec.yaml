@@ -1,7 +1,7 @@
 name: sijilli
 description: تطبيق مواعيد اجتماعي
 publish_to: 'none'
-version: 1.2.9+1021
+version: 1.2.9+1022
 
 environment:
   sdk: ">=3.2.0 <4.0.0"
@@ -81,3 +81,16 @@ flutter:
     - assets/logo/
     - assets/quran/quran.json
     - assets/fonts/NotoSansArabic-Regular.ttf
+    - assets/fonts/Manal_High.ttf
+    - assets/fonts/Manal_Bold.ttf
+
+  fonts:
+    - family: Manal_High
+      fonts:
+        - asset: assets/fonts/Manal_High.ttf
+    - family: Manal_Bold
+      fonts:
+        - asset: assets/fonts/Manal_Bold.ttf
+    - family: NotoSansArabic
+      fonts:
+        - asset: assets/fonts/NotoSansArabic-Regular.ttf

@@ -28,16 +28,11 @@ class ThemeProvider extends ChangeNotifier {
 
   final List<String> availableFonts = [
     'Default',
-    'Alyamama',
+    'Manal High',
+    'Manal Bold',
     'Tajawal',
-    'Almarai',
-    'Readex Pro',
     'Amiri',
-    'Alexandria',
-    'Vazirmatn',
-    'Noto Sans Arabic',
-    'IBM Plex Sans Arabic',
-    'Scheherazade New',
+    'Al Amiri',
   ];
 
   Future<void> loadSettings() async {
@@ -114,44 +109,16 @@ class ThemeProvider extends ChangeNotifier {
   TextTheme getCustomTextTheme(TextTheme base) {
     try {
       switch (_fontFamily) {
-        case 'Alyamama':
-          return GoogleFonts.readexProTextTheme(base);
-        case 'Almarai':
-          return GoogleFonts.almaraiTextTheme(base);
+        case 'Manal High':
+          return base.apply(fontFamily: 'Manal_High');
+        case 'Manal Bold':
+          return base.apply(fontFamily: 'Manal_Bold');
         case 'Tajawal':
           return GoogleFonts.tajawalTextTheme(base);
-        case 'IBM Plex Sans Arabic':
-          return GoogleFonts.ibmPlexSansArabicTextTheme(base);
-        case 'Scheherazade New':
-          // Scheherazade New is thin by default, we apply BOLD globally for it
-          var theme = GoogleFonts.scheherazadeNewTextTheme(base);
-          return theme.copyWith(
-            displayLarge: theme.displayLarge?.copyWith(fontWeight: FontWeight.bold),
-            displayMedium: theme.displayMedium?.copyWith(fontWeight: FontWeight.bold),
-            displaySmall: theme.displaySmall?.copyWith(fontWeight: FontWeight.bold),
-            headlineLarge: theme.headlineLarge?.copyWith(fontWeight: FontWeight.bold),
-            headlineMedium: theme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-            headlineSmall: theme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-            titleLarge: theme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            titleMedium: theme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            titleSmall: theme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-            bodyLarge: theme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
-            bodyMedium: theme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-            bodySmall: theme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
-            labelLarge: theme.labelLarge?.copyWith(fontWeight: FontWeight.bold),
-            labelMedium: theme.labelMedium?.copyWith(fontWeight: FontWeight.bold),
-            labelSmall: theme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
-          );
-        case 'Readex Pro':
-          return GoogleFonts.readexProTextTheme(base);
         case 'Amiri':
           return GoogleFonts.amiriTextTheme(base);
-        case 'Alexandria':
-          return GoogleFonts.alexandriaTextTheme(base);
-        case 'Vazirmatn':
-          return GoogleFonts.vazirmatnTextTheme(base);
-        case 'Noto Sans Arabic':
-          return GoogleFonts.notoSansArabicTextTheme(base);
+        case 'Al Amiri':
+          return GoogleFonts.amiriQuranTextTheme(base);
         default:
           if (kIsWeb) {
             return base.apply(fontFamily: 'system-ui');
@@ -168,9 +135,15 @@ class ThemeProvider extends ChangeNotifier {
     if (fontName == 'Default' || fontName.isEmpty) {
       return baseStyle.copyWith(fontFamily: null);
     }
+    if (fontName == 'Manal High') {
+      return baseStyle.copyWith(fontFamily: 'Manal_High');
+    }
+    if (fontName == 'Manal Bold') {
+      return baseStyle.copyWith(fontFamily: 'Manal_Bold');
+    }
     String googleFontName = fontName;
-    if (fontName == 'Alyamama') {
-      googleFontName = 'Readex Pro';
+    if (fontName == 'Al Amiri') {
+      googleFontName = 'Amiri Quran';
     }
     try {
       return GoogleFonts.getFont(

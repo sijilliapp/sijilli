@@ -463,47 +463,72 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
           child: ArticleContentRenderer(text: _article!.text, fontFamily: fontFamily),
         ),
         
-        if (_article!.tags.isNotEmpty) ...[
-          const SizedBox(height: 24),
-          Wrap(
-            spacing: 8.0,
-            runSpacing: 8.0,
-            children: _article!.tags.map((tag) => TagChip(tag: tag)).toList(),
-          ),
-        ],
-        
-        const SizedBox(height: 20),
-
-        // Print Button
-        OutlinedButton.icon(
-          onPressed: () async {
-            if (_article == null) return;
-            try {
-              await ArticlePrinter.printArticle(context, _article!);
-            } catch (e) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('حدث خطأ أثناء محاولة الطباعة: $e'),
-                    behavior: SnackBarBehavior.floating,
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            if (_article!.tags.isNotEmpty)
+              Expanded(
+                child: Wrap(
+                  spacing: 8.0,
+                  runSpacing: 8.0,
+                  children: _article!.tags.map((tag) => TagChip(tag: tag)).toList(),
+                ),
+              )
+            else
+              const Spacer(),
+            const SizedBox(width: 16),
+            GestureDetector(
+              onTap: () async {
+                if (_article == null) return;
+                try {
+                  await ArticlePrinter.printArticle(context, _article!);
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('حدث خطأ أثناء محاولة الطباعة: $e'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.grey.withOpacity(0.35),
+                    width: 1.0,
                   ),
-                );
-              }
-            }
-          },
-          icon: const Icon(Icons.print_outlined),
-          label: const Text('طباعة المقال (A4)'),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            foregroundColor: AppColors.primary,
-            side: const BorderSide(color: AppColors.primary),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.print_outlined,
+                      size: 13,
+                      color: Colors.grey.shade700,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'طباعة (A4)',
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        height: 1.1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
+          ],
         ),
-
-        const SizedBox(height: 20),
 
         // شريط التفاعل (الإعجاب والتعليقات)
         const Divider(),

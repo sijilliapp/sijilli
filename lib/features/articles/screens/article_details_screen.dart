@@ -321,65 +321,122 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                               ),
                       ),
                       
-                      if (updatedArticle.tags.isNotEmpty || isAuthor) ...[
-                        const SizedBox(height: 24),
-                        Wrap(
-                          spacing: 8.0,
-                          runSpacing: 8.0,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            ...updatedArticle.tags.map((tag) => TagChip(tag: tag)),
-                            if (isAuthor)
-                              GestureDetector(
-                                onTap: () {
-                                  TagSelectorSheet.show(
-                                    context,
-                                    initialSelectedTagIds: updatedArticle.tagIds,
-                                    onSelectionChanged: (selectedTagIds, selectedTags) async {
-                                      await context.read<ArticleProvider>().updateArticle(
-                                        id: updatedArticle.id,
-                                        tagIds: selectedTagIds,
-                                      );
-                                    },
-                                  );
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: AppColors.primary.withValues(alpha: 0.3),
-                                      width: 1.0,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.add,
-                                        size: 13,
-                                        color: AppColors.primary,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        updatedArticle.tags.isEmpty 
-                                            ? context.l10n.addCategory 
-                                            : context.l10n.editCategory,
-                                        style: const TextStyle(
-                                          color: AppColors.primary,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                          height: 1.1,
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          if (updatedArticle.tags.isNotEmpty || isAuthor)
+                            Expanded(
+                              child: Wrap(
+                                spacing: 8.0,
+                                runSpacing: 8.0,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  ...updatedArticle.tags.map((tag) => TagChip(tag: tag)),
+                                  if (isAuthor)
+                                    GestureDetector(
+                                      onTap: () {
+                                        TagSelectorSheet.show(
+                                          context,
+                                          initialSelectedTagIds: updatedArticle.tagIds,
+                                          onSelectionChanged: (selectedTagIds, selectedTags) async {
+                                            await context.read<ArticleProvider>().updateArticle(
+                                              id: updatedArticle.id,
+                                              tagIds: selectedTagIds,
+                                            );
+                                          },
+                                        );
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(
+                                            color: AppColors.primary.withValues(alpha: 0.3),
+                                            width: 1.0,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(
+                                              Icons.add,
+                                              size: 13,
+                                              color: AppColors.primary,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              updatedArticle.tags.isEmpty 
+                                                  ? context.l10n.addCategory 
+                                                  : context.l10n.editCategory,
+                                              style: const TextStyle(
+                                                color: AppColors.primary,
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                                height: 1.1,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                ],
+                              ),
+                            )
+                          else
+                            const Spacer(),
+                          const SizedBox(width: 16),
+                          GestureDetector(
+                            onTap: () async {
+                              try {
+                                await ArticlePrinter.printArticle(context, updatedArticle);
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('حدث خطأ أثناء محاولة الطباعة: $e'),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.grey.withValues(alpha: 0.35),
+                                  width: 1.0,
                                 ),
                               ),
-                          ],
-                        ),
-                      ],
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.print_outlined,
+                                    size: 13,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'طباعة (A4)',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade700,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      height: 1.1,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                       
                       // Metadata Block at the bottom
                       const SizedBox(height: 24),
@@ -432,35 +489,7 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
 
-                      // Print Button
-                      OutlinedButton.icon(
-                        onPressed: () async {
-                          try {
-                            await ArticlePrinter.printArticle(context, updatedArticle);
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('حدث خطأ أثناء محاولة الطباعة: $e'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            }
-                          }
-                        },
-                        icon: const Icon(Icons.print_outlined),
-                        label: const Text('طباعة المقال (A4)'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          foregroundColor: AppColors.primary,
-                          side: const BorderSide(color: AppColors.primary),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
                       const SizedBox(height: 24),
                       
                       // Interaction Bar
