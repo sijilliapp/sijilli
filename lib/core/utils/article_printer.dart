@@ -205,18 +205,7 @@ class ArticlePrinter {
     final List<int> lengths = [];
     
     for (final widget in widgets) {
-      int len = 50; // default weight
-      if (widget is pw.Text) {
-        len = widget.text.text.length;
-      } else if (widget is pw.RichText) {
-        len = widget.text.toString().length;
-      } else if (widget is pw.Paragraph) {
-        len = widget.text.text.length;
-      } else if (widget is pw.Header) {
-        len = widget.text.text.length + 100; // give more weight to headers
-      } else if (widget is pw.Container) {
-        len = 150; 
-      }
+      final len = _getWidgetWeight(widget);
       lengths.add(len);
       totalLen += len;
     }
@@ -244,6 +233,32 @@ class ArticlePrinter {
     }
     
     return [col1, col2];
+  }
+
+  static int _getWidgetWeight(pw.Widget widget) {
+    if (widget is pw.Padding) {
+      final child = widget.child;
+      if (child is pw.RichText) {
+        return _getSpanText(child.text).length;
+      }
+    }
+    return 150; // default fallback weight
+  }
+
+  static String _getSpanText(pw.InlineSpan span) {
+    if (span is pw.TextSpan) {
+      final buffer = StringBuffer();
+      if (span.text != null) {
+        buffer.write(span.text);
+      }
+      if (span.children != null) {
+        for (final child in span.children!) {
+          buffer.write(_getSpanText(child));
+        }
+      }
+      return buffer.toString();
+    }
+    return '';
   }
 
   /// Parses Sijilli markup tags (like [POEM]) and returns a list of PDF widgets.
