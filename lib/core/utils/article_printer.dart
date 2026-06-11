@@ -108,9 +108,8 @@ class ArticlePrinter {
               );
             },
             build: (pw.Context context) {
-              final title = article.title;
               final articleBodyWidgets = _parseArticleText(
-                article.textWithoutTitle,
+                article.text,
                 arabicFont,
                 fontFallbackList,
                 useTwoColumns: useTwoColumns,
@@ -122,23 +121,6 @@ class ArticlePrinter {
                 final col2 = cols[1];
 
                 return [
-                  // Centered and Bold Title at the top (spans across both columns)
-                  pw.Align(
-                    alignment: pw.Alignment.center,
-                    child: pw.Text(
-                      title,
-                      textAlign: pw.TextAlign.center,
-                      style: pw.TextStyle(
-                        font: arabicFont,
-                        fontFallback: fontFallbackList,
-                        fontSize: 18,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.grey900,
-                      ),
-                    ),
-                  ),
-                  pw.SizedBox(height: 20),
-
                   // Two columns layout (partition order is right-to-left for Arabic, left-to-right for English)
                   pw.Partitions(
                     children: [
@@ -165,27 +147,7 @@ class ArticlePrinter {
                 ];
               }
 
-              return [
-                // Centered and Bold Title at the top
-                pw.Align(
-                  alignment: pw.Alignment.center,
-                  child: pw.Text(
-                    title,
-                    textAlign: pw.TextAlign.center,
-                    style: pw.TextStyle(
-                      font: arabicFont,
-                      fontFallback: fontFallbackList,
-                      fontSize: 18,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.grey900,
-                    ),
-                  ),
-                ),
-                pw.SizedBox(height: 20),
-
-                // Formatted body of the article (excluding the title to prevent duplication)
-                ...articleBodyWidgets,
-              ];
+              return articleBodyWidgets;
             },
           ),
         );
