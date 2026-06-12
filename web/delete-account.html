@@ -471,7 +471,7 @@
                 // 2. Send DELETE request to delete the user record
                 const deleteResponse = await fetch(`${POCKETBASE_URL}/api/collections/users/records/${userId}`, {
                     method: 'DELETE',
-                    headers: { 'Authorization': token }
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (!deleteResponse.ok) {
