@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سجلي - حذف الحساب والبيانات</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    
+    <!-- Tajawal and Inter Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --primary-color: #ef4444; /* Red for deletion */
+            --primary-hover: #dc2626;
+            --accent-color: #3b82f6;
+            --input-bg: rgba(255, 255, 255, 0.05);
+            --input-border: rgba(255, 255, 255, 0.1);
+            --input-focus: rgba(59, 130, 246, 0.5);
+            --success-color: #10b981;
+        }
+
+        [data-lang="en"] {
+            font-family: 'Inter', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Tajawal', 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(239, 68, 68, 0.05) 0%, transparent 40%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .logo img {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .lang-switch {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+        }
+        
+        html[dir="ltr"] .lang-switch {
+            left: auto;
+            right: 20px;
+        }
+
+        .lang-btn {
+            background: transparent;
+            border: 1px solid var(--card-border);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .lang-btn:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--text-secondary);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 16px;
+            outline: none;
+        }
+
+        html[dir="rtl"] input {
+            text-align: right;
+        }
+        html[dir="ltr"] input {
+            text-align: left;
+        }
+
+        input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px var(--input-focus);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border: 1px solid var(--card-border);
+            margin-top: 16px;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 24px 0;
+            color: rgba(255, 255, 255, 0.15);
+            font-size: 12px;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .divider:not(:empty)::before {
+            margin-left: .5em;
+        }
+
+        .divider:not(:empty)::after {
+            margin-right: .5em;
+        }
+
+        .info-box {
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px dashed rgba(239, 68, 68, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #fca5a5;
+            margin-bottom: 24px;
+        }
+
+        .error-message {
+            color: #f87171;
+            font-size: 13px;
+            margin-top: 8px;
+            display: none;
+            text-align: center;
+        }
+
+        .success-screen {
+            display: none;
+            text-align: center;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .success-icon {
+            width: 64px;
+            height: 64px;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 24px;
+            font-size: 32px;
+        }
+
+        .success-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .success-text {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .loading-spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid white;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        footer {
+            margin-top: 32px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+            text-align: center;
+        }
+
+        footer a {
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Language switcher -->
+        <div class="lang-switch">
+            <button class="lang-btn" onclick="toggleLanguage()" id="langBtn">English</button>
+        </div>
+
+        <!-- Request deletion Screen -->
+        <div id="requestScreen">
+            <div class="logo">
+                <img src="icons/Icon-192.png" alt="سجلي" onerror="this.src='favicon.png'">
+            </div>
+            
+            <h1 id="title">حذف الحساب والبيانات</h1>
+            <p class="subtitle" id="subtitle">يرجى تأكيد هويتك لحذف حسابك وجميع البيانات المرتبطة به نهائياً من منصة سجلي.</p>
+
+            <div class="info-box" id="infoBox">
+                <strong>تنبيه هام:</strong> حذف الحساب عملية نهائية ولا يمكن التراجع عنها. سيتم حذف جميع مقالاتك، تعليقاتك، وجدول مواعيدك بالكامل ولن تتمكن من استعادتها مجدداً.
+            </div>
+
+            <form id="deleteForm" onsubmit="handleDelete(event)">
+                <div class="form-group">
+                    <label for="identity" id="labelIdentity">اسم المستخدم أو البريد الإلكتروني</label>
+                    <input type="text" id="identity" required placeholder="example@sijilli.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password" id="labelPassword">كلمة المرور</label>
+                    <input type="password" id="password" required placeholder="••••••••">
+                </div>
+
+                <div class="error-message" id="errorMessage">اسم المستخدم أو كلمة المرور غير صحيحة.</div>
+
+                <button type="submit" class="btn btn-primary" id="btnSubmit">
+                    <span class="loading-spinner" id="spinner"></span>
+                    <span id="btnText">حذف الحساب نهائياً</span>
+                </button>
+            </form>
+
+            <div class="divider" id="dividerOr">أو</div>
+
+            <p class="subtitle" style="margin-bottom: 16px;" id="manualText">إذا كنت لا تتذكر بيانات الدخول، يمكنك تقديم طلب يدوي:</p>
+            <a href="mailto:support@sijilli.com?subject=طلب حذف حساب سجلي&body=أرغب في حذف حسابي وبياناتي المرتبطة باسم المستخدم: " class="btn btn-secondary" id="btnMail">
+                طلب الحذف عبر البريد الإلكتروني
+            </a>
+        </div>
+
+        <!-- Success Screen -->
+        <div id="successScreen" class="success-screen">
+            <div class="success-icon">✓</div>
+            <div class="success-title" id="successTitle">تم حذف الحساب بنجاح</div>
+            <div class="success-text" id="successText">لقد تم حذف حسابك وكافة البيانات المتعلقة به نهائياً من خوادم سجلي بنجاح. شكراً لك.</div>
+            <button class="btn btn-secondary" onclick="resetForm()" id="btnBack">الرجوع للرئيسية</button>
+        </div>
+    </div>
+
+    <footer>
+        <span id="footerText">© 2026 سجلي. جميع الحقوق محفوظة.</span>
+    </footer>
+
+    <script>
+        const POCKETBASE_URL = 'https://sijilli.pockethost.io';
+        let currentLang = 'ar';
+
+        const translations = {
+            ar: {
+                title: "حذف الحساب والبيانات",
+                subtitle: "يرجى تأكيد هويتك لحذف حسابك وجميع البيانات المرتبطة به نهائياً من منصة سجلي.",
+                infoBox: "<strong>تنبيه هام:</strong> حذف الحساب عملية نهائية ولا يمكن التراجع عنها. سيتم حذف جميع مقالاتك، تعليقاتك، وجدول مواعيدك بالكامل ولن تتمكن من استعادتها مجدداً.",
+                labelIdentity: "اسم المستخدم أو البريد الإلكتروني",
+                labelPassword: "كلمة المرور",
+                btnSubmit: "حذف الحساب نهائياً",
+                dividerOr: "أو",
+                manualText: "إذا كنت لا تتذكر بيانات الدخول، يمكنك تقديم طلب يدوي:",
+                btnMail: "طلب الحذف عبر البريد الإلكتروني",
+                successTitle: "تم حذف الحساب بنجاح",
+                successText: "لقد تم حذف حسابك وكافة البيانات المتعلقة به نهائياً من خوادم سجلي بنجاح. شكراً لك.",
+                btnBack: "الرجوع للرئيسية",
+                errorAuth: "اسم المستخدم أو كلمة المرور غير صحيحة.",
+                errorDelete: "فشل حذف الحساب. يرجى التواصل مع الدعم الفني.",
+                subjectMail: "طلب حذف حساب سجلي",
+                bodyMail: "أرغب في حذف حسابي وبياناتي المرتبطة باسم المستخدم: ",
+                footerText: "© 2026 سجلي. جميع الحقوق محفوظة."
+            },
+            en: {
+                title: "Delete Account & Data",
+                subtitle: "Please confirm your identity to permanently delete your account and all associated data from Sijilli platform.",
+                infoBox: "<strong>Important Notice:</strong> Account deletion is permanent and cannot be undone. All your articles, comments, and schedule will be completely deleted and cannot be recovered.",
+                labelIdentity: "Username or Email",
+                labelPassword: "Password",
+                btnSubmit: "Delete Account Permanently",
+                dividerOr: "OR",
+                manualText: "If you don't remember your login details, you can request manual deletion:",
+                btnMail: "Request Deletion via Email",
+                successTitle: "Account Successfully Deleted",
+                successText: "Your account and all related data have been permanently deleted from Sijilli servers. Thank you.",
+                btnBack: "Back to Home",
+                errorAuth: "Invalid username/email or password.",
+                errorDelete: "Failed to delete account. Please contact support.",
+                subjectMail: "Sijilli Account Deletion Request",
+                bodyMail: "I would like to request the deletion of my account and all associated data for username: ",
+                footerText: "© 2026 Sijilli. All rights reserved."
+            }
+        };
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'ar' ? 'en' : 'ar';
+            document.documentElement.lang = currentLang;
+            document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+            document.body.setAttribute('data-lang', currentLang);
+            document.getElementById('langBtn').innerText = currentLang === 'ar' ? 'English' : 'العربية';
+
+            const t = translations[currentLang];
+            document.getElementById('title').innerText = t.title;
+            document.getElementById('subtitle').innerText = t.subtitle;
+            document.getElementById('infoBox').innerHTML = t.infoBox;
+            document.getElementById('labelIdentity').innerText = t.labelIdentity;
+            document.getElementById('labelPassword').innerText = t.labelPassword;
+            document.getElementById('btnText').innerText = t.btnSubmit;
+            document.getElementById('dividerOr').innerText = t.dividerOr;
+            document.getElementById('manualText').innerText = t.manualText;
+            document.getElementById('btnMail').innerText = t.btnMail;
+            document.getElementById('successTitle').innerText = t.successTitle;
+            document.getElementById('successText').innerText = t.successText;
+            document.getElementById('btnBack').innerText = t.btnBack;
+            document.getElementById('footerText').innerText = t.footerText;
+
+            // Update mail link
+            document.getElementById('btnMail').href = `mailto:support@sijilli.com?subject=${encodeURIComponent(t.subjectMail)}&body=${encodeURIComponent(t.bodyMail)}`;
+        }
+
+        async function handleDelete(event) {
+            event.preventDefault();
+            
+            const identity = document.getElementById('identity').value.trim();
+            const password = document.getElementById('password').value;
+            const spinner = document.getElementById('spinner');
+            const btnText = document.getElementById('btnText');
+            const errorDiv = document.getElementById('errorMessage');
+
+            // Show loading
+            spinner.style.display = 'inline-block';
+            btnText.style.display = 'none';
+            errorDiv.style.display = 'none';
+
+            try {
+                // 1. Authenticate with PocketBase password endpoint
+                const authResponse = await fetch(`${POCKETBASE_URL}/api/collections/users/auth-with-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identity, password })
+                });
+
+                if (!authResponse.ok) {
+                    throw new Error('auth_failed');
+                }
+
+                const authData = await authResponse.json();
+                const token = authData.token;
+                const userId = authData.record.id;
+
+                // 2. Send DELETE request to delete the user record
+                const deleteResponse = await fetch(`${POCKETBASE_URL}/api/collections/users/records/${userId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': token }
+                });
+
+                if (!deleteResponse.ok) {
+                    throw new Error('delete_failed');
+                }
+
+                // Show Success Screen
+                document.getElementById('requestScreen').style.display = 'none';
+                document.getElementById('successScreen').style.display = 'block';
+
+            } catch (error) {
+                console.error(error);
+                errorDiv.style.display = 'block';
+                errorDiv.innerText = error.message === 'auth_failed' 
+                    ? translations[currentLang].errorAuth 
+                    : translations[currentLang].errorDelete;
+            } finally {
+                // Hide loading
+                spinner.style.display = 'none';
+                btnText.style.display = 'inline';
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('identity').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successScreen').style.display = 'none';
+            document.getElementById('requestScreen').style.display = 'block';
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

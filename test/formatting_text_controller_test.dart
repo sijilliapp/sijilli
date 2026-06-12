@@ -4,6 +4,7 @@ import 'package:sijilli/models/article.dart';
 import 'package:sijilli/models/appointment.dart';
 import 'package:flutter/material.dart';
 import 'package:sijilli/features/articles/widgets/poetry/poem_formatter_utils.dart';
+import 'package:sijilli/core/utils/bidi_utils.dart';
 
 void main() {
   group('Article Strip Formatting Tests', () {
@@ -436,6 +437,25 @@ void main() {
           ),
         ),
       );
+    });
+  });
+
+  group('BidiUtils Tests', () {
+    test('Should detect RTL directionality correctly despite formatting tags', () {
+      final dir1 = BidiUtils.getDirection('[POEM]محبك تثقل ميزانه');
+      expect(dir1, equals(TextDirection.rtl));
+
+      final dir2 = BidiUtils.getDirection('# [CENTER]مرحبا بك');
+      expect(dir2, equals(TextDirection.rtl));
+
+      final dir3 = BidiUtils.getDirection('![صورة](http://example.com/img.png) \n نص عربي بعد الصورة');
+      expect(dir3, equals(TextDirection.rtl));
+
+      final dir4 = BidiUtils.getDirection('[CENTER]Hello world');
+      expect(dir4, equals(TextDirection.ltr));
+
+      final dir5 = BidiUtils.getDirection('   [BOLD]  مرحبا   ');
+      expect(dir5, equals(TextDirection.rtl));
     });
   });
 }

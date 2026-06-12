@@ -236,7 +236,7 @@ class ArticleContentRenderer extends StatelessWidget {
     });
 
     final List<Widget> widgets = [];
-    final poemPattern = RegExp(r'\[POEM\](.*?)\[/POEM\]', dotAll: true, caseSensitive: false);
+    final poemPattern = RegExp(r'\[POEM(?:\s+TYPE="([^"]+?)")?\](.*?)\[/POEM\]', dotAll: true, caseSensitive: false);
     
     int lastMatchEnd = 0;
     
@@ -254,9 +254,10 @@ class ArticleContentRenderer extends StatelessWidget {
       }
       
       // Add PoemView
-      final poemContent = match.group(1)?.trim() ?? '';
+      final type = match.group(1)?.toUpperCase() ?? 'STANDARD';
+      final poemContent = match.group(2)?.trim() ?? '';
       if (poemContent.isNotEmpty) {
-        widgets.add(PoemView(poemText: poemContent, fontFamily: fontFamily));
+        widgets.add(PoemView(poemText: poemContent, fontFamily: fontFamily, type: type));
       }
       
       lastMatchEnd = match.end;

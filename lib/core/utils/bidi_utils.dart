@@ -3,11 +3,26 @@ import 'package:flutter/material.dart';
 class BidiUtils {
   BidiUtils._();
 
+  /// Cleans formatting and markup tags (e.g. [POEM], [CENTER], markdown links)
+  /// from the text to ensure the first strong character check reflects the actual content.
+  static String _cleanText(String text) {
+    return text
+        // Strip markdown images: ![alt](url)
+        .replaceAll(RegExp(r'!\[.*?\]\(.*?\)'), '')
+        // Strip tags in brackets: [POEM], [/POEM], [CENTER], [BOLD], etc.
+        .replaceAll(RegExp(r'\[.*?\]'), '')
+        // Strip markdown link urls: (http://...)
+        .replaceAll(RegExp(r'\(.*?\)'), '')
+        // Strip common markdown symbols at the start of lines/words
+        .replaceAll(RegExp(r'[#*`_~=-]'), '');
+  }
+
   /// Resolves the text direction of a string based on its first strong character.
   /// If no strong characters are found or the text is empty, it falls back to
   /// the specified fallback direction (defaults to LTR).
   static TextDirection getDirection(String text, {TextDirection? fallback}) {
-    if (text.isEmpty) {
+    final cleaned = _cleanText(text).trim();
+    if (cleaned.isEmpty) {
       return fallback ?? TextDirection.ltr;
     }
 
@@ -17,7 +32,7 @@ class BidiUtils {
     final regex = RegExp(
       r'([a-zA-Z])|([\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF])',
     );
-    final match = regex.firstMatch(text);
+    final match = regex.firstMatch(cleaned);
     if (match != null) {
       if (match.group(2) != null) {
         return TextDirection.rtl; // Arabic/RTL character found first

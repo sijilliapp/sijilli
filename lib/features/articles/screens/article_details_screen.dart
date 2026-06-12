@@ -20,6 +20,7 @@ import 'package:sijilli/features/articles/widgets/tag_chip.dart';
 import 'package:sijilli/features/articles/widgets/tag_selector_sheet.dart';
 import 'package:sijilli/core/utils/image_saver_util.dart';
 import '../../../core/utils/article_printer.dart';
+import 'package:share_plus/share_plus.dart';
 
 class ArticleDetailsScreen extends StatefulWidget {
   final Article article;
@@ -95,6 +96,7 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
     final isAuthor = currentUserId == updatedArticle.authorId;
 
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Directionality(
       textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
@@ -182,35 +184,9 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                       );
                     },
                   ),
-                  if (isAuthor || updatedArticle.isPublished)
-                    IconButton(
-                      tooltip: 'نسخ رابط المشاركة',
-                      icon: const Icon(Icons.link),
-                      onPressed: () async {
-                      final username = updatedArticle.author?.username ?? 'user';
-                      final url = 'https://sijilli.com/$username/${updatedArticle.id}';
-                      
-                      // Auto-publish if author and not already published
-                      if (isAuthor && !updatedArticle.isPublished) {
-                        await context.read<ArticleProvider>().togglePublishStatus(updatedArticle.id, true);
-                      }
-  
-                      await Clipboard.setData(ClipboardData(text: url));
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(isAuthor && !updatedArticle.isPublished 
-                                ? 'تم نسخ رابط المقال إلى الحافظة ونشره تلقائياً 🚀'
-                                : 'تم نسخ رابط المشاركة إلى الحافظة 🔗'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      }
-                    },
-                  ),
                   if (isAuthor)
                     IconButton(
-                      tooltip: 'تعديل المقال',
+                      tooltip: isArabic ? 'تعديل المقال' : 'Edit article',
                       icon: const Icon(Icons.edit_outlined),
                       onPressed: () {
                         Navigator.push(
@@ -219,6 +195,22 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                             builder: (context) => AddArticleScreen(article: updatedArticle),
                           ),
                         );
+                      },
+                    ),
+                  if (isAuthor || updatedArticle.isPublished)
+                    IconButton(
+                      tooltip: isArabic ? 'مشاركة المقال' : 'Share article',
+                      icon: const Icon(Icons.share_outlined),
+                      onPressed: () async {
+                        final username = updatedArticle.author?.username ?? 'user';
+                        final url = 'https://sijilli.com/$username/${updatedArticle.id}';
+                        
+                        // Auto-publish if author and not already published
+                        if (isAuthor && !updatedArticle.isPublished) {
+                          await context.read<ArticleProvider>().togglePublishStatus(updatedArticle.id, true);
+                        }
+  
+                        await Share.share(url, subject: updatedArticle.title);
                       },
                     ),
                 ],
@@ -395,10 +387,14 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: Colors.grey.withValues(alpha: 0.15),
+                                color: isDarkMode 
+                                    ? Colors.white.withValues(alpha: 0.08) 
+                                    : Colors.grey.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: Colors.grey.withValues(alpha: 0.35),
+                                  color: isDarkMode 
+                                      ? Colors.white.withValues(alpha: 0.2) 
+                                      : Colors.grey.withValues(alpha: 0.35),
                                   width: 1.0,
                                 ),
                               ),
@@ -408,13 +404,13 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                                   Icon(
                                     Icons.print_outlined,
                                     size: 13,
-                                    color: Colors.grey.shade700,
+                                    color: isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    'طباعة (A4)',
+                                    isArabic ? 'طباعة (A4)' : 'Print (A4)',
                                     style: TextStyle(
-                                      color: Colors.grey.shade700,
+                                      color: isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700,
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
                                       height: 1.1,
@@ -558,6 +554,7 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
   }
 
   void _showPrintOptionsSheet(BuildContext context, Article article) {
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     showModalBottomSheet(
       context: context,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -576,7 +573,7 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'خيارات الطباعة',
+                      isArabic ? 'خيارات الطباعة' : 'Print Options',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 18,
@@ -599,13 +596,15 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                             value: false,
                             groupValue: useTwoColumns,
                             activeColor: AppColors.primary,
-                            title: const Text(
-                              'عمود واحد (افتراضي)',
-                              style: TextStyle(fontSize: 14),
+                            title: Text(
+                              isArabic ? 'عمود واحد (افتراضي)' : 'One Column (Default)',
+                              style: const TextStyle(fontSize: 14),
                             ),
-                            subtitle: const Text(
-                              'طباعة المقال في عمود واحد كامل الصفحة',
-                              style: TextStyle(fontSize: 12),
+                            subtitle: Text(
+                              isArabic 
+                                  ? 'طباعة المقال في عمود واحد كامل الصفحة' 
+                                  : 'Print the article in a single column full page',
+                              style: const TextStyle(fontSize: 12),
                             ),
                             onChanged: (val) {
                               if (val != null) setSheetState(() => useTwoColumns = val);
@@ -616,13 +615,15 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                             value: true,
                             groupValue: useTwoColumns,
                             activeColor: AppColors.primary,
-                            title: const Text(
-                              'عمودان (تنسيق صحيفة)',
-                              style: TextStyle(fontSize: 14),
+                            title: Text(
+                              isArabic ? 'عمودان (تنسيق صحيفة)' : 'Two Columns (Newspaper Layout)',
+                              style: const TextStyle(fontSize: 14),
                             ),
-                            subtitle: const Text(
-                              'تقسيم المقال لعمودين متوازيين لتوفير الورق وتسهيل القراءة',
-                              style: TextStyle(fontSize: 12),
+                            subtitle: Text(
+                              isArabic 
+                                  ? 'تقسيم المقال لعمودين متوازيين لتوفير الورق وتسهيل القراءة' 
+                                  : 'Split the article into two parallel columns to save paper and ease reading',
+                              style: const TextStyle(fontSize: 12),
                             ),
                             onChanged: (val) {
                               if (val != null) setSheetState(() => useTwoColumns = val);
@@ -641,7 +642,11 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('حدث خطأ أثناء محاولة الطباعة: $e'),
+                                content: Text(
+                                  isArabic 
+                                      ? 'حدث خطأ أثناء محاولة الطباعة: $e' 
+                                      : 'An error occurred while trying to print: $e',
+                                ),
                                 behavior: SnackBarBehavior.floating,
                               ),
                             );
@@ -656,9 +661,9 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
-                        'بدء الطباعة',
-                        style: TextStyle(
+                      child: Text(
+                        isArabic ? 'بدء الطباعة' : 'Start Printing',
+                        style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                         ),
