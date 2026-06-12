@@ -475,7 +475,18 @@
                 });
 
                 if (!deleteResponse.ok) {
-                    throw new Error('delete_failed');
+                    let errorDetail = '';
+                    try {
+                        const errJson = await deleteResponse.json();
+                        errorDetail = JSON.stringify(errJson);
+                    } catch (_) {
+                        try {
+                            errorDetail = await deleteResponse.text();
+                        } catch (__) {
+                            errorDetail = deleteResponse.statusText;
+                        }
+                    }
+                    throw new Error(`delete_failed: ${deleteResponse.status} - ${errorDetail}`);
                 }
 
                 // Show Success Screen
@@ -485,9 +496,13 @@
             } catch (error) {
                 console.error(error);
                 errorDiv.style.display = 'block';
-                errorDiv.innerText = error.message === 'auth_failed' 
-                    ? translations[currentLang].errorAuth 
-                    : translations[currentLang].errorDelete;
+                if (error.message === 'auth_failed') {
+                    errorDiv.innerText = translations[currentLang].errorAuth;
+                } else if (error.message.startsWith('delete_failed:')) {
+                    errorDiv.innerText = translations[currentLang].errorDelete + ` (Details: ${error.message.substring(14)})`;
+                } else {
+                    errorDiv.innerText = translations[currentLang].errorDelete + ` (Network/Error: ${error.message})`;
+                }
             } finally {
                 // Hide loading
                 spinner.style.display = 'none';
