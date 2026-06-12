@@ -438,6 +438,101 @@
             document.getElementById('btnMail').href = `mailto:support@sijilli.com?subject=${encodeURIComponent(t.subjectMail)}&body=${encodeURIComponent(t.bodyMail)}`;
         }
 
+        async function cleanupUserData(userId, token) {
+            const headers = { 'Authorization': `Bearer ${token}` };
+            
+            // 1. Clean up Friendships
+            try {
+                const res = await fetch(`${POCKETBASE_URL}/api/collections/friendship/records?perPage=500&filter=${encodeURIComponent(`user_a='${userId}' || user_b='${userId}'`)}`, { headers });
+                if (res.ok) {
+                    const data = await res.json();
+                    for (const item of data.items || []) {
+                        try {
+                            await fetch(`${POCKETBASE_URL}/api/collections/friendship/records/${item.id}`, { method: 'DELETE', headers });
+                        } catch (e) { console.error('Friendship delete failed', e); }
+                    }
+                }
+            } catch (e) { console.error('Friendship fetch failed', e); }
+
+            // 2. Clean up Appointments (and their invitations)
+            try {
+                const res = await fetch(`${POCKETBASE_URL}/api/collections/appointments/records?perPage=500&filter=${encodeURIComponent(`host='${userId}'`)}`, { headers });
+                if (res.ok) {
+                    const data = await res.json();
+                    for (const item of data.items || []) {
+                        // Delete invitations for this appointment first
+                        try {
+                            const inviteRes = await fetch(`${POCKETBASE_URL}/api/collections/invitations/records?perPage=500&filter=${encodeURIComponent(`appointment='${item.id}'`)}`, { headers });
+                            if (inviteRes.ok) {
+                                const inviteData = await inviteRes.json();
+                                for (const invite of inviteData.items || []) {
+                                    try {
+                                        await fetch(`${POCKETBASE_URL}/api/collections/invitations/records/${invite.id}`, { method: 'DELETE', headers });
+                                    } catch (e) {}
+                                }
+                            }
+                        } catch (e) {}
+                        // Delete appointment
+                        try {
+                            await fetch(`${POCKETBASE_URL}/api/collections/appointments/records/${item.id}`, { method: 'DELETE', headers });
+                        } catch (e) { console.error('Appointment delete failed', e); }
+                    }
+                }
+            } catch (e) { console.error('Appointment fetch failed', e); }
+
+            // 3. Clean up Invitations
+            try {
+                const res = await fetch(`${POCKETBASE_URL}/api/collections/invitations/records?perPage=500&filter=${encodeURIComponent(`user='${userId}'`)}`, { headers });
+                if (res.ok) {
+                    const data = await res.json();
+                    for (const item of data.items || []) {
+                        try {
+                            await fetch(`${POCKETBASE_URL}/api/collections/invitations/records/${item.id}`, { method: 'DELETE', headers });
+                        } catch (e) {}
+                    }
+                }
+            } catch (e) {}
+
+            // 4. Clean up Notifications
+            try {
+                const res = await fetch(`${POCKETBASE_URL}/api/collections/notifications/records?perPage=500&filter=${encodeURIComponent(`user='${userId}'`)}`, { headers });
+                if (res.ok) {
+                    const data = await res.json();
+                    for (const item of data.items || []) {
+                        try {
+                            await fetch(`${POCKETBASE_URL}/api/collections/notifications/records/${item.id}`, { method: 'DELETE', headers });
+                        } catch (e) {}
+                    }
+                }
+            } catch (e) {}
+
+            // 5. Clean up Tags
+            try {
+                const res = await fetch(`${POCKETBASE_URL}/api/collections/tags/records?perPage=500&filter=${encodeURIComponent(`user='${userId}'`)}`, { headers });
+                if (res.ok) {
+                    const data = await res.json();
+                    for (const item of data.items || []) {
+                        try {
+                            await fetch(`${POCKETBASE_URL}/api/collections/tags/records/${item.id}`, { method: 'DELETE', headers });
+                        } catch (e) {}
+                    }
+                }
+            } catch (e) {}
+
+            // 6. Clean up Visits
+            try {
+                const res = await fetch(`${POCKETBASE_URL}/api/collections/visits/records?perPage=500&filter=${encodeURIComponent(`visitor='${userId}' || visited='${userId}'`)}`, { headers });
+                if (res.ok) {
+                    const data = await res.json();
+                    for (const item of data.items || []) {
+                        try {
+                            await fetch(`${POCKETBASE_URL}/api/collections/visits/records/${item.id}`, { method: 'DELETE', headers });
+                        } catch (e) {}
+                    }
+                }
+            } catch (e) {}
+        }
+
         async function handleDelete(event) {
             event.preventDefault();
             
@@ -467,6 +562,9 @@
                 const authData = await authResponse.json();
                 const token = authData.token;
                 const userId = authData.record.id;
+
+                // Clean up related data first to satisfy database constraints
+                await cleanupUserData(userId, token);
 
                 // 2. Send DELETE request to delete the user record
                 const deleteResponse = await fetch(`${POCKETBASE_URL}/api/collections/users/records/${userId}`, {
