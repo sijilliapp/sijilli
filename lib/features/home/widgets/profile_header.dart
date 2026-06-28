@@ -8,6 +8,7 @@ import 'package:sijilli/core/constants/app_dimens.dart';
 import 'package:sijilli/models/user.dart';
 import 'package:sijilli/features/auth/providers/auth_provider.dart';
 import 'package:sijilli/features/appointments/providers/appointment_provider.dart';
+import 'package:sijilli/features/articles/providers/article_provider.dart';
 import 'package:sijilli/core/widgets/pulse_avatar.dart';
 import 'package:sijilli/core/widgets/user_name_with_badge.dart';
 import 'profile/social_stats_row.dart';
@@ -252,11 +253,28 @@ class _ProfileHeaderState extends State<ProfileHeader> {
           child: Column(
             children: [
               // Avatar
-                Consumer<AppointmentProvider>(
-                  builder: (context, AppointmentProvider appointmentProvider, _) {
-                    final currentStatus = widget.customStatus ?? appointmentProvider.avatarStatus;
+              Consumer2<AppointmentProvider, ArticleProvider>(
+                  builder: (context, appointmentProvider, articleProvider, _) {
+                    AvatarStatus currentStatus = widget.customStatus ?? appointmentProvider.avatarStatus;
+                    
+                    if (currentStatus == AvatarStatus.none) {
+                      // تطبيق سياسة الطوق الذكي بناءً على نشاط المقالات
+                      final userArticles = articleProvider.getUserArticles(displayUser.id);
+                      final hasRecentArticle = userArticles.any((a) => 
+                        a.isPublished && 
+                        DateTime.now().difference(a.updatedAt).inHours < 24
+                      );
+                      final hasPublishedArticles = userArticles.any((a) => a.isPublished);
+
+                      if (hasRecentArticle) {
+                        currentStatus = AvatarStatus.active; // وهج مشع
+                      } else if (hasPublishedArticles) {
+                        currentStatus = AvatarStatus.upcoming; // طوق ملون
+                      }
+                    }
+
                     final isMe = !widget.isPublicView && displayUser.id == authProvider.user?.id;
-  
+   
                     Widget avatarWidget = PulseAvatar(
                       imageUrl: displayUser.getAvatarUrl('https://sijilli.pockethost.io'),
                       status: currentStatus,

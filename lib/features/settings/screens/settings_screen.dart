@@ -12,6 +12,7 @@ import 'blocked_users_screen.dart';
 import '../../auth/screens/privacy_policy_screen.dart';
 import 'notification_settings_screen.dart';
 import 'privacy_settings_screen.dart';
+import 'article_settings_screen.dart';
 import '../../admin/screens/super_admin_screen.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/providers/settings_provider.dart';
@@ -150,6 +151,21 @@ class SettingsScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const PrivacySettingsScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+
+          // إعدادات المقالات
+          _buildSettingsCard(
+            context,
+            icon: Icons.article_outlined,
+            title: 'المقالات',
+            subtitle: 'حماية مقالاتك وتعطيل نسخ المحتوى',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ArticleSettingsScreen()),
               );
             },
           ),

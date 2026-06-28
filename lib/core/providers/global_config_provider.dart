@@ -31,6 +31,21 @@ class GlobalConfigProvider extends ChangeNotifier {
     return _getNumber('article_max_chars')?.toInt() ?? 5000;
   }
 
+  /// الحد الأقصى لعدد الملفات الصوتية في المقال الواحد
+  int get audioMaxFiles {
+    return _getNumber('audio_max_files')?.toInt() ?? 5;
+  }
+
+  /// الحد الأقصى لحجم الملف الصوتي الواحد بالميجابايت
+  int get audioMaxSizeMb {
+    return _getNumber('audio_max_size_mb')?.toInt() ?? 5;
+  }
+
+  /// الحد الأقصى للمجموع الكلي لسعة الملفات الصوتية بالميجابايت
+  int get audioTotalCapacityMb {
+    return _getNumber('audio_total_capacity_mb')?.toInt() ?? 25;
+  }
+
   /// الحصول على بريد التواصل
   String get contactEmail {
     return _getString('contact_email') ?? 'sijilliapp@gmail.com';

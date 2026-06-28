@@ -3,18 +3,26 @@ import 'package:flutter/rendering.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_dimens.dart';
 import '../../../core/providers/theme_provider.dart';
 import '../../../core/utils/image_saver_util.dart';
 import 'poetry/poem_view.dart';
 import 'poetry/poem_formatter_utils.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../../../core/utils/bidi_utils.dart';
+import 'inline_audio_player.dart';
 
 class ArticleContentRenderer extends StatelessWidget {
   final String text;
   final String? fontFamily;
+  final List<String>? audioUrls;
 
-  const ArticleContentRenderer({super.key, required this.text, this.fontFamily});
+  const ArticleContentRenderer({
+    super.key,
+    required this.text,
+    this.fontFamily,
+    this.audioUrls,
+  });
 
   TextSpan _parseInlineFormatting(String text, BuildContext context) {
     const double fontSize = 22.0;
@@ -74,6 +82,21 @@ class ArticleContentRenderer extends StatelessWidget {
     final match = pattern.firstMatch(trimmed);
     if (match != null && match.groupCount >= 1) {
       return match.group(1);
+    }
+    return null;
+  }
+
+  String? _extractAudioUrl(String line) {
+    final trimmed = line.trim();
+    if (trimmed.contains(' ')) return null;
+    if (!trimmed.startsWith(RegExp(r'https?://'))) return null;
+    
+    final audioExtensions = ['.mp3', '.wav', '.m4a', '.aac', '.opus', '.ogg', '.caf'];
+    final lower = trimmed.toLowerCase();
+    for (final ext in audioExtensions) {
+      if (lower.endsWith(ext) || lower.contains('$ext?')) {
+        return trimmed;
+      }
     }
     return null;
   }
@@ -140,7 +163,7 @@ class ArticleContentRenderer extends StatelessWidget {
     );
   }
 
-  List<Widget> _renderTextBlock(BuildContext context, String blockText) {
+  List<Widget> _renderTextBlock(BuildContext context, String blockText, _AudioIndex audioIndexWrapper) {
     final List<Widget> widgets = [];
     final lines = blockText.split('\n');
     
@@ -189,8 +212,16 @@ class ArticleContentRenderer extends StatelessWidget {
         }
       }
 
+      // Normalize line by stripping inline formatting tags (like [BOLD], [HIGHLIGHT], etc.)
+      // to ensure embedded tags ([AUDIO], YouTube links, images) are recognized cleanly even if formatted.
+      final String normalizedLine = cleanLine
+          .replaceAll(RegExp(r'\[/?(POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT|POEM_LEFT|POEM_CENTER)/?\]', caseSensitive: false), '')
+          .replaceAll(RegExp(r'\[/'), '')
+          .replaceAll(RegExp(r'==|~~|--|\+\+|\*'), '')
+          .trim();
+
       // Check for media links in the cleaned line
-      final imageUrl = _extractImageUrl(cleanLine);
+      final imageUrl = _extractImageUrl(normalizedLine);
       if (imageUrl != null) {
         widgets.add(Padding(
           padding: EdgeInsets.only(bottom: i == lines.length - 1 ? 0.0 : 8.0),
@@ -199,12 +230,55 @@ class ArticleContentRenderer extends StatelessWidget {
         continue;
       }
       
-      final youtubeId = _extractYoutubeId(cleanLine);
+      final youtubeId = _extractYoutubeId(normalizedLine);
       if (youtubeId != null) {
         widgets.add(Padding(
           padding: EdgeInsets.only(bottom: i == lines.length - 1 ? 0.0 : 8.0),
           child: _buildYoutubePlayer(context, youtubeId),
         ));
+        continue;
+      }
+
+      // 1. Direct audio file URL
+      final directAudioUrl = _extractAudioUrl(normalizedLine);
+      if (directAudioUrl != null) {
+        widgets.add(Padding(
+          padding: EdgeInsets.only(bottom: i == lines.length - 1 ? 0.0 : 8.0),
+          child: InlineAudioPlayer(audioUrl: directAudioUrl),
+        ));
+        continue;
+      }
+
+      // 2. [AUDIO] embedding tag
+      if (normalizedLine.toUpperCase() == '[AUDIO]') {
+        if (audioUrls != null && audioUrls!.isNotEmpty && audioIndexWrapper.value < audioUrls!.length) {
+          widgets.add(Padding(
+            padding: EdgeInsets.only(bottom: i == lines.length - 1 ? 0.0 : 8.0),
+            child: InlineAudioPlayer(audioUrl: audioUrls![audioIndexWrapper.value]),
+          ));
+          audioIndexWrapper.value++;
+        } else {
+          widgets.add(Padding(
+            padding: EdgeInsets.only(bottom: i == lines.length - 1 ? 0.0 : 8.0),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.redAccent.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(AppDimens.radiusS),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
+                  SizedBox(width: 8),
+                  Text(
+                    'الملف الصوتي الخاص بهذا التضمين غير متوفر',
+                    style: TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+          ));
+        }
         continue;
       }
       
@@ -238,6 +312,7 @@ class ArticleContentRenderer extends StatelessWidget {
     final List<Widget> widgets = [];
     final poemPattern = RegExp(r'\[POEM(?:\s+TYPE="([^"]+?)")?\](.*?)\[/POEM\]', dotAll: true, caseSensitive: false);
     
+    final audioIndexWrapper = _AudioIndex();
     int lastMatchEnd = 0;
     
     for (final match in poemPattern.allMatches(cleanedText)) {
@@ -248,7 +323,7 @@ class ArticleContentRenderer extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: _renderTextBlock(context, preText),
+            children: _renderTextBlock(context, preText, audioIndexWrapper),
           ),
         ));
       }
@@ -268,13 +343,13 @@ class ArticleContentRenderer extends StatelessWidget {
     if (postText.isNotEmpty) {
       widgets.add(Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: _renderTextBlock(context, postText),
+        children: _renderTextBlock(context, postText, audioIndexWrapper),
       ));
     }
     
     // If no text or poems were added at all, just render the original string
     if (widgets.isEmpty && cleanedText.isNotEmpty) {
-      widgets.addAll(_renderTextBlock(context, cleanedText));
+      widgets.addAll(_renderTextBlock(context, cleanedText, audioIndexWrapper));
     }
     final isArabic = BidiUtils.isRtl(text, fallbackToRtl: Localizations.localeOf(context).languageCode == 'ar');
 
@@ -676,4 +751,8 @@ class RenderEdgeToEdgeLayout extends RenderShiftedBox {
     final BoxParentData childParentData = child!.parentData! as BoxParentData;
     childParentData.offset = Offset(-overflow / 2.0, 0.0);
   }
+}
+
+class _AudioIndex {
+  int value = 0;
 }

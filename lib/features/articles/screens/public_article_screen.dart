@@ -102,11 +102,17 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
         profile = article.author;
       }
       
+      final updatedArticle = article.copyWith(viewsCount: article.viewsCount + 1);
+      
       setState(() {
-        _article = article;
+        _article = updatedArticle;
         _authorProfile = profile;
         _isLoading = false;
       });
+
+      if (mounted) {
+        Provider.of<ArticleProvider>(context, listen: false).incrementViews(article.id, article: article);
+      }
 
       // تتبع قراءة المقال للجمهور العابر (الزوار المجهولين)
       if (mounted) {
@@ -360,6 +366,9 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
     }
 
     final hasImage = _article!.image != null && _article!.image!.isNotEmpty;
+    final List<String> audioUrls = _article!.audioFiles
+        .map((file) => 'https://sijilli.pockethost.io/api/files/articles/${_article!.id}/$file')
+        .toList();
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isDesktop = screenWidth > 800;
@@ -460,7 +469,11 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
         // محتوى المقال
         CollapsibleContent(
           buttonText: context.l10n.fullArticle,
-          child: ArticleContentRenderer(text: _article!.text, fontFamily: fontFamily),
+          child: ArticleContentRenderer(
+            text: _article!.text,
+            fontFamily: fontFamily,
+            audioUrls: audioUrls,
+          ),
         ),
         
         const SizedBox(height: 24),
@@ -532,24 +545,19 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
               orElse: () => _article!,
             );
             
-            final isLiked = innerArticle.likes.contains(currentUserId);
             final commentsCount = provider.getCommentsForArticle(innerArticle.id).length;
             
             return Row(
               children: [
-                IconButton(
-                  icon: Icon(
-                    isLiked ? Icons.favorite : Icons.favorite_border,
-                    color: isLiked ? AppColors.error : AppColors.getTextSecondary(context),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Icon(
+                    Icons.visibility_outlined,
+                    color: AppColors.getTextSecondary(context),
                   ),
-                  onPressed: currentUserId != null ? () {
-                    final record = PocketBaseClient.instance.pb.authStore.record;
-                    final name = record?.data['name'] ?? record?.data['username'] ?? '';
-                    provider.toggleLike(innerArticle.id, currentUserId, likerName: name);
-                  } : null,
                 ),
                 Text(
-                  '${innerArticle.likes.length}',
+                  '${innerArticle.viewsCount}',
                   style: TextStyle(
                     fontSize: AppDimens.textSizeM,
                     fontWeight: FontWeight.bold,

@@ -63,6 +63,11 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
         );
       }
     });
+
+    // زيادة عداد القراءات للجميع بما فيهم صاحب المقال
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<ArticleProvider>(context, listen: false).incrementViews(widget.article.id);
+    });
   }
 
   void _showCommentsSheet() {
@@ -92,6 +97,9 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
     );
     
     final hasImage = updatedArticle.image != null && updatedArticle.image!.isNotEmpty;
+    final List<String> audioUrls = updatedArticle.audioFiles
+        .map((file) => 'https://sijilli.pockethost.io/api/files/articles/${updatedArticle.id}/$file')
+        .toList();
     final currentUserId = context.read<AuthProvider>().user?.id;
     final isAuthor = currentUserId == updatedArticle.authorId;
 
@@ -305,11 +313,13 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                                 child: ArticleContentRenderer(
                                   text: updatedArticle.text,
                                   fontFamily: fontFamily,
+                                  audioUrls: audioUrls,
                                 ),
                               )
                             : ArticleContentRenderer(
                                 text: updatedArticle.text,
                                 fontFamily: fontFamily,
+                                audioUrls: audioUrls,
                               ),
                       ),
                       
@@ -487,24 +497,19 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                             orElse: () => updatedArticle,
                           );
                           
-                          final isLiked = innerArticle.likes.contains(currentUserId);
-                          
                           return Row(
                             children: [
-                              IconButton(
-                                icon: Icon(
-                                  isLiked ? Icons.favorite : Icons.favorite_border,
-                                  color: isLiked ? AppColors.error : AppColors.getTextSecondary(context),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Icon(
+                                  Icons.visibility_outlined,
+                                  color: AppColors.getTextSecondary(context),
                                 ),
-                                onPressed: currentUserId != null ? () {
-                                  final likerName = context.read<AuthProvider>().user?.name ?? '';
-                                  provider.toggleLike(innerArticle.id, currentUserId, likerName: likerName);
-                                } : null,
                               ),
                               Padding(
                                 padding: const EdgeInsets.only(top: 4.0),
                                 child: Text(
-                                  '${innerArticle.likes.length}',
+                                  '${innerArticle.viewsCount}',
                                   style: TextStyle(
                                     fontSize: AppDimens.textSizeM,
                                     fontWeight: FontWeight.bold,

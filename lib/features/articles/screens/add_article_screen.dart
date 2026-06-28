@@ -16,6 +16,8 @@ import '../providers/tag_provider.dart';
 import '../widgets/formatting_text_controller.dart';
 import '../widgets/article_content_renderer.dart';
 import '../widgets/tag_selector_sheet.dart';
+import '../widgets/inline_audio_player.dart';
+import 'package:file_picker/file_picker.dart';
 import '../widgets/tag_chip.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import '../../../core/providers/global_config_provider.dart';
@@ -38,6 +40,8 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
   final FocusNode _textFocusNode = FocusNode();
   File? _selectedImage;
   bool _deleteExistingImage = false;
+  List<File> _selectedAudios = [];
+  List<String> _existingAudios = [];
   bool _isPublished = false;
   bool _isLoading = false;
   bool _isPreviewMode = false;
@@ -67,7 +71,10 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
     _lastRawText = _textController.rawText;
     _isPublished = widget.article?.isPublished ?? false;
     _selectedTagIds = widget.article?.tagIds ?? widget.initialTagIds ?? [];
-
+    if (widget.article != null) {
+      _existingAudios = List.from(widget.article!.audioFiles);
+    }
+ 
     _textController.addListener(_unifiedTextListener);
 
     if (widget.article == null) {
@@ -795,26 +802,6 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
               toolbarTitle: context.l10n.editArticleCover,
               toolbarColor: AppColors.primary,
               toolbarWidgetColor: Colors.white,
-              initAspectRatio: CropAspectRatioPreset.original,
-              lockAspectRatio: false,
-              aspectRatioPresets: [
-                CropAspectRatioPreset.original,
-                CropAspectRatioPreset.square,
-                CropAspectRatioPreset.ratio3x2,
-                CropAspectRatioPreset.ratio4x3,
-                CropAspectRatioPreset.ratio16x9,
-              ],
-            ),
-            IOSUiSettings(
-              title: context.l10n.editArticleCover,
-              aspectRatioLockEnabled: false,
-              aspectRatioPresets: [
-                CropAspectRatioPreset.original,
-                CropAspectRatioPreset.square,
-                CropAspectRatioPreset.ratio3x2,
-                CropAspectRatioPreset.ratio4x3,
-                CropAspectRatioPreset.ratio16x9,
-              ],
             ),
           ],
         );
@@ -822,12 +809,113 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
         if (croppedFile != null) {
           setState(() {
             _selectedImage = File(croppedFile.path);
+            _deleteExistingImage = false;
           });
         }
       }
     } catch (e) {
-      print('Error picking image: $e');
+      debugPrint('Error picking image: $e');
     }
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+  }
+
+  Future<void> _pickAudio() async {
+    try {
+      final globalConfig = context.read<GlobalConfigProvider>();
+      final maxFiles = globalConfig.audioMaxFiles;
+      final maxSizeMb = globalConfig.audioMaxSizeMb;
+      final totalCapacityMb = globalConfig.audioTotalCapacityMb;
+
+      final int currentCount = _existingAudios.length + _selectedAudios.length;
+      if (currentCount >= maxFiles) {
+        _showErrorSnackBar('لقد تجاوزت الحد الأقصى للملفات الصوتية المسموح بها وهو $maxFiles ملفات.');
+        return;
+      }
+
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['mp3', 'wav', 'm4a', 'aac', 'opus', 'ogg', 'caf'],
+      );
+      if (result != null && result.files.single.path != null) {
+        final pickedFile = File(result.files.single.path!);
+        final int fileSize = pickedFile.lengthSync();
+        if (fileSize > maxSizeMb * 1024 * 1024) {
+          _showErrorSnackBar('حجم الملف الصوتي (${(fileSize / (1024 * 1024)).toStringAsFixed(1)}MB) يتجاوز الحد الأقصى للملف الواحد وهو $maxSizeMb ميجابايت.');
+          return;
+        }
+
+        int totalLocalSize = 0;
+        for (final f in _selectedAudios) {
+          totalLocalSize += f.lengthSync();
+        }
+        final int totalSize = totalLocalSize + fileSize + (_existingAudios.length * 4 * 1024 * 1024);
+        if (totalSize > totalCapacityMb * 1024 * 1024) {
+          _showErrorSnackBar('إجمالي حجم الملفات الصوتية (${(totalSize / (1024 * 1024)).toStringAsFixed(1)}MB) يتجاوز السعة الإجمالية المسموح بها وهي $totalCapacityMb ميجابايت.');
+          return;
+        }
+
+        setState(() {
+          _selectedAudios.add(pickedFile);
+        });
+        
+        final currentSelection = _textController.selection;
+        final rawText = _textController.rawText;
+        
+        String newText;
+        int newCursorOffset;
+        if (currentSelection.isValid) {
+          final start = currentSelection.start;
+          final end = currentSelection.end;
+          newText = rawText.replaceRange(start, end, '\n[AUDIO]\n');
+          newCursorOffset = start + '\n[AUDIO]\n'.length;
+        } else {
+          newText = '$rawText\n[AUDIO]\n';
+          newCursorOffset = newText.length;
+        }
+        
+        _textController.setRawText(newText);
+        _textController.selection = TextSelection.collapsed(offset: newCursorOffset);
+        _textFocusNode.requestFocus();
+      }
+    } catch (e) {
+      debugPrint('Error picking audio: $e');
+    }
+  }
+ 
+  void _confirmDeleteExistingAudio(String fileName) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('إزالة الملف الصوتي'),
+        content: const Text('هل أنت متأكد من رغبتك في حذف هذا الملف الصوتي من المقال نهائياً؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(context.l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() {
+                _existingAudios.remove(fileName);
+              });
+            },
+            child: Text(
+              context.l10n.delete,
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _submit() async {
@@ -853,6 +941,8 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
         isDraft: false,
         imageFile: _selectedImage,
         removeImage: _deleteExistingImage,
+        audioFiles: _selectedAudios,
+        existingAudios: _existingAudios,
         tagIds: _selectedTagIds,
       );
     } else {
@@ -861,6 +951,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
         isPublished: _isPublished,
         isDraft: false,
         imageFile: _selectedImage,
+        audioFiles: _selectedAudios,
         tagIds: _selectedTagIds,
       );
     }
@@ -909,6 +1000,8 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
               setState(() {
                 _textController.clear();
                 _selectedImage = null;
+                _selectedAudios.clear();
+                _existingAudios.clear();
                 _isPublished = false;
               });
               if (widget.article == null) {
@@ -1497,20 +1590,34 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // من اليسار: زر الصورة (إضافة أو إزالة مع صندوق تأكيد)
-                  Builder(
-                    builder: (context) {
-                      final hasImage = _selectedImage != null || (widget.article?.image != null && widget.article!.image!.isNotEmpty && !_deleteExistingImage);
-                      return IconButton(
+                  // من اليسار: زر الصورة وزر الصوت
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Builder(
+                        builder: (context) {
+                          final hasImage = _selectedImage != null || (widget.article?.image != null && widget.article!.image!.isNotEmpty && !_deleteExistingImage);
+                          return IconButton(
+                            visualDensity: VisualDensity.compact,
+                            tooltip: hasImage ? 'إزالة الصورة' : 'إضافة صورة غلاف',
+                            icon: Icon(
+                              hasImage ? Icons.no_photography : Icons.add_photo_alternate_outlined,
+                              color: hasImage ? AppColors.error : AppColors.primary,
+                            ),
+                            onPressed: hasImage ? _confirmDeleteImage : _pickImage,
+                          );
+                        },
+                      ),
+                      IconButton(
                         visualDensity: VisualDensity.compact,
-                        tooltip: hasImage ? 'إزالة الصورة' : 'إضافة صورة غلاف',
-                        icon: Icon(
-                          hasImage ? Icons.no_photography : Icons.add_photo_alternate_outlined,
-                          color: hasImage ? AppColors.error : AppColors.primary,
+                        tooltip: 'إضافة ملف صوتي/واتساب 🎙️',
+                        icon: const Icon(
+                          Icons.mic_none_outlined,
+                          color: AppColors.primary,
                         ),
-                        onPressed: hasImage ? _confirmDeleteImage : _pickImage,
-                      );
-                    },
+                        onPressed: _pickAudio,
+                      ),
+                    ],
                   ),
                   // بالوسط: أدوات تحريك المؤشر والتظليل
                   Row(
@@ -1688,6 +1795,114 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
             const Divider(height: 1),
           ],
 
+          if (_existingAudios.isNotEmpty || _selectedAudios.isNotEmpty) ...[
+            Builder(
+              builder: (context) {
+                final globalConfig = context.watch<GlobalConfigProvider>();
+                final maxFiles = globalConfig.audioMaxFiles;
+                final totalCapacityMb = globalConfig.audioTotalCapacityMb;
+                
+                int totalLocalSize = 0;
+                for (final f in _selectedAudios) {
+                  totalLocalSize += f.lengthSync();
+                }
+                final double totalSizeMb = (totalLocalSize / (1024 * 1024)) + (_existingAudios.length * 4.0);
+                final int currentCount = _existingAudios.length + _selectedAudios.length;
+                
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  color: AppColors.getCardBackground(context).withOpacity(0.6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.insert_drive_file_outlined, size: 14, color: AppColors.getTextSecondary(context)),
+                          const SizedBox(width: 4),
+                          Text(
+                            'عدد الملفات: $currentCount / $maxFiles',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.getTextSecondary(context)),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Icon(Icons.cloud_queue_rounded, size: 14, color: AppColors.getTextSecondary(context)),
+                          const SizedBox(width: 4),
+                          Text(
+                            'السعة: ${totalSizeMb.toStringAsFixed(1)}MB / ${totalCapacityMb}MB',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.getTextSecondary(context)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }
+            ),
+            const Divider(height: 1),
+            ..._existingAudios.map((file) {
+              final cleanName = file.split('_').skip(1).join('_');
+              final displayName = cleanName.isEmpty ? file : cleanName;
+              return Container(
+                key: ValueKey('existing_$file'),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                color: AppColors.getCardBackground(context),
+                child: Row(
+                  children: [
+                    const Icon(Icons.audiotrack_rounded, color: Colors.green),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        displayName,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                      onPressed: () {
+                        _confirmDeleteExistingAudio(file);
+                      },
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+            ..._selectedAudios.map((file) {
+              final displayName = file.path.split('/').last;
+              return Container(
+                key: ValueKey('selected_${file.path}'),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                color: AppColors.getCardBackground(context),
+                child: Row(
+                  children: [
+                    const Icon(Icons.audiotrack_rounded, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        displayName,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, color: Colors.red),
+                      onPressed: () {
+                        setState(() {
+                          _selectedAudios.remove(file);
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+            const Divider(height: 1),
+          ],
+
           // Editor & Preview Area
           Expanded(
             child: Column(
@@ -1708,7 +1923,21 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                           padding: const EdgeInsets.all(16.0),
                           child: ListenableBuilder(
                             listenable: _textController,
-                            builder: (context, _) => ArticleContentRenderer(text: _textController.rawText),
+                            builder: (context, _) {
+                              final List<String> previewAudioUrls = [];
+                              if (widget.article != null) {
+                                for (final file in _existingAudios) {
+                                  previewAudioUrls.add('https://sijilli.pockethost.io/api/files/articles/${widget.article!.id}/$file');
+                                }
+                              }
+                              for (final file in _selectedAudios) {
+                                previewAudioUrls.add(file.path);
+                              }
+                              return ArticleContentRenderer(
+                                text: _textController.rawText,
+                                audioUrls: previewAudioUrls,
+                              );
+                            },
                           ),
                         ),
                       ),

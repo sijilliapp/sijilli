@@ -4,6 +4,8 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimens.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../appointments/providers/appointment_provider.dart';
+import '../../articles/providers/article_provider.dart';
+import '../../../models/extensions/appointment_logic.dart';
 import '../tabs/appointments_tab.dart';
 import '../widgets/profile_tabs/profile_articles_tab.dart';
 import '../widgets/profile_header.dart';
@@ -14,6 +16,7 @@ import '../../appointments/screens/saved_appointments_screen.dart';
 
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/extensions/context_l10n.dart';
+import '../../../core/local/local_db_service.dart';
 
 import '../../search/providers/search_provider.dart';
 import '../../../core/services/calendar_sync_service.dart';
@@ -30,6 +33,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
   late TabController _tabController;
   final ScrollController _scrollController = ScrollController();
   final CalendarSyncService _calendarSyncService = CalendarSyncService();
+  bool _isSnapping = false;
 
   @override
   void initState() {
@@ -46,9 +50,30 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
       }
     });
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       context.read<AppointmentProvider>().fetchAppointments();
       context.read<SearchProvider>().init();
+      
+      // توجيه تلقائي ذكي للتبويب الأنسب عند فتح التطبيق بالاستعلام المباشر من قاعدة البيانات المحلية
+      try {
+        final appointments = await LocalDbService.instance.getAppointments();
+        final userArticles = await LocalDbService.instance.getArticles();
+
+        final hasActiveOrUpcoming = appointments.any((a) => 
+          (a.isNow || a.isUpcoming) && !a.isCancelled && !a.isUserDeleted
+        );
+        
+        final hasPublishedArticles = userArticles.any((a) => a.isPublished);
+
+        if (mounted) {
+          // إذا لم يكن لديه مواعيد نشطة أو قريبة، ولديه مقالات منشورة، نفتح المقالات كافتراضي
+          if (!hasActiveOrUpcoming && hasPublishedArticles) {
+            _tabController.index = 1;
+          }
+        }
+      } catch (e) {
+        print('⚠️ [HomeScreen] Failed to fetch cache for tab routing: $e');
+      }
       
       // Initial snap to tabs after short delay for layout
       Future.delayed(const Duration(milliseconds: 500), () {
@@ -74,7 +99,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
   }
 
   void _snapToTabs({bool force = false}) {
-    if (!mounted || !_scrollController.hasClients) return;
+    if (!mounted || !_scrollController.hasClients || _isSnapping) return;
 
     // Safety check: Don't snap if user is already scrolling or already animating
     if (!force && _scrollController.position.isScrollingNotifier.value) return;
@@ -93,17 +118,22 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     // If offset is very close to snapOffset, skip to avoid jitter
     if ((_scrollController.offset - snapOffset).abs() < 1.0) return;
 
-    if (force || (_scrollController.offset > 0 && _scrollController.offset < snapOffset)) {
+    if (force || (_scrollController.offset > 1.0 && _scrollController.offset < snapOffset - 1.0)) {
+      setState(() => _isSnapping = true);
       _scrollController.animateTo(
         snapOffset,
         duration: const Duration(milliseconds: 600),
         curve: Curves.fastOutSlowIn,
-      ).catchError((_) {}); // Prevent crashes if unmounted mid-animation
+      ).then((_) {
+        if (mounted) setState(() => _isSnapping = false);
+      }).catchError((_) {
+        if (mounted) setState(() => _isSnapping = false);
+      });
     }
   }
 
   void scrollToMagneticTop({bool force = false}) {
-    if (!mounted || !_scrollController.hasClients) return;
+    if (!mounted || !_scrollController.hasClients || _isSnapping) return;
 
     final settings = context.read<SettingsProvider>();
     final appointments = context.read<AppointmentProvider>().appointments;
@@ -122,19 +152,29 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     final currentOffset = _scrollController.offset;
 
     if (force) {
+      setState(() => _isSnapping = true);
       _scrollController.animateTo(
         targetOffset,
         duration: const Duration(milliseconds: 600),
         curve: Curves.fastOutSlowIn,
-      ).catchError((_) {});
+      ).then((_) {
+        if (mounted) setState(() => _isSnapping = false);
+      }).catchError((_) {
+        if (mounted) setState(() => _isSnapping = false);
+      });
     } else {
       // Auto-snap only if enabled and within range
-      if (isEnabled && currentOffset < snapOffset && !_scrollController.position.isScrollingNotifier.value) {
+      if (isEnabled && currentOffset < snapOffset - 1.0 && !_scrollController.position.isScrollingNotifier.value) {
+        setState(() => _isSnapping = true);
         _scrollController.animateTo(
           snapOffset,
           duration: const Duration(milliseconds: 600),
           curve: Curves.fastOutSlowIn,
-        ).catchError((_) {});
+        ).then((_) {
+          if (mounted) setState(() => _isSnapping = false);
+        }).catchError((_) {
+          if (mounted) setState(() => _isSnapping = false);
+        });
       }
     }
   }
@@ -205,12 +245,12 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     final apptProvider = context.watch<AppointmentProvider>();
     final settings = context.watch<SettingsProvider>();
     final hasRegions = apptProvider.searchRegionKeywords.isNotEmpty;
-    final hasCategories = apptProvider.searchCategoryKeywords.isNotEmpty;
+    final hasMonths = apptProvider.searchMonthKeywords.isNotEmpty;
 
     double capsulesHeight = 0.0;
-    if (hasRegions && hasCategories) {
+    if (hasRegions && hasMonths) {
       capsulesHeight = 90.0;
-    } else if (hasRegions || hasCategories) {
+    } else if (hasRegions || hasMonths) {
       capsulesHeight = 45.0;
     }
 
@@ -220,8 +260,8 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
           final settings = context.read<SettingsProvider>();
           final appointments = context.read<AppointmentProvider>().appointments;
 
-          // Skip snap if disabled or no appointments
-          if (!settings.isMagneticScrollEnabled || appointments.isEmpty) {
+          // Skip snap if disabled, no appointments, or currently snapping
+          if (!settings.isMagneticScrollEnabled || appointments.isEmpty || _isSnapping) {
             return false;
           }
 
@@ -230,15 +270,20 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
           final offset = _scrollController.offset;
 
           // Magnetic snap if between 0 and snapOffset
-          if (offset > 0 && offset < snapOffset) {
+          if (offset > 1.0 && offset < snapOffset - 1.0) {
             if (offset > snapOffset / 2) {
               _snapToTabs();
             } else {
+              setState(() => _isSnapping = true);
               _scrollController.animateTo(
                 0,
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeOut,
-              );
+              ).then((_) {
+                if (mounted) setState(() => _isSnapping = false);
+              }).catchError((_) {
+                if (mounted) setState(() => _isSnapping = false);
+              });
             }
           }
         }
@@ -400,9 +445,9 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     return Consumer<AppointmentProvider>(
       builder: (context, provider, _) {
         final regions = provider.searchRegionKeywords;
-        final categories = provider.searchCategoryKeywords;
+        final months = provider.searchMonthKeywords;
 
-        if (regions.isEmpty && categories.isEmpty) return const SizedBox.shrink();
+        if (regions.isEmpty && months.isEmpty) return const SizedBox.shrink();
 
         final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -440,17 +485,17 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                   },
                 ),
               ),
-            // السطر الثاني: أسماء التصنيفات والخصوصية
-            if (categories.isNotEmpty)
+            // السطر الثاني: أسماء الأشهر
+            if (months.isNotEmpty)
               Container(
                 height: 45,
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: categories.length,
+                  itemCount: months.length,
                   itemBuilder: (context, index) {
-                    final keyword = categories[index];
+                    final keyword = months[index];
                     return Padding(
                       padding: const EdgeInsets.only(left: 8),
                       child: ActionChip(

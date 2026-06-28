@@ -31,6 +31,7 @@ class UserModel {
   final bool emailVisibility;
   final bool phoneVerified; // 📱 هل تم التحقق من الهاتف؟
   final bool isSuperAdmin; // 🛡️ مشرف عام (صلاحيات كاملة)
+  final bool disableCopying; // 🔒 منع نسخ المقالات
   
   // ====================== التواريخ ======================
   final DateTime? date; // تاريخ الميلاد
@@ -62,6 +63,7 @@ class UserModel {
     this.emailVisibility = false,
     this.phoneVerified = false, // Default is false
     this.isSuperAdmin = false, // Default is false
+    this.disableCopying = false, // Default is false
     this.date,
     required this.created,
     required this.updated,
@@ -92,6 +94,7 @@ class UserModel {
       emailVisibility: JsonUtils.parseBool(json['emailVisibility']),
       phoneVerified: JsonUtils.parseBool(json['phone_verified']) ?? JsonUtils.parseBool(json['phoneVerified']),
       isSuperAdmin: JsonUtils.parseBool(json['is_super_admin']) ?? JsonUtils.parseBool(json['isSuperAdmin']),
+      disableCopying: JsonUtils.parseBool(json['disable_copying']) ?? JsonUtils.parseBool(json['disableCopying']),
       date: JsonUtils.parseDateTime(json['date']),
       created: JsonUtils.parseDateTime(json['created']) ?? DateTime.now(),
       updated: JsonUtils.parseDateTime(json['updated']) ?? DateTime.now(),
@@ -172,6 +175,7 @@ class UserModel {
       'emailVisibility': emailVisibility,
       'phone_verified': phoneVerified,
       'is_super_admin': isSuperAdmin,
+      'disable_copying': disableCopying,
       'date': date?.toIso8601String(),
       'created': created.toIso8601String(),
       'updated': updated.toIso8601String(),
@@ -207,6 +211,7 @@ class UserModel {
     bool? emailVisibility,
     bool? phoneVerified,
     bool? isSuperAdmin,
+    bool? disableCopying,
     DateTime? date,
     DateTime? created,
     DateTime? updated,
@@ -233,6 +238,7 @@ class UserModel {
       emailVisibility: emailVisibility ?? this.emailVisibility,
       phoneVerified: phoneVerified ?? this.phoneVerified,
       isSuperAdmin: isSuperAdmin ?? this.isSuperAdmin,
+      disableCopying: disableCopying ?? this.disableCopying,
       date: date ?? this.date,
       created: created ?? this.created,
       updated: updated ?? this.updated,

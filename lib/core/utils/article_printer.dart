@@ -141,7 +141,9 @@ class ArticlePrinter {
     double currentCol2Height = 0;
     
     for (final widget in widgets) {
-      final double widgetHeight = _estimateWidgetHeight(widget, columnWidth);
+      // Subtract 32 from columnWidth because _buildPagePartitions adds a horizontal padding of 16 (on both sides)
+      // to each column, meaning the actual text rendering width is columnWidth - 32.
+      final double widgetHeight = _estimateWidgetHeight(widget, columnWidth - 32);
       
       // Fallback if the widget is larger than the column height itself
       if (widgetHeight > pageHeight) {
@@ -213,13 +215,25 @@ class ArticlePrinter {
   }
 
   /// Estimates the visual height of a widget in points.
-  static double _estimateWidgetHeight(pw.Widget widget, double columnWidth) {
+  static double _estimateWidgetHeight(pw.Widget? widget, double columnWidth) {
+    if (widget == null) return 0.0;
+
     if (widget is pw.SizedBox) {
-      return widget.height ?? 0.0;
+      if (widget.height != null) {
+        return widget.height!;
+      }
+      return _estimateWidgetHeight(widget.child, columnWidth);
     }
+
     if (widget is pw.Divider) {
       return widget.thickness ?? 0.5;
     }
+
+    if (widget is pw.Padding) {
+      final verticalPadding = widget.padding.vertical;
+      return _estimateWidgetHeight(widget.child, columnWidth - widget.padding.horizontal) + verticalPadding;
+    }
+
     if (widget is pw.Column) {
       double total = 0.0;
       for (final child in widget.children) {
@@ -227,50 +241,60 @@ class ArticlePrinter {
       }
       return total;
     }
-    if (widget is pw.Padding) {
-      final child = widget.child;
-      if (child == null) return widget.padding.vertical;
-      final verticalPadding = widget.padding.vertical;
-      
-      if (child is pw.RichText) {
-        final text = _getSpanText(child.text);
-        final double textWidth = columnWidth - widget.padding.horizontal;
-        // Average char width factor for Arabic/English is ~0.55 of font size (11.0)
-        final double charsPerLine = textWidth > 0 ? (textWidth / 6.05) : 35.0;
-        
-        final lines = text.split('\n');
-        double totalLines = 0.0;
-        for (final line in lines) {
-          if (line.isEmpty) {
-            totalLines += 1.0;
-          } else {
-            totalLines += (line.length / charsPerLine).ceil();
-          }
-        }
-        return (totalLines * 11.0 * 1.5) + verticalPadding;
-      }
-      
-      if (child is pw.Align) {
-        final alignChild = child.child;
-        if (alignChild is pw.SizedBox || alignChild is pw.Container) {
-          // Standard poem line (Sadr & Ajez Row or standalone line)
-          final double lineFontSize = 11.5;
-          final double lineHeight = 1.5;
-          return (lineFontSize * lineHeight) + verticalPadding;
-        }
-      }
 
-      if (child is pw.Divider) {
-        return (child.thickness ?? 0.5) + verticalPadding;
-      }
-
-      if (child is pw.SizedBox) {
-        return (child.height ?? 0.0) + verticalPadding;
-      }
-      
-      return _estimateWidgetHeight(child, columnWidth) + verticalPadding;
+    if (widget is pw.Directionality) {
+      return _estimateWidgetHeight(widget.child, columnWidth);
     }
-    
+
+    if (widget is pw.Align) {
+      final alignChild = widget.child;
+      if (alignChild is pw.SizedBox || alignChild is pw.Container) {
+        // Standard poem line (Sadr & Ajez Row or standalone line)
+        final double lineFontSize = 11.5;
+        final double lineHeight = 1.5;
+        return lineFontSize * lineHeight;
+      }
+      return _estimateWidgetHeight(widget.child, columnWidth);
+    }
+
+    if (widget is pw.Container) {
+      double extra = 0.0;
+      try {
+        final margin = widget.margin;
+        if (margin != null) {
+          extra += margin.vertical;
+        }
+        final padding = widget.padding;
+        if (padding != null) {
+          extra += padding.vertical;
+        }
+      } catch (_) {}
+      return _estimateWidgetHeight(widget.child, columnWidth) + extra;
+    }
+
+    if (widget is pw.RichText) {
+      final text = _getSpanText(widget.text);
+      double fontSize = 11.0;
+      double height = 1.70; // Slightly higher height multiplier for safety margin (preventing overflow)
+      if (widget.text.style != null) {
+        fontSize = widget.text.style!.fontSize ?? 11.0;
+        height = widget.text.style!.height ?? 1.70;
+      }
+      final double charWidthFactor = BidiUtils.isRtl(text) ? 0.50 : 0.55; // Slightly increased for safe wrapping estimation
+      final double charsPerLine = columnWidth > 0 ? (columnWidth / (fontSize * charWidthFactor)) : 35.0;
+
+      final lines = text.split('\n');
+      double totalLines = 0.0;
+      for (final line in lines) {
+        if (line.isEmpty) {
+          totalLines += 1.0;
+        } else {
+          totalLines += (line.length / charsPerLine).ceil();
+        }
+      }
+      return totalLines * fontSize * height;
+    }
+
     return 40.0;
   }
 

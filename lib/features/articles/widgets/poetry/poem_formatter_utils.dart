@@ -75,7 +75,7 @@ class PoemFormatterUtils {
 
   static String _stripLeftoverTags(String text) {
     return text
-        .replaceAll(RegExp(r'\[/?(?:BOLD|HIGHLIGHT|B|POEM|CENTER|JUSTIFY|LEFT|RIGHT)/?\]', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\[/?(?:BOLD|HIGHLIGHT|B|POEM|CENTER|JUSTIFY|LEFT|RIGHT|AUDIO)/?\]', caseSensitive: false), '')
         .replaceAll(RegExp(r'\[/', caseSensitive: false), '');
   }
 

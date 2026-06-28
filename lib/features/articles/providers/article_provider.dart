@@ -289,6 +289,7 @@ class ArticleProvider extends ChangeNotifier {
     bool isDraft = false,
     List<String>? tagIds,
     File? imageFile,
+    List<File>? audioFiles,
     bool silent = false,
   }) async {
     if (!silent) {
@@ -319,7 +320,27 @@ class ArticleProvider extends ChangeNotifier {
       try {
         http.MultipartFile? multipartFile;
         if (imageFile != null) {
-          multipartFile = await http.MultipartFile.fromPath('image', imageFile.path);
+          final String ext = imageFile.path.split('.').last.toLowerCase();
+          final String safeExt = (ext.length > 0 && ext.length <= 4) ? ext : 'jpg';
+          final String safeFileName = 'image_${DateTime.now().millisecondsSinceEpoch}.$safeExt';
+          multipartFile = await http.MultipartFile.fromPath(
+            'image',
+            imageFile.path,
+            filename: safeFileName,
+          );
+        }
+        List<http.MultipartFile>? multipartAudios;
+        if (audioFiles != null && audioFiles.isNotEmpty) {
+          multipartAudios = [];
+          for (final audioFile in audioFiles) {
+            final String originalName = audioFile.path.split('/').last;
+            final String fileName = Uri.encodeFull(originalName);
+            multipartAudios.add(await http.MultipartFile.fromPath(
+              'audio',
+              audioFile.path,
+              filename: fileName,
+            ));
+          }
         }
   
         final newArticle = await _articleService.createArticle(
@@ -328,6 +349,7 @@ class ArticleProvider extends ChangeNotifier {
           isDraft: isDraft,
           tagIds: tagIds,
           imageFile: multipartFile,
+          audioFiles: multipartAudios,
         );
 
       // Replace temp with real
@@ -341,7 +363,7 @@ class ArticleProvider extends ChangeNotifier {
       await LocalDbService.instance.saveArticles(_articles);
       return newArticle;
     } catch (e) {
-      _errorMessage = 'Saved locally (sync failed): $e';
+      _errorMessage = 'Saved locally: ${_getFriendlyErrorMessage(e)}';
       print('Sync Error: $e');
       return tempArticle;
     } finally {
@@ -360,6 +382,9 @@ class ArticleProvider extends ChangeNotifier {
     List<String>? tagIds,
     File? imageFile,
     bool removeImage = false,
+    List<File>? audioFiles,
+    List<String>? existingAudios,
+    bool removeAudio = false,
     bool silent = false,
   }) async {
     if (!silent) {
@@ -373,9 +398,29 @@ class ArticleProvider extends ChangeNotifier {
     try {
       http.MultipartFile? multipartFile;
       if (imageFile != null) {
-        multipartFile = await http.MultipartFile.fromPath('image', imageFile.path);
+        final String ext = imageFile.path.split('.').last.toLowerCase();
+        final String safeExt = (ext.length > 0 && ext.length <= 4) ? ext : 'jpg';
+        final String safeFileName = 'image_${DateTime.now().millisecondsSinceEpoch}.$safeExt';
+        multipartFile = await http.MultipartFile.fromPath(
+          'image',
+          imageFile.path,
+          filename: safeFileName,
+        );
       }
-
+      List<http.MultipartFile>? multipartAudios;
+      if (audioFiles != null && audioFiles.isNotEmpty) {
+        multipartAudios = [];
+        for (final audioFile in audioFiles) {
+          final String originalName = audioFile.path.split('/').last;
+          final String fileName = Uri.encodeFull(originalName);
+          multipartAudios.add(await http.MultipartFile.fromPath(
+            'audio',
+            audioFile.path,
+            filename: fileName,
+          ));
+        }
+      }
+ 
       Article updatedArticle;
       if (isTemp) {
         updatedArticle = await _articleService.createArticle(
@@ -384,6 +429,7 @@ class ArticleProvider extends ChangeNotifier {
           isDraft: isDraft ?? true,
           tagIds: tagIds,
           imageFile: multipartFile,
+          audioFiles: multipartAudios,
         );
       } else {
         updatedArticle = await _articleService.updateArticle(
@@ -394,6 +440,9 @@ class ArticleProvider extends ChangeNotifier {
           tagIds: tagIds,
           imageFile: multipartFile,
           removeImage: removeImage,
+          audioFiles: multipartAudios,
+          existingAudios: existingAudios,
+          removeAudio: removeAudio,
         );
       }
 
@@ -420,7 +469,7 @@ class ArticleProvider extends ChangeNotifier {
           return localUpdated;
         }
       }
-      _errorMessage = 'Failed to update article: $e';
+      _errorMessage = 'Failed to update article: ${_getFriendlyErrorMessage(e)}';
       return null;
     } finally {
       if (!silent) {
@@ -430,47 +479,47 @@ class ArticleProvider extends ChangeNotifier {
     }
   }
 
-  /// Toggle Like
-  Future<void> toggleLike(String articleId, String userId, {String? likerName}) async {
-    final index = _articles.indexWhere((a) => a.id == articleId);
-    if (index == -1) return;
-
-    final article = _articles[index];
-    final currentLikes = List<String>.from(article.likes);
-    final isAddingLike = !currentLikes.contains(userId);
-    
-    // Optimistic UI update
-    if (currentLikes.contains(userId)) {
-      currentLikes.remove(userId);
-    } else {
-      currentLikes.add(userId);
+  String _getFriendlyErrorMessage(dynamic e) {
+    final errorStr = e.toString();
+    if (errorStr.contains('validation_file_size_limit')) {
+      return 'حجم الملف الصوتي كبير جداً. الحد الأقصى المسموح به حالياً على الخادم هو 5 ميجابايت. يرجى زيارة لوحة التحكم PocketBase لزيادة الحد.';
     }
-    _articles[index] = article.copyWith(likes: currentLikes);
-    notifyListeners();
+    if (errorStr.contains('validation_file_mime_type')) {
+      return 'نوع الملف الصوتي غير مدعوم على الخادم.';
+    }
+    return '$e';
+  }
 
-    try {
-      await _articleService.toggleLike(articleId, userId);
-      
-      // If we added a like, trigger a notification to the author
-      if (isAddingLike && userId != article.authorId && likerName != null && likerName.isNotEmpty) {
-        try {
-          final notificationService = NotificationService();
-          await notificationService.createNotification(
-            targetUserId: article.authorId,
-            title: 'إعجابات',
-            message: 'لقد سجل $likerName إعجاباً بمقالك.',
-            type: NotificationType.system, // use system type to display in screen feed
-            relatedId: articleId,
-          );
-        } catch (e) {
-          print('⚠️ Failed to send like notification: $e');
-        }
-      }
-    } catch (e) {
-      // Revert if API fails
-      _articles[index] = article;
-      _errorMessage = 'Failed to toggle like: $e';
+  /// زيادة عدد القراءات والمشاهدات للمقال
+  Future<void> incrementViews(String articleId, {Article? article}) async {
+    final index = _articles.indexWhere((a) => a.id == articleId);
+    if (index != -1) {
+      final oldArticle = _articles[index];
+      final newCount = oldArticle.viewsCount + 1;
+
+      // تحديث محلي فوري (Optimistic UI)
+      _articles[index] = oldArticle.copyWith(viewsCount: newCount);
       notifyListeners();
+
+      // حفظ التحديث محلياً في قاعدة البيانات المحلية (Hive)
+      try {
+        await LocalDbService.instance.saveArticles(_articles);
+      } catch (e) {
+        print('⚠️ Failed to save view count to local DB: $e');
+      }
+
+      try {
+        await _articleService.incrementViewsCount(articleId, newCount);
+      } catch (e) {
+        print('⚠️ Failed to sync view count to server: $e');
+      }
+    } else if (article != null) {
+      final newCount = article.viewsCount + 1;
+      try {
+        await _articleService.incrementViewsCount(articleId, newCount);
+      } catch (e) {
+        print('⚠️ Failed to sync view count to server: $e');
+      }
     }
   }
 

@@ -15,6 +15,7 @@ import 'dart:convert';
 class LocalDbService {
   static LocalDbService? _instance;
   static LocalDbService get instance => _instance ??= LocalDbService._();
+  static set instance(LocalDbService mock) => _instance = mock;
   
   static const String boxName = 'users';
   static const String followedBoxName = 'followed_users';
@@ -33,6 +34,10 @@ class LocalDbService {
   
   LocalDbService._() {
     _ready = _initAll();
+  }
+
+  LocalDbService.empty() {
+    _ready = Future.value();
   }
 
   Future<void> _initAll() async {
@@ -447,18 +452,30 @@ class LocalDbService {
       ..tagsJson = jsonEncode({
         'tagIds': a.tagIds,
         'tags': a.tags.map((t) => t.toJson()).toList(),
+        'viewsCount': a.viewsCount,
+        'audio': a.audioFiles,
       });
   }
 
   Article _toModelArticle(LocalArticle la) {
     List<String> tagIds = [];
     List<Tag> tags = [];
+    int viewsCount = 0;
+    List<String> audioFiles = [];
     if (la.tagsJson != null && la.tagsJson!.isNotEmpty) {
       try {
         final decoded = jsonDecode(la.tagsJson!);
         if (decoded is Map) {
           tagIds = (decoded['tagIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
           tags = (decoded['tags'] as List<dynamic>?)?.map((e) => Tag.fromJson(Map<String, dynamic>.from(e))).toList() ?? [];
+          viewsCount = (decoded['viewsCount'] as num?)?.toInt() ?? 0;
+          
+          final audioData = decoded['audio'];
+          if (audioData is List) {
+            audioFiles = audioData.map((e) => e.toString()).toList();
+          } else if (audioData is String && audioData.isNotEmpty) {
+            audioFiles = [audioData];
+          }
         }
       } catch (e) {
         debugPrint('⚠️ Error decoding tags from local DB: $e');
@@ -474,9 +491,11 @@ class LocalDbService {
       createdAt: la.createdAt,
       updatedAt: la.updatedAt,
       image: la.image,
+      audioFiles: audioFiles,
       likes: la.likes,
       tagIds: tagIds,
       tags: tags,
+      viewsCount: viewsCount,
       author: la.authorJson != null ? UserModel.fromJson(jsonDecode(la.authorJson!)) : null,
       poetryMetadata: la.poetryMetadataJson != null ? jsonDecode(la.poetryMetadataJson!) : null,
       highlightsMetadata: la.highlightsMetadataJson != null ? jsonDecode(la.highlightsMetadataJson!) : null,

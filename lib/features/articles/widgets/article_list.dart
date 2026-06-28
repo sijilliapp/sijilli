@@ -5,6 +5,7 @@ import '../screens/article_details_screen.dart';
 import '../screens/add_article_screen.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_dimens.dart';
 
 class ArticleList extends StatelessWidget {
   final List<Article> articles;
@@ -40,7 +41,7 @@ class ArticleList extends StatelessWidget {
       onRefresh: onRefresh,
       color: AppColors.primary,
       child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(4.0, 2.0, 4.0, 80.0),
+        padding: const EdgeInsets.fromLTRB(8.0, 4.0, 8.0, 80.0),
         itemCount: articles.length + (hasMore ? 1 : 0),
         itemBuilder: (context, index) {
           if (index == articles.length) {

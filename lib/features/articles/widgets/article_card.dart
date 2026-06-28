@@ -7,6 +7,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimens.dart';
 import '../../../models/article.dart';
 import '../../../models/appointment.dart';
+import '../../../models/tag.dart';
 import '../providers/article_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
@@ -14,6 +15,8 @@ import 'package:timeago/timeago.dart' as timeago;
 import '../../../core/widgets/sheets/app_action_sheet.dart';
 import '../../profile/providers/moderation_provider.dart';
 import 'tag_selector_sheet.dart';
+import '../../appointments/widgets/atomic/interaction_capsule.dart';
+
 
 class ArticleCard extends StatelessWidget {
   final Article article;
@@ -27,22 +30,59 @@ class ArticleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentUserId = context.read<AuthProvider>().user?.id;
+    final authProvider = context.watch<AuthProvider>();
+    final currentUser = authProvider.user;
+    final currentUserId = currentUser?.id;
     final isAuthor = currentUserId == article.authorId;
+    final isCopyDisabled = isAuthor
+        ? (currentUser?.disableCopying == true)
+        : (article.author?.disableCopying == true);
     final commentsCount = context.watch<ArticleProvider>().getCommentsForArticle(article.id).length;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isTrash = article.postStatus == PostStatus.trash;
+    final isArchived = article.postStatus == PostStatus.archived;
+    final isDraft = article.postStatus == PostStatus.draft;
+
+    Color cardBgColor;
+
+    if (isDark) {
+      cardBgColor = AppColors.darkCardBackground;
+    } else {
+      if (isTrash) {
+        cardBgColor = AppColors.warningLight.withValues(alpha: 0.12);
+      } else if (isArchived) {
+        cardBgColor = Colors.blue.shade50;
+      } else if (isDraft) {
+        cardBgColor = const Color(0xFFF3F4F6);
+      } else {
+        cardBgColor = AppColors.appointmentCardBackground; // Crisp light blue
+      }
+    }
+    final borderColor = isDark ? Colors.grey.shade700 : Colors.grey.shade400;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 4.0),
+      margin: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 4.0),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.black.withValues(alpha: 0.35) : Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Material(
-        elevation: AppDimens.appointmentCardElevation,
-        shadowColor: Colors.black.withValues(alpha: 0.12),
-        color: AppColors.getCardBackground(context),
+        color: cardBgColor,
         borderRadius: BorderRadius.circular(20),
         clipBehavior: Clip.antiAlias,
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.grey, width: AppDimens.appointmentCardBorderWidth),
+            border: Border.all(
+              color: borderColor,
+              width: 1.0,
+            ),
           ),
           child: InkWell(
             onTap: onTap,
@@ -201,14 +241,33 @@ class ArticleCard extends StatelessWidget {
                         },
                       ),
                     AppActionItem(
-                      label: context.l10n.copy,
-                      icon: Icons.copy,
+                      label: isCopyDisabled ? 'النسخ مقفل' : context.l10n.copy,
+                      icon: isCopyDisabled ? Icons.lock_outline : Icons.copy,
                       onTap: () async {
-                        await Clipboard.setData(ClipboardData(text: article.pureText));
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(context.l10n.articleCopied(article.title))),
+                        if (isCopyDisabled) {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              content: const Text(
+                                'قام الكاتب بتعطيل نسخ المقال.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('موافق'),
+                                ),
+                              ],
+                            ),
                           );
+                        } else {
+                          await Clipboard.setData(ClipboardData(text: article.pureText));
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(context.l10n.articleCopied(article.title))),
+                            );
+                          }
                         }
                       },
                     ),
@@ -281,7 +340,7 @@ class ArticleCard extends StatelessWidget {
                 if (article.image != null && article.image!.isNotEmpty)
                   Positioned.fill(
                     child: Opacity(
-                      opacity: 0.1, // Increased transparency (was 0.15)
+                      opacity: 0.1,
                       child: Image.network(
                         _getImageUrl(article),
                         fit: BoxFit.cover,
@@ -289,178 +348,54 @@ class ArticleCard extends StatelessWidget {
                       ),
                     ),
                   ),
-
                 // 2. Content
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
+                  padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 4.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Header: Title and Publish Switch
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: RichText(
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              text: TextSpan(
+                      // Header Row: Title and status capsule combined in the same row
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 0.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                article.title.isNotEmpty ? article.title : 'بدون عنوان',
                                 style: TextStyle(
-                                  fontSize: AppDimens.textSizeL,
-                                  fontWeight: FontWeight.bold,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w900,
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.85),
                                   height: 1.2,
-                                  color: AppColors.getTextPrimary(context),
-                                  fontFamily: Theme.of(context).textTheme.bodyMedium?.fontFamily,
                                 ),
-                                children: [
-                                  TextSpan(
-                                    text: article.title.isNotEmpty ? article.title : 'بدون عنوان',
-                                  ),
-                                ],
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                          ),
-                          if (isAuthor && article.postStatus != PostStatus.written) ...[
-                            const SizedBox(width: 8),
-                            _buildStatusCapsule(context, article.postStatus),
+                            if (isAuthor && article.postStatus != PostStatus.written) ...[
+                              const SizedBox(width: 12),
+                              _buildStatusCapsule(context, article.postStatus),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 14),
                       
-                      // Footer: Metadata
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text.rich(
-                              TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: timeago.format(article.createdAt, locale: context.l10n.localeName),
-                                  ),
-                                  const TextSpan(text: '  •  '),
-                                  TextSpan(
-                                    text: context.l10n.readTimeMins(article.estimatedReadingTimeMinutes),
-                                  ),
-                                  if (article.tags.isNotEmpty) ...[
-                                    const TextSpan(text: '  •  '),
-                                    ...article.tags.map((t) => WidgetSpan(
-                                      alignment: PlaceholderAlignment.middle,
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                                        child: Tooltip(
-                                          message: t.name,
-                                          child: Container(
-                                            width: 6.0,
-                                            height: 6.0,
-                                            decoration: BoxDecoration(
-                                              color: t.color,
-                                              shape: BoxShape.circle,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    )),
-                                  ] else if (isAuthor) ...[
-                                    const TextSpan(text: '  •  '),
-                                    WidgetSpan(
-                                      alignment: PlaceholderAlignment.middle,
-                                      child: GestureDetector(
-                                        onTap: () {
-                                          TagSelectorSheet.show(
-                                            context,
-                                            initialSelectedTagIds: article.tagIds,
-                                            onSelectionChanged: (selectedTagIds, selectedTags) async {
-                                              await context.read<ArticleProvider>().updateArticle(
-                                                id: article.id,
-                                                tagIds: selectedTagIds,
-                                              );
-                                            },
-                                          );
-                                        },
-                                        child: MouseRegion(
-                                          cursor: SystemMouseCursors.click,
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Icon(
-                                                Icons.add,
-                                                size: 11,
-                                                color: AppColors.primary,
-                                              ),
-                                              const SizedBox(width: 1),
-                                              Text(
-                                                context.l10n.articleCategoryLabel,
-                                                style: TextStyle(
-                                                  fontSize: AppDimens.textSizeS,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: AppColors.primary,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: AppDimens.textSizeS,
-                                color: AppColors.getTextSecondary(context),
-                              ),
+                      // Footer: Metadata & Interaction (Plain text and icons, no capsules)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(0.0, 0, 0.0, 8.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: _buildMetadataRow(context, isAuthor: isAuthor),
                             ),
-                          ),
-                          // Likes & Comments Counters
-                          Directionality(
-                            textDirection: TextDirection.ltr,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                const SizedBox(width: 5), // Nudge away from the edge to align with Switch
-                                Icon(
-                                  article.likes.contains(currentUserId) ? Icons.favorite : Icons.favorite_border,
-                                  size: 14,
-                                  color: AppColors.getTextSecondary(context),
-                                ),
-                                const SizedBox(width: 4),
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 2.0),
-                                  child: Text(
-                                    article.likes.length.toString(),
-                                    style: TextStyle(
-                                      fontSize: AppDimens.textSizeS,
-                                      color: AppColors.getTextSecondary(context),
-                                    ),
-                                  ),
-                                ),
-                                if (commentsCount > 0) ...[
-                                  const SizedBox(width: 12),
-                                  Icon(
-                                    Icons.comment_outlined,
-                                    size: 14,
-                                    color: AppColors.getTextSecondary(context),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 2.0),
-                                    child: Text(
-                                      commentsCount.toString(),
-                                      style: TextStyle(
-                                        fontSize: AppDimens.textSizeS,
-                                        color: AppColors.getTextSecondary(context),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            _buildViewsAndComments(context, commentsCount),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -468,6 +403,127 @@ class ArticleCard extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetadataRow(BuildContext context, {required bool isAuthor}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
+    final textColor = isDark ? Colors.grey.shade300 : Colors.grey.shade700;
+
+    final locale = context.l10n.localeName;
+    final mins = article.estimatedReadingTimeMinutes;
+    final readTimeLabel = mins >= 60 
+        ? (locale == 'ar' ? '${(mins / 60).round()} ساعة' : '${(mins / 60).round()} hr')
+        : (locale == 'ar' ? '$mins دقيقة' : '$mins min');
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Icon(Icons.access_time_filled, size: 14, color: iconColor),
+        const SizedBox(width: 4),
+        Text(
+          timeago.format(article.createdAt, locale: locale),
+          style: TextStyle(color: textColor, fontSize: 13),
+        ),
+        const SizedBox(width: 10),
+        Icon(Icons.hourglass_empty_rounded, size: 14, color: iconColor),
+        const SizedBox(width: 4),
+        Text(
+          readTimeLabel,
+          style: TextStyle(color: textColor, fontSize: 13),
+        ),
+        // Category tags and add tag button are disabled inside the article card list as requested by the user
+        const SizedBox.shrink(),
+      ],
+    );
+  }
+
+  Widget _buildViewsAndComments(BuildContext context, int commentsCount) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
+    final textColor = isDark ? Colors.grey.shade300 : Colors.grey.shade700;
+
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.visibility_outlined,
+            size: 14,
+            color: iconColor,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            article.viewsCount.toString(),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+            ),
+          ),
+          if (commentsCount > 0) ...[
+            const SizedBox(width: 12),
+            Icon(
+              Icons.chat_bubble_outline_rounded,
+              size: 14,
+              color: iconColor,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              commentsCount.toString(),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddTagButton(BuildContext context, Article article, bool isAuthor) {
+    final primaryColor = AppColors.primary;
+    return GestureDetector(
+      onTap: () {
+        TagSelectorSheet.show(
+          context,
+          initialSelectedTagIds: article.tagIds,
+          onSelectionChanged: (selectedTagIds, selectedTags) async {
+            await context.read<ArticleProvider>().updateArticle(
+              id: article.id,
+              tagIds: selectedTagIds,
+            );
+          },
+        );
+      },
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.add_rounded,
+              size: 13,
+              color: primaryColor,
+            ),
+            const SizedBox(width: 2),
+            Text(
+              context.l10n.articleCategoryLabel,
+              style: TextStyle(
+                fontSize: 13,
+                color: primaryColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -501,19 +557,26 @@ class ArticleCard extends StatelessWidget {
         label = context.l10n.published;
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        border: Border.all(color: color, width: 1),
-        borderRadius: BorderRadius.circular(20),
-      ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? color.withValues(alpha: 0.15) : color.withValues(alpha: 0.08);
+
+    return InteractionCapsule(
+      borderColor: color,
+      borderOpacity: 1.0,
+      backgroundColor: bgColor,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.05),
+          blurRadius: 4,
+          offset: const Offset(0, 2),
+        ),
+      ],
       child: Text(
         label,
         style: TextStyle(
           color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

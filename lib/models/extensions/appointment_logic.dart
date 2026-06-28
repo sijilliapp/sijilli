@@ -224,7 +224,9 @@ extension AppointmentLogic on Appointment {
 
     if (!hasRegion && !hasBuilding) return null;
     if (hasRegion && hasBuilding) return '$region - $cleanB';
-    return region ?? cleanB;
+    if (hasRegion) return region;
+    if (hasBuilding) return cleanB;
+    return null;
   }
   
   /// الموقع المختصر الذكي (يعطي الأولوية للمبنى/المكان المحدد)
@@ -236,7 +238,9 @@ extension AppointmentLogic on Appointment {
     if (!hasRegion && !hasBuilding) return null;
     // Flip order: Building - Region
     if (hasRegion && hasBuilding) return '$cleanB - $region';
-    return region ?? cleanB;
+    if (hasRegion) return region;
+    if (hasBuilding) return cleanB;
+    return null;
   }
   
   /// التحقق إذا كان الموعد لديه مكان (يتجاهل النصوص الفارغة)

@@ -93,27 +93,101 @@ class AppointmentProvider extends ChangeNotifier {
     return regions.toList()..sort();
   }
 
-  /// الحصول على قائمة أسماء التصنيفات في الصفحة للبحث (مع كلمة معتمدون)
-  List<String> get searchCategoryKeywords {
-    final Set<String> categoryNames = {};
-    final mainAppointments = appointments.where((a) {
+  /// الحصول على اسم الشهر للموعد (سواء هجري أو ميلادي بالعربية)
+  String getAppointmentMonthName(Appointment a, String locale) {
+    const hijriMonthsAr = {
+      1: 'محرم', 2: 'صفر', 3: 'ربيع الأول', 4: 'ربيع الآخر',
+      5: 'جمادى الأولى', 6: 'جمادى الآخرة', 7: 'رجب', 8: 'شعبان',
+      9: 'رمضان', 10: 'شوال', 11: 'ذو القعدة', 12: 'ذو الحجة'
+    };
+
+    const gregorianMonthsAr = {
+      1: 'يناير', 2: 'فبراير', 3: 'مارس', 4: 'أبريل', 5: 'مايو', 6: 'يونيو',
+      7: 'يوليو', 8: 'أغسطس', 9: 'سبتمبر', 10: 'أكتوبر', 11: 'نوفمبر', 12: 'ديسمبر'
+    };
+
+    if (a.dateType == 'hijri') {
+      final hMonth = a.hijriMonth;
+      if (hMonth != null && hMonth >= 1 && hMonth <= 12) {
+        return hijriMonthsAr[hMonth] ?? '';
+      }
+      if (a.hijriDate != null) {
+        try {
+          final parts = a.hijriDate!.replaceAll('/', '-').split('-');
+          int? monthVal;
+          if (parts.length == 3) {
+            monthVal = int.tryParse(parts[1]);
+          }
+          if (monthVal != null && monthVal >= 1 && monthVal <= 12) {
+            return hijriMonthsAr[monthVal] ?? '';
+          }
+        } catch (_) {}
+      }
+      return '';
+    } else {
+      final monthVal = a.date.month;
+      return gregorianMonthsAr[monthVal] ?? '';
+    }
+  }
+
+  int _getMonthOrderIndex(String monthName) {
+    const hijriOrder = {
+      'محرم': 1, 'صفر': 2, 'ربيع الأول': 3, 'ربيع الآخر': 4,
+      'جمادى الأولى': 5, 'جمادى الآخرة': 6, 'رجب': 7, 'شعبان': 8,
+      'رمضان': 9, 'شوال': 10, 'ذو القعدة': 11, 'ذو الحجة': 12
+    };
+
+    const gregorianOrder = {
+      'يناير': 101, 'فبراير': 102, 'مارس': 103, 'أبريل': 104,
+      'مايو': 105, 'يونيو': 106, 'يوليو': 107, 'أغسطس': 108,
+      'سبتمبر': 109, 'أكتوبر': 110, 'نوفمبر': 111, 'ديسمبر': 112
+    };
+
+    if (hijriOrder.containsKey(monthName)) return hijriOrder[monthName]!;
+    if (gregorianOrder.containsKey(monthName)) return gregorianOrder[monthName]!;
+    return 999;
+  }
+
+  /// الحصول على قائمة أسماء الأشهر في الصفحة للبحث (هجري وميلادي) مرتبة كرونولوجياً
+  List<String> get searchMonthKeywords {
+    final Set<String> months = {};
+    
+    List<Appointment> base;
+    if (_moderation == null) {
+      base = _appointments.where((a) => a.viewerRecord?.postStatus != PostStatus.bookmarked).toList();
+    } else {
+      base = _appointments.where((a) => 
+        !_moderation!.isUserBlocked(a.hostId) && 
+        a.viewerRecord?.postStatus != PostStatus.bookmarked
+      ).toList();
+    }
+
+    final mainAppointments = base.where((a) {
       final isHostedByMe = a.hostId == _currentUserId;
       final isAcceptedByMe = a.viewerRecord?.status == InvitationStatus.accepted;
       return isHostedByMe || isAcceptedByMe;
     }).toList();
 
     for (var a in mainAppointments) {
-      if (a.currentUserInvitation?.categories?.name != null && a.currentUserInvitation!.categories!.name.trim().isNotEmpty) {
-        categoryNames.add(a.currentUserInvitation!.categories!.name.trim());
+      final mName = getAppointmentMonthName(a, 'ar');
+      if (mName.isNotEmpty) {
+        months.add(mName);
       }
     }
-    final sortedCategories = categoryNames.toList()..sort();
-    return [...sortedCategories, 'معتمدون'];
+    
+    final List<String> sortedMonths = months.toList();
+    sortedMonths.sort((a, b) {
+      final idxA = _getMonthOrderIndex(a);
+      final idxB = _getMonthOrderIndex(b);
+      return idxA.compareTo(idxB);
+    });
+    
+    return sortedMonths;
   }
 
-  /// الكلمات المفتاحية لمجال البحث (المناطق المتوفرة في الصفحة أولاً، ثم التصنيفات categories، ثم كلمة معتمدون)
+  /// الكلمات المفتاحية لمجال البحث (المناطق المتوفرة في الصفحة أولاً، ثم الأشهر)
   List<String> get searchKeywords {
-    return [...searchRegionKeywords, ...searchCategoryKeywords];
+    return [...searchRegionKeywords, ...searchMonthKeywords];
   }
 
   // Getters (Filter out blocked users and bookmarked items)
@@ -173,11 +247,13 @@ class AppointmentProvider extends ChangeNotifier {
         final buildingMatch = normalize(a.building).contains(word);
         final hostMatch = normalize(a.host?.name).contains(word);
         final categoryMatch = normalize(a.currentUserInvitation?.categories?.name).contains(word);
+        final monthName = getAppointmentMonthName(a, 'ar');
+        final monthMatch = normalize(monthName).contains(word);
         final participantsMatch = a.participants?.any((p) => 
           normalize(p.user?.name).contains(word)
         ) ?? false;
         
-        return titleMatch || regionMatch || buildingMatch || hostMatch || categoryMatch || participantsMatch;
+        return titleMatch || regionMatch || buildingMatch || hostMatch || categoryMatch || participantsMatch || monthMatch;
       });
     }).toList();
   }

@@ -69,6 +69,7 @@ class PbArticleService {
     String? postStatus,
     List<String>? tagIds,
     http.MultipartFile? imageFile,
+    List<http.MultipartFile>? audioFiles,
   }) async {
     try {
       final authorId = _pb.authStore.record?.id;
@@ -97,6 +98,9 @@ class PbArticleService {
       if (imageFile != null) {
         files.add(imageFile);
       }
+      if (audioFiles != null) {
+        files.addAll(audioFiles);
+      }
 
       final record = await _pb.collection(collectionArticles).create(
         body: body,
@@ -123,6 +127,9 @@ class PbArticleService {
     bool clearDeletedAt = false,
     http.MultipartFile? imageFile,
     bool removeImage = false,
+    List<http.MultipartFile>? audioFiles,
+    List<String>? existingAudios,
+    bool removeAudio = false,
   }) async {
     try {
       final body = <String, dynamic>{};
@@ -156,11 +163,23 @@ class PbArticleService {
       }
 
       if (removeImage) body['image'] = ''; // PocketBase deletes the file if passed an empty string
+      if (existingAudios != null) {
+        if (existingAudios.isEmpty) {
+          body['audio'] = '';
+        } else {
+          body['audio'] = existingAudios;
+        }
+      } else if (removeAudio) {
+        body['audio'] = '';
+      }
       if (tagIds != null) body['tags'] = tagIds;
-
+ 
       final List<http.MultipartFile> files = [];
       if (imageFile != null) {
         files.add(imageFile);
+      }
+      if (audioFiles != null) {
+        files.addAll(audioFiles);
       }
 
       final record = await _pb.collection(collectionArticles).update(
@@ -218,26 +237,14 @@ class PbArticleService {
     }
   }
 
-  /// إضافة أو إزالة الإعجاب
-  Future<void> toggleLike(String articleId, String userId) async {
+  /// زيادة عدد القراءات والمشاهدات للمقال
+  Future<void> incrementViewsCount(String articleId, int newCount) async {
     try {
-      // 1. Fetch current article likes
-      final record = await _pb.collection(collectionArticles).getOne(articleId);
-      List<dynamic> currentLikes = record.getListValue<String>('likes');
-      
-      // 2. Toggle
-      if (currentLikes.contains(userId)) {
-        currentLikes.remove(userId);
-      } else {
-        currentLikes.add(userId);
-      }
-
-      // 3. Update
       await _pb.collection(collectionArticles).update(articleId, body: {
-        'likes': currentLikes,
+        'likes_count': newCount,
       });
     } catch (e) {
-      print('PbArticleService toggleLike error: $e');
+      print('PbArticleService incrementViewsCount error: $e');
       rethrow;
     }
   }

@@ -1,10 +1,12 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimens.dart';
 import '../../../../core/providers/theme_provider.dart';
 import 'poem_formatter_utils.dart';
 
-class PoemView extends StatelessWidget {
+class PoemView extends StatefulWidget {
   final String poemText;
   final String? fontFamily;
   final String type;
@@ -12,12 +14,32 @@ class PoemView extends StatelessWidget {
   const PoemView({super.key, required this.poemText, this.fontFamily, this.type = 'STANDARD'});
 
   @override
+  State<PoemView> createState() => _PoemViewState();
+}
+
+class _PoemViewState extends State<PoemView> {
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb) {
+      // Re-measure after 400ms and 1200ms on web to ensure custom asynchronously-loaded web fonts (like Amiri)
+      // are fully loaded and used for correct TextPainter measurement.
+      Timer(const Duration(milliseconds: 400), () {
+        if (mounted) setState(() {});
+      });
+      Timer(const Duration(milliseconds: 1200), () {
+        if (mounted) setState(() {});
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (poemText.trim().isEmpty) return const SizedBox.shrink();
+    if (widget.poemText.trim().isEmpty) return const SizedBox.shrink();
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final lines = poemText.split('\n').where((l) => l.trim().isNotEmpty).toList();
+        final lines = widget.poemText.split('\n').where((l) => l.trim().isNotEmpty).toList();
         final double maxAllowedWidth = (constraints.maxWidth - 48) > 0 ? (constraints.maxWidth - 48) : constraints.maxWidth;
 
         final double fontSize = AppDimens.textSize;
@@ -30,12 +52,12 @@ class PoemView extends StatelessWidget {
           color: AppColors.getTextPrimary(context),
           fontWeight: fontWeight,
         );
-        final textStyle = ThemeProvider.getTextStyleForFont(fontFamily ?? 'Default', baseStyle);
+        final textStyle = ThemeProvider.getTextStyleForFont(widget.fontFamily ?? 'Default', baseStyle);
 
         // Parse the poem lines into PoemItems based on structure type
         final List<PoemItem> items = [];
 
-        if (type == 'TAKHMEES') {
+        if (widget.type == 'TAKHMEES') {
           for (int i = 0; i < lines.length; i += 5) {
             final remaining = lines.length - i;
             if (remaining >= 5) {
@@ -121,7 +143,7 @@ class PoemView extends StatelessWidget {
           }
 
           // Post-process styling for TASHTEER and TARBEE
-          if (type == 'TASHTEER') {
+          if (widget.type == 'TASHTEER') {
             int verseIndex = 0;
             for (int k = 0; k < items.length; k++) {
               final item = items[k];
@@ -136,7 +158,7 @@ class PoemView extends StatelessWidget {
                 verseIndex++;
               }
             }
-          } else if (type == 'TARBEE') {
+          } else if (widget.type == 'TARBEE') {
             int verseIndex = 0;
             for (int k = 0; k < items.length; k++) {
               final item = items[k];
@@ -263,7 +285,7 @@ class PoemView extends StatelessWidget {
                     final centeredWordSpans = PoemFormatterUtils.splitSpansIntoWords(parsedCentered);
                     
                     // Unified width for centered Takhmees lines: finalSadrWidth * 1.2 capped at containerWidth
-                    final double widthLimit = type == 'TAKHMEES'
+                    final double widthLimit = widget.type == 'TAKHMEES'
                         ? (finalSadrWidth * 1.2 > containerWidth ? containerWidth : (finalSadrWidth > 0 ? finalSadrWidth * 1.2 : containerWidth * 0.6))
                         : (finalCenteredWidth > containerWidth ? containerWidth : (finalCenteredWidth > 0 ? finalCenteredWidth : containerWidth * 0.6));
 
@@ -377,7 +399,7 @@ class PoemView extends StatelessWidget {
                       children: [
                         ...widgets,
                         if (item.hasDividerBelow) ...[
-                          const SizedBox(height: 8.0),
+                           const SizedBox(height: 8.0),
                           Divider(thickness: 1.0, color: Colors.grey.withOpacity(0.3)),
                         ],
                         if (item.hasSpacingBelow)

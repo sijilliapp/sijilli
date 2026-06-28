@@ -177,7 +177,7 @@
     "viewRule": "@request.auth.id != \"\" || isPublic = true",
     "createRule": "",
     "updateRule": "@request.body.is_super_admin:isset = false || @request.auth.is_super_admin = true",
-    "deleteRule": "id = @request.auth.id || @request.auth.role = \"admin\" || @request.auth.is_super_admin = true",
+    "deleteRule": "id = @request.auth.id || @request.auth.role = \"admin\"",
     "name": "users",
     "type": "auth",
     "fields": [
@@ -320,15 +320,6 @@
           "approved",
           "admin"
         ]
-      },
-      {
-        "hidden": false,
-        "id": "bool3244230138",
-        "name": "is_super_admin",
-        "presentable": false,
-        "required": false,
-        "system": false,
-        "type": "bool"
       },
       {
         "hidden": false,
@@ -501,6 +492,15 @@
         "hidden": false,
         "id": "bool3195689420",
         "name": "is_suggested",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "bool"
+      },
+      {
+        "hidden": false,
+        "id": "bool334834678",
+        "name": "disable_copying",
         "presentable": false,
         "required": false,
         "system": false,
@@ -1584,8 +1584,8 @@
     "id": "pbc_1125843985",
     "listRule": "is_published = true || author = @request.auth.id || @request.auth.role = \"admin\"",
     "viewRule": "is_published = true || author = @request.auth.id",
-    "createRule": "@request.auth.id != \"\"",
-    "updateRule": "author = @request.auth.id || @request.auth.role = \"admin\" || @request.auth.id != \"\"",
+    "createRule": "@request.auth.id != \"user\"",
+    "updateRule": "author = @request.auth.id || @request.auth.role = \"admin\"",
     "deleteRule": "@request.auth.id != \"\" && (author = @request.auth.id || @request.auth.role = \"admin\")",
     "name": "articles",
     "type": "base",
@@ -1707,6 +1707,47 @@
       },
       {
         "hidden": false,
+        "id": "select2063623452",
+        "maxSelect": 1,
+        "name": "post_status",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "select",
+        "values": [
+          "published",
+          "draft",
+          "archived",
+          "trash",
+          "written"
+        ]
+      },
+      {
+        "hidden": false,
+        "id": "date1257476049",
+        "max": "",
+        "min": "",
+        "name": "deleted_at",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "date"
+      },
+      {
+        "cascadeDelete": false,
+        "collectionId": "pbc_1219621782",
+        "hidden": false,
+        "id": "relation1874629670",
+        "maxSelect": 999,
+        "minSelect": 0,
+        "name": "tags",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "hidden": false,
         "id": "autodate2990389176",
         "name": "created",
         "onCreate": true,
@@ -1801,6 +1842,94 @@
         "max": 0,
         "min": 0,
         "name": "icon",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "hidden": false,
+        "id": "autodate2990389176",
+        "name": "created",
+        "onCreate": true,
+        "onUpdate": false,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      },
+      {
+        "hidden": false,
+        "id": "autodate3332085495",
+        "name": "updated",
+        "onCreate": true,
+        "onUpdate": true,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      }
+    ],
+    "indexes": [],
+    "system": false
+  },
+  {
+    "id": "pbc_533777971",
+    "listRule": "",
+    "viewRule": "",
+    "createRule": "@request.auth.id != null && user = @request.auth.id",
+    "updateRule": "@request.auth.id != null && @request.auth.id = user",
+    "deleteRule": "@request.auth.id != null && (user = @request.auth.id || article.author = @request.auth.id || @request.auth.role = \"admin\")",
+    "name": "comments",
+    "type": "base",
+    "fields": [
+      {
+        "autogeneratePattern": "[a-z0-9]{15}",
+        "hidden": false,
+        "id": "text3208210256",
+        "max": 15,
+        "min": 15,
+        "name": "id",
+        "pattern": "^[a-z0-9]+$",
+        "presentable": false,
+        "primaryKey": true,
+        "required": true,
+        "system": true,
+        "type": "text"
+      },
+      {
+        "cascadeDelete": true,
+        "collectionId": "pbc_1125843985",
+        "hidden": false,
+        "id": "relation37359206",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "name": "article",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "cascadeDelete": true,
+        "collectionId": "_pb_users_auth_",
+        "hidden": false,
+        "id": "relation2375276105",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "name": "user",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text4274335913",
+        "max": 500,
+        "min": 1,
+        "name": "content",
         "pattern": "",
         "presentable": false,
         "primaryKey": false,
@@ -1959,7 +2088,7 @@
     "viewRule": "user_a = @request.auth.id || user_b = @request.auth.id",
     "createRule": "@request.auth.id != \"\" && (user_a = @request.auth.id || user_b = @request.auth.id)",
     "updateRule": "@request.auth.id != \"\" && (user_a = @request.auth.id || user_b = @request.auth.id)",
-    "deleteRule": "",
+    "deleteRule": "user_a = @request.auth.id || user_b = @request.auth.id",
     "name": "friendship",
     "type": "base",
     "fields": [
@@ -2569,12 +2698,101 @@
     "system": false
   },
   {
+    "id": "pbc_1219621782",
+    "listRule": "",
+    "viewRule": "",
+    "createRule": "@request.auth.id != \"\" && user = @request.auth.id",
+    "updateRule": "@request.auth.id != \"\" && user = @request.auth.id",
+    "deleteRule": "@request.auth.id != \"\" && user = @request.auth.id",
+    "name": "tags",
+    "type": "base",
+    "fields": [
+      {
+        "autogeneratePattern": "[a-z0-9]{15}",
+        "hidden": false,
+        "id": "text3208210256",
+        "max": 15,
+        "min": 15,
+        "name": "id",
+        "pattern": "^[a-z0-9]+$",
+        "presentable": false,
+        "primaryKey": true,
+        "required": true,
+        "system": true,
+        "type": "text"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text1579384326",
+        "max": 0,
+        "min": 0,
+        "name": "name",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": true,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text1716930793",
+        "max": 0,
+        "min": 0,
+        "name": "color",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": true,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "cascadeDelete": false,
+        "collectionId": "_pb_users_auth_",
+        "hidden": false,
+        "id": "relation2375276105",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "name": "user",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "hidden": false,
+        "id": "autodate2990389176",
+        "name": "created",
+        "onCreate": true,
+        "onUpdate": false,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      },
+      {
+        "hidden": false,
+        "id": "autodate3332085495",
+        "name": "updated",
+        "onCreate": true,
+        "onUpdate": true,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      }
+    ],
+    "indexes": [],
+    "system": false
+  },
+  {
     "id": "pbc_1935361188",
     "listRule": "visitor = @request.auth.id || visited = @request.auth.id",
     "viewRule": "visitor = @request.auth.id || visited = @request.auth.id",
     "createRule": "@request.auth.id != ''",
     "updateRule": null,
-    "deleteRule": "visited = @request.auth.id",
+    "deleteRule": "visitor = @request.auth.id || visited = @request.auth.id",
     "name": "visits",
     "type": "base",
     "fields": [

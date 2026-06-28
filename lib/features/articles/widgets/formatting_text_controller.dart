@@ -521,10 +521,17 @@ class FormattingTextEditingController extends TextEditingController {
       final lineStart = currentOffset;
       final lineEnd = currentOffset + line.length;
 
-      // Extract inline spans for this line
-      final List<StyleSpan> lineSpans = _spans
-          .where((s) => s.start < lineEnd && s.end > lineStart)
-          .toList();
+      // Extract inline spans for this line, protecting AUDIO and media links from formatting tags
+      final cleanLineUpper = line.toUpperCase().trim();
+      final isMediaLine = cleanLineUpper == '[AUDIO]' ||
+          line.trim().startsWith('http://') ||
+          line.trim().startsWith('https://');
+
+      final List<StyleSpan> lineSpans = isMediaLine
+          ? []
+          : _spans
+              .where((s) => s.start < lineEnd && s.end > lineStart)
+              .toList();
 
       // Formulate insertions relative to this line
       final List<(int index, String tag)> insertions = [];
@@ -642,10 +649,17 @@ class FormattingTextEditingController extends TextEditingController {
         continue;
       }
 
-      // Extract inline spans for this line
-      final List<StyleSpan> lineSpans = _spans
-          .where((s) => s.start < lineEnd && s.end > lineStart)
-          .toList();
+      // Extract inline spans for this line, protecting AUDIO and media links from formatting tags
+      final cleanLineUpper = line.toUpperCase().trim();
+      final isMediaLine = cleanLineUpper == '[AUDIO]' ||
+          line.trim().startsWith('http://') ||
+          line.trim().startsWith('https://');
+
+      final List<StyleSpan> lineSpans = isMediaLine
+          ? []
+          : _spans
+              .where((s) => s.start < lineEnd && s.end > lineStart)
+              .toList();
 
       // Formulate insertions relative to this line
       final List<(int index, String tag)> insertions = [];
