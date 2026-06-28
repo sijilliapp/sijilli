@@ -1334,6 +1334,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isKeyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
     return Scaffold(
       backgroundColor: AppColors.getBackground(context),
       appBar: PreferredSize(
@@ -1748,51 +1749,56 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
           
           const Divider(height: 1),
 
-          if (_selectedImage != null) ...[
-            GestureDetector(
-              onTap: _pickImage,
-              child: Container(
-                height: 200,
-                width: double.infinity,
-                color: AppColors.getCardBackground(context),
-                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.file(_selectedImage!, fit: BoxFit.cover),
-                    Container(color: Colors.black26),
-                    const Center(
-                      child: Icon(Icons.edit, color: Colors.white, size: 32),
-                    ),
-                  ],
+          const Divider(height: 1),
+
+          // Hide cover image preview when keyboard is visible to free up vertical space for the text editor
+          if (!isKeyboardVisible) ...[
+            if (_selectedImage != null) ...[
+              GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  height: 120, // Compact height
+                  width: double.infinity,
+                  color: AppColors.getCardBackground(context),
+                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.file(_selectedImage!, fit: BoxFit.cover),
+                      Container(color: Colors.black26),
+                      const Center(
+                        child: Icon(Icons.edit, color: Colors.white, size: 24),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const Divider(height: 1),
-          ] else if (widget.article?.image != null && widget.article!.image!.isNotEmpty && !_deleteExistingImage) ...[
-            GestureDetector(
-              onTap: _pickImage,
-              child: Container(
-                height: 200,
-                width: double.infinity,
-                color: AppColors.getCardBackground(context),
-                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.network(
-                      'https://sijilli.pockethost.io/api/files/articles/${widget.article!.id}/${widget.article!.image}',
-                      fit: BoxFit.cover,
-                    ),
-                    Container(color: Colors.black26),
-                    const Center(
-                      child: Icon(Icons.edit, color: Colors.white, size: 32),
-                    ),
-                  ],
+              const Divider(height: 1),
+            ] else if (widget.article?.image != null && widget.article!.image!.isNotEmpty && !_deleteExistingImage) ...[
+              GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  height: 120, // Compact height
+                  width: double.infinity,
+                  color: AppColors.getCardBackground(context),
+                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.network(
+                        'https://sijilli.pockethost.io/api/files/articles/${widget.article!.id}/${widget.article!.image}',
+                        fit: BoxFit.cover,
+                      ),
+                      Container(color: Colors.black26),
+                      const Center(
+                        child: Icon(Icons.edit, color: Colors.white, size: 24),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const Divider(height: 1),
+              const Divider(height: 1),
+            ],
           ],
 
           if (_existingAudios.isNotEmpty || _selectedAudios.isNotEmpty) ...[
@@ -1810,7 +1816,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                 final int currentCount = _existingAudios.length + _selectedAudios.length;
                 
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   color: AppColors.getCardBackground(context).withOpacity(0.6),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1841,65 +1847,84 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
               }
             ),
             const Divider(height: 1),
-            ..._existingAudios.map((file) {
-              final cleanName = file.split('_').skip(1).join('_');
-              final displayName = cleanName.isEmpty ? file : cleanName;
-              return Container(
-                key: ValueKey('existing_$file'),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                color: AppColors.getCardBackground(context),
-                child: Row(
+            // Wrap list in a ConstrainedBox & SingleChildScrollView so it doesn't grow infinitely and push editor off-screen
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: isKeyboardVisible ? 60.0 : 120.0,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.audiotrack_rounded, color: Colors.green),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        displayName,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
-                      onPressed: () {
-                        _confirmDeleteExistingAudio(file);
-                      },
-                    ),
+                    ..._existingAudios.map((file) {
+                      final cleanName = file.split('_').skip(1).join('_');
+                      final displayName = cleanName.isEmpty ? file : cleanName;
+                      return Container(
+                        key: ValueKey('existing_$file'),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        color: AppColors.getCardBackground(context),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.audiotrack_rounded, color: Colors.green, size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                displayName,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 18),
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () {
+                                _confirmDeleteExistingAudio(file);
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    ..._selectedAudios.map((file) {
+                      final displayName = file.path.split('/').last;
+                      return Container(
+                        key: ValueKey('selected_${file.path}'),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        color: AppColors.getCardBackground(context),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.audiotrack_rounded, color: AppColors.primary, size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                displayName,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close_rounded, color: Colors.red, size: 18),
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () {
+                                setState(() {
+                                  _selectedAudios.remove(file);
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
                   ],
                 ),
-              );
-            }).toList(),
-            ..._selectedAudios.map((file) {
-              final displayName = file.path.split('/').last;
-              return Container(
-                key: ValueKey('selected_${file.path}'),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                color: AppColors.getCardBackground(context),
-                child: Row(
-                  children: [
-                    const Icon(Icons.audiotrack_rounded, color: AppColors.primary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        displayName,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Colors.red),
-                      onPressed: () {
-                        setState(() {
-                          _selectedAudios.remove(file);
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
+              ),
+            ),
             const Divider(height: 1),
           ],
 
