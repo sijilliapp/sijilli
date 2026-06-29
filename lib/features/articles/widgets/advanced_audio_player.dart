@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'dart:async';
 import 'dart:io';
@@ -201,7 +202,8 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
                         widget.audioUrl.startsWith('blob:');
 
       final functionName = isTranscription ? 'transcribe' : 'summarize';
-      final serviceUrl = Uri.parse('https://sijilli.com/api/$functionName');
+      final String baseUrl = kIsWeb ? Uri.base.origin : 'https://www.sijilli.com';
+      final serviceUrl = Uri.parse('$baseUrl/api/$functionName');
       
       http.Response response;
 
