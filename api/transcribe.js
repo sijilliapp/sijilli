@@ -34,8 +34,11 @@ module.exports = async (req, res) => {
   }
 
   const audioUrl = req.query.url || (req.body && req.body.url);
-  if (!audioUrl) {
-    return res.status(400).json({ error: 'Missing audio URL parameter' });
+  const audioData = req.body && req.body.audioData;
+  const mimeType = req.body && req.body.mimeType || (audioUrl ? getMimeType(audioUrl) : 'audio/mp3');
+
+  if (!audioUrl && !audioData) {
+    return res.status(400).json({ error: 'Missing audio URL or audioData parameter' });
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
@@ -44,10 +47,14 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // 1. Download the audio file
-    const fileBuffer = await downloadFile(audioUrl);
-    const base64Audio = fileBuffer.toString('base64');
-    const mimeType = getMimeType(audioUrl);
+    let base64Audio;
+    if (audioData) {
+      base64Audio = audioData;
+    } else {
+      // 1. Download the audio file
+      const fileBuffer = await downloadFile(audioUrl);
+      base64Audio = fileBuffer.toString('base64');
+    }
 
     // 2. Prepare payload for Gemini 1.5 Flash
     const payload = {

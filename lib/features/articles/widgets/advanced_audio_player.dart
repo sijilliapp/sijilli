@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'dart:async';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../core/constants/app_colors.dart';
@@ -195,12 +196,57 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
     });
 
     try {
-      // 1. Build the Vercel service endpoint URL
-      final functionName = isTranscription ? 'transcribe' : 'summarize';
-      final serviceUrl = Uri.parse('https://sijilli.com/api/$functionName?url=${Uri.encodeComponent(widget.audioUrl)}');
+      final isNetwork = widget.audioUrl.startsWith('http://') || 
+                        widget.audioUrl.startsWith('https://') ||
+                        widget.audioUrl.startsWith('blob:');
 
-      // 2. Query Vercel serverless function
-      final response = await http.get(serviceUrl).timeout(const Duration(seconds: 40));
+      final functionName = isTranscription ? 'transcribe' : 'summarize';
+      final serviceUrl = Uri.parse('https://sijilli.com/api/$functionName');
+      
+      http.Response response;
+
+      if (isNetwork) {
+        // Send as query parameter or JSON URL
+        response = await http.post(
+          serviceUrl,
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({'url': widget.audioUrl}),
+        ).timeout(const Duration(seconds: 40));
+      } else {
+        // Local file - read bytes and send base64
+        final file = File(widget.audioUrl);
+        if (!await file.exists()) {
+          _showErrorDialog('الملف الصوتي المحلي غير موجود');
+          return;
+        }
+
+        final length = await file.length();
+        if (length > 4.2 * 1024 * 1024) {
+          _showErrorDialog('الملف الصوتي كبير جداً للتفريغ الفوري قبل الحفظ. يرجى حفظ المقال أولاً ثم تفريغه.');
+          return;
+        }
+
+        final bytes = await file.readAsBytes();
+        final base64Data = base64Encode(bytes);
+        
+        // Resolve mimeType
+        String mimeType = 'audio/mp3';
+        final lower = widget.audioUrl.toLowerCase();
+        if (lower.endsWith('.wav')) mimeType = 'audio/wav';
+        else if (lower.endsWith('.m4a')) mimeType = 'audio/mp4';
+        else if (lower.endsWith('.ogg')) mimeType = 'audio/ogg';
+        else if (lower.endsWith('.opus')) mimeType = 'audio/opus';
+        else if (lower.endsWith('.aac')) mimeType = 'audio/aac';
+
+        response = await http.post(
+          serviceUrl,
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({
+            'audioData': base64Data,
+            'mimeType': mimeType,
+          }),
+        ).timeout(const Duration(seconds: 50));
+      }
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
