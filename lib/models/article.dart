@@ -1,4 +1,5 @@
 import 'package:sijilli/core/utils/json_utils.dart';
+import 'package:sijilli/core/utils/audio_helper.dart';
 import 'package:sijilli/models/user.dart';
 import 'package:sijilli/models/appointment.dart';
 import 'package:sijilli/models/tag.dart';
@@ -49,11 +50,16 @@ class Article {
 
   /// Computed Title: استخراج أول الكلمات لتكون عنوان المقال
   String get title {
-    if (text.trim().isEmpty) return 'مقال بدون عنوان';
+    if (text.trim().isEmpty) {
+      if (audioFiles.isNotEmpty) {
+        return _getCleanAudioTitle(audioFiles.first);
+      }
+      return 'مقال بدون عنوان';
+    }
     
     // Clean all tags and markers
     String clean = text;
-    clean = clean.replaceAll(RegExp(r'\[/?(POEM|CENTER|JUSTIFY|LEFT|RIGHT|B|BOLD|HIGHLIGHT|POEM_LEFT|POEM_CENTER|AUDIO)/?\]', caseSensitive: false), '');
+    clean = clean.replaceAll(RegExp(r'\[/?(POEM|CENTER|JUSTIFY|LEFT|RIGHT|B|BOLD|HIGHLIGHT|POEM_LEFT|POEM_CENTER|AUDIO|AUDIO_[^\]]+)/?\]', caseSensitive: false), '');
     clean = clean.replaceAll(RegExp(r'\[/'), '');
     clean = clean.replaceAll(RegExp(r'==|~~|--|\+\+|\*'), '');
     
@@ -95,16 +101,30 @@ class Article {
       cleanLines.add(trimmed);
     }
     
-    if (cleanLines.isEmpty) return 'مقال بدون عنوان';
+    if (cleanLines.isEmpty) {
+      if (audioFiles.isNotEmpty) {
+        return _getCleanAudioTitle(audioFiles.first);
+      }
+      return 'مقال بدون عنوان';
+    }
     
     final String firstLine = cleanLines.first;
     final words = firstLine.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
-    if (words.isEmpty) return 'مقال بدون عنوان';
+    if (words.isEmpty) {
+      if (audioFiles.isNotEmpty) {
+        return _getCleanAudioTitle(audioFiles.first);
+      }
+      return 'مقال بدون عنوان';
+    }
     
     if (words.length <= 5) {
       return words.join(' ');
     }
     return '${words.take(5).join(' ')}...';
+  }
+
+  static String _getCleanAudioTitle(String filename) {
+    return AudioHelper.getCleanAudioTitle(filename);
   }
   
   /// النص مجرداً من كل علامات التنسيق الخاصة بسجلي
@@ -122,7 +142,7 @@ class Article {
 
     String res = input;
     // 1. Remove all BBCode tags (including alternate closing tag formats like [BOLD/])
-    res = res.replaceAll(RegExp(r'\[/?(POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT|POEM_LEFT|POEM_CENTER|AUDIO)/?\]', caseSensitive: false), '');
+    res = res.replaceAll(RegExp(r'\[/?(POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT|POEM_LEFT|POEM_CENTER|AUDIO(?:_[^\]]+|:\s*[^\]]+)?)/?\]', caseSensitive: false), '');
     
     // 2. Remove line alignment/poetry shortcuts at start/end of lines
     final lines = res.split('\n');
@@ -172,7 +192,7 @@ class Article {
         
         // التحقق إذا كان سطر الشعر عبارة عن كلمة واحدة أو أقل (توقيع أو سطر يتيم قصير)
         String cleanForWordCheck = line
-            .replaceAll(RegExp(r'\[/?(BOLD|B|HIGHLIGHT|CENTER|JUSTIFY|LEFT|RIGHT|AUDIO)/?\]', caseSensitive: false), '')
+            .replaceAll(RegExp(r'\[/?(BOLD|B|HIGHLIGHT|CENTER|JUSTIFY|LEFT|RIGHT|AUDIO(?:_[^\]]+|:\s*[^\]]+)?)/?\]', caseSensitive: false), '')
             .replaceAll(RegExp(r'[=~\-\+\*]'), '')
             .trim();
         final isSingleWord = cleanForWordCheck.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length <= 1;
@@ -219,7 +239,7 @@ class Article {
     });
     
     // 2. إزالة بقية وسوم التنسيق المباشرة (عريض، محاذاة، تظليل) مع وسوم الإغلاق البديلة والوسوم المفتوحة/المكسورة
-    String cleanText = text.replaceAll(RegExp(r'\[/?(POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT|AUDIO)/?\]', caseSensitive: false), '');
+    String cleanText = text.replaceAll(RegExp(r'\[/?(POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT|AUDIO(?:_[^\]]+|:\s*[^\]]+)?)/?\]', caseSensitive: false), '');
     cleanText = cleanText.replaceAll(RegExp(r'\[/', caseSensitive: false), '');
     // إزالة النجمات وعلامات التنسيق المزدوجة القديمة
     cleanText = cleanText.replaceAll(RegExp(r'==|~~|--|\+\+|\*'), '');

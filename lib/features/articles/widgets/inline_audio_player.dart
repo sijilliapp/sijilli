@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sijilli/core/utils/audio_helper.dart';
 import 'package:just_audio/just_audio.dart';
 import 'dart:async';
 import '../../../core/constants/app_colors.dart';
@@ -138,69 +139,7 @@ class _InlineAudioPlayerState extends State<InlineAudioPlayer> {
   }
 
   String _getCleanFileName(String url) {
-    try {
-      final uri = Uri.parse(url);
-      final rawName = uri.pathSegments.last;
-
-      if (rawName.toLowerCase().contains('whatsapp') || rawName.toLowerCase().endsWith('.opus')) {
-        return 'رسالة صوتية من واتساب 💬';
-      }
-
-      // 1. Separate filename and extension
-      final dotIndex = rawName.lastIndexOf('.');
-      if (dotIndex != -1) {
-        String mainPart = rawName.substring(0, dotIndex);
-        final ext = rawName.substring(dotIndex);
-        
-        // 2. Strip PocketBase 10-char random suffix (e.g. _a1b2c3d4e5)
-        final suffixRegex = RegExp(r'_([a-zA-Z0-9]{10})$');
-        if (suffixRegex.hasMatch(mainPart)) {
-          mainPart = mainPart.replaceFirst(suffixRegex, '');
-        }
-        
-        // 3. Remove underscores to get raw hex
-        final hexOnly = mainPart.replaceAll('_', '').toLowerCase();
-        
-        // 4. Validate if it's a valid hex string of even length
-        if (hexOnly.isNotEmpty && 
-            hexOnly.length % 2 == 0 && 
-            RegExp(r'^[0-9a-f]+$').hasMatch(hexOnly)) {
-          
-          // 5. Check if it looks like UTF-8 Arabic bytes (which start with d8/d9/da/db or 20 for space)
-          bool isArabicHex = false;
-          for (int i = 0; i < hexOnly.length; i += 2) {
-            final byte = hexOnly.substring(i, i + 2);
-            if (byte == 'd8' || byte == 'd9' || byte == 'da' || byte == 'db' || byte == '20') {
-              isArabicHex = true;
-              break;
-            }
-          }
-          
-          if (isArabicHex) {
-            final buffer = StringBuffer();
-            for (int i = 0; i < hexOnly.length; i += 2) {
-              buffer.write('%');
-              buffer.write(hexOnly.substring(i, i + 2));
-            }
-            final percentEncoded = buffer.toString();
-            final decoded = Uri.decodeFull(percentEncoded);
-            if (decoded.trim().isNotEmpty) {
-              return '$decoded$ext';
-            }
-          }
-        }
-      }
-
-      // Fallback: standard pocketbase cleaning and URI decoding
-      String cleanName = rawName;
-      final pbSuffixPattern = RegExp(r'_([a-zA-Z0-9]{10})\.([a-zA-Z0-9]+)$');
-      if (pbSuffixPattern.hasMatch(cleanName)) {
-        cleanName = cleanName.replaceFirst(RegExp(r'_([a-zA-Z0-9]{10})\.'), '.');
-      }
-      return Uri.decodeFull(cleanName);
-    } catch (_) {
-      return 'ملف صوتي 🎵';
-    }
+    return AudioHelper.getCleanFileNameFromUrl(url);
   }
 
   @override

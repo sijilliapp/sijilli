@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:sijilli/core/utils/audio_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -866,6 +867,10 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
           _selectedAudios.add(pickedFile);
         });
         
+        final String originalName = pickedFile.path.split('/').last;
+        final String cleanFilename = AudioHelper.getCleanAudioTitle(originalName);
+        final String audioTag = '\n[AUDIO: $cleanFilename]\n';
+
         final currentSelection = _textController.selection;
         final rawText = _textController.rawText;
         
@@ -874,10 +879,10 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
         if (currentSelection.isValid) {
           final start = currentSelection.start;
           final end = currentSelection.end;
-          newText = rawText.replaceRange(start, end, '\n[AUDIO]\n');
-          newCursorOffset = start + '\n[AUDIO]\n'.length;
+          newText = rawText.replaceRange(start, end, audioTag);
+          newCursorOffset = start + audioTag.length;
         } else {
-          newText = '$rawText\n[AUDIO]\n';
+          newText = '$rawText$audioTag';
           newCursorOffset = newText.length;
         }
         
@@ -1857,66 +1862,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     ..._existingAudios.map((file) {
-                      String cleanName = file;
-
-                      // 1. Separate filename and extension
-                      final dotIndex = cleanName.lastIndexOf('.');
-                      if (dotIndex != -1) {
-                        String mainPart = cleanName.substring(0, dotIndex);
-                        final ext = cleanName.substring(dotIndex);
-                        
-                        // 2. Strip PocketBase 10-char random suffix (e.g. _a1b2c3d4e5)
-                        final suffixRegex = RegExp(r'_([a-zA-Z0-9]{10})$');
-                        if (suffixRegex.hasMatch(mainPart)) {
-                          mainPart = mainPart.replaceFirst(suffixRegex, '');
-                        }
-                        
-                        // 3. Remove underscores to get raw hex
-                        final hexOnly = mainPart.replaceAll('_', '').toLowerCase();
-                        
-                        // 4. Validate if it's a valid hex string of even length
-                        if (hexOnly.isNotEmpty && 
-                            hexOnly.length % 2 == 0 && 
-                            RegExp(r'^[0-9a-f]+$').hasMatch(hexOnly)) {
-                          
-                          // 5. Check if it looks like UTF-8 Arabic bytes (which start with d8/d9/da/db or 20 for space)
-                          bool isArabicHex = false;
-                          for (int i = 0; i < hexOnly.length; i += 2) {
-                            final byte = hexOnly.substring(i, i + 2);
-                            if (byte == 'd8' || byte == 'd9' || byte == 'da' || byte == 'db' || byte == '20') {
-                              isArabicHex = true;
-                              break;
-                            }
-                          }
-                          
-                          if (isArabicHex) {
-                            final buffer = StringBuffer();
-                            for (int i = 0; i < hexOnly.length; i += 2) {
-                              buffer.write('%');
-                              buffer.write(hexOnly.substring(i, i + 2));
-                            }
-                            final percentEncoded = buffer.toString();
-                            try {
-                              final decoded = Uri.decodeFull(percentEncoded);
-                              if (decoded.trim().isNotEmpty) {
-                                cleanName = '$decoded$ext';
-                              }
-                            } catch (_) {}
-                          }
-                        }
-                      }
-
-                      // Fallback: standard pocketbase cleaning and URI decoding if not decoded yet
-                      if (cleanName == file) {
-                        final pbSuffixPattern = RegExp(r'_([a-zA-Z0-9]{10})\.([a-zA-Z0-9]+)$');
-                        if (pbSuffixPattern.hasMatch(cleanName)) {
-                          cleanName = cleanName.replaceFirst(RegExp(r'_([a-zA-Z0-9]{10})\.'), '.');
-                        }
-                        try {
-                          cleanName = Uri.decodeFull(cleanName);
-                        } catch (_) {}
-                      }
-
+                      final cleanName = AudioHelper.decodeArabicFileName(file);
                       final displayName = cleanName;
                       return Container(
                         key: ValueKey('existing_$file'),

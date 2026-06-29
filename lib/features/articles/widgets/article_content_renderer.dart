@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sijilli/core/utils/audio_helper.dart';
 import 'package:flutter/rendering.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -249,14 +250,50 @@ class ArticleContentRenderer extends StatelessWidget {
         continue;
       }
 
-      // 2. [AUDIO] embedding tag
-      if (normalizedLine.toUpperCase() == '[AUDIO]') {
-        if (audioUrls != null && audioUrls!.isNotEmpty && audioIndexWrapper.value < audioUrls!.length) {
+      // 2. [AUDIO] embedding tag (supports [AUDIO], [AUDIO: filename], [AUDIO_filename], and [AUDIO: URL])
+      final audioMatch = RegExp(r'^\[AUDIO(?:_|:\s*)(.+?)\]$', caseSensitive: false).firstMatch(normalizedLine);
+      final isAudioTag = normalizedLine.toUpperCase() == '[AUDIO]' || audioMatch != null;
+
+      if (isAudioTag) {
+        String? resolvedUrl;
+        
+        if (audioMatch != null) {
+          final content = audioMatch.group(1)!.trim();
+          if (content.toLowerCase().startsWith('http://') || content.toLowerCase().startsWith('https://')) {
+            resolvedUrl = content;
+          } else {
+            // Find file by name matching
+            final filenameQuery = content.toLowerCase();
+            if (audioUrls != null) {
+              for (final url in audioUrls!) {
+                final cleanFile = AudioHelper.getCleanAudioTitle(url).toLowerCase();
+                final cleanFileWithExt = AudioHelper.getCleanFileNameFromUrl(url).toLowerCase();
+                
+                if (cleanFile == filenameQuery || 
+                    cleanFileWithExt == filenameQuery || 
+                    cleanFile.contains(filenameQuery) || 
+                    filenameQuery.contains(cleanFile)) {
+                  resolvedUrl = url;
+                  break;
+                }
+              }
+            }
+          }
+        }
+        
+        // Fallback: sequential mapping if not resolved
+        if (resolvedUrl == null) {
+          if (audioUrls != null && audioUrls!.isNotEmpty && audioIndexWrapper.value < audioUrls!.length) {
+            resolvedUrl = audioUrls![audioIndexWrapper.value];
+            audioIndexWrapper.value++;
+          }
+        }
+
+        if (resolvedUrl != null) {
           widgets.add(Padding(
             padding: EdgeInsets.only(bottom: i == lines.length - 1 ? 0.0 : 8.0),
-            child: InlineAudioPlayer(audioUrl: audioUrls![audioIndexWrapper.value]),
+            child: InlineAudioPlayer(audioUrl: resolvedUrl),
           ));
-          audioIndexWrapper.value++;
         } else {
           widgets.add(Padding(
             padding: EdgeInsets.only(bottom: i == lines.length - 1 ? 0.0 : 8.0),
@@ -623,41 +660,9 @@ class _YoutubePreviewCardState extends State<YoutubePreviewCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AspectRatio(
-          aspectRatio: 16 / 9,
-          child: _isPlaying ? _buildPlayer() : _buildPreview(),
-        ),
-        const SizedBox(height: 6),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton.icon(
-                onPressed: _openInYoutubeApp,
-                icon: const Icon(Icons.open_in_new, size: 14, color: Colors.red),
-                label: Text(
-                  'فتح في تطبيق يوتيوب',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.getTextSecondary(context),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: _isPlaying ? _buildPlayer() : _buildPreview(),
     );
   }
 }
