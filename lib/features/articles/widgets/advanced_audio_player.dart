@@ -269,7 +269,14 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
           _showErrorDialog('فشل في جلب الاستجابة من الذكاء الاصطناعي');
         }
       } else {
-        _showErrorDialog('فشل الاتصال بخادم الذكاء الاصطناعي (رمز ${response.statusCode})');
+        String detail = '';
+        try {
+          final data = json.decode(response.body);
+          if (data['error'] != null) {
+            detail = '\nالسبب: ${data['error']}';
+          }
+        } catch (_) {}
+        _showErrorDialog('فشل الاتصال بخادم الذكاء الاصطناعي (رمز ${response.statusCode})$detail');
       }
     } catch (e) {
       _showErrorDialog('حدث خطأ أثناء الاتصال بالذكاء الاصطناعي: $e');

@@ -1,15 +1,30 @@
 const https = require('https');
+const { URL } = require('url');
 
-function downloadFile(url) {
+function downloadFile(url, maxRedirects = 5) {
   return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
+    const request = https.get(url, (res) => {
+      // Handle redirects (301, 302, 307, 308)
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        if (maxRedirects <= 0) {
+          return reject(new Error('Too many redirects'));
+        }
+        try {
+          const targetUrl = new URL(res.headers.location, url).toString();
+          return downloadFile(targetUrl, maxRedirects - 1).then(resolve).catch(reject);
+        } catch (urlErr) {
+          return reject(new Error(`Redirect URL parse error: ${urlErr.message}`));
+        }
+      }
+
       if (res.statusCode !== 200) {
         return reject(new Error(`Failed to download file: status ${res.statusCode}`));
       }
       const chunks = [];
       res.on('data', (chunk) => chunks.push(chunk));
       res.on('end', () => resolve(Buffer.concat(chunks)));
-    }).on('error', reject);
+    });
+    request.on('error', reject);
   });
 }
 
