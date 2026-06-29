@@ -2,19 +2,49 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 
-function fetchJson(url) {
-  return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
-      let data = '';
-      res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => {
-        try {
-          resolve(JSON.parse(data));
-        } catch (e) {
-          reject(e);
+function fetchJson(url, retries = 6, delay = 1500) {
+  return new Promise(async (resolve, reject) => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const result = await new Promise((resolveFetch, rejectFetch) => {
+          const req = https.get(url, (res) => {
+            let data = '';
+            res.on('data', (chunk) => { data += chunk; });
+            res.on('end', () => {
+              resolveFetch({ statusCode: res.statusCode, body: data });
+            });
+          });
+          req.on('error', rejectFetch);
+          req.setTimeout(4000, () => {
+            req.destroy(new Error('Timeout'));
+          });
+        });
+
+        if (result.statusCode === 404) {
+          // Article does not exist, return null immediately without wasting retries
+          return resolve(null);
         }
-      });
-    }).on('error', reject);
+
+        if (result.statusCode === 200) {
+          try {
+            const parsed = JSON.parse(result.body);
+            if (parsed && (parsed.id || parsed.code)) {
+              return resolve(parsed);
+            }
+          } catch (e) {
+            // HTML body returned, likely Pockethost "waking up" page
+          }
+        }
+      } catch (err) {
+        // Request failed or timed out
+      }
+
+      if (i < retries - 1) {
+        // Wait before retrying to allow Pockethost to finish booting up
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+    reject(new Error(`Failed to fetch database record after ${retries} attempts`));
   });
 }
 
