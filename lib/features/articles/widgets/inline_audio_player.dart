@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sijilli/core/utils/audio_helper.dart';
+import 'package:sijilli/core/utils/audio_cache_manager.dart';
 import 'package:just_audio/just_audio.dart';
 import 'dart:async';
 import '../../../core/constants/app_colors.dart';
@@ -55,12 +56,15 @@ class _InlineAudioPlayerState extends State<InlineAudioPlayer> {
         return;
       }
 
-      if (widget.audioUrl.startsWith('http://') || 
-          widget.audioUrl.startsWith('https://') ||
-          widget.audioUrl.startsWith('blob:')) {
-        await _audioPlayer.setUrl(widget.audioUrl);
+      // Check and fetch from local cache if possible
+      final resolvedUrl = await AudioCacheManager.instance.getAudioSource(widget.audioUrl);
+
+      if (resolvedUrl.startsWith('http://') || 
+          resolvedUrl.startsWith('https://') ||
+          resolvedUrl.startsWith('blob:')) {
+        await _audioPlayer.setUrl(resolvedUrl);
       } else {
-        await _audioPlayer.setFilePath(widget.audioUrl);
+        await _audioPlayer.setFilePath(resolvedUrl);
       }
 
       _playerStateSubscription = _audioPlayer.playerStateStream.listen((state) {

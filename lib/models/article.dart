@@ -59,7 +59,7 @@ class Article {
     
     // Clean all tags and markers
     String clean = text;
-    clean = clean.replaceAll(RegExp(r'\[/?(POEM|CENTER|JUSTIFY|LEFT|RIGHT|B|BOLD|HIGHLIGHT|POEM_LEFT|POEM_CENTER|AUDIO|AUDIO_[^\]]+)/?\]', caseSensitive: false), '');
+    clean = clean.replaceAll(RegExp(r'\[/?(POEM|CENTER|JUSTIFY|LEFT|RIGHT|B|BOLD|HIGHLIGHT|POEM_LEFT|POEM_CENTER|AUDIO(?:_[^\]]+|:\s*[^\]]+)?)/?\]', caseSensitive: false), '');
     clean = clean.replaceAll(RegExp(r'\[/'), '');
     clean = clean.replaceAll(RegExp(r'==|~~|--|\+\+|\*'), '');
     

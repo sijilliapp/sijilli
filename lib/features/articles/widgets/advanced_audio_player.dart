@@ -1,0 +1,624 @@
+import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
+import 'dart:async';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_dimens.dart';
+import '../../../../core/utils/audio_helper.dart';
+import '../../../../core/utils/audio_cache_manager.dart';
+
+class AdvancedAudioPlayer extends StatefulWidget {
+  final String audioUrl;
+  final Function(String)? onTextGenerated; // If non-null, we are in Edit Mode
+
+  const AdvancedAudioPlayer({
+    super.key,
+    required this.audioUrl,
+    this.onTextGenerated,
+  });
+
+  @override
+  State<AdvancedAudioPlayer> createState() => _AdvancedAudioPlayerState();
+}
+
+class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
+  late AudioPlayer _audioPlayer;
+  static AudioPlayer? _activePlayer;
+
+  bool _isPlaying = false;
+  bool _isBuffering = false;
+  Duration _position = Duration.zero;
+  Duration _duration = Duration.zero;
+  String? _errorMessage;
+
+  // AB Loop variables
+  Duration? _loopA;
+  Duration? _loopB;
+
+  // Speed and Loop Mode variables
+  double _speed = 1.0;
+  bool _isRepeatEnabled = false;
+
+  // AI loading states
+  bool _isTranscribing = false;
+  bool _isSummarizing = false;
+
+  StreamSubscription? _playerStateSubscription;
+  StreamSubscription? _positionSubscription;
+  StreamSubscription? _durationSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _audioPlayer = AudioPlayer();
+    _initAudio();
+  }
+
+  Future<void> _initAudio() async {
+    try {
+      setState(() {
+        _isBuffering = true;
+        _errorMessage = null;
+      });
+
+      // AVPlayer on iOS does not support playing raw .opus files natively.
+      final isOpus = widget.audioUrl.toLowerCase().contains('.opus');
+      final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
+      
+      if (isOpus && isIOS) {
+        setState(() {
+          _isBuffering = false;
+          _errorMessage = 'صيغة OPUS غير مدعومة على iOS. يرجى التصدير كـ M4A';
+        });
+        return;
+      }
+
+      // Check and fetch from local cache if possible
+      final resolvedUrl = await AudioCacheManager.instance.getAudioSource(widget.audioUrl);
+
+      if (resolvedUrl.startsWith('http://') || 
+          resolvedUrl.startsWith('https://') ||
+          resolvedUrl.startsWith('blob:')) {
+        await _audioPlayer.setUrl(resolvedUrl);
+      } else {
+        await _audioPlayer.setFilePath(resolvedUrl);
+      }
+
+      _playerStateSubscription = _audioPlayer.playerStateStream.listen((state) {
+        if (!mounted) return;
+        setState(() {
+          _isPlaying = state.playing;
+          _isBuffering = state.processingState == ProcessingState.loading ||
+              state.processingState == ProcessingState.buffering;
+        });
+      });
+
+      _positionSubscription = _audioPlayer.positionStream.listen((pos) {
+        if (!mounted) return;
+        
+        // AB Loop logic
+        if (_loopA != null && _loopB != null && pos >= _loopB!) {
+          _audioPlayer.seek(_loopA!);
+          return;
+        }
+
+        setState(() {
+          _position = pos;
+        });
+      });
+
+      _durationSubscription = _audioPlayer.durationStream.listen((dur) {
+        if (!mounted) return;
+        setState(() {
+          _duration = dur ?? Duration.zero;
+        });
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isBuffering = false;
+          _errorMessage = 'فشل تحميل الملف الصوتي';
+        });
+      }
+    }
+  }
+
+  Future<void> _togglePlay() async {
+    if (_errorMessage != null) return;
+
+    try {
+      if (_isPlaying) {
+        await _audioPlayer.pause();
+      } else {
+        // Pause any other active player in the app
+        if (_activePlayer != null && _activePlayer != _audioPlayer) {
+          await _activePlayer!.pause().catchError((_) {});
+        }
+        _activePlayer = _audioPlayer;
+        await _audioPlayer.play();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'خطأ أثناء التشغيل';
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleRepeat() async {
+    try {
+      final nextState = !_isRepeatEnabled;
+      await _audioPlayer.setLoopMode(nextState ? LoopMode.one : LoopMode.off);
+      setState(() {
+        _isRepeatEnabled = nextState;
+      });
+    } catch (e) {
+      debugPrint('Error setting repeat: $e');
+    }
+  }
+
+  Future<void> _changeSpeed(double speed) async {
+    try {
+      await _audioPlayer.setSpeed(speed);
+      setState(() {
+        _speed = speed;
+      });
+    } catch (e) {
+      debugPrint('Error setting speed: $e');
+    }
+  }
+
+  Future<void> _skip(int seconds) async {
+    final currentPos = _audioPlayer.position;
+    final newPos = currentPos + Duration(seconds: seconds);
+    if (newPos < Duration.zero) {
+      await _audioPlayer.seek(Duration.zero);
+    } else if (newPos > _duration) {
+      await _audioPlayer.seek(_duration);
+    } else {
+      await _audioPlayer.seek(newPos);
+    }
+  }
+
+  // AI services trigger
+  Future<void> _callAIService(bool isTranscription) async {
+    if (_isTranscribing || _isSummarizing) return;
+
+    setState(() {
+      if (isTranscription) {
+        _isTranscribing = true;
+      } else {
+        _isSummarizing = true;
+      }
+    });
+
+    try {
+      // 1. Build the Vercel service endpoint URL
+      final functionName = isTranscription ? 'transcribe' : 'summarize';
+      final serviceUrl = Uri.parse('https://sijilli.com/api/$functionName?url=${Uri.encodeComponent(widget.audioUrl)}');
+
+      // 2. Query Vercel serverless function
+      final response = await http.get(serviceUrl).timeout(const Duration(seconds: 40));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final generatedText = data['text'] as String?;
+
+        if (generatedText != null && generatedText.trim().isNotEmpty) {
+          if (widget.onTextGenerated != null) {
+            // Edit Mode: Insert text directly in editor
+            widget.onTextGenerated!(generatedText);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(isTranscription ? 'تم إدراج النص المفرغ في المحرر بنجاح' : 'تم إدراج تلخيص المحاضرة بنجاح')),
+            );
+          } else {
+            // Read Mode: Open dialog/sheet to show the result
+            _showAIResultDialog(isTranscription ? 'التفريغ الصوتي الذكي' : 'تلخيص الأفكار الرئيسية', generatedText);
+          }
+        } else {
+          _showErrorDialog('فشل في جلب الاستجابة من الذكاء الاصطناعي');
+        }
+      } else {
+        _showErrorDialog('فشل الاتصال بخادم الذكاء الاصطناعي (رمز ${response.statusCode})');
+      }
+    } catch (e) {
+      _showErrorDialog('حدث خطأ أثناء الاتصال بالذكاء الاصطناعي: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isTranscribing = false;
+          _isSummarizing = false;
+        });
+      }
+    }
+  }
+
+  void _showAIResultDialog(String title, String content) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final theme = Theme.of(context);
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: BoxDecoration(
+            color: AppColors.getCardBackground(context),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppDimens.radiusL)),
+          ),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Pull handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.getTextPrimary(context),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const Divider(),
+              const SizedBox(height: 8),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Text(
+                    content,
+                    style: TextStyle(
+                      fontSize: 15,
+                      height: 1.6,
+                      color: AppColors.getTextPrimary(context),
+                    ),
+                    textAlign: TextAlign.right,
+                    textDirection: TextDirection.rtl,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showErrorDialog(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
+    );
+  }
+
+  @override
+  void dispose() {
+    _playerStateSubscription?.cancel();
+    _positionSubscription?.cancel();
+    _durationSubscription?.cancel();
+    if (_activePlayer == _audioPlayer) {
+      _activePlayer = null;
+    }
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$minutes:$seconds';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cleanFileName = AudioHelper.getCleanFileNameFromUrl(widget.audioUrl);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.getCardBackground(context).withOpacity(isDark ? 0.6 : 0.85),
+        borderRadius: BorderRadius.circular(AppDimens.radiusL),
+        border: Border.all(
+          color: (isDark ? Colors.white : Colors.black).withOpacity(0.08),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppDimens.radiusL),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header & Filename
+              Row(
+                children: [
+                  const Icon(Icons.audio_file_rounded, color: Colors.blueAccent, size: 22),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      cleanFileName,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textDirection: TextDirection.rtl,
+                    ),
+                  ),
+                  if (_errorMessage != null)
+                    const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 20)
+                  else if (_isBuffering)
+                    const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.blueAccent),
+                    )
+                  else
+                    const Icon(Icons.verified_user_rounded, color: Colors.green, size: 16),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                )
+              else ...[
+                // AB Loop Info Bar
+                if (_loopA != null || _loopB != null)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.blueAccent.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(AppDimens.radiusS),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'تكرار المقطع: أ = ${_loopA != null ? _formatDuration(_loopA!) : "غير محدد"} | ب = ${_loopB != null ? _formatDuration(_loopB!) : "غير محدد"}',
+                          style: const TextStyle(color: Colors.blueAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _loopA = null;
+                              _loopB = null;
+                            });
+                          },
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: const Text('إلغاء التكرار', style: TextStyle(color: Colors.redAccent, fontSize: 11)),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // Slider / Progress bar
+                Row(
+                  children: [
+                    Text(
+                      _formatDuration(_position),
+                      style: TextStyle(fontSize: 11, color: AppColors.getTextSecondary(context)),
+                    ),
+                    Expanded(
+                      child: Slider(
+                        activeColor: Colors.blueAccent,
+                        inactiveColor: (isDark ? Colors.white : Colors.black).withOpacity(0.1),
+                        value: _position.inMilliseconds.toDouble(),
+                        max: _duration.inMilliseconds > 0 
+                            ? _duration.inMilliseconds.toDouble() 
+                            : 100.0,
+                        onChanged: (val) {
+                          _audioPlayer.seek(Duration(milliseconds: val.toInt()));
+                        },
+                      ),
+                    ),
+                    Text(
+                      _formatDuration(_duration),
+                      style: TextStyle(fontSize: 11, color: AppColors.getTextSecondary(context)),
+                    ),
+                  ],
+                ),
+
+                // Main Controls Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    // Speed Menu
+                    PopupMenuButton<double>(
+                      icon: Text(
+                        '${_speed}x',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blueAccent),
+                      ),
+                      onSelected: _changeSpeed,
+                      itemBuilder: (context) => [0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map((s) {
+                        return PopupMenuItem<double>(
+                          value: s,
+                          child: Text('${s}x', style: const TextStyle(fontSize: 12)),
+                        );
+                      }).toList(),
+                    ),
+
+                    // Skip -10s
+                    IconButton(
+                      icon: const Icon(Icons.replay_10_rounded, size: 20),
+                      onPressed: () => _skip(-10),
+                    ),
+
+                    // Play/Pause Button
+                    GestureDetector(
+                      onTap: _togglePlay,
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.blueAccent,
+                        ),
+                        child: Icon(
+                          _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+
+                    // Skip +10s
+                    IconButton(
+                      icon: const Icon(Icons.forward_10_rounded, size: 20),
+                      onPressed: () => _skip(10),
+                    ),
+
+                    // Repeat toggle
+                    IconButton(
+                      icon: Icon(
+                        _isRepeatEnabled ? Icons.repeat_one_rounded : Icons.repeat_rounded,
+                        color: _isRepeatEnabled ? Colors.blueAccent : AppColors.getTextSecondary(context),
+                      ),
+                      onPressed: _toggleRepeat,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Divider(),
+                const SizedBox(height: 8),
+
+                // A-B Loop & AI Buttons Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    // Loop A
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _loopA = _position;
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _loopA != null ? Colors.blueAccent : Colors.grey.withOpacity(0.08),
+                        foregroundColor: _loopA != null ? Colors.white : AppColors.getTextPrimary(context),
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text('بداية أ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                    ),
+
+                    // Loop B
+                    ElevatedButton(
+                      onPressed: _loopA == null ? null : () {
+                        if (_position > _loopA!) {
+                          setState(() {
+                            _loopB = _position;
+                          });
+                        } else {
+                          _showErrorDialog('نقطة النهاية (ب) يجب أن تكون بعد نقطة البداية (أ)');
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _loopB != null ? Colors.blueAccent : Colors.grey.withOpacity(0.08),
+                        foregroundColor: _loopB != null ? Colors.white : AppColors.getTextPrimary(context),
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text('نهاية ب', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                    ),
+
+                    // AI Transcribe Button
+                    ElevatedButton.icon(
+                      onPressed: (_isTranscribing || _isSummarizing) ? null : () => _callAIService(true),
+                      icon: _isTranscribing
+                          ? const SizedBox(
+                              width: 10,
+                              height: 10,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.translate_rounded, size: 12),
+                      label: Text(
+                        widget.onTextGenerated != null ? 'تفريغ في المحرر' : 'تفريغ الكتابة',
+                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.teal.withOpacity(0.1),
+                        foregroundColor: Colors.teal,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+
+                    // AI Summarize Button
+                    ElevatedButton.icon(
+                      onPressed: (_isTranscribing || _isSummarizing) ? null : () => _callAIService(false),
+                      icon: _isSummarizing
+                          ? const SizedBox(
+                              width: 10,
+                              height: 10,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.summarize_rounded, size: 12),
+                      label: Text(
+                        widget.onTextGenerated != null ? 'إدراج التلخيص' : 'تلخيص المقطع',
+                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepOrange.withOpacity(0.1),
+                        foregroundColor: Colors.deepOrange,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

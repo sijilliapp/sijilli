@@ -12,17 +12,20 @@ import 'poetry/poem_formatter_utils.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../../../core/utils/bidi_utils.dart';
 import 'inline_audio_player.dart';
+import 'advanced_audio_player.dart';
 
 class ArticleContentRenderer extends StatelessWidget {
   final String text;
   final String? fontFamily;
   final List<String>? audioUrls;
+  final Function(String)? onTextGenerated;
 
   const ArticleContentRenderer({
     super.key,
     required this.text,
     this.fontFamily,
     this.audioUrls,
+    this.onTextGenerated,
   });
 
   TextSpan _parseInlineFormatting(String text, BuildContext context) {
@@ -250,7 +253,79 @@ class ArticleContentRenderer extends StatelessWidget {
         continue;
       }
 
-      // 2. [AUDIO] embedding tag (supports [AUDIO], [AUDIO: filename], [AUDIO_filename], and [AUDIO: URL])
+      // 2. [AUDIO_ADVANCED] embedding tag (supports [AUDIO_ADVANCED], [AUDIO_ADVANCED: filename], [AUDIO_ADVANCED_filename], and [AUDIO_ADVANCED: URL])
+      final advancedMatch = RegExp(r'^\[AUDIO_ADVANCED(?:_|:\s*)(.+?)\]$', caseSensitive: false).firstMatch(normalizedLine);
+      final isAdvancedTag = normalizedLine.toUpperCase() == '[AUDIO_ADVANCED]' || advancedMatch != null;
+
+      if (isAdvancedTag) {
+        String? resolvedUrl;
+        
+        if (advancedMatch != null) {
+          final content = advancedMatch.group(1)!.trim();
+          if (content.toLowerCase().startsWith('http://') || content.toLowerCase().startsWith('https://')) {
+            resolvedUrl = content;
+          } else {
+            // Find file by name matching
+            final filenameQuery = content.toLowerCase();
+            if (audioUrls != null) {
+              for (final url in audioUrls!) {
+                final cleanFile = AudioHelper.getCleanAudioTitle(url).toLowerCase();
+                final cleanFileWithExt = AudioHelper.getCleanFileNameFromUrl(url).toLowerCase();
+                
+                if (cleanFile == filenameQuery || 
+                    cleanFileWithExt == filenameQuery || 
+                    cleanFile.contains(filenameQuery) || 
+                    filenameQuery.contains(cleanFile)) {
+                  resolvedUrl = url;
+                  break;
+                }
+              }
+            }
+          }
+        }
+        
+        // Fallback: sequential mapping if not resolved
+        if (resolvedUrl == null) {
+          if (audioUrls != null && audioUrls!.isNotEmpty && audioIndexWrapper.value < audioUrls!.length) {
+            resolvedUrl = audioUrls![audioIndexWrapper.value];
+            audioIndexWrapper.value++;
+          }
+        }
+
+        if (resolvedUrl != null) {
+          widgets.add(Padding(
+            padding: EdgeInsets.only(bottom: i == lines.length - 1 ? 0.0 : 8.0),
+            child: AdvancedAudioPlayer(
+              audioUrl: resolvedUrl,
+              onTextGenerated: onTextGenerated,
+            ),
+          ));
+        } else {
+          widgets.add(Padding(
+            padding: EdgeInsets.only(bottom: i == lines.length - 1 ? 0.0 : 8.0),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.redAccent.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(AppDimens.radiusS),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
+                  SizedBox(width: 8),
+                  Text(
+                    'الملف الصوتي الخاص بهذا التضمين غير متوفر',
+                    style: TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+          ));
+        }
+        continue;
+      }
+
+      // 3. [AUDIO] embedding tag (supports [AUDIO], [AUDIO: filename], [AUDIO_filename], and [AUDIO: URL])
       final audioMatch = RegExp(r'^\[AUDIO(?:_|:\s*)(.+?)\]$', caseSensitive: false).firstMatch(normalizedLine);
       final isAudioTag = normalizedLine.toUpperCase() == '[AUDIO]' || audioMatch != null;
 

@@ -523,7 +523,7 @@ class FormattingTextEditingController extends TextEditingController {
 
       // Extract inline spans for this line, protecting AUDIO and media links from formatting tags
       final cleanLineUpper = line.toUpperCase().trim();
-      final isMediaLine = cleanLineUpper == '[AUDIO]' ||
+      final isMediaLine = cleanLineUpper.startsWith('[AUDIO') ||
           line.trim().startsWith('http://') ||
           line.trim().startsWith('https://');
 
@@ -651,7 +651,7 @@ class FormattingTextEditingController extends TextEditingController {
 
       // Extract inline spans for this line, protecting AUDIO and media links from formatting tags
       final cleanLineUpper = line.toUpperCase().trim();
-      final isMediaLine = cleanLineUpper == '[AUDIO]' ||
+      final isMediaLine = cleanLineUpper.startsWith('[AUDIO') ||
           line.trim().startsWith('http://') ||
           line.trim().startsWith('https://');
 

@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'dart:ui' as ui;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_dimens.dart';
 import '../../../core/local/local_db_service.dart';
 import '../../../models/article.dart';
 import '../../../models/tag.dart';
@@ -828,12 +829,157 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
     );
   }
 
+  void _handleAITextGenerated(String generatedText) {
+    final currentSelection = _textController.selection;
+    final rawText = _textController.rawText;
+    
+    String newText;
+    int newCursorOffset;
+    if (currentSelection.isValid) {
+      final start = currentSelection.start;
+      final end = currentSelection.end;
+      newText = rawText.replaceRange(start, end, '\n$generatedText\n');
+      newCursorOffset = start + '\n$generatedText\n'.length;
+    } else {
+      newText = '$rawText\n$generatedText\n';
+      newCursorOffset = newText.length;
+    }
+    
+    setState(() {
+      _textController.setRawText(newText);
+      _textController.selection = TextSelection.collapsed(offset: newCursorOffset);
+    });
+  }
+
+  void _showAudioTypeBottomSheet(File pickedFile) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.getCardBackground(context),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(AppDimens.radiusL)),
+          ),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'اختر نوع إدراج الملف الصوتي',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.getTextPrimary(context),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.audiotrack_rounded, color: Colors.blueAccent),
+                title: const Text('ملف صوتي بسيط', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('يمكن إدراج عدة ملفات متتابعة في المقال الواحد.'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _processAudioInsertion(pickedFile, isAdvanced: false);
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.spatial_audio_off_rounded, color: Colors.teal),
+                title: const Text('ملف صوتي متقدم', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('ملف صوتي وحيد مع تحكم كامل بالسرعة، تكرار A-B، وتفريغ/تلخيص بالذكاء الاصطناعي.'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _processAudioInsertion(pickedFile, isAdvanced: true);
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _processAudioInsertion(File pickedFile, {required bool isAdvanced}) {
+    final totalFiles = _existingAudios.length + _selectedAudios.length;
+    final bool hasAdvanced = _textController.rawText.toUpperCase().contains('[AUDIO_ADVANCED');
+
+    if (isAdvanced) {
+      if (totalFiles > 0) {
+        _showErrorSnackBar('المشغل المتقدم يتطلب أن يكون هو الملف الوحيد في المقال. يرجى حذف الملفات الصوتية الحالية أولاً.');
+        return;
+      }
+    } else {
+      if (hasAdvanced) {
+        _showErrorSnackBar('هذا المقال مخصص لملف صوتي متقدم وحيد. لا يمكن إدراج ملفات بسيطة إضافية.');
+        return;
+      }
+    }
+
+    final int fileSize = pickedFile.lengthSync();
+    final configProvider = Provider.of<GlobalConfigProvider>(context, listen: false);
+    final double maxFileMb = configProvider.audioMaxSizeMb.toDouble();
+    final double totalCapacityMb = configProvider.audioTotalCapacityMb.toDouble();
+
+    if (fileSize > maxFileMb * 1024 * 1024) {
+      _showErrorSnackBar('حجم الملف الصوتي (${(fileSize / (1024 * 1024)).toStringAsFixed(1)}MB) يتجاوز الحد المسموح به للملف الواحد وهو $maxFileMb ميجابايت.');
+      return;
+    }
+
+    int totalLocalSize = 0;
+    for (final f in _selectedAudios) {
+      totalLocalSize += f.lengthSync();
+    }
+
+    final int totalSize = totalLocalSize + fileSize + (_existingAudios.length * 4 * 1024 * 1024);
+    if (totalSize > totalCapacityMb * 1024 * 1024) {
+      _showErrorSnackBar('إجمالي حجم الملفات الصوتية (${(totalSize / (1024 * 1024)).toStringAsFixed(1)}MB) يتجاوز السعة الإجمالية المسموح بها وهي $totalCapacityMb ميجابايت.');
+      return;
+    }
+
+    setState(() {
+      _selectedAudios.add(pickedFile);
+    });
+
+    final String originalName = pickedFile.path.split('/').last;
+    final String cleanFilename = AudioHelper.getCleanAudioTitle(originalName);
+    final String audioTag = isAdvanced 
+        ? '\n[AUDIO_ADVANCED: $cleanFilename]\n' 
+        : '\n[AUDIO: $cleanFilename]\n';
+
+    final currentSelection = _textController.selection;
+    final rawText = _textController.rawText;
+    
+    String newText;
+    int newCursorOffset;
+    if (currentSelection.isValid) {
+      final start = currentSelection.start;
+      final end = currentSelection.end;
+      newText = rawText.replaceRange(start, end, audioTag);
+      newCursorOffset = start + audioTag.length;
+    } else {
+      newText = '$rawText$audioTag';
+      newCursorOffset = newText.length;
+    }
+    
+    _textController.setRawText(newText);
+    _textController.selection = TextSelection.collapsed(offset: newCursorOffset);
+    _textFocusNode.requestFocus();
+  }
+
   Future<void> _pickAudio() async {
     try {
       final globalConfig = context.read<GlobalConfigProvider>();
       final maxFiles = globalConfig.audioMaxFiles;
-      final maxSizeMb = globalConfig.audioMaxSizeMb;
-      final totalCapacityMb = globalConfig.audioTotalCapacityMb;
+      final bool hasAdvanced = _textController.rawText.toUpperCase().contains('[AUDIO_ADVANCED');
+
+      if (hasAdvanced) {
+        _showErrorSnackBar('هذا المقال مخصص لملف صوتي متقدم وحيد. لا يمكن إدراج ملفات إضافية.');
+        return;
+      }
 
       final int currentCount = _existingAudios.length + _selectedAudios.length;
       if (currentCount >= maxFiles) {
@@ -847,48 +993,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
       );
       if (result != null && result.files.single.path != null) {
         final pickedFile = File(result.files.single.path!);
-        final int fileSize = pickedFile.lengthSync();
-        if (fileSize > maxSizeMb * 1024 * 1024) {
-          _showErrorSnackBar('حجم الملف الصوتي (${(fileSize / (1024 * 1024)).toStringAsFixed(1)}MB) يتجاوز الحد الأقصى للملف الواحد وهو $maxSizeMb ميجابايت.');
-          return;
-        }
-
-        int totalLocalSize = 0;
-        for (final f in _selectedAudios) {
-          totalLocalSize += f.lengthSync();
-        }
-        final int totalSize = totalLocalSize + fileSize + (_existingAudios.length * 4 * 1024 * 1024);
-        if (totalSize > totalCapacityMb * 1024 * 1024) {
-          _showErrorSnackBar('إجمالي حجم الملفات الصوتية (${(totalSize / (1024 * 1024)).toStringAsFixed(1)}MB) يتجاوز السعة الإجمالية المسموح بها وهي $totalCapacityMb ميجابايت.');
-          return;
-        }
-
-        setState(() {
-          _selectedAudios.add(pickedFile);
-        });
-        
-        final String originalName = pickedFile.path.split('/').last;
-        final String cleanFilename = AudioHelper.getCleanAudioTitle(originalName);
-        final String audioTag = '\n[AUDIO: $cleanFilename]\n';
-
-        final currentSelection = _textController.selection;
-        final rawText = _textController.rawText;
-        
-        String newText;
-        int newCursorOffset;
-        if (currentSelection.isValid) {
-          final start = currentSelection.start;
-          final end = currentSelection.end;
-          newText = rawText.replaceRange(start, end, audioTag);
-          newCursorOffset = start + audioTag.length;
-        } else {
-          newText = '$rawText$audioTag';
-          newCursorOffset = newText.length;
-        }
-        
-        _textController.setRawText(newText);
-        _textController.selection = TextSelection.collapsed(offset: newCursorOffset);
-        _textFocusNode.requestFocus();
+        _showAudioTypeBottomSheet(pickedFile);
       }
     } catch (e) {
       debugPrint('Error picking audio: $e');
@@ -1966,6 +2071,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                               return ArticleContentRenderer(
                                 text: _textController.rawText,
                                 audioUrls: previewAudioUrls,
+                                onTextGenerated: _handleAITextGenerated,
                               );
                             },
                           ),
