@@ -48,17 +48,41 @@ class PbArticleService {
     }
   }
 
-  /// جلب مقال واحد بواسطة المعرف (للعامة)
+  /// جلب مقال واحد بواسطة المعرف (للعامة) مع محاولات إعادة المحاولة عند إسبات السيرفر
   Future<Article> getArticleById(String id) async {
-    try {
-      final record = await _pb.collection(collectionArticles).getOne(
-        id,
-        expand: 'author,tags',
-      );
-      return Article.fromJson(record.toJson());
-    } catch (e) {
-      print('PbArticleService getArticleById error: $e');
-      rethrow;
+    int retries = 0;
+    const maxRetries = 5;
+    const retryDelay = Duration(milliseconds: 1500);
+
+    while (true) {
+      try {
+        final record = await _pb.collection(collectionArticles).getOne(
+          id,
+          expand: 'author,tags',
+        );
+        return Article.fromJson(record.toJson());
+      } catch (e) {
+        retries++;
+        
+        bool isTemporary = false;
+        if (e is ClientException) {
+          // Retry on connection timeout (408), network issues (0), request aborts, or server wake-up/503 errors
+          if (e.statusCode == 0 || e.statusCode == 408 || e.statusCode >= 500 || e.isAbort) {
+            isTemporary = true;
+          }
+        } else {
+          isTemporary = true;
+        }
+
+        if (isTemporary && retries < maxRetries) {
+          print('🔄 [PbArticleService] Temporary error fetching article $id (attempt $retries/$maxRetries): $e. Retrying in ${retryDelay.inMilliseconds}ms...');
+          await Future.delayed(retryDelay);
+          continue;
+        }
+        
+        print('❌ [PbArticleService] Definitive error or max retries reached for article $id: $e');
+        rethrow;
+      }
     }
   }
 

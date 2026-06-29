@@ -122,7 +122,7 @@ class PbUserService {
     }
   }
 
-  /// جلب البيانات العامة لمستخدم عبر اسم المستخدم أو المعرف
+  /// جلب البيانات العامة لمستخدم عبر اسم المستخدم أو المعرف مع دعم التخزين المؤقت وإعادة المحاولة
   Future<UserModel?> getPublicProfile(String usernameOrId) async {
     // 1. Check Cache first
     if (_profileCache.containsKey(usernameOrId)) {
@@ -133,7 +133,10 @@ class PbUserService {
     }
 
     int retries = 0;
-    while (retries < 3) {
+    const maxRetries = 5;
+    const retryDelay = Duration(milliseconds: 1500);
+
+    while (true) {
       try {
         final isIdFormat = RegExp(r'^[a-z0-9]{15}$').hasMatch(usernameOrId);
         
@@ -167,33 +170,32 @@ class PbUserService {
         return user;
 
       } catch (e) {
-        // 🔄 Retry Logic
-        bool shouldRetry = false;
+        retries++;
         
+        bool isTemporary = false;
         if (e is ClientException) {
-          // Retry on: Network Error (0), Server Error (5xx), or Request Aborted
-          if (e.isAbort || e.statusCode == 0 || e.statusCode >= 500) {
-            shouldRetry = true;
+          // Do not retry on 404 Not Found
+          if (e.statusCode == 404) {
+            debugPrint('⚠️ [PbUserService] User not found ($usernameOrId): $e');
+            return null;
+          }
+          if (e.statusCode == 0 || e.statusCode == 408 || e.statusCode >= 500 || e.isAbort) {
+            isTemporary = true;
           }
         } else {
-          // Retry on unknown Dart exceptions (e.g. SocketException wrapped)
-          shouldRetry = true;
+          isTemporary = true;
         }
 
-        if (shouldRetry) {
-          retries++;
-          if (retries >= 3) break; // Give up after max retries
-          
-          print('🔄 [PbUserService] Error fetching user "$usernameOrId": $e. Retrying ($retries/3)...');
-          await Future.delayed(Duration(milliseconds: 500 * retries)); // Exponential backoff
+        if (isTemporary && retries < maxRetries) {
+          print('🔄 [PbUserService] Temporary error fetching profile $usernameOrId (attempt $retries/$maxRetries): $e. Retrying in ${retryDelay.inMilliseconds}ms...');
+          await Future.delayed(retryDelay);
           continue;
         }
 
-        print('⚠️ Failed to fetch public profile for "$usernameOrId": $e');
-        return null; // Return null only if definitive failure (e.g. 404)
+        print('❌ [PbUserService] Definitive error or max retries reached for profile $usernameOrId: $e');
+        return null;
       }
     }
-    return null;
   }
 
   /// التحقق من متابعة مستخدم معين (مقبول فقط)
