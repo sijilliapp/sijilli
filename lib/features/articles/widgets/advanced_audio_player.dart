@@ -981,21 +981,29 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
                     ElevatedButton.icon(
                       onPressed: _isSummarizing ? null : () => _callAIService(true),
                       icon: _isTranscribing
-                          ? const Icon(Icons.stop_rounded, size: 12, color: Colors.redAccent)
-                          : const Icon(Icons.translate_rounded, size: 12),
+                          ? const Icon(Icons.stop_rounded, size: 14, color: Colors.redAccent)
+                          : const Icon(Icons.translate_rounded, size: 14),
                       label: Text(
                         _isTranscribing 
                             ? 'إيقاف التفريغ' 
                             : (widget.onTextGenerated != null ? 'تفريغ في المحرر' : 'تفريغ الكتابة'),
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _isTranscribing 
                             ? Colors.redAccent.withOpacity(0.1) 
-                            : Colors.teal.withOpacity(0.1),
+                            : Colors.teal.withOpacity(0.08),
                         foregroundColor: _isTranscribing ? Colors.redAccent : Colors.teal,
+                        surfaceTintColor: Colors.transparent,
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        side: BorderSide(
+                          color: _isTranscribing ? Colors.redAccent : Colors.teal.withOpacity(0.3),
+                          width: _isTranscribing ? 1.5 : 0.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppDimens.radiusS),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
@@ -1005,21 +1013,29 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
                     ElevatedButton.icon(
                       onPressed: _isTranscribing ? null : () => _callAIService(false),
                       icon: _isSummarizing
-                          ? const Icon(Icons.stop_rounded, size: 12, color: Colors.redAccent)
-                          : const Icon(Icons.summarize_rounded, size: 12),
+                          ? const Icon(Icons.stop_rounded, size: 14, color: Colors.redAccent)
+                          : const Icon(Icons.summarize_rounded, size: 14),
                       label: Text(
                         _isSummarizing 
                             ? 'إيقاف التلخيص' 
                             : (widget.onTextGenerated != null ? 'إدراج التلخيص' : 'تلخيص المقطع'),
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _isSummarizing 
                             ? Colors.redAccent.withOpacity(0.1) 
-                            : Colors.deepOrange.withOpacity(0.1),
+                            : Colors.deepOrange.withOpacity(0.08),
                         foregroundColor: _isSummarizing ? Colors.redAccent : Colors.deepOrange,
+                        surfaceTintColor: Colors.transparent,
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        side: BorderSide(
+                          color: _isSummarizing ? Colors.redAccent : Colors.deepOrange.withOpacity(0.3),
+                          width: _isSummarizing ? 1.5 : 0.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppDimens.radiusS),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
