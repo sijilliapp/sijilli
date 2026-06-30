@@ -348,6 +348,122 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
     }
   }
 
+  Widget _buildSummaryContent(String text) {
+    final lines = text.split('\n');
+    final List<Widget> lineWidgets = [];
+    final timestampRegex = RegExp(r'\[(\d{1,2}):(\d{2})\]');
+
+    for (final line in lines) {
+      if (line.trim().isEmpty) {
+        lineWidgets.add(const SizedBox(height: 8));
+        continue;
+      }
+
+      final matches = timestampRegex.allMatches(line);
+      if (matches.isNotEmpty) {
+        final List<InlineSpan> spans = [];
+        int lastMatchEnd = 0;
+
+        for (final match in matches) {
+          // Add text before the match
+          if (match.start > lastMatchEnd) {
+            spans.add(TextSpan(text: line.substring(lastMatchEnd, match.start)));
+          }
+
+          final timeStr = match.group(0)!; // e.g. [01:23]
+          final minutes = int.parse(match.group(1)!);
+          final seconds = int.parse(match.group(2)!);
+          final targetDuration = Duration(minutes: minutes, seconds: seconds);
+
+          // Add clickable timestamp span
+          spans.add(
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: GestureDetector(
+                onTap: () {
+                  _audioPlayer.seek(targetDuration);
+                  if (!_isPlaying) {
+                    _togglePlay();
+                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('انتقال إلى $timeStr'),
+                      duration: const Duration(milliseconds: 800),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.blueAccent.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    timeStr,
+                    style: const TextStyle(
+                      color: Colors.blueAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          lastMatchEnd = match.end;
+        }
+
+        // Add remaining text after the last match
+        if (lastMatchEnd < line.length) {
+          spans.add(TextSpan(text: line.substring(lastMatchEnd)));
+        }
+
+        lineWidgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: RichText(
+              textAlign: TextAlign.right,
+              textDirection: TextDirection.rtl,
+              text: TextSpan(
+                style: TextStyle(
+                  fontSize: 15,
+                  height: 1.6,
+                  color: AppColors.getTextPrimary(context),
+                  fontFamily: 'Outfit',
+                ),
+                children: spans,
+              ),
+            ),
+          ),
+        );
+      } else {
+        // Fallback for normal line without timestamp
+        lineWidgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Text(
+              line,
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.6,
+                color: AppColors.getTextPrimary(context),
+              ),
+              textAlign: TextAlign.right,
+              textDirection: TextDirection.rtl,
+            ),
+          ),
+        );
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: lineWidgets,
+    );
+  }
+
   void _showAIResultDialog(String title, String content) {
     showModalBottomSheet(
       context: context,
@@ -398,16 +514,7 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
               const SizedBox(height: 8),
               Expanded(
                 child: SingleChildScrollView(
-                  child: Text(
-                    content,
-                    style: TextStyle(
-                      fontSize: 15,
-                      height: 1.6,
-                      color: AppColors.getTextPrimary(context),
-                    ),
-                    textAlign: TextAlign.right,
-                    textDirection: TextDirection.rtl,
-                  ),
+                  child: _buildSummaryContent(content),
                 ),
               ),
             ],
