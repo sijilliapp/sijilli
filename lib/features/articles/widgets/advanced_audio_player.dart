@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimens.dart';
 import '../../../../core/utils/audio_helper.dart';
@@ -12,7 +13,7 @@ import '../../../../core/utils/audio_cache_manager.dart';
 
 class AdvancedAudioPlayer extends StatefulWidget {
   final String audioUrl;
-  final Function(String)? onTextGenerated; // If non-null, we are in Edit Mode
+  final Function(String text, String audioUrl)? onTextGenerated; // If non-null, we are in Edit Mode
 
   const AdvancedAudioPlayer({
     super.key,
@@ -45,6 +46,7 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
   // AI loading states
   bool _isTranscribing = false;
   bool _isSummarizing = false;
+  bool _isAICancelled = false;
 
   StreamSubscription? _playerStateSubscription;
   StreamSubscription? _positionSubscription;
@@ -186,9 +188,27 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
 
   // AI services trigger
   Future<void> _callAIService(bool isTranscription) async {
-    if (_isTranscribing || _isSummarizing) return;
+    if (isTranscription) {
+      if (_isTranscribing) {
+        // Stop/cancel current operation
+        setState(() {
+          _isAICancelled = true;
+          _isTranscribing = false;
+        });
+        return;
+      }
+    } else {
+      if (_isSummarizing) {
+        setState(() {
+          _isAICancelled = true;
+          _isSummarizing = false;
+        });
+        return;
+      }
+    }
 
     setState(() {
+      _isAICancelled = false;
       if (isTranscription) {
         _isTranscribing = true;
       } else {
@@ -197,6 +217,26 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
     });
 
     try {
+      // 0. Cache check for summary
+      if (!isTranscription) {
+        final prefs = await SharedPreferences.getInstance();
+        final cachedSummary = prefs.getString('summary_${widget.audioUrl.hashCode}');
+        if (cachedSummary != null && cachedSummary.trim().isNotEmpty) {
+          if (_isAICancelled) return;
+          _showAIResultDialog('تلخيص الأفكار الرئيسية', cachedSummary);
+          return;
+        }
+      }
+
+      // Calculate startTime if transcribing
+      String? startTimeStr;
+      if (isTranscription) {
+        final currentPos = _audioPlayer.position;
+        final minutes = currentPos.inMinutes;
+        final seconds = currentPos.inSeconds % 60;
+        startTimeStr = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+      }
+
       final isNetwork = widget.audioUrl.startsWith('http://') || 
                         widget.audioUrl.startsWith('https://') ||
                         widget.audioUrl.startsWith('blob:');
@@ -207,12 +247,17 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
       
       http.Response response;
 
+      final Map<String, dynamic> requestBody = {};
+      if (startTimeStr != null) {
+        requestBody['startTime'] = startTimeStr;
+      }
+
       if (isNetwork) {
-        // Send as query parameter or JSON URL
+        requestBody['url'] = widget.audioUrl;
         response = await http.post(
           serviceUrl,
           headers: {'Content-Type': 'application/json'},
-          body: json.encode({'url': widget.audioUrl}),
+          body: json.encode(requestBody),
         ).timeout(const Duration(seconds: 40));
       } else {
         // Local file - read bytes and send base64
@@ -240,30 +285,41 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
         else if (lower.endsWith('.opus')) mimeType = 'audio/opus';
         else if (lower.endsWith('.aac')) mimeType = 'audio/aac';
 
+        requestBody['audioData'] = base64Data;
+        requestBody['mimeType'] = mimeType;
+
         response = await http.post(
           serviceUrl,
           headers: {'Content-Type': 'application/json'},
-          body: json.encode({
-            'audioData': base64Data,
-            'mimeType': mimeType,
-          }),
+          body: json.encode(requestBody),
         ).timeout(const Duration(seconds: 50));
       }
+
+      if (_isAICancelled) return;
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final generatedText = data['text'] as String?;
 
         if (generatedText != null && generatedText.trim().isNotEmpty) {
-          if (widget.onTextGenerated != null) {
-            // Edit Mode: Insert text directly in editor
-            widget.onTextGenerated!(generatedText);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(isTranscription ? 'تم إدراج النص المفرغ في المحرر بنجاح' : 'تم إدراج تلخيص المحاضرة بنجاح')),
-            );
+          if (isTranscription) {
+            if (widget.onTextGenerated != null) {
+              // Edit Mode: Insert text directly in editor
+              widget.onTextGenerated!(generatedText, widget.audioUrl);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('تم إدراج النص المفرغ في المحرر بنجاح')),
+              );
+            } else {
+              // Read Mode: Open dialog/sheet to show the result
+              _showAIResultDialog('التفريغ الصوتي الذكي', generatedText);
+            }
           } else {
-            // Read Mode: Open dialog/sheet to show the result
-            _showAIResultDialog(isTranscription ? 'التفريغ الصوتي الذكي' : 'تلخيص الأفكار الرئيسية', generatedText);
+            // Cache the summary
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('summary_${widget.audioUrl.hashCode}', generatedText);
+            
+            // Show result
+            _showAIResultDialog('تلخيص الأفكار الرئيسية', generatedText);
           }
         } else {
           _showErrorDialog('فشل في جلب الاستجابة من الذكاء الاصطناعي');
@@ -279,7 +335,9 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
         _showErrorDialog('فشل الاتصال بخادم الذكاء الاصطناعي (رمز ${response.statusCode})$detail');
       }
     } catch (e) {
-      _showErrorDialog('حدث خطأ أثناء الاتصال بالذكاء الاصطناعي: $e');
+      if (!_isAICancelled) {
+        _showErrorDialog('حدث خطأ أثناء الاتصال بالذكاء الاصطناعي: $e');
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -622,21 +680,21 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
 
                     // AI Transcribe Button
                     ElevatedButton.icon(
-                      onPressed: (_isTranscribing || _isSummarizing) ? null : () => _callAIService(true),
+                      onPressed: _isSummarizing ? null : () => _callAIService(true),
                       icon: _isTranscribing
-                          ? const SizedBox(
-                              width: 10,
-                              height: 10,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
+                          ? const Icon(Icons.stop_rounded, size: 12, color: Colors.redAccent)
                           : const Icon(Icons.translate_rounded, size: 12),
                       label: Text(
-                        widget.onTextGenerated != null ? 'تفريغ في المحرر' : 'تفريغ الكتابة',
+                        _isTranscribing 
+                            ? 'إيقاف التفريغ' 
+                            : (widget.onTextGenerated != null ? 'تفريغ في المحرر' : 'تفريغ الكتابة'),
                         style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal.withOpacity(0.1),
-                        foregroundColor: Colors.teal,
+                        backgroundColor: _isTranscribing 
+                            ? Colors.redAccent.withOpacity(0.1) 
+                            : Colors.teal.withOpacity(0.1),
+                        foregroundColor: _isTranscribing ? Colors.redAccent : Colors.teal,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                         minimumSize: Size.zero,
@@ -646,21 +704,21 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
 
                     // AI Summarize Button
                     ElevatedButton.icon(
-                      onPressed: (_isTranscribing || _isSummarizing) ? null : () => _callAIService(false),
+                      onPressed: _isTranscribing ? null : () => _callAIService(false),
                       icon: _isSummarizing
-                          ? const SizedBox(
-                              width: 10,
-                              height: 10,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
+                          ? const Icon(Icons.stop_rounded, size: 12, color: Colors.redAccent)
                           : const Icon(Icons.summarize_rounded, size: 12),
                       label: Text(
-                        widget.onTextGenerated != null ? 'إدراج التلخيص' : 'تلخيص المقطع',
+                        _isSummarizing 
+                            ? 'إيقاف التلخيص' 
+                            : (widget.onTextGenerated != null ? 'إدراج التلخيص' : 'تلخيص المقطع'),
                         style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepOrange.withOpacity(0.1),
-                        foregroundColor: Colors.deepOrange,
+                        backgroundColor: _isSummarizing 
+                            ? Colors.redAccent.withOpacity(0.1) 
+                            : Colors.deepOrange.withOpacity(0.1),
+                        foregroundColor: _isSummarizing ? Colors.redAccent : Colors.deepOrange,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                         minimumSize: Size.zero,

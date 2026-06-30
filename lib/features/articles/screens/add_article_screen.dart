@@ -829,24 +829,76 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
     );
   }
 
-  void _handleAITextGenerated(String generatedText) {
-    final currentSelection = _textController.selection;
+  void _handleAITextGenerated(String generatedText, String audioUrl) {
     final rawText = _textController.rawText;
     
-    String newText;
+    // Clean audio name
+    final originalName = audioUrl.split('/').last;
+    final cleanName = AudioHelper.getCleanAudioTitle(originalName).toLowerCase();
+    
+    final lines = rawText.split('\n');
+    int tagIndex = -1;
+    
+    for (int i = 0; i < lines.length; i++) {
+      final lineUpper = lines[i].toUpperCase().trim();
+      if (lineUpper.startsWith('[AUDIO_ADVANCED') && lineUpper.toLowerCase().contains(cleanName)) {
+        tagIndex = i;
+        break;
+      }
+    }
+    
+    // If not found by cleanName, try general [AUDIO_ADVANCED] matching
+    if (tagIndex == -1) {
+      for (int i = 0; i < lines.length; i++) {
+        final lineUpper = lines[i].toUpperCase().trim();
+        if (lineUpper == '[AUDIO_ADVANCED]') {
+          tagIndex = i;
+          break;
+        }
+      }
+    }
+    
+    String updatedText;
     int newCursorOffset;
-    if (currentSelection.isValid) {
-      final start = currentSelection.start;
-      final end = currentSelection.end;
-      newText = rawText.replaceRange(start, end, '\n$generatedText\n');
-      newCursorOffset = start + '\n$generatedText\n'.length;
+    
+    if (tagIndex != -1) {
+      // Find the end of the transcription block immediately following the tag
+      // (so we append to existing transcription if there is any)
+      int insertAt = tagIndex + 1;
+      while (insertAt < lines.length && 
+             lines[insertAt].trim().isNotEmpty && 
+             !lines[insertAt].trim().startsWith('[') && 
+             !lines[insertAt].trim().startsWith('==') && 
+             !lines[insertAt].trim().startsWith('~~')) {
+        insertAt++;
+      }
+      lines.insert(insertAt, generatedText);
+      updatedText = lines.join('\n');
+      
+      // Compute the cursor offset after the inserted text
+      int offset = 0;
+      for (int i = 0; i <= insertAt; i++) {
+        if (i < lines.length) {
+          offset += lines[i].length + 1;
+        }
+      }
+      newCursorOffset = offset > updatedText.length ? updatedText.length : offset;
     } else {
-      newText = '$rawText\n$generatedText\n';
-      newCursorOffset = newText.length;
+      // Fallback: insert at current selection or end of text
+      final currentSelection = _textController.selection;
+      if (currentSelection.isValid) {
+        final start = currentSelection.start;
+        final end = currentSelection.end;
+        updatedText = rawText.replaceRange(start, end, '\n$generatedText\n');
+        newCursorOffset = start + '\n$generatedText\n'.length;
+      } else {
+        updatedText = '$rawText\n$generatedText\n';
+        newCursorOffset = updatedText.length;
+      }
     }
     
     setState(() {
-      _textController.setRawText(newText);
+      _textController.setRawText(updatedText);
       _textController.selection = TextSelection.collapsed(offset: newCursorOffset);
     });
   }
