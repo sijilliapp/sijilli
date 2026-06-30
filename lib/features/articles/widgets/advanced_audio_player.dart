@@ -544,6 +544,94 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
     );
   }
 
+  void _handleABLoopToggle() {
+    final currentPos = _position;
+    if (_loopA == null && _loopB == null) {
+      setState(() {
+        _loopA = currentPos;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تم تحديد نقطة البداية (A) - اضغط مجدداً لتحديد النهاية (B)'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } else if (_loopA != null && _loopB == null) {
+      if (currentPos > _loopA!) {
+        setState(() {
+          _loopB = currentPos;
+        });
+        _audioPlayer.seek(_loopA!);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم تفعيل تكرار المقطع (A ⇄ B)'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } else {
+        _showErrorDialog('نقطة النهاية (B) يجب أن تكون بعد نقطة البداية (A)');
+      }
+    } else {
+      setState(() {
+        _loopA = null;
+        _loopB = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تم إيقاف تكرار المقطع'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Widget _buildABLoopButtonLabel() {
+    final TextStyle activeStyle = TextStyle(
+      color: Colors.blueAccent,
+      fontWeight: FontWeight.bold,
+      fontSize: 12,
+      shadows: [
+        Shadow(
+          color: Colors.blueAccent.withOpacity(0.5),
+          blurRadius: 8,
+        ),
+      ],
+    );
+    
+    final TextStyle inactiveStyle = TextStyle(
+      color: AppColors.getTextSecondary(context).withOpacity(0.5),
+      fontWeight: FontWeight.normal,
+      fontSize: 12,
+    );
+
+    final TextStyle arrowStyle = TextStyle(
+      color: (_loopA != null && _loopB != null) 
+          ? Colors.blueAccent 
+          : AppColors.getTextSecondary(context).withOpacity(0.4),
+      fontWeight: FontWeight.bold,
+      fontSize: 12,
+    );
+
+    return RichText(
+      text: TextSpan(
+        children: [
+          TextSpan(
+            text: 'A',
+            style: _loopA != null ? activeStyle : inactiveStyle,
+          ),
+          TextSpan(
+            text: ' ⇄ ',
+            style: arrowStyle,
+          ),
+          TextSpan(
+            text: 'B',
+            style: _loopB != null ? activeStyle : inactiveStyle,
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showErrorDialog(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -574,6 +662,17 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
   Widget build(BuildContext context) {
     final cleanFileName = AudioHelper.getCleanFileNameFromUrl(widget.audioUrl);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bool isLoopAOnly = _loopA != null && _loopB == null;
+    final bool isLoopActive = _loopA != null && _loopB != null;
+
+    final Color buttonBg = isLoopActive 
+        ? Colors.blueAccent.withOpacity(0.12)
+        : (isLoopAOnly ? Colors.blueAccent.withOpacity(0.06) : Colors.grey.withOpacity(0.08));
+
+    final BorderSide border = isLoopActive
+        ? const BorderSide(color: Colors.blueAccent, width: 1.5)
+        : (isLoopAOnly ? const BorderSide(color: Colors.blueAccent, width: 0.5) : BorderSide.none);
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 12),
@@ -651,7 +750,7 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'تكرار المقطع: أ = ${_loopA != null ? _formatDuration(_loopA!) : "غير محدد"} | ب = ${_loopB != null ? _formatDuration(_loopB!) : "غير محدد"}',
+                          'تكرار المقطع: A = ${_loopA != null ? _formatDuration(_loopA!) : "غير محدد"} | B = ${_loopB != null ? _formatDuration(_loopB!) : "غير محدد"}',
                           style: const TextStyle(color: Colors.blueAccent, fontSize: 11, fontWeight: FontWeight.bold),
                         ),
                         TextButton(
@@ -765,44 +864,22 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    // Loop A
+                    // A-B Loop unified button
                     ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _loopA = _position;
-                        });
-                      },
+                      onPressed: _handleABLoopToggle,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _loopA != null ? Colors.blueAccent : Colors.grey.withOpacity(0.08),
-                        foregroundColor: _loopA != null ? Colors.white : AppColors.getTextPrimary(context),
+                        backgroundColor: buttonBg,
+                        surfaceTintColor: Colors.transparent,
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        side: border,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppDimens.radiusS),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      child: const Text('بداية أ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                    ),
-
-                    // Loop B
-                    ElevatedButton(
-                      onPressed: _loopA == null ? null : () {
-                        if (_position > _loopA!) {
-                          setState(() {
-                            _loopB = _position;
-                          });
-                        } else {
-                          _showErrorDialog('نقطة النهاية (ب) يجب أن تكون بعد نقطة البداية (أ)');
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _loopB != null ? Colors.blueAccent : Colors.grey.withOpacity(0.08),
-                        foregroundColor: _loopB != null ? Colors.white : AppColors.getTextPrimary(context),
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: const Text('نهاية ب', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                      child: _buildABLoopButtonLabel(),
                     ),
 
                     // AI Transcribe Button
