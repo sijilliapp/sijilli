@@ -333,8 +333,7 @@ class ArticleProvider extends ChangeNotifier {
         if (audioFiles != null && audioFiles.isNotEmpty) {
           multipartAudios = [];
           for (final audioFile in audioFiles) {
-            final String originalName = audioFile.path.split('/').last;
-            final String fileName = Uri.encodeFull(originalName);
+            final String fileName = audioFile.path.split('/').last;
             multipartAudios.add(await http.MultipartFile.fromPath(
               'audio',
               audioFile.path,
@@ -411,8 +410,7 @@ class ArticleProvider extends ChangeNotifier {
       if (audioFiles != null && audioFiles.isNotEmpty) {
         multipartAudios = [];
         for (final audioFile in audioFiles) {
-          final String originalName = audioFile.path.split('/').last;
-          final String fileName = Uri.encodeFull(originalName);
+          final String fileName = audioFile.path.split('/').last;
           multipartAudios.add(await http.MultipartFile.fromPath(
             'audio',
             audioFile.path,
