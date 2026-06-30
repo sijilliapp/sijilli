@@ -15,24 +15,39 @@ class AudioHelper {
         mainPart = mainPart.replaceFirst(suffixRegex, '');
       }
       
-      // 3. Clean transition underscores between hex characters (e.g. d_8 -> d8, 8_a -> 8a)
-      String cleaned = mainPart.toLowerCase();
-      final transitionRegex = RegExp(r'([0-9a-f])_([0-9a-f])');
-      while (transitionRegex.hasMatch(cleaned)) {
-        cleaned = cleaned.replaceAllMapped(transitionRegex, (m) => '${m[1]}${m[2]}');
-      }
-
-      // 4. Convert all _XX (where XX is two hex chars) to %XX
-      final byteRegex = RegExp(r'_([0-9a-f]{2})');
-      String percentEncoded = cleaned.replaceAllMapped(byteRegex, (m) => '%${m[1]}');
-
-      // 5. Decode URL percent-encoding to restore Arabic characters
-      try {
-        final decoded = Uri.decodeFull(percentEncoded);
-        if (decoded.trim().isNotEmpty) {
-          return '$decoded$ext';
+      // 3. Remove underscores to get raw hex
+      final hexOnly = mainPart.replaceAll('_', '').toLowerCase();
+      
+      // 4. Validate if it's a valid hex string of even length
+      if (hexOnly.isNotEmpty && 
+          hexOnly.length % 2 == 0 && 
+          RegExp(r'^[0-9a-f]+$').hasMatch(hexOnly)) {
+        
+        // 5. Check if it looks like UTF-8 Arabic bytes (which start with d8/d9/da/db or 20 for space)
+        bool isArabicHex = false;
+        for (int i = 0; i < hexOnly.length; i += 2) {
+          final byte = hexOnly.substring(i, i + 2);
+          if (byte == 'd8' || byte == 'd9' || byte == 'da' || byte == 'db' || byte == '20') {
+            isArabicHex = true;
+            break;
+          }
         }
-      } catch (_) {}
+        
+        if (isArabicHex) {
+          final buffer = StringBuffer();
+          for (int i = 0; i < hexOnly.length; i += 2) {
+            buffer.write('%');
+            buffer.write(hexOnly.substring(i, i + 2));
+          }
+          final percentEncoded = buffer.toString();
+          try {
+            final decoded = Uri.decodeFull(percentEncoded);
+            if (decoded.trim().isNotEmpty) {
+              return '$decoded$ext';
+            }
+          } catch (_) {}
+        }
+      }
 
       // Fallback: standard pocketbase cleaning and URI decoding
       String cleanName = filename;
