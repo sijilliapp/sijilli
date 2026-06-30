@@ -13,7 +13,7 @@ import '../../../../core/utils/audio_cache_manager.dart';
 
 class AdvancedAudioPlayer extends StatefulWidget {
   final String audioUrl;
-  final Function(String text, String audioUrl)? onTextGenerated; // If non-null, we are in Edit Mode
+  final Function(String text, String audioUrl, bool isFinal)? onTextGenerated; // If non-null, we are in Edit Mode
 
   const AdvancedAudioPlayer({
     super.key,
@@ -317,6 +317,9 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
               Timer.periodic(const Duration(milliseconds: 80), (timer) {
                 if (_isAICancelled || !mounted || wordIndex >= words.length) {
                   timer.cancel();
+                  if (widget.onTextGenerated != null) {
+                    widget.onTextGenerated!(accumulated, widget.audioUrl, true);
+                  }
                   if (mounted) {
                     setState(() {
                       _isTranscribing = false;
@@ -326,7 +329,7 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
                 }
 
                 accumulated += (wordIndex == 0 ? "" : " ") + words[wordIndex];
-                widget.onTextGenerated!(accumulated, widget.audioUrl);
+                widget.onTextGenerated!(accumulated, widget.audioUrl, false);
                 wordIndex++;
               });
             } else {
@@ -387,7 +390,7 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
   Widget _buildSummaryContent(String text) {
     final lines = text.split('\n');
     final List<Widget> lineWidgets = [];
-    final timestampRegex = RegExp(r'\[(\d{1,2}):(\d{2})\]');
+    final timestampRegex = RegExp(r'(?:\[)?(\d{1,2}):(\d{2})(?:\])?');
 
     for (final line in lines) {
       if (line.trim().isEmpty) {

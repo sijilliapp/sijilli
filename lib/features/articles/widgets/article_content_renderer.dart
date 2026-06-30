@@ -18,7 +18,7 @@ class ArticleContentRenderer extends StatelessWidget {
   final String text;
   final String? fontFamily;
   final List<String>? audioUrls;
-  final Function(String text, String audioUrl)? onTextGenerated;
+  final Function(String text, String audioUrl, bool isFinal)? onTextGenerated;
 
   const ArticleContentRenderer({
     super.key,

@@ -866,7 +866,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
     return -1;
   }
 
-  void _handleAITextGenerated(String generatedText, String audioUrl) {
+  void _handleAITextGenerated(String generatedText, String audioUrl, bool isFinal) {
     final rawText = _textController.rawText;
     final originalName = audioUrl.split('/').last;
     final cleanName = AudioHelper.getCleanAudioTitle(originalName).toLowerCase();

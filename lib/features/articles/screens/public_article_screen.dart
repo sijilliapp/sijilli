@@ -22,7 +22,7 @@ import 'package:sijilli/features/articles/widgets/tag_chip.dart';
 import '../widgets/collapsible_content.dart';
 import 'package:sijilli/core/utils/image_saver_util.dart';
 import '../../../core/utils/article_printer.dart';
-
+import '../../../core/utils/audio_helper.dart';
 class PublicArticleScreen extends StatefulWidget {
   final String username;
   final String articleId;
@@ -46,6 +46,99 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
   bool _isLoading = true;
   String? _error;
   bool _isImageExpanded = false;
+
+  String? _activeStreamingAudioUrl;
+  int _streamingStartIndex = -1;
+  int _lastStreamingInsertedLength = 0;
+
+  int _findTagInsertionIndex(String rawText, String cleanName) {
+    final lines = rawText.split('\n');
+    int tagLineIndex = -1;
+    
+    for (int i = 0; i < lines.length; i++) {
+      final lineUpper = lines[i].toUpperCase().trim();
+      if (lineUpper.startsWith('[AUDIO_ADVANCED') && lineUpper.toLowerCase().contains(cleanName)) {
+        tagLineIndex = i;
+        break;
+      }
+    }
+    
+    if (tagLineIndex == -1) {
+      for (int i = 0; i < lines.length; i++) {
+        final lineUpper = lines[i].toUpperCase().trim();
+        if (lineUpper == '[AUDIO_ADVANCED]') {
+          tagLineIndex = i;
+          break;
+        }
+      }
+    }
+    
+    if (tagLineIndex != -1) {
+      int offset = 0;
+      for (int i = 0; i <= tagLineIndex; i++) {
+        offset += lines[i].length + 1;
+      }
+      return offset - 1;
+    }
+    
+    return -1;
+  }
+
+  void _handleReadModeAITextGenerated(String generatedText, String audioUrl, bool isFinal) async {
+    final rawText = _article!.text;
+    final originalName = audioUrl.split('/').last;
+    final cleanName = AudioHelper.getCleanAudioTitle(originalName).toLowerCase();
+
+    // 1. Initialize active streaming session if needed
+    if (_activeStreamingAudioUrl != audioUrl) {
+      final int tagOffset = _findTagInsertionIndex(rawText, cleanName);
+      
+      if (tagOffset != -1) {
+        _streamingStartIndex = tagOffset;
+      } else {
+        _streamingStartIndex = rawText.length;
+      }
+      
+      _activeStreamingAudioUrl = audioUrl;
+      _lastStreamingInsertedLength = 0;
+    }
+
+    // 2. Perform in-place range replacement
+    final String replacement = '\n$generatedText\n';
+    final String updatedText = rawText.replaceRange(
+      _streamingStartIndex,
+      _streamingStartIndex + _lastStreamingInsertedLength,
+      replacement,
+    );
+    
+    _lastStreamingInsertedLength = replacement.length;
+
+    // Update state locally so it renders immediately
+    setState(() {
+      _article = _article!.copyWith(text: updatedText);
+    });
+
+    // 3. Save to database if it's the final completed string
+    if (isFinal) {
+      _activeStreamingAudioUrl = null;
+      _streamingStartIndex = -1;
+      _lastStreamingInsertedLength = 0;
+
+      try {
+        await _articleService.updateArticle(
+          id: _article!.id,
+          text: updatedText,
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم تفريغ وحفظ النص الصوتي في المقال بنجاح')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('فشل حفظ التفريغ في الخادم: $e'), backgroundColor: Colors.redAccent),
+        );
+      }
+    }
+  }
 
   void _showCommentsSheet() {
     if (_article == null) return;
@@ -144,7 +237,6 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
     final settingsProvider = Provider.of<SettingsProvider>(context);
     final themeProvider = Provider.of<ThemeProvider>(context);
     final fontFamily = settingsProvider.articleFontFamily;
-
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 500),
       transitionBuilder: (Widget child, Animation<double> animation) {
@@ -290,6 +382,9 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
   }
 
   Widget _buildBody(String? fontFamily) {
+    final currentUserId = PocketBaseClient.instance.pb.authStore.record?.id;
+    final bool isAuthor = _article != null && currentUserId != null && currentUserId == _article!.authorId;
+
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -473,6 +568,7 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
             text: _article!.text,
             fontFamily: fontFamily,
             audioUrls: audioUrls,
+            onTextGenerated: isAuthor ? _handleReadModeAITextGenerated : null,
           ),
         ),
         
