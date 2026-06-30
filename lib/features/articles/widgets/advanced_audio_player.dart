@@ -345,9 +345,20 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
           _showErrorDialog('فشل في جلب الاستجابة من الذكاء الاصطناعي');
         }
       } else {
+        final bodyStr = response.body;
+        final bool isQuotaExceeded = response.statusCode == 429 || 
+                                     bodyStr.contains('429') || 
+                                     bodyStr.contains('RESOURCE_EXHAUSTED') || 
+                                     bodyStr.toLowerCase().contains('quota');
+        
+        if (isQuotaExceeded) {
+          _showUpgradePromptDialog();
+          return;
+        }
+
         String detail = '';
         try {
-          final data = json.decode(response.body);
+          final data = json.decode(bodyStr);
           if (data['error'] != null) {
             detail = '\nالسبب: ${data['error']}';
           }
@@ -356,7 +367,12 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
       }
     } catch (e) {
       if (!_isAICancelled) {
-        _showErrorDialog('حدث خطأ أثناء الاتصال بالذكاء الاصطناعي: $e');
+        final errStr = e.toString().toLowerCase();
+        if (errStr.contains('429') || errStr.contains('quota') || errStr.contains('resource_exhausted')) {
+          _showUpgradePromptDialog();
+        } else {
+          _showErrorDialog('حدث خطأ أثناء الاتصال بالذكاء الاصطناعي: $e');
+        }
       }
     } finally {
       if (mounted) {
@@ -636,6 +652,85 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
+    );
+  }
+
+  void _showUpgradePromptDialog() {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDimens.radiusL),
+          ),
+          backgroundColor: AppColors.getCardBackground(context),
+          title: Row(
+            textDirection: TextDirection.rtl,
+            children: [
+              const Icon(Icons.star_rounded, color: Colors.amber, size: 28),
+              const SizedBox(width: 8),
+              Text(
+                'طلب ترقية الحساب',
+                style: TextStyle(
+                  color: AppColors.getTextPrimary(context),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  fontFamily: 'Outfit',
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'لقد تجاوزت الحد المسموح به للتفريغ والتلخيص المجاني المتاح للمستخدمين العاديين.\n\nيرجى ترقية حسابك من مستخدم إلى كاتب للحصول على باقة مزايا متكاملة تشمل تفريغاً صوتياً غير محدود وتلخيصاً ذكياً فورياً!',
+            style: TextStyle(
+              color: AppColors.getTextSecondary(context),
+              fontSize: 14,
+              height: 1.5,
+              fontFamily: 'Outfit',
+            ),
+            textAlign: TextAlign.right,
+            textDirection: TextDirection.rtl,
+          ),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'لاحقاً',
+                style: TextStyle(
+                  color: AppColors.getTextSecondary(context),
+                  fontFamily: 'Outfit',
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('سيتم فتح صفحة طلب الترقية قريباً'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppDimens.radiusS),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              child: const Text(
+                'ترقية إلى كاتب',
+                style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
