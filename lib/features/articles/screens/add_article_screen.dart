@@ -62,6 +62,10 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
   Offset? _lastPointerDownOffset;
   late final ScrollController _editorScrollController;
 
+  String? _activeStreamingAudioUrl;
+  int _streamingStartIndex = -1;
+  int _lastStreamingInsertedLength = 0;
+
   @override
   void initState() {
     super.initState();
@@ -829,74 +833,70 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
     );
   }
 
-  void _handleAITextGenerated(String generatedText, String audioUrl) {
-    final rawText = _textController.rawText;
-    
-    // Clean audio name
-    final originalName = audioUrl.split('/').last;
-    final cleanName = AudioHelper.getCleanAudioTitle(originalName).toLowerCase();
-    
+  int _findTagInsertionIndex(String rawText, String cleanName) {
     final lines = rawText.split('\n');
-    int tagIndex = -1;
+    int tagLineIndex = -1;
     
     for (int i = 0; i < lines.length; i++) {
       final lineUpper = lines[i].toUpperCase().trim();
       if (lineUpper.startsWith('[AUDIO_ADVANCED') && lineUpper.toLowerCase().contains(cleanName)) {
-        tagIndex = i;
+        tagLineIndex = i;
         break;
       }
     }
     
-    // If not found by cleanName, try general [AUDIO_ADVANCED] matching
-    if (tagIndex == -1) {
+    if (tagLineIndex == -1) {
       for (int i = 0; i < lines.length; i++) {
         final lineUpper = lines[i].toUpperCase().trim();
         if (lineUpper == '[AUDIO_ADVANCED]') {
-          tagIndex = i;
+          tagLineIndex = i;
           break;
         }
       }
     }
     
-    String updatedText;
-    int newCursorOffset;
-    
-    if (tagIndex != -1) {
-      // Find the end of the transcription block immediately following the tag
-      // (so we append to existing transcription if there is any)
-      int insertAt = tagIndex + 1;
-      while (insertAt < lines.length && 
-             lines[insertAt].trim().isNotEmpty && 
-             !lines[insertAt].trim().startsWith('[') && 
-             !lines[insertAt].trim().startsWith('==') && 
-             !lines[insertAt].trim().startsWith('~~')) {
-        insertAt++;
-      }
-      lines.insert(insertAt, generatedText);
-      updatedText = lines.join('\n');
-      
-      // Compute the cursor offset after the inserted text
+    if (tagLineIndex != -1) {
       int offset = 0;
-      for (int i = 0; i <= insertAt; i++) {
-        if (i < lines.length) {
-          offset += lines[i].length + 1;
-        }
+      for (int i = 0; i <= tagLineIndex; i++) {
+        offset += lines[i].length + 1;
       }
-      newCursorOffset = offset > updatedText.length ? updatedText.length : offset;
-    } else {
-      // Fallback: insert at current selection or end of text
-      final currentSelection = _textController.selection;
-      if (currentSelection.isValid) {
-        final start = currentSelection.start;
-        final end = currentSelection.end;
-        updatedText = rawText.replaceRange(start, end, '\n$generatedText\n');
-        newCursorOffset = start + '\n$generatedText\n'.length;
-      } else {
-        updatedText = '$rawText\n$generatedText\n';
-        newCursorOffset = updatedText.length;
-      }
+      return offset - 1;
     }
     
+    return -1;
+  }
+
+  void _handleAITextGenerated(String generatedText, String audioUrl) {
+    final rawText = _textController.rawText;
+    final originalName = audioUrl.split('/').last;
+    final cleanName = AudioHelper.getCleanAudioTitle(originalName).toLowerCase();
+
+    // 1. Initialize active streaming session if needed
+    if (_activeStreamingAudioUrl != audioUrl) {
+      final int tagOffset = _findTagInsertionIndex(rawText, cleanName);
+      
+      if (tagOffset != -1) {
+        _streamingStartIndex = tagOffset;
+      } else {
+        final currentSelection = _textController.selection;
+        _streamingStartIndex = currentSelection.isValid ? currentSelection.start : rawText.length;
+      }
+      
+      _activeStreamingAudioUrl = audioUrl;
+      _lastStreamingInsertedLength = 0;
+    }
+
+    // 2. Perform in-place range replacement
+    final String replacement = '\n$generatedText\n';
+    final String updatedText = rawText.replaceRange(
+      _streamingStartIndex,
+      _streamingStartIndex + _lastStreamingInsertedLength,
+      replacement,
+    );
+    
+    _lastStreamingInsertedLength = replacement.length;
+    final int newCursorOffset = _streamingStartIndex + replacement.length;
+
     setState(() {
       _textController.setRawText(updatedText);
       _textController.selection = TextSelection.collapsed(offset: newCursorOffset);

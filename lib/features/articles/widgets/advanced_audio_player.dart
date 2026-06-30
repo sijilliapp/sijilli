@@ -304,11 +304,31 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
         if (generatedText != null && generatedText.trim().isNotEmpty) {
           if (isTranscription) {
             if (widget.onTextGenerated != null) {
-              // Edit Mode: Insert text directly in editor
-              widget.onTextGenerated!(generatedText, widget.audioUrl);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('تم إدراج النص المفرغ في المحرر بنجاح')),
-              );
+              // Edit Mode: Stream text word-by-word
+              final List<String> words = generatedText.split(RegExp(r'\s+'));
+              int wordIndex = 0;
+              String accumulated = "";
+              
+              setState(() {
+                _isTranscribing = true;
+                _isAICancelled = false;
+              });
+
+              Timer.periodic(const Duration(milliseconds: 80), (timer) {
+                if (_isAICancelled || !mounted || wordIndex >= words.length) {
+                  timer.cancel();
+                  if (mounted) {
+                    setState(() {
+                      _isTranscribing = false;
+                    });
+                  }
+                  return;
+                }
+
+                accumulated += (wordIndex == 0 ? "" : " ") + words[wordIndex];
+                widget.onTextGenerated!(accumulated, widget.audioUrl);
+                wordIndex++;
+              });
             } else {
               // Read Mode: Open dialog/sheet to show the result
               _showAIResultDialog('التفريغ الصوتي الذكي', generatedText);
