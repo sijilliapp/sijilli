@@ -1,42 +1,38 @@
-import 'dart:io';
 import 'dart:convert';
 
 class AudioHelper {
-  /// Decodes and cleans a PocketBase-sanitized audio filename back to its original Arabic/English form
   static String decodeArabicFileName(String filename) {
     try {
-      // 1. Separate filename and extension
       final dotIndex = filename.lastIndexOf('.');
       String mainPart = dotIndex == -1 ? filename : filename.substring(0, dotIndex);
       final ext = dotIndex == -1 ? '' : filename.substring(dotIndex);
       
-      // 2. Strip PocketBase random suffix (support 8 to 15 alphanumeric characters at the end)
+      // Strip suffix (support 8 to 15 alphanumeric characters at the end)
       final suffixRegex = RegExp(r'_([a-zA-Z0-9]{8,15})$');
       if (suffixRegex.hasMatch(mainPart)) {
         mainPart = mainPart.replaceFirst(suffixRegex, '');
       }
-      
-      String temp = mainPart;
 
-      // 3. Clean up split single hex digits (e.g. _8_a -> _8a) caused by transitions from digit to uppercase letter in sanitization
+      String temp = mainPart;
+      
+      // 1. Clean up split single hex digits (e.g. _8_a -> _8a)
       final singleHexRegex = RegExp(r'_([0-9a-f])_([0-9a-f])', caseSensitive: false);
       while (singleHexRegex.hasMatch(temp)) {
         temp = temp.replaceAllMapped(singleHexRegex, (m) => '_${m.group(1)}${m.group(2)}');
       }
 
-      // 4. Prepend underscore if the string starts with two hex digits followed by an underscore
+      // 2. Prepend underscore if it starts with 2 hex digits followed by underscore
       if (RegExp(r'^[0-9a-f]{2}_', caseSensitive: false).hasMatch(temp)) {
         temp = '_$temp';
       }
 
-      // 5. Only decode if it contains Arabic UTF-8 signature bytes (d8/d9/da/db/e2) preceded by underscore
+      // 3. Only decode if it contains Arabic UTF-8 signature bytes (d8/d9/da/db/e2) preceded by underscore
       final hasArabicBytes = RegExp(r'_(d8|d9|da|db|e2)', caseSensitive: false).hasMatch(temp);
       if (hasArabicBytes) {
-        // Replace all _XX patterns (preceded by underscore) with %XX to decode via Uri
         final hexPairRegex = RegExp(r'_([0-9a-f]{2})', caseSensitive: false);
         final percentEncoded = temp.replaceAllMapped(hexPairRegex, (m) => '%${m.group(1)}');
+        
         try {
-          // Custom percent decode with allowMalformed to prevent crashes/exceptions
           final List<int> bytes = [];
           int i = 0;
           while (i < percentEncoded.length) {
@@ -55,12 +51,8 @@ class AudioHelper {
           }
           final decoded = utf8.decode(bytes, allowMalformed: true);
           
-          // Strip directional formatting marks and residual malformed character placeholders
           String cleanDecoded = decoded.replaceAll('', '').trim();
-          cleanDecoded = cleanDecoded
-              .replaceAll('\u200e', '')
-              .replaceAll('\u2068', '')
-              .replaceAll('\u2069', '');
+          cleanDecoded = cleanDecoded.replaceAll('\u200e', '').replaceAll('\u2068', '').replaceAll('\u2069', '');
 
           if (cleanDecoded.isNotEmpty) {
             return '$cleanDecoded$ext';
@@ -80,7 +72,6 @@ class AudioHelper {
     }
   }
 
-  /// Returns the decoded filename without its extension (handles full URLs too)
   static String getCleanAudioTitle(String filenameOrUrl) {
     try {
       String name = filenameOrUrl;
@@ -100,7 +91,6 @@ class AudioHelper {
     }
   }
 
-  /// Extracts filename from path or URL and cleans it
   static String getCleanFileNameFromUrl(String url) {
     try {
       String name = url;
@@ -116,4 +106,10 @@ class AudioHelper {
       return 'ملف صوتي 🎵';
     }
   }
+}
+
+void main() {
+  final url = 'https://sijilli.pockethost.io/api/files/articles/12345/e2_80_8_e_e2_81_a8_d8_b2_d9_8_a_d9_86_d8_a8_d8_a8_20_d8_a7_d9_84_d8_af_d8_b1_d8_a7_d8_b2_d9_8a_20_d9_85_d8_ad_d8_b1_d9_85_201448_a1b2c3d4e5.mp3';
+  print('Decoded FileName: ${AudioHelper.getCleanFileNameFromUrl(url)}');
+  print('Decoded Title: ${AudioHelper.getCleanAudioTitle(url)}');
 }

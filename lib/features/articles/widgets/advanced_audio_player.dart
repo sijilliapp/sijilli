@@ -91,10 +91,16 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
 
       _playerStateSubscription = _audioPlayer.playerStateStream.listen((state) {
         if (!mounted) return;
+        final bool isCompleted = state.processingState == ProcessingState.completed;
         setState(() {
-          _isPlaying = state.playing;
+          _isPlaying = state.playing && !isCompleted;
           _isBuffering = state.processingState == ProcessingState.loading ||
               state.processingState == ProcessingState.buffering;
+          if (isCompleted) {
+            _position = Duration.zero;
+            _audioPlayer.pause();
+            _audioPlayer.seek(Duration.zero);
+          }
         });
       });
 
