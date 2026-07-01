@@ -123,8 +123,10 @@ class Article {
     return '${words.take(5).join(' ')}...';
   }
 
-  static String _getCleanAudioTitle(String filename) {
-    return AudioHelper.getCleanAudioTitle(filename);
+  String _getCleanAudioTitle(String filename) {
+    final displayName = AudioHelper.getAudioDisplayName(filename, text, audioFiles);
+    final dotIndex = displayName.lastIndexOf('.');
+    return dotIndex == -1 ? displayName : displayName.substring(0, dotIndex);
   }
   
   /// النص مجرداً من كل علامات التنسيق الخاصة بسجلي

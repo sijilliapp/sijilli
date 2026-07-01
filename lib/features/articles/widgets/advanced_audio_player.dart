@@ -13,11 +13,13 @@ import '../../../../core/utils/audio_cache_manager.dart';
 
 class AdvancedAudioPlayer extends StatefulWidget {
   final String audioUrl;
+  final String? audioTitle;
   final Function(String text, String audioUrl, bool isFinal)? onTextGenerated; // If non-null, we are in Edit Mode
 
   const AdvancedAudioPlayer({
     super.key,
     required this.audioUrl,
+    this.audioTitle,
     this.onTextGenerated,
   });
 
@@ -746,7 +748,7 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    final cleanFileName = AudioHelper.getCleanFileNameFromUrl(widget.audioUrl);
+    final cleanFileName = widget.audioTitle ?? AudioHelper.getCleanFileNameFromUrl(widget.audioUrl);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final bool isLoopAOnly = _loopA != null && _loopB == null;

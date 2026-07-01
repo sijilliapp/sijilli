@@ -1,48 +1,22 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pocketbase/pocketbase.dart';
+import 'package:sijilli/models/article.dart';
+import 'package:sijilli/models/appointment.dart';
 
 void main() {
-  test('test approved user update likes_count only', () async {
-    final pb = PocketBase('https://sijilli.pockethost.io');
-    try {
-      // 1. Create a temp user with role = approved
-      final email = 'temp_approved_${DateTime.now().millisecondsSinceEpoch}@example.com';
-      final password = 'password123';
-      
-      final userRecord = await pb.collection('users').create(body: {
-        'email': email,
-        'password': password,
-        'passwordConfirm': password,
-        'username': 'apprv_${DateTime.now().millisecondsSinceEpoch}',
-        'name': 'Temp Approved',
-        'role': 'approved',
-      });
-      print('Created temp approved: ${userRecord.id}');
-
-      // 2. Authenticate
-      final authData = await pb.collection('users').authWithPassword(email, password);
-      print('Authenticated as: ${authData.record.id}');
-
-      // 3. Fetch article
-      final resultList = await pb.collection('articles').getList(page: 1, perPage: 1);
-      if (resultList.items.isEmpty) {
-        print('No articles found');
-        return;
-      }
-      final record = resultList.items.first;
-      final currentLikesCount = record.data['likes_count'] ?? 0;
-      print('Current likes_count: $currentLikesCount');
-
-      // 4. Try updating likes_count only
-      final updatedRecord = await pb.collection('articles').update(record.id, body: {
-        'likes_count': currentLikesCount + 1,
-      });
-      print('SUCCESS! Updated likes_count: ${updatedRecord.data['likes_count']}');
-
-      // Clean up
-      await pb.collection('users').delete(authData.record.id);
-    } catch (e) {
-      print('Error during update: $e');
-    }
+  test('test computed Article title with distorted pocketbase filename', () {
+    final article = Article(
+      id: 'test',
+      authorId: 'test_author',
+      text: '',
+      postStatus: PostStatus.draft,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      audioFiles: [
+        'e2_80_8_e_e2_81_a8_d8_b2_d9_8_a_d9_86_d8_a8_d8_a8_20_d8_a7_d9_84_d8_af_d8_b1_d8_a7_d8_b2_d9_8a_20_d9_85_d8_ad_d8_b1_d9_85_201448_a1b2c3d4e5.mp3'
+      ],
+    );
+    
+    print('Computed title: "${article.title}"');
+    expect(article.title, equals('زينبب الدرازي محرم 1448'));
   });
 }

@@ -2019,8 +2019,11 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     ..._existingAudios.map((file) {
-                      final cleanName = AudioHelper.decodeArabicFileName(file);
-                      final displayName = cleanName;
+                      final displayName = AudioHelper.getAudioDisplayName(
+                        file,
+                        _textController.rawText,
+                        _existingAudios,
+                      );
                       return Container(
                         key: ValueKey('existing_$file'),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),

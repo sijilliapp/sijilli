@@ -293,10 +293,21 @@ class ArticleContentRenderer extends StatelessWidget {
         }
 
         if (resolvedUrl != null) {
+          final List<String> audioFiles = audioUrls?.map((u) {
+            if (u.toLowerCase().startsWith('http://') || u.toLowerCase().startsWith('https://')) {
+              try {
+                return Uri.parse(u).pathSegments.last;
+              } catch (_) {}
+            }
+            return u.split('/').last;
+          }).toList() ?? [];
+          final String resolvedTitle = AudioHelper.getAudioDisplayName(resolvedUrl, text, audioFiles);
+
           widgets.add(Padding(
             padding: EdgeInsets.only(bottom: i == lines.length - 1 ? 0.0 : 8.0),
             child: AdvancedAudioPlayer(
               audioUrl: resolvedUrl,
+              audioTitle: resolvedTitle,
               onTextGenerated: onTextGenerated,
             ),
           ));
