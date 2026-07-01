@@ -569,24 +569,12 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
       setState(() {
         _loopA = currentPos;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('تم تحديد نقطة البداية (A) - اضغط مجدداً لتحديد النهاية (B)'),
-          duration: Duration(seconds: 2),
-        ),
-      );
     } else if (_loopA != null && _loopB == null) {
       if (currentPos > _loopA!) {
         setState(() {
           _loopB = currentPos;
         });
         _audioPlayer.seek(_loopA!);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم تفعيل تكرار المقطع (A ⇄ B)'),
-            duration: Duration(seconds: 2),
-          ),
-        );
       } else {
         _showErrorDialog('نقطة النهاية (B) يجب أن تكون بعد نقطة البداية (A)');
       }
@@ -595,12 +583,6 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
         _loopA = null;
         _loopB = null;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('تم إيقاف تكرار المقطع'),
-          duration: Duration(seconds: 2),
-        ),
-      );
     }
   }
 
@@ -835,40 +817,6 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
                   ),
                 )
               else ...[
-                // AB Loop Info Bar
-                if (_loopA != null || _loopB != null)
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.blueAccent.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(AppDimens.radiusS),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'تكرار المقطع: A = ${_loopA != null ? _formatDuration(_loopA!) : "غير محدد"} | B = ${_loopB != null ? _formatDuration(_loopB!) : "غير محدد"}',
-                          style: const TextStyle(color: Colors.blueAccent, fontSize: 11, fontWeight: FontWeight.bold),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              _loopA = null;
-                              _loopB = null;
-                            });
-                          },
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: const Text('إلغاء التكرار', style: TextStyle(color: Colors.redAccent, fontSize: 11)),
-                        ),
-                      ],
-                    ),
-                  ),
-
                 // Slider / Progress bar
                 Row(
                   children: [
@@ -987,20 +935,18 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
                           ? const Icon(Icons.stop_rounded, size: 14, color: Colors.redAccent)
                           : const Icon(Icons.translate_rounded, size: 14),
                       label: Text(
-                        _isTranscribing 
-                            ? 'إيقاف التفريغ' 
-                            : (widget.onTextGenerated != null ? 'تفريغ في المحرر' : 'تفريغ الكتابة'),
+                        _isTranscribing ? 'إيقاف التفريغ' : 'تفريغ النص',
                         style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _isTranscribing 
                             ? Colors.redAccent.withOpacity(0.1) 
-                            : Colors.teal.withOpacity(0.08),
-                        foregroundColor: _isTranscribing ? Colors.redAccent : Colors.teal,
+                            : Colors.blueAccent.withOpacity(0.06),
+                        foregroundColor: _isTranscribing ? Colors.redAccent : Colors.blueAccent,
                         surfaceTintColor: Colors.transparent,
                         elevation: 0,
                         side: BorderSide(
-                          color: _isTranscribing ? Colors.redAccent : Colors.teal.withOpacity(0.3),
+                          color: _isTranscribing ? Colors.redAccent : Colors.blueAccent.withOpacity(0.3),
                           width: _isTranscribing ? 1.5 : 0.5,
                         ),
                         shape: RoundedRectangleBorder(
@@ -1019,20 +965,18 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
                           ? const Icon(Icons.stop_rounded, size: 14, color: Colors.redAccent)
                           : const Icon(Icons.summarize_rounded, size: 14),
                       label: Text(
-                        _isSummarizing 
-                            ? 'إيقاف التلخيص' 
-                            : (widget.onTextGenerated != null ? 'إدراج التلخيص' : 'تلخيص المقطع'),
+                        _isSummarizing ? 'إيقاف الفهرسة' : 'الفهرس',
                         style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _isSummarizing 
                             ? Colors.redAccent.withOpacity(0.1) 
-                            : Colors.deepOrange.withOpacity(0.08),
-                        foregroundColor: _isSummarizing ? Colors.redAccent : Colors.deepOrange,
+                            : Colors.blueAccent.withOpacity(0.06),
+                        foregroundColor: _isSummarizing ? Colors.redAccent : Colors.blueAccent,
                         surfaceTintColor: Colors.transparent,
                         elevation: 0,
                         side: BorderSide(
-                          color: _isSummarizing ? Colors.redAccent : Colors.deepOrange.withOpacity(0.3),
+                          color: _isSummarizing ? Colors.redAccent : Colors.blueAccent.withOpacity(0.3),
                           width: _isSummarizing ? 1.5 : 0.5,
                         ),
                         shape: RoundedRectangleBorder(
