@@ -371,6 +371,7 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final generatedText = data['text'] as String?;
+        final generatedIndex = data['index'] as String?;
 
         if (generatedText != null && generatedText.trim().isNotEmpty) {
           if (isTranscription) {
@@ -395,6 +396,9 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
                   
                   SharedPreferences.getInstance().then((prefs) async {
                     await prefs.setString('transcription_${widget.audioUrl.hashCode}', accumulated);
+                    if (generatedIndex != null && generatedIndex.trim().isNotEmpty) {
+                      await prefs.setString('summary_${widget.audioUrl.hashCode}', generatedIndex);
+                    }
                     
                     final String audioKey = widget.audioUrl.split('/').last.toLowerCase();
                     final Map<String, dynamic> currentMeta = widget.audioMetadata != null 
@@ -404,6 +408,9 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
                         ? Map<String, dynamic>.from(currentMeta[audioKey]!) 
                         : {};
                     fileMeta['transcription'] = accumulated;
+                    if (generatedIndex != null && generatedIndex.trim().isNotEmpty) {
+                      fileMeta['summary'] = generatedIndex;
+                    }
                     currentMeta[audioKey] = fileMeta;
 
                     if (widget.onMetadataUpdated != null) {
@@ -429,6 +436,9 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
               
               SharedPreferences.getInstance().then((prefs) async {
                 await prefs.setString('transcription_${widget.audioUrl.hashCode}', generatedText);
+                if (generatedIndex != null && generatedIndex.trim().isNotEmpty) {
+                  await prefs.setString('summary_${widget.audioUrl.hashCode}', generatedIndex);
+                }
                 
                 final String audioKey = widget.audioUrl.split('/').last.toLowerCase();
                 final Map<String, dynamic> currentMeta = widget.audioMetadata != null 
@@ -438,6 +448,9 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
                     ? Map<String, dynamic>.from(currentMeta[audioKey]!) 
                     : {};
                 fileMeta['transcription'] = generatedText;
+                if (generatedIndex != null && generatedIndex.trim().isNotEmpty) {
+                  fileMeta['summary'] = generatedIndex;
+                }
                 currentMeta[audioKey] = fileMeta;
 
                 if (widget.onMetadataUpdated != null) {
@@ -446,26 +459,34 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
               });
             }
           } else {
-            // Cache the summary
+            // Summary mode: display index and cache both
             final prefs = await SharedPreferences.getInstance();
-            await prefs.setString('summary_${widget.audioUrl.hashCode}', generatedText);
+            final String targetIndexText = generatedIndex ?? '';
             
-            final String audioKey = widget.audioUrl.split('/').last.toLowerCase();
-            final Map<String, dynamic> currentMeta = widget.audioMetadata != null 
-                ? Map<String, dynamic>.from(widget.audioMetadata!) 
-                : {};
-            final Map<String, dynamic> fileMeta = currentMeta[audioKey] is Map 
-                ? Map<String, dynamic>.from(currentMeta[audioKey]!) 
-                : {};
-            fileMeta['summary'] = generatedText;
-            currentMeta[audioKey] = fileMeta;
+            if (targetIndexText.trim().isNotEmpty) {
+              await prefs.setString('summary_${widget.audioUrl.hashCode}', targetIndexText);
+              await prefs.setString('transcription_${widget.audioUrl.hashCode}', generatedText);
+              
+              final String audioKey = widget.audioUrl.split('/').last.toLowerCase();
+              final Map<String, dynamic> currentMeta = widget.audioMetadata != null 
+                  ? Map<String, dynamic>.from(widget.audioMetadata!) 
+                  : {};
+              final Map<String, dynamic> fileMeta = currentMeta[audioKey] is Map 
+                  ? Map<String, dynamic>.from(currentMeta[audioKey]!) 
+                  : {};
+              fileMeta['summary'] = targetIndexText;
+              fileMeta['transcription'] = generatedText;
+              currentMeta[audioKey] = fileMeta;
 
-            if (widget.onMetadataUpdated != null) {
-              widget.onMetadataUpdated!(currentMeta);
+              if (widget.onMetadataUpdated != null) {
+                widget.onMetadataUpdated!(currentMeta);
+              }
+
+              _showAIResultDialog('تلخيص الأفكار الرئيسية', targetIndexText);
+            } else {
+              // Fallback if index wasn't populated
+              _showAIResultDialog('تلخيص الأفكار الرئيسية', generatedText);
             }
-
-            // Show result
-            _showAIResultDialog('تلخيص الأفكار الرئيسية', generatedText);
           }
         } else {
           _showErrorDialog('فشل في جلب الاستجابة من الذكاء الاصطناعي');

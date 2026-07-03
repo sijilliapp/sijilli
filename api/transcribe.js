@@ -147,21 +147,22 @@ module.exports = async (req, res) => {
 
     const duration = req.body && req.body.duration;
 
-    let promptText = "قم بتفريغ هذا الملف الصوتي بدقة بالغة إلى نص مقروء باللغة العربية. حافظ على سياق الحديث البشري وعلامات الترقيم المناسبة. إذا كان المتحدث يتحدث بلهجة عامية عربية، قم بكتابتها كما هي بأحرف عربية واضحة ومفهومة دون تبديل أو تغيير يخل بالمعنى الأصلي.";
-    
+    let promptText = "قم بتحليل الملف الصوتي وتوليد مخرجات بصيغة JSON تحتوي على عنصرين:\n" +
+      "1. transcription: تفريغ صوتي دقيق جداً ومباشر للحديث باللغة العربية دون أي زيادة أو شرح أو تخمين. حافظ على الألفاظ كما نطق بها المتحدث تماماً. وإذا كان المتحدث يتحدث بلهجة عامية، اكتبها كما هي بالظبط بأحرف عربية واضحة ومفهومة دون تبديل.\n" +
+      "2. index: فهرس ودليل زمني لمفاصل وفترات الملف الصوتي، بحيث يبدأ كل سطر بالطابع الزمني الدقيق بصيغة MM:SS، متبوعاً بمطلع الحديث حرفياً كما نطق به المتحدث عند هذا الوقت بالضبط (مثال: '01:25: السلام عليكم ورحمة الله وبركاته، أيها الإخوة...'). تجنب تماماً تلخيص الأفكار أو بلورتها أو وضع عناوين تعبيرية لها، بل اكتب مطلع الجملة المنطوقة حرفياً وبدقة عالية.\n\n";
+
     if (duration && duration <= 300) {
-      promptText += ` طول الملف الصوتي الفعلي هو ${duration} ثانية فقط. قم بتفريغ الملف بالكامل من بدايته وحتى نهايته بدقة دون أي زيادة أو تأليف أو تخمين خارج نطاق الصوت الفعلي.`;
+      promptText += `طول الملف الصوتي الفعلي هو ${duration} ثانية فقط. قم بمعالجة الملف بالكامل من بدايته وحتى نهايته بدقة دون أي زيادة أو تأليف أو تخمين خارج نطاق الصوت الفعلي.`;
     } else {
-      promptText += ` قم بتفريغ جزء مدته 5 دقائق فقط من الملف الصوتي، يبدأ من الطابع الزمني [${startTime}] وينتهي عند الطابع الزمني [${stopTime}].`;
+      promptText += `قم بمعالجة جزء مدته 5 دقائق فقط من الملف الصوتي، يبدأ من الطابع الزمني [${startTime}] وينتهي عند الطابع الزمني [${stopTime}].`;
       if (duration) {
         promptText += ` الطول الإجمالي للملف الصوتي هو ${duration} ثانية.`;
       }
       promptText += ` تجاهل تماماً أي كلام قيل قبل [${startTime}] أو بعد [${stopTime}]. لا تقم بتأليف أو تخمين أي كلام غير موجود في النطاق المحدد.`;
     }
-    promptText += " هام جداً: إذا كان الملف الصوتي (أو الجزء المحدد منه) صامتاً تماماً، أو يحتوي على ضوضاء أو موسيقى فقط، أو أن الكلام البشري فيه غير مفهوم أو غير واضح لغوياً على الإطلاق، فاكتب هذه العبارة المحددة فقط دون أي كلام آخر: [صوت غير واضح أو صمت]. لا تقم بتخمين أو ابتكار أي نصوص على الإطلاق في هذه الحالة.";
-    promptText += " اكتب النص المفرغ مباشرة دون أي مقدمات أو شرح.";
+    promptText += "\n\nهام جداً: إذا كان الملف الصوتي (أو الجزء المحدد منه) صامتاً تماماً، أو يحتوي على ضوضاء أو موسيقى فقط، أو أن الكلام البشري فيه غير مفهوم أو غير واضح لغوياً على الإطلاق، فاجعل قيمة كل من transcription و index هي العبارة التالية بالضبط دون أي كلام آخر: [صوت غير واضح أو صمت]. لا تقم بتخمين أو ابتكار أي نصوص على الإطلاق في هذه الحالة.";
 
-    // 2. Prepare payload for Gemini 2.5 Flash
+    // 2. Prepare payload for Gemini 2.5 Flash in JSON Mode
     const payload = {
       contents: [
         {
@@ -177,13 +178,28 @@ module.exports = async (req, res) => {
             }
           ]
         }
-      ]
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            transcription: { type: "STRING" },
+            index: { type: "STRING" }
+          },
+          required: ["transcription", "index"]
+        }
+      }
     };
 
     // 3. Make request with automatic retries for temporary 503 errors
-    const transcription = await makeGeminiRequest(apiKey, payload);
+    const responseJsonStr = await makeGeminiRequest(apiKey, payload);
+    const resultData = JSON.parse(responseJsonStr);
 
-    return res.status(200).json({ text: transcription });
+    return res.status(200).json({ 
+      text: resultData.transcription, 
+      index: resultData.index 
+    });
 
   } catch (err) {
     console.error('Transcription error:', err);

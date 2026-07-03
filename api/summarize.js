@@ -130,7 +130,12 @@ module.exports = async (req, res) => {
       base64Audio = fileBuffer.toString('base64');
     }
 
-    // 2. Prepare payload for Gemini 1.5 Flash
+    // 2. Prepare payload for Gemini 2.5 Flash in JSON Mode
+    const promptText = "قم بتحليل الملف الصوتي وتوليد مخرجات بصيغة JSON تحتوي على عنصرين:\n" +
+      "1. transcription: تفريغ صوتي دقيق جداً ومباشر للحديث باللغة العربية دون أي زيادة أو شرح أو تخمين. حافظ على الألفاظ كما نطق بها المتحدث تماماً. وإذا كان المتحدث يتحدث بلهجة عامية، اكتبها كما هي بالظبط بأحرف عربية واضحة ومفهومة دون تبديل.\n" +
+      "2. index: فهرس ودليل زمني لمفاصل وفترات الملف الصوتي، بحيث يبدأ كل سطر بالطابع الزمني الدقيق بصيغة MM:SS، متبوعاً بمطلع الحديث حرفياً كما نطق به المتحدث عند هذا الوقت بالضبط (مثال: '01:25: السلام عليكم ورحمة الله وبركاته، أيها الإخوة...'). تجنب تماماً تلخيص الأفكار أو بلورتها أو وضع عناوين تعبيرية لها، بل اكتب مطلع الجملة المنطوقة حرفياً وبدقة عالية.\n\n" +
+      "هام جداً: إذا كان الملف الصوتي صامتاً تماماً، أو يحتوي على ضوضاء أو موسيقى فقط، أو أن الكلام البشري فيه غير مفهوم أو غير واضح لغوياً على الإطلاق، فاجعل قيمة كل من transcription و index هي العبارة التالية بالضبط دون أي كلام آخر: [صوت غير واضح أو صمت]. لا تقم بتخمين أو ابتكار أي نصوص على الإطلاق في هذه الحالة.";
+
     const payload = {
       contents: [
         {
@@ -142,17 +147,32 @@ module.exports = async (req, res) => {
               }
             },
             {
-              text: "قم بإنشاء فهرس ودليل زمني لمفاصل هذا الملف الصوتي باللغة العربية. لا تكتب أي مقدمات أو شرح أو نصوص طويلة. اكتب فقط أسطر مرتبة تمثل رؤوس الأقلام والأفكار الرئيسية للملَف، بحيث يبدأ كل سطر بالطابع الزمني الدقيق بصيغة MM:SS (مثال: 02:10 فكرة جديدة أو بداية موضوع جديد)، متبوعاً بعنوان الفكرة أو النقطة بشكل مختصر جداً ومفيد. تتبع بداية كل فكرة جديدة بدقة زمنية عالية. هام جداً: إذا كان الملف الصوتي صامتاً تماماً، أو يحتوي على ضوضاء أو موسيقى فقط، أو أن الكلام البشري فيه غير مفهوم أو غير واضح لغوياً على الإطلاق، فاكتب هذه العبارة المحددة فقط دون أي كلام آخر: [صوت غير واضح أو صمت]. لا تقم بتخمين أو ابتكار أي نصوص على الإطلاق في هذه الحالة."
+              text: promptText
             }
           ]
         }
-      ]
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            transcription: { type: "STRING" },
+            index: { type: "STRING" }
+          },
+          required: ["transcription", "index"]
+        }
+      }
     };
 
     // 3. Make request with automatic retries for temporary 503 errors
-    const summary = await makeGeminiRequest(apiKey, payload);
+    const responseJsonStr = await makeGeminiRequest(apiKey, payload);
+    const resultData = JSON.parse(responseJsonStr);
 
-    return res.status(200).json({ text: summary });
+    return res.status(200).json({ 
+      text: resultData.transcription, 
+      index: resultData.index 
+    });
 
   } catch (err) {
     console.error('Summarization error:', err);
