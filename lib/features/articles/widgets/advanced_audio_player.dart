@@ -194,6 +194,13 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
   }
 
   Future<void> _skip(int seconds) async {
+    if (_isTranscribing || _isSummarizing) {
+      setState(() {
+        _isAICancelled = true;
+        _isTranscribing = false;
+        _isSummarizing = false;
+      });
+    }
     final currentPos = _audioPlayer.position;
     final newPos = currentPos + Duration(seconds: seconds);
     if (newPos < Duration.zero) {
@@ -880,6 +887,13 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
                             ? _duration.inMilliseconds.toDouble() 
                             : 100.0,
                         onChanged: (val) {
+                          if (_isTranscribing || _isSummarizing) {
+                            setState(() {
+                              _isAICancelled = true;
+                              _isTranscribing = false;
+                              _isSummarizing = false;
+                            });
+                          }
                           _audioPlayer.seek(Duration(milliseconds: val.toInt()));
                         },
                       ),
