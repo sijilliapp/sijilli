@@ -808,6 +808,41 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
               toolbarTitle: context.l10n.editArticleCover,
               toolbarColor: AppColors.primary,
               toolbarWidgetColor: Colors.white,
+              initAspectRatio: CropAspectRatioPreset.original,
+              lockAspectRatio: false,
+              aspectRatioPresets: [
+                CropAspectRatioPreset.original,
+                CropAspectRatioPreset.square,
+                CropAspectRatioPreset.ratio3x2,
+                CropAspectRatioPreset.ratio4x3,
+                CropAspectRatioPreset.ratio16x9,
+              ],
+            ),
+            IOSUiSettings(
+              title: context.l10n.editArticleCover,
+              aspectRatioLockEnabled: false,
+              aspectRatioPresets: [
+                CropAspectRatioPreset.original,
+                CropAspectRatioPreset.square,
+                CropAspectRatioPreset.ratio3x2,
+                CropAspectRatioPreset.ratio4x3,
+                CropAspectRatioPreset.ratio16x9,
+              ],
+            ),
+            WebUiSettings(
+              context: context,
+              presentStyle: WebPresentStyle.dialog,
+              size: const CropperSize(
+                width: 380,
+                height: 380,
+              ),
+              translations: WebTranslations(
+                title: context.l10n.editArticleCover,
+                rotateLeftTooltip: 'تدوير لليسار',
+                rotateRightTooltip: 'تدوير لليمين',
+                cancelButton: 'إلغاء',
+                cropButton: 'قص',
+              ),
             ),
           ],
         );

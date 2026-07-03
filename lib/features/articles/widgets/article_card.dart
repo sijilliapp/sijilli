@@ -435,8 +435,32 @@ class ArticleCard extends StatelessWidget {
           readTimeLabel,
           style: TextStyle(color: textColor, fontSize: 13),
         ),
-        // Category tags and add tag button are disabled inside the article card list as requested by the user
-        const SizedBox.shrink(),
+        if (article.tags.isNotEmpty || isAuthor) ...[
+          const SizedBox(width: 10),
+          Text(
+            '•',
+            style: TextStyle(color: iconColor.withValues(alpha: 0.5), fontSize: 13),
+          ),
+          const SizedBox(width: 10),
+        ],
+        if (article.tags.isNotEmpty) ...[
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: article.tags.map((tag) {
+              return Container(
+                width: 8,
+                height: 8,
+                margin: const EdgeInsets.symmetric(horizontal: 2.0),
+                decoration: BoxDecoration(
+                  color: tag.color,
+                  shape: BoxShape.circle,
+                ),
+              );
+            }).toList(),
+          ),
+          if (isAuthor) const SizedBox(width: 8),
+        ],
+        if (isAuthor) _buildAddTagButton(context, article, isAuthor),
       ],
     );
   }
