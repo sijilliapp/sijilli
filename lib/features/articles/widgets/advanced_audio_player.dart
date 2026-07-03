@@ -326,7 +326,8 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
                 if (_isAICancelled || !mounted || wordIndex >= words.length) {
                   timer.cancel();
                   if (widget.onTextGenerated != null) {
-                    widget.onTextGenerated!(accumulated, widget.audioUrl, true);
+                    final finalAppendedText = '$accumulated\n\n[أكمل 05:00]';
+                    widget.onTextGenerated!(finalAppendedText, widget.audioUrl, true);
                   }
                   if (mounted) {
                     setState(() {
@@ -936,35 +937,36 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
                       child: _buildABLoopButtonLabel(),
                     ),
 
-                    // AI Transcribe Button
-                    ElevatedButton.icon(
-                      onPressed: _isSummarizing ? null : () => _callAIService(true),
-                      icon: _isTranscribing
-                          ? const Icon(Icons.stop_rounded, size: 14, color: Colors.redAccent)
-                          : const Icon(Icons.translate_rounded, size: 14),
-                      label: Text(
-                        _isTranscribing ? 'إيقاف التفريغ' : 'تفريغ النص',
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _isTranscribing 
-                            ? Colors.redAccent.withOpacity(0.1) 
-                            : Colors.blueAccent.withOpacity(0.06),
-                        foregroundColor: _isTranscribing ? Colors.redAccent : Colors.blueAccent,
-                        surfaceTintColor: Colors.transparent,
-                        elevation: 0,
-                        side: BorderSide(
-                          color: _isTranscribing ? Colors.redAccent : Colors.blueAccent.withOpacity(0.3),
-                          width: _isTranscribing ? 1.5 : 0.5,
+                     if (widget.onTextGenerated != null) ...[
+                      ElevatedButton.icon(
+                        onPressed: _isSummarizing ? null : () => _callAIService(true),
+                        icon: _isTranscribing
+                            ? const Icon(Icons.stop_rounded, size: 14, color: Colors.redAccent)
+                            : const Icon(Icons.translate_rounded, size: 14),
+                        label: Text(
+                          _isTranscribing ? 'إيقاف التفريغ' : 'تفريغ النص',
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppDimens.radiusS),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _isTranscribing 
+                              ? Colors.redAccent.withOpacity(0.1) 
+                              : Colors.blueAccent.withOpacity(0.06),
+                          foregroundColor: _isTranscribing ? Colors.redAccent : Colors.blueAccent,
+                          surfaceTintColor: Colors.transparent,
+                          elevation: 0,
+                          side: BorderSide(
+                            color: _isTranscribing ? Colors.redAccent : Colors.blueAccent.withOpacity(0.3),
+                            width: _isTranscribing ? 1.5 : 0.5,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppDimens.radiusS),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                    ),
+                    ],
 
                     // AI Summarize Button
                     ElevatedButton.icon(

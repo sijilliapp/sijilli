@@ -71,11 +71,23 @@ module.exports = async (req, res) => {
       base64Audio = fileBuffer.toString('base64');
     }
 
-    const startTime = req.body && req.body.startTime;
+    const startTime = req.body && req.body.startTime || "00:00";
+    // Calculate stop time (+5 minutes)
+    let stopTime = "05:00";
+    try {
+      const parts = startTime.split(':');
+      if (parts.length === 2) {
+        const mins = parseInt(parts[0], 10);
+        const secs = parseInt(parts[1], 10);
+        const totalSecs = mins * 60 + secs + 300;
+        const stopMins = Math.floor(totalSecs / 60);
+        const stopSecs = totalSecs % 60;
+        stopTime = `${stopMins.toString().padStart(2, '0')}:${stopSecs.toString().padStart(2, '0')}`;
+      }
+    } catch (_) {}
+
     let promptText = "قم بتفريغ هذا الملف الصوتي بدقة بالغة إلى نص مقروء باللغة العربية. حافظ على سياق الحديث البشري وعلامات الترقيم المناسبة. إذا كان المتحدث يتحدث بلهجة عامية عربية، قم بكتابتها كما هي بأحرف عربية واضحة ومفهومة دون تبديل أو تغيير يخل بالمعنى الأصلي.";
-    if (startTime) {
-      promptText += ` ابدأ التفريغ من الطابع الزمني [${startTime}] فصاعداً، وتجاهل تماماً أي كلام قيل قبل هذا الوقت. ابدأ كتابة النص مباشرة من هذا الوقت.`;
-    }
+    promptText += ` قم بتفريغ جزء مدته 5 دقائق فقط من الملف الصوتي، يبدأ من الطابع الزمني [${startTime}] وينتهي عند الطابع الزمني [${stopTime}]. تجاهل تماماً أي كلام قيل قبل [${startTime}] أو بعد [${stopTime}]. اكتب النص المفرغ مباشرة دون أي مقدمات أو شرح.`;
 
     // 2. Prepare payload for Gemini 2.5 Flash
     const payload = {

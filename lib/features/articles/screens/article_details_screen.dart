@@ -314,12 +314,24 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                                   text: updatedArticle.text,
                                   fontFamily: fontFamily,
                                   audioUrls: audioUrls,
+                                  onTextUpdated: isAuthor ? (updatedText) async {
+                                    await Provider.of<ArticleProvider>(context, listen: false).updateArticle(
+                                      id: updatedArticle.id,
+                                      text: updatedText,
+                                    );
+                                  } : null,
                                 ),
                               )
                             : ArticleContentRenderer(
                                 text: updatedArticle.text,
                                 fontFamily: fontFamily,
                                 audioUrls: audioUrls,
+                                onTextUpdated: isAuthor ? (updatedText) async {
+                                  await Provider.of<ArticleProvider>(context, listen: false).updateArticle(
+                                    id: updatedArticle.id,
+                                    text: updatedText,
+                                  );
+                                } : null,
                               ),
                       ),
                       

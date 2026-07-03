@@ -13,12 +13,19 @@ import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../../../core/utils/bidi_utils.dart';
 import 'inline_audio_player.dart';
 import 'advanced_audio_player.dart';
+import 'dart:convert';
+import 'dart:io' show File;
+import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:provider/provider.dart';
+import '../providers/article_provider.dart';
 
 class ArticleContentRenderer extends StatelessWidget {
   final String text;
   final String? fontFamily;
   final List<String>? audioUrls;
   final Function(String text, String audioUrl, bool isFinal)? onTextGenerated;
+  final Function(String updatedText)? onTextUpdated;
 
   const ArticleContentRenderer({
     super.key,
@@ -26,6 +33,7 @@ class ArticleContentRenderer extends StatelessWidget {
     this.fontFamily,
     this.audioUrls,
     this.onTextGenerated,
+    this.onTextUpdated,
   });
 
   TextSpan _parseInlineFormatting(String text, BuildContext context) {
@@ -405,9 +413,27 @@ class ArticleContentRenderer extends StatelessWidget {
         continue;
       }
       
+      final continueMatch = RegExp(r'^\[(?:أكمل|Continue)\s*(\d{1,2}:\d{2})\]$', caseSensitive: false).firstMatch(normalizedLine);
+      if (continueMatch != null) {
+        final timestamp = continueMatch.group(1)!;
+        if (onTextUpdated == null) {
+          continue;
+        }
+        widgets.add(Padding(
+          padding: EdgeInsets.only(bottom: i == lines.length - 1 ? 0.0 : 8.0),
+          child: ContinueTranscriptionButton(
+            timestamp: timestamp,
+            audioUrls: audioUrls,
+            articleText: text,
+            onTextUpdated: onTextUpdated!,
+          ),
+        ));
+        continue;
+      }
+
       widgets.add(Padding(
         padding: EdgeInsets.only(bottom: i == lines.length - 1 ? 0.0 : 8.0),
-        child: Text.rich(
+        child: SelectableText.rich(
           _parseInlineFormatting(cleanLine, context),
           textAlign: textAlign,
         ),
@@ -846,4 +872,203 @@ class RenderEdgeToEdgeLayout extends RenderShiftedBox {
 
 class _AudioIndex {
   int value = 0;
+}
+
+class ContinueTranscriptionButton extends StatefulWidget {
+  final String timestamp;
+  final List<String>? audioUrls;
+  final String articleText;
+  final Function(String updatedText) onTextUpdated;
+
+  const ContinueTranscriptionButton({
+    super.key,
+    required this.timestamp,
+    required this.audioUrls,
+    required this.articleText,
+    required this.onTextUpdated,
+  });
+
+  @override
+  State<ContinueTranscriptionButton> createState() => _ContinueTranscriptionButtonState();
+}
+
+class _ContinueTranscriptionButtonState extends State<ContinueTranscriptionButton> {
+  bool _isLoading = false;
+
+  Future<void> _transcribeNextChunk() async {
+    if (_isLoading) return;
+
+    if (widget.audioUrls == null || widget.audioUrls!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا يوجد ملف صوتي للتفريغ')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final audioUrl = widget.audioUrls!.first;
+      final String baseUrl = kIsWeb ? Uri.base.origin : 'https://www.sijilli.com';
+      final serviceUrl = Uri.parse('$baseUrl/api/transcribe');
+
+      final requestBody = {
+        'startTime': widget.timestamp,
+      };
+
+      final isNetwork = audioUrl.startsWith('http://') || 
+                        audioUrl.startsWith('https://') ||
+                        audioUrl.startsWith('blob:');
+
+      http.Response response;
+      if (isNetwork) {
+        requestBody['url'] = audioUrl;
+        response = await http.post(
+          serviceUrl,
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode(requestBody),
+        ).timeout(const Duration(seconds: 40));
+      } else {
+        // Local file - read bytes and send base64
+        final file = File(audioUrl);
+        if (!await file.exists()) {
+          throw Exception('الملف الصوتي المحلي غير موجود');
+        }
+        final bytes = await file.readAsBytes();
+        requestBody['audioData'] = base64Encode(bytes);
+        
+        String mimeType = 'audio/mp3';
+        final lower = audioUrl.toLowerCase();
+        if (lower.endsWith('.wav')) mimeType = 'audio/wav';
+        else if (lower.endsWith('.m4a')) mimeType = 'audio/mp4';
+        else if (lower.endsWith('.ogg')) mimeType = 'audio/ogg';
+        else if (lower.endsWith('.opus')) mimeType = 'audio/opus';
+
+        requestBody['mimeType'] = mimeType;
+
+        response = await http.post(
+          serviceUrl,
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode(requestBody),
+        ).timeout(const Duration(seconds: 50));
+      }
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final generatedText = data['text'] as String?;
+
+        if (generatedText != null && generatedText.trim().isNotEmpty) {
+          // Replace [أكمل 05:00] (or similar) in raw text with the generated text,
+          // followed by the next 5-minute tag (if next time is <= 60 minutes)
+          final String currentTag = '[أكمل ${widget.timestamp}]';
+          final String continueTag = '[Continue ${widget.timestamp}]';
+          
+          // Parse current timestamp to add 5 minutes
+          final parts = widget.timestamp.split(':');
+          String? nextTag;
+          if (parts.length == 2) {
+            final mins = int.tryParse(parts[0]) ?? 0;
+            final secs = int.tryParse(parts[1]) ?? 0;
+            final totalSecs = mins * 60 + secs + 300;
+            final nextMins = totalSecs ~/ 60;
+            final nextSecs = totalSecs % 60;
+            
+            if (nextMins < 60 || (nextMins == 60 && nextSecs == 0)) {
+              final nextMinsStr = nextMins.toString().padLeft(2, '0');
+              final nextSecsStr = nextSecs.toString().padLeft(2, '0');
+              nextTag = '[أكمل $nextMinsStr:$nextSecsStr]';
+            }
+          }
+
+          final String appendText = nextTag != null 
+              ? '\n$generatedText\n\n$nextTag' 
+              : '\n$generatedText\n';
+
+          // Update article text
+          String updatedText = widget.articleText;
+          if (updatedText.contains(currentTag)) {
+            updatedText = updatedText.replaceFirst(currentTag, appendText);
+          } else if (updatedText.contains(continueTag)) {
+            updatedText = updatedText.replaceFirst(continueTag, appendText);
+          } else {
+            // Fallback: replace with regex
+            updatedText = updatedText.replaceFirst(
+              RegExp(r'\[(?:أكمل|Continue)\s*' + RegExp.escape(widget.timestamp) + r'\]', caseSensitive: false),
+              appendText,
+            );
+          }
+
+          widget.onTextUpdated(updatedText);
+        } else {
+          // Gemini returned empty text -> audio has ended! Remove the tag
+          final String currentTag = '[أكمل ${widget.timestamp}]';
+          final String continueTag = '[Continue ${widget.timestamp}]';
+          String updatedText = widget.articleText;
+          if (updatedText.contains(currentTag)) {
+            updatedText = updatedText.replaceFirst(currentTag, '');
+          } else if (updatedText.contains(continueTag)) {
+            updatedText = updatedText.replaceFirst(continueTag, '');
+          }
+          widget.onTextUpdated(updatedText);
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('فشل تفريغ المقطع: رمز الاستجابة ${response.statusCode}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('خطأ أثناء التفريغ: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8.0),
+        child: Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: OutlinedButton.icon(
+          onPressed: _transcribeNextChunk,
+          style: OutlinedButton.styleFrom(
+            side: const BorderSide(color: AppColors.primary, width: 1.5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          ),
+          icon: const Icon(Icons.keyboard_double_arrow_down_rounded, size: 16, color: AppColors.primary),
+          label: Text(
+            'أكمل ${widget.timestamp}',
+            style: const TextStyle(
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

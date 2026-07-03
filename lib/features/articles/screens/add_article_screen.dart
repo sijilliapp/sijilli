@@ -936,6 +936,12 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
       _textController.setRawText(updatedText);
       _textController.selection = TextSelection.collapsed(offset: newCursorOffset);
     });
+
+    if (isFinal) {
+      _activeStreamingAudioUrl = null;
+      _streamingStartIndex = -1;
+      _lastStreamingInsertedLength = 0;
+    }
   }
 
   void _showAudioTypeBottomSheet(File pickedFile) {
@@ -2162,6 +2168,9 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                                 text: _textController.rawText,
                                 audioUrls: previewAudioUrls,
                                 onTextGenerated: _handleAITextGenerated,
+                                onTextUpdated: (updatedText) {
+                                  _textController.setRawText(updatedText);
+                                },
                               );
                             },
                           ),

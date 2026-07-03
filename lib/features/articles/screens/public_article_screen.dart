@@ -569,6 +569,19 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
             fontFamily: fontFamily,
             audioUrls: audioUrls,
             onTextGenerated: isAuthor ? _handleReadModeAITextGenerated : null,
+            onTextUpdated: isAuthor ? (updatedText) async {
+              setState(() {
+                _article = _article!.copyWith(text: updatedText);
+              });
+              try {
+                await _articleService.updateArticle(
+                  id: _article!.id,
+                  text: updatedText,
+                );
+              } catch (e) {
+                debugPrint('Error updating article text in public screen: $e');
+              }
+            } : null,
           ),
         ),
         
