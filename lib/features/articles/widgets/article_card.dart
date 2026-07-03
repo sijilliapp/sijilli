@@ -435,7 +435,7 @@ class ArticleCard extends StatelessWidget {
           readTimeLabel,
           style: TextStyle(color: textColor, fontSize: 13),
         ),
-        if (article.tags.isNotEmpty || isAuthor) ...[
+        if (article.tags.isNotEmpty || (isAuthor && article.tags.isEmpty)) ...[
           const SizedBox(width: 10),
           Text(
             '•',
@@ -444,23 +444,42 @@ class ArticleCard extends StatelessWidget {
           const SizedBox(width: 10),
         ],
         if (article.tags.isNotEmpty) ...[
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: article.tags.map((tag) {
-              return Container(
-                width: 8,
-                height: 8,
-                margin: const EdgeInsets.symmetric(horizontal: 2.0),
-                decoration: BoxDecoration(
-                  color: tag.color,
-                  shape: BoxShape.circle,
-                ),
+          GestureDetector(
+            onTap: isAuthor ? () {
+              TagSelectorSheet.show(
+                context,
+                initialSelectedTagIds: article.tagIds,
+                onSelectionChanged: (selectedTagIds, selectedTags) async {
+                  await context.read<ArticleProvider>().updateArticle(
+                    id: article.id,
+                    tagIds: selectedTagIds,
+                  );
+                },
               );
-            }).toList(),
+            } : null,
+            child: MouseRegion(
+              cursor: isAuthor ? SystemMouseCursors.click : SystemMouseCursors.basic,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: article.tags.map((tag) {
+                    return Container(
+                      width: 8,
+                      height: 8,
+                      margin: const EdgeInsets.symmetric(horizontal: 2.0),
+                      decoration: BoxDecoration(
+                        color: tag.color,
+                        shape: BoxShape.circle,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
           ),
-          if (isAuthor) const SizedBox(width: 8),
         ],
-        if (isAuthor) _buildAddTagButton(context, article, isAuthor),
+        if (isAuthor && article.tags.isEmpty) _buildAddTagButton(context, article, isAuthor),
       ],
     );
   }
