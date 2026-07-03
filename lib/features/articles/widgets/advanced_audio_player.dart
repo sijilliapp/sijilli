@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import 'dart:async';
 import 'dart:io';
@@ -235,13 +236,20 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
     });
 
     try {
-      // 0. Cache check for summary
+      // 0. Cache check for summary and transcription
+      final prefs = await SharedPreferences.getInstance();
       if (!isTranscription) {
-        final prefs = await SharedPreferences.getInstance();
         final cachedSummary = prefs.getString('summary_${widget.audioUrl.hashCode}');
         if (cachedSummary != null && cachedSummary.trim().isNotEmpty) {
           if (_isAICancelled) return;
           _showAIResultDialog('تلخيص الأفكار الرئيسية', cachedSummary);
+          return;
+        }
+      } else if (widget.onTextGenerated == null) {
+        final cachedTranscription = prefs.getString('transcription_${widget.audioUrl.hashCode}');
+        if (cachedTranscription != null && cachedTranscription.trim().isNotEmpty) {
+          if (_isAICancelled) return;
+          _showAIResultDialog('التفريغ الصوتي الذكي', cachedTranscription, isAlreadyCompleted: true);
           return;
         }
       }
@@ -522,7 +530,7 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
     );
   }
 
-  void _showAIResultDialog(String title, String content) {
+  void _showAIResultDialog(String title, String content, {bool isAlreadyCompleted = false}) {
     if (title == 'التفريغ الصوتي الذكي') {
       showModalBottomSheet(
         context: context,
@@ -532,6 +540,8 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
           return InteractiveTranscriptionSheet(
             initialText: content,
             audioUrl: widget.audioUrl,
+            audioDuration: _duration,
+            isAlreadyCompleted: isAlreadyCompleted,
           );
         },
       );
@@ -1035,11 +1045,15 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
 class InteractiveTranscriptionSheet extends StatefulWidget {
   final String initialText;
   final String audioUrl;
+  final Duration? audioDuration;
+  final bool isAlreadyCompleted;
 
   const InteractiveTranscriptionSheet({
     super.key,
     required this.initialText,
     required this.audioUrl,
+    this.audioDuration,
+    this.isAlreadyCompleted = false,
   });
 
   @override
@@ -1055,7 +1069,27 @@ class _InteractiveTranscriptionSheetState extends State<InteractiveTranscription
   void initState() {
     super.initState();
     _text = widget.initialText;
-    _currentTimestamp = "05:00";
+    
+    if (widget.isAlreadyCompleted) {
+      _currentTimestamp = "";
+    } else {
+      if (widget.audioDuration != null && widget.audioDuration!.inSeconds <= 300) {
+        _currentTimestamp = "";
+        _saveCompletedTranscription(_text);
+      } else {
+        _currentTimestamp = "05:00";
+      }
+    }
+  }
+
+  Future<void> _saveCompletedTranscription(String fullText) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('transcription_${widget.audioUrl.hashCode}', fullText);
+      debugPrint('💾 Cached completed transcription for: ${widget.audioUrl}');
+    } catch (e) {
+      debugPrint('⚠️ Error caching completed transcription: $e');
+    }
   }
 
   Future<void> _fetchNextChunk() async {
@@ -1129,8 +1163,14 @@ class _InteractiveTranscriptionSheetState extends State<InteractiveTranscription
                 final nextMinsStr = nextMins.toString().padLeft(2, '0');
                 final nextSecsStr = nextSecs.toString().padLeft(2, '0');
                 _currentTimestamp = '$nextMinsStr:$nextSecsStr';
+                
+                if (widget.audioDuration != null && totalSecs >= widget.audioDuration!.inSeconds) {
+                  _currentTimestamp = "";
+                  _saveCompletedTranscription(_text);
+                }
               } else {
                 _currentTimestamp = "";
+                _saveCompletedTranscription(_text);
               }
             }
           });
@@ -1138,6 +1178,7 @@ class _InteractiveTranscriptionSheetState extends State<InteractiveTranscription
           setState(() {
             _currentTimestamp = "";
           });
+          _saveCompletedTranscription(_text);
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1216,44 +1257,70 @@ class _InteractiveTranscriptionSheetState extends State<InteractiveTranscription
             ),
           ),
           const Divider(),
-          if (_currentTimestamp.isNotEmpty) ...[
-            if (_isLoading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8.0),
-                child: Center(
-                  child: SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-              )
-            else
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: OutlinedButton.icon(
-                    onPressed: _fetchNextChunk,
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.primary, width: 1.5),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (_currentTimestamp.isNotEmpty) ...[
+                  if (_isLoading)
+                    const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else
+                    OutlinedButton.icon(
+                      onPressed: _fetchNextChunk,
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.primary, width: 1.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    ),
-                    icon: const Icon(Icons.keyboard_double_arrow_down_rounded, size: 16, color: AppColors.primary),
-                    label: Text(
-                      'أكمل $_currentTimestamp',
-                      style: const TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                      icon: const Icon(Icons.keyboard_double_arrow_down_rounded, size: 16, color: AppColors.primary),
+                      label: Text(
+                        'أكمل $_currentTimestamp',
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
+                  const SizedBox(width: 16),
+                ],
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: _text));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('تم نسخ النص المفرغ بالكامل بنجاح'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  ),
+                  icon: const Icon(Icons.copy_all_rounded, size: 16),
+                  label: const Text(
+                    'نسخ النص',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
-              ),
-          ],
+              ],
+            ),
+          ),
         ],
       ),
     );
