@@ -214,6 +214,28 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
 
   // AI services trigger
   Future<void> _callAIService(bool isTranscription) async {
+    final bool isVisitor = widget.onTextGenerated == null;
+
+    if (isVisitor) {
+      final prefs = await SharedPreferences.getInstance();
+      if (isTranscription) {
+        final cachedTranscription = prefs.getString('transcription_${widget.audioUrl.hashCode}');
+        if (cachedTranscription != null && cachedTranscription.trim().isNotEmpty) {
+          _showAIResultDialog('التفريغ الصوتي الذكي', cachedTranscription, isAlreadyCompleted: true);
+        } else {
+          _showErrorDialog('لم يقم الكاتب بتحليل الملف');
+        }
+      } else {
+        final cachedSummary = prefs.getString('summary_${widget.audioUrl.hashCode}');
+        if (cachedSummary != null && cachedSummary.trim().isNotEmpty) {
+          _showAIResultDialog('تلخيص الأفكار الرئيسية', cachedSummary);
+        } else {
+          _showErrorDialog('لم يقم الكاتب بتحليل الملف');
+        }
+      }
+      return;
+    }
+
     if (isTranscription) {
       if (_isTranscribing) {
         // Stop/cancel current operation
@@ -243,7 +265,7 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
     });
 
     try {
-      // 0. Cache check for summary and transcription
+      // 0. Cache check for summary and transcription (author mode)
       final prefs = await SharedPreferences.getInstance();
       if (!isTranscription) {
         final cachedSummary = prefs.getString('summary_${widget.audioUrl.hashCode}');
@@ -252,7 +274,7 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
           _showAIResultDialog('تلخيص الأفكار الرئيسية', cachedSummary);
           return;
         }
-      } else if (widget.onTextGenerated == null) {
+      } else {
         final cachedTranscription = prefs.getString('transcription_${widget.audioUrl.hashCode}');
         if (cachedTranscription != null && cachedTranscription.trim().isNotEmpty) {
           if (_isAICancelled) return;
