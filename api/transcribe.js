@@ -28,6 +28,65 @@ function downloadFile(url, maxRedirects = 5) {
   });
 }
 
+function makeGeminiRequest(apiKey, payload, retriesLeft = 3, delayMs = 2000) {
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const requestData = JSON.stringify(payload);
+
+  return new Promise((resolve, reject) => {
+    const geminiReq = https.request(
+      geminiUrl,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(requestData)
+        }
+      },
+      (geminiRes) => {
+        let body = '';
+        geminiRes.on('data', (chunk) => { body += chunk; });
+        geminiRes.on('end', async () => {
+          try {
+            let responseJson = {};
+            try {
+              responseJson = JSON.parse(body);
+            } catch (_) {}
+            
+            const is503 = geminiRes.statusCode === 503 || 
+                          (responseJson.error && (responseJson.error.code === 503 || responseJson.error.status === 'UNAVAILABLE'));
+                          
+            if (is503 && retriesLeft > 0) {
+              console.warn(`Gemini 503 returned. Retrying in ${delayMs}ms... (${retriesLeft} retries left)`);
+              await new Promise((r) => setTimeout(r, delayMs));
+              return makeGeminiRequest(apiKey, payload, retriesLeft - 1, delayMs * 1.5).then(resolve).catch(reject);
+            }
+
+            if (responseJson.candidates && responseJson.candidates[0] && responseJson.candidates[0].content && responseJson.candidates[0].content.parts && responseJson.candidates[0].content.parts[0]) {
+              resolve(responseJson.candidates[0].content.parts[0].text);
+            } else {
+              reject(new Error(`Invalid response from Gemini: ${body}`));
+            }
+          } catch (e) {
+            reject(e);
+          }
+        });
+      }
+    );
+
+    geminiReq.on('error', async (err) => {
+      if (retriesLeft > 0) {
+        console.warn(`Request error: ${err.message}. Retrying in ${delayMs}ms...`);
+        await new Promise((r) => setTimeout(r, delayMs));
+        return makeGeminiRequest(apiKey, payload, retriesLeft - 1, delayMs * 1.5).then(resolve).catch(reject);
+      }
+      reject(err);
+    });
+
+    geminiReq.write(requestData);
+    geminiReq.end();
+  });
+}
+
 function getMimeType(url) {
   const lower = url.toLowerCase();
   if (lower.endsWith('.wav')) return 'audio/wav';
@@ -108,43 +167,8 @@ module.exports = async (req, res) => {
       ]
     };
 
-    // 3. Make POST request to Gemini API
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-    
-    const requestData = JSON.stringify(payload);
-    
-    const transcription = await new Promise((resolveRequest, rejectRequest) => {
-      const geminiReq = https.request(
-        geminiUrl,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': Buffer.byteLength(requestData)
-          }
-        },
-        (geminiRes) => {
-          let body = '';
-          geminiRes.on('data', (chunk) => { body += chunk; });
-          geminiRes.on('end', () => {
-            try {
-              const responseJson = JSON.parse(body);
-              if (responseJson.candidates && responseJson.candidates[0] && responseJson.candidates[0].content && responseJson.candidates[0].content.parts && responseJson.candidates[0].content.parts[0]) {
-                resolveRequest(responseJson.candidates[0].content.parts[0].text);
-              } else {
-                rejectRequest(new Error(`Invalid response from Gemini: ${body}`));
-              }
-            } catch (e) {
-              rejectRequest(e);
-            }
-          });
-        }
-      );
-
-      geminiReq.on('error', rejectRequest);
-      geminiReq.write(requestData);
-      geminiReq.end();
-    });
+    // 3. Make request with automatic retries for temporary 503 errors
+    const transcription = await makeGeminiRequest(apiKey, payload);
 
     return res.status(200).json({ text: transcription });
 
