@@ -568,6 +568,7 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
             text: _article!.text,
             fontFamily: fontFamily,
             audioUrls: audioUrls,
+            audioMetadata: _article!.audioMetadata,
             onTextGenerated: isAuthor ? _handleReadModeAITextGenerated : null,
             onTextUpdated: isAuthor ? (updatedText) async {
               setState(() {
@@ -580,6 +581,19 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
                 );
               } catch (e) {
                 debugPrint('Error updating article text in public screen: $e');
+              }
+            } : null,
+            onMetadataUpdated: isAuthor ? (updatedMetadata) async {
+              setState(() {
+                _article = _article!.copyWith(audioMetadata: updatedMetadata);
+              });
+              try {
+                await _articleService.updateArticle(
+                  id: _article!.id,
+                  audioMetadata: updatedMetadata,
+                );
+              } catch (e) {
+                debugPrint('Error updating article metadata in public screen: $e');
               }
             } : null,
           ),

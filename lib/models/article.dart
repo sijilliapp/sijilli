@@ -25,6 +25,7 @@ class Article {
   // Poetry & Correction Metadata placeholders
   final Map<String, dynamic>? poetryMetadata;
   final List<dynamic>? highlightsMetadata;
+  final Map<String, dynamic>? audioMetadata;
 
   Article({
     required this.id,
@@ -43,6 +44,7 @@ class Article {
     this.viewsCount = 0,
     this.poetryMetadata,
     this.highlightsMetadata,
+    this.audioMetadata,
   });
 
   bool get isPublished => postStatus == PostStatus.published;
@@ -353,6 +355,7 @@ class Article {
       viewsCount: JsonUtils.parseInt(json['likes_count']) ?? 0,
       poetryMetadata: json['poetry_metadata'] as Map<String, dynamic>?,
       highlightsMetadata: json['highlights_metadata'] as List<dynamic>?,
+      audioMetadata: json['audio_metadata'] as Map<String, dynamic>?,
     );
   }
 
@@ -374,6 +377,7 @@ class Article {
       'tags': tagIds,
       'poetry_metadata': poetryMetadata,
       'highlights_metadata': highlightsMetadata,
+      'audio_metadata': audioMetadata,
     };
   }
 
@@ -396,6 +400,7 @@ class Article {
     int? viewsCount,
     Map<String, dynamic>? poetryMetadata,
     List<dynamic>? highlightsMetadata,
+    Map<String, dynamic>? audioMetadata,
   }) {
     PostStatus resolvedStatus = postStatus ?? this.postStatus;
     if (isPublished != null) {
@@ -421,6 +426,7 @@ class Article {
       viewsCount: viewsCount ?? this.viewsCount,
       poetryMetadata: poetryMetadata ?? this.poetryMetadata,
       highlightsMetadata: highlightsMetadata ?? this.highlightsMetadata,
+      audioMetadata: audioMetadata ?? this.audioMetadata,
     );
   }
 }

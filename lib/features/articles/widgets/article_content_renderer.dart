@@ -26,6 +26,8 @@ class ArticleContentRenderer extends StatelessWidget {
   final List<String>? audioUrls;
   final Function(String text, String audioUrl, bool isFinal)? onTextGenerated;
   final Function(String updatedText)? onTextUpdated;
+  final Map<String, dynamic>? audioMetadata;
+  final Function(Map<String, dynamic> updatedMetadata)? onMetadataUpdated;
 
   const ArticleContentRenderer({
     super.key,
@@ -34,6 +36,8 @@ class ArticleContentRenderer extends StatelessWidget {
     this.audioUrls,
     this.onTextGenerated,
     this.onTextUpdated,
+    this.audioMetadata,
+    this.onMetadataUpdated,
   });
 
   TextSpan _parseInlineFormatting(String text, BuildContext context) {
@@ -317,6 +321,8 @@ class ArticleContentRenderer extends StatelessWidget {
               audioUrl: resolvedUrl,
               audioTitle: resolvedTitle,
               onTextGenerated: onTextGenerated,
+              audioMetadata: audioMetadata,
+              onMetadataUpdated: onMetadataUpdated,
             ),
           ));
         } else {

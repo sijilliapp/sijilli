@@ -94,6 +94,7 @@ class PbArticleService {
     List<String>? tagIds,
     http.MultipartFile? imageFile,
     List<http.MultipartFile>? audioFiles,
+    Map<String, dynamic>? audioMetadata,
   }) async {
     try {
       final authorId = _pb.authStore.record?.id;
@@ -116,6 +117,7 @@ class PbArticleService {
         'is_draft': isDraft,
         'likes': [],
         if (tagIds != null) 'tags': tagIds,
+        if (audioMetadata != null) 'audio_metadata': audioMetadata,
       };
 
       final List<http.MultipartFile> files = [];
@@ -154,10 +156,12 @@ class PbArticleService {
     List<http.MultipartFile>? audioFiles,
     List<String>? existingAudios,
     bool removeAudio = false,
+    Map<String, dynamic>? audioMetadata,
   }) async {
     try {
       final body = <String, dynamic>{};
       if (text != null) body['text'] = text;
+      if (audioMetadata != null) body['audio_metadata'] = audioMetadata;
       
       if (postStatus != null) {
         body['post_status'] = postStatus;

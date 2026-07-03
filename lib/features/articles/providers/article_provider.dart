@@ -311,6 +311,7 @@ class ArticleProvider extends ChangeNotifier {
     File? imageFile,
     List<File>? audioFiles,
     bool silent = false,
+    Map<String, dynamic>? audioMetadata,
   }) async {
     if (!silent) {
       _isLoading = true;
@@ -329,6 +330,7 @@ class ArticleProvider extends ChangeNotifier {
         updatedAt: DateTime.now(),
         likes: [],
         tagIds: tagIds ?? [],
+        audioMetadata: audioMetadata,
         // For offline display without image
       );
       
@@ -370,6 +372,7 @@ class ArticleProvider extends ChangeNotifier {
           tagIds: tagIds,
           imageFile: multipartFile,
           audioFiles: multipartAudios,
+          audioMetadata: audioMetadata,
         );
 
       // Replace temp with real
@@ -406,6 +409,7 @@ class ArticleProvider extends ChangeNotifier {
     List<String>? existingAudios,
     bool removeAudio = false,
     bool silent = false,
+    Map<String, dynamic>? audioMetadata,
   }) async {
     if (!silent) {
       _isLoading = true;
@@ -463,6 +467,7 @@ class ArticleProvider extends ChangeNotifier {
           audioFiles: multipartAudios,
           existingAudios: existingAudios,
           removeAudio: removeAudio,
+          audioMetadata: audioMetadata,
         );
       }
 

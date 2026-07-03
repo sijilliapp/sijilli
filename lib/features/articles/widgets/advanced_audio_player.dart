@@ -16,12 +16,16 @@ class AdvancedAudioPlayer extends StatefulWidget {
   final String audioUrl;
   final String? audioTitle;
   final Function(String text, String audioUrl, bool isFinal)? onTextGenerated; // If non-null, we are in Edit Mode
+  final Map<String, dynamic>? audioMetadata;
+  final Function(Map<String, dynamic> updatedMetadata)? onMetadataUpdated;
 
   const AdvancedAudioPlayer({
     super.key,
     required this.audioUrl,
     this.audioTitle,
     this.onTextGenerated,
+    this.audioMetadata,
+    this.onMetadataUpdated,
   });
 
   @override
@@ -215,20 +219,25 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
   // AI services trigger
   Future<void> _callAIService(bool isTranscription) async {
     final bool isVisitor = widget.onTextGenerated == null;
+    final String audioKey = widget.audioUrl.split('/').last.toLowerCase();
 
     if (isVisitor) {
       final prefs = await SharedPreferences.getInstance();
       if (isTranscription) {
-        final cachedTranscription = prefs.getString('transcription_${widget.audioUrl.hashCode}');
-        if (cachedTranscription != null && cachedTranscription.trim().isNotEmpty) {
-          _showAIResultDialog('التفريغ الصوتي الذكي', cachedTranscription, isAlreadyCompleted: true);
+        final meta = widget.audioMetadata?[audioKey];
+        final String? cachedTranscription = (meta is Map) ? meta['transcription']?.toString() : null;
+        final String? fallback = cachedTranscription ?? prefs.getString('transcription_${widget.audioUrl.hashCode}');
+        if (fallback != null && fallback.trim().isNotEmpty) {
+          _showAIResultDialog('التفريغ الصوتي الذكي', fallback, isAlreadyCompleted: true);
         } else {
           _showErrorDialog('لم يقم الكاتب بتحليل الملف');
         }
       } else {
-        final cachedSummary = prefs.getString('summary_${widget.audioUrl.hashCode}');
-        if (cachedSummary != null && cachedSummary.trim().isNotEmpty) {
-          _showAIResultDialog('تلخيص الأفكار الرئيسية', cachedSummary);
+        final meta = widget.audioMetadata?[audioKey];
+        final String? cachedSummary = (meta is Map) ? meta['summary']?.toString() : null;
+        final String? fallback = cachedSummary ?? prefs.getString('summary_${widget.audioUrl.hashCode}');
+        if (fallback != null && fallback.trim().isNotEmpty) {
+          _showAIResultDialog('تلخيص الأفكار الرئيسية', fallback);
         } else {
           _showErrorDialog('لم يقم الكاتب بتحليل الملف');
         }
@@ -268,17 +277,21 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
       // 0. Cache check for summary and transcription (author mode)
       final prefs = await SharedPreferences.getInstance();
       if (!isTranscription) {
-        final cachedSummary = prefs.getString('summary_${widget.audioUrl.hashCode}');
-        if (cachedSummary != null && cachedSummary.trim().isNotEmpty) {
+        final meta = widget.audioMetadata?[audioKey];
+        final String? cachedSummary = (meta is Map) ? meta['summary']?.toString() : null;
+        final String? fallback = cachedSummary ?? prefs.getString('summary_${widget.audioUrl.hashCode}');
+        if (fallback != null && fallback.trim().isNotEmpty) {
           if (_isAICancelled) return;
-          _showAIResultDialog('تلخيص الأفكار الرئيسية', cachedSummary);
+          _showAIResultDialog('تلخيص الأفكار الرئيسية', fallback);
           return;
         }
       } else {
-        final cachedTranscription = prefs.getString('transcription_${widget.audioUrl.hashCode}');
-        if (cachedTranscription != null && cachedTranscription.trim().isNotEmpty) {
+        final meta = widget.audioMetadata?[audioKey];
+        final String? cachedTranscription = (meta is Map) ? meta['transcription']?.toString() : null;
+        final String? fallback = cachedTranscription ?? prefs.getString('transcription_${widget.audioUrl.hashCode}');
+        if (fallback != null && fallback.trim().isNotEmpty) {
           if (_isAICancelled) return;
-          _showAIResultDialog('التفريغ الصوتي الذكي', cachedTranscription, isAlreadyCompleted: true);
+          _showAIResultDialog('التفريغ الصوتي الذكي', fallback, isAlreadyCompleted: true);
           return;
         }
       }
@@ -379,6 +392,25 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
                     final finalAppendedText = '$accumulated\n\n[أكمل 05:00]';
                     widget.onTextGenerated!(finalAppendedText, widget.audioUrl, true);
                   }
+                  
+                  SharedPreferences.getInstance().then((prefs) async {
+                    await prefs.setString('transcription_${widget.audioUrl.hashCode}', accumulated);
+                    
+                    final String audioKey = widget.audioUrl.split('/').last.toLowerCase();
+                    final Map<String, dynamic> currentMeta = widget.audioMetadata != null 
+                        ? Map<String, dynamic>.from(widget.audioMetadata!) 
+                        : {};
+                    final Map<String, dynamic> fileMeta = currentMeta[audioKey] is Map 
+                        ? Map<String, dynamic>.from(currentMeta[audioKey]!) 
+                        : {};
+                    fileMeta['transcription'] = accumulated;
+                    currentMeta[audioKey] = fileMeta;
+
+                    if (widget.onMetadataUpdated != null) {
+                      widget.onMetadataUpdated!(currentMeta);
+                    }
+                  });
+
                   if (mounted) {
                     setState(() {
                       _isTranscribing = false;
@@ -400,6 +432,20 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
             final prefs = await SharedPreferences.getInstance();
             await prefs.setString('summary_${widget.audioUrl.hashCode}', generatedText);
             
+            final String audioKey = widget.audioUrl.split('/').last.toLowerCase();
+            final Map<String, dynamic> currentMeta = widget.audioMetadata != null 
+                ? Map<String, dynamic>.from(widget.audioMetadata!) 
+                : {};
+            final Map<String, dynamic> fileMeta = currentMeta[audioKey] is Map 
+                ? Map<String, dynamic>.from(currentMeta[audioKey]!) 
+                : {};
+            fileMeta['summary'] = generatedText;
+            currentMeta[audioKey] = fileMeta;
+
+            if (widget.onMetadataUpdated != null) {
+              widget.onMetadataUpdated!(currentMeta);
+            }
+
             // Show result
             _showAIResultDialog('تلخيص الأفكار الرئيسية', generatedText);
           }

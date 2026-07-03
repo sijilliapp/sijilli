@@ -65,10 +65,14 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
   String? _activeStreamingAudioUrl;
   int _streamingStartIndex = -1;
   int _lastStreamingInsertedLength = 0;
+  Map<String, dynamic>? _audioMetadata;
 
   @override
   void initState() {
     super.initState();
+    _audioMetadata = widget.article?.audioMetadata != null 
+        ? Map<String, dynamic>.from(widget.article!.audioMetadata!) 
+        : {};
     _editorScrollController = ScrollController();
     _textController = FormattingTextEditingController(
       rawText: widget.article?.text ?? '',
@@ -662,6 +666,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                   isDraft: true,
                   silent: true,
                   tagIds: _selectedTagIds,
+                  audioMetadata: _audioMetadata,
                 );
                 if (draft != null && mounted) {
                   final oldId = 'local_draft';
@@ -702,6 +707,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
               isDraft: true,
               silent: true,
               tagIds: _selectedTagIds,
+              audioMetadata: _audioMetadata,
             );
             if (updated != null && mounted) {
               if (_draftArticleId == id && _draftArticleId != updated.id) {
@@ -1156,6 +1162,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
         audioFiles: _selectedAudios,
         existingAudios: _existingAudios,
         tagIds: _selectedTagIds,
+        audioMetadata: _audioMetadata,
       );
     } else {
       resultArticle = await provider.addArticle(
@@ -1165,6 +1172,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
         imageFile: _selectedImage,
         audioFiles: _selectedAudios,
         tagIds: _selectedTagIds,
+        audioMetadata: _audioMetadata,
       );
     }
 
@@ -2176,9 +2184,15 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                               return ArticleContentRenderer(
                                 text: _textController.rawText,
                                 audioUrls: previewAudioUrls,
+                                audioMetadata: _audioMetadata,
                                 onTextGenerated: _handleAITextGenerated,
                                 onTextUpdated: (updatedText) {
                                   _textController.setRawText(updatedText);
+                                },
+                                onMetadataUpdated: (updatedMetadata) {
+                                  setState(() {
+                                    _audioMetadata = updatedMetadata;
+                                  });
                                 },
                               );
                             },

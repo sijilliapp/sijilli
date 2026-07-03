@@ -1695,6 +1695,16 @@
         "type": "json"
       },
       {
+        "hidden": false,
+        "id": "json412351235",
+        "maxSize": 0,
+        "name": "audio_metadata",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "json"
+      },
+      {
         "convertURLs": false,
         "hidden": false,
         "id": "editor999008199",

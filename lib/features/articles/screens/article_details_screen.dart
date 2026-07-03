@@ -314,10 +314,17 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                                   text: updatedArticle.text,
                                   fontFamily: fontFamily,
                                   audioUrls: audioUrls,
+                                  audioMetadata: updatedArticle.audioMetadata,
                                   onTextUpdated: isAuthor ? (updatedText) async {
                                     await Provider.of<ArticleProvider>(context, listen: false).updateArticle(
                                       id: updatedArticle.id,
                                       text: updatedText,
+                                    );
+                                  } : null,
+                                  onMetadataUpdated: isAuthor ? (updatedMetadata) async {
+                                    await Provider.of<ArticleProvider>(context, listen: false).updateArticle(
+                                      id: updatedArticle.id,
+                                      audioMetadata: updatedMetadata,
                                     );
                                   } : null,
                                 ),
@@ -326,10 +333,17 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                                 text: updatedArticle.text,
                                 fontFamily: fontFamily,
                                 audioUrls: audioUrls,
+                                audioMetadata: updatedArticle.audioMetadata,
                                 onTextUpdated: isAuthor ? (updatedText) async {
                                   await Provider.of<ArticleProvider>(context, listen: false).updateArticle(
                                     id: updatedArticle.id,
                                     text: updatedText,
+                                  );
+                                } : null,
+                                onMetadataUpdated: isAuthor ? (updatedMetadata) async {
+                                  await Provider.of<ArticleProvider>(context, listen: false).updateArticle(
+                                    id: updatedArticle.id,
+                                    audioMetadata: updatedMetadata,
                                   );
                                 } : null,
                               ),
