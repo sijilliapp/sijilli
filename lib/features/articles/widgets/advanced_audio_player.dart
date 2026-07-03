@@ -277,6 +277,9 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
       if (startTimeStr != null) {
         requestBody['startTime'] = startTimeStr;
       }
+      if (_duration != Duration.zero) {
+        requestBody['duration'] = _duration.inSeconds;
+      }
 
       if (isNetwork) {
         requestBody['url'] = widget.audioUrl;
@@ -1103,9 +1106,12 @@ class _InteractiveTranscriptionSheetState extends State<InteractiveTranscription
       final String baseUrl = kIsWeb ? Uri.base.origin : 'https://www.sijilli.com';
       final serviceUrl = Uri.parse('$baseUrl/api/transcribe');
 
-      final requestBody = {
+      final Map<String, dynamic> requestBody = {
         'startTime': _currentTimestamp,
       };
+      if (widget.audioDuration != null) {
+        requestBody['duration'] = widget.audioDuration!.inSeconds;
+      }
 
       final isNetwork = widget.audioUrl.startsWith('http://') || 
                         widget.audioUrl.startsWith('https://') ||
