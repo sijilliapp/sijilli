@@ -12,6 +12,7 @@ import '../services/pb_article_service.dart';
 import '../services/pb_comment_service.dart';
 import '../../notifications/services/notification_service.dart';
 import '../../../core/services/pocketbase_client.dart';
+import '../../../core/utils/error_helper.dart';
 
 class ArticleProvider extends ChangeNotifier {
   final PbArticleService _articleService = PbArticleService();
@@ -21,6 +22,11 @@ class ArticleProvider extends ChangeNotifier {
   List<Article> _trashedArticles = [];
   bool _isLoading = false;
   String? _errorMessage;
+  String? _articlesErrorMessage;
+  String? _commentsErrorMessage;
+  
+  String? get articlesErrorMessage => _articlesErrorMessage;
+  String? get commentsErrorMessage => _commentsErrorMessage;
   
   List<String> _activeFilterTagIds = [];
   List<String> get activeFilterTagIds => _activeFilterTagIds;
@@ -58,6 +64,8 @@ class ArticleProvider extends ChangeNotifier {
       _articleComments.clear();
       _activeFilterTagIds = [];
       _errorMessage = null;
+      _articlesErrorMessage = null;
+      _commentsErrorMessage = null;
       _currentPage = 1;
       _hasMore = true;
       
@@ -120,6 +128,7 @@ class ArticleProvider extends ChangeNotifier {
     if (_currentUserId == null) return;
     _isLoading = true;
     _errorMessage = null;
+    _articlesErrorMessage = null;
     notifyListeners();
 
     try {
@@ -130,8 +139,10 @@ class ArticleProvider extends ChangeNotifier {
       );
       _archivedArticles = fetched;
       _errorMessage = null;
+      _articlesErrorMessage = null;
     } catch (e) {
-      _errorMessage = 'Failed to load archived articles: $e';
+      _articlesErrorMessage = ErrorHelper.getFriendlyErrorMessage(e, defaultMessage: 'فشل تحميل المقالات المؤرشفة.');
+      _errorMessage = _articlesErrorMessage;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -142,6 +153,7 @@ class ArticleProvider extends ChangeNotifier {
     if (_currentUserId == null) return;
     _isLoading = true;
     _errorMessage = null;
+    _articlesErrorMessage = null;
     notifyListeners();
 
     try {
@@ -152,8 +164,10 @@ class ArticleProvider extends ChangeNotifier {
       );
       _trashedArticles = fetched;
       _errorMessage = null;
+      _articlesErrorMessage = null;
     } catch (e) {
-      _errorMessage = 'Failed to load trashed articles: $e';
+      _articlesErrorMessage = ErrorHelper.getFriendlyErrorMessage(e, defaultMessage: 'فشل تحميل المقالات المحذوفة.');
+      _errorMessage = _articlesErrorMessage;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -176,6 +190,7 @@ class ArticleProvider extends ChangeNotifier {
       }
       
       _errorMessage = null;
+      _articlesErrorMessage = null;
     }
 
     if (!_hasMore || _isLoading) return;
@@ -218,8 +233,10 @@ class ArticleProvider extends ChangeNotifier {
       
       _currentPage++;
       _errorMessage = null;
+      _articlesErrorMessage = null;
     } catch (e) {
-      _errorMessage = 'Failed to load articles: $e';
+      _articlesErrorMessage = ErrorHelper.getFriendlyErrorMessage(e, defaultMessage: 'فشل تحميل المقالات.');
+      _errorMessage = _articlesErrorMessage;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -232,6 +249,7 @@ class ArticleProvider extends ChangeNotifier {
       _currentPage = 1;
       _hasMore = true;
       _errorMessage = null;
+      _articlesErrorMessage = null;
     }
 
     if (!_hasMore || _isLoading) return;
@@ -275,8 +293,10 @@ class ArticleProvider extends ChangeNotifier {
       
       _currentPage++;
       _errorMessage = null;
+      _articlesErrorMessage = null;
     } catch (e) {
-      _errorMessage = 'Failed to load user articles: $e';
+      _articlesErrorMessage = ErrorHelper.getFriendlyErrorMessage(e, defaultMessage: 'فشل تحميل المقالات.');
+      _errorMessage = _articlesErrorMessage;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -741,14 +761,17 @@ class ArticleProvider extends ChangeNotifier {
   Future<void> fetchComments(String articleId) async {
     _isCommentsLoading = true;
     _errorMessage = null;
+    _commentsErrorMessage = null;
     notifyListeners();
 
     try {
       final comments = await _commentService.getComments(articleId);
       _articleComments[articleId] = comments;
       _errorMessage = null;
+      _commentsErrorMessage = null;
     } catch (e) {
-      _errorMessage = 'Failed to load comments: $e';
+      _commentsErrorMessage = ErrorHelper.getFriendlyErrorMessage(e, defaultMessage: 'فشل تحميل التعليقات.');
+      _errorMessage = _commentsErrorMessage;
     } finally {
       _isCommentsLoading = false;
       notifyListeners();
@@ -764,6 +787,7 @@ class ArticleProvider extends ChangeNotifier {
     required String commenterName,
   }) async {
     _errorMessage = null;
+    _commentsErrorMessage = null;
     try {
       final newComment = await _commentService.createComment(
         articleId: articleId,
@@ -797,7 +821,8 @@ class ArticleProvider extends ChangeNotifier {
 
       return newComment;
     } catch (e) {
-      _errorMessage = 'Failed to add comment: $e';
+      _commentsErrorMessage = ErrorHelper.getFriendlyErrorMessage(e, defaultMessage: 'فشل إضافة التعليق.');
+      _errorMessage = _commentsErrorMessage;
       notifyListeners();
       return null;
     }
@@ -806,6 +831,7 @@ class ArticleProvider extends ChangeNotifier {
   /// Delete a comment
   Future<bool> deleteComment(String articleId, String commentId) async {
     _errorMessage = null;
+    _commentsErrorMessage = null;
     try {
       await _commentService.deleteComment(commentId);
       if (_articleComments.containsKey(articleId)) {
@@ -814,7 +840,8 @@ class ArticleProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = 'Failed to delete comment: $e';
+      _commentsErrorMessage = ErrorHelper.getFriendlyErrorMessage(e, defaultMessage: 'فشل حذف التعليق.');
+      _errorMessage = _commentsErrorMessage;
       notifyListeners();
       return false;
     }

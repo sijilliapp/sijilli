@@ -452,7 +452,7 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
                 isInitialLoading: provider.isInitialLoading,
                 isFetchingMore: provider.isFetchingMore,
                 hasMore: provider.hasMore,
-                errorMessage: provider.errorMessage,
+                errorMessage: provider.articlesErrorMessage,
                 onLoadMore: () {
                   provider.fetchUserArticles(
                     widget.userId,

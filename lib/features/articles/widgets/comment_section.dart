@@ -237,6 +237,50 @@ class _CommentSectionState extends State<CommentSection> {
                           );
                         }
 
+                        if (provider.commentsErrorMessage != null) {
+                          return Center(
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.all(24.0),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.cloud_off_rounded,
+                                    size: 48,
+                                    color: isDark ? Colors.white24 : Colors.grey.shade300,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    provider.commentsErrorMessage!,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primary,
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    onPressed: () {
+                                      provider.fetchComments(widget.article.id);
+                                    },
+                                    icon: const Icon(Icons.refresh, size: 16),
+                                    label: Text(
+                                      Localizations.localeOf(context).languageCode == 'ar' ? 'إعادة المحاولة' : 'Retry',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+
                         final comments = provider.getCommentsForArticle(widget.article.id);
 
                         if (comments.isEmpty) {
