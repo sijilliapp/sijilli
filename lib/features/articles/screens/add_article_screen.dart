@@ -1081,8 +1081,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
       }
 
       final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['mp3', 'wav', 'm4a', 'aac', 'opus', 'ogg', 'caf'],
+        type: FileType.audio,
       );
       if (result != null && result.files.single.path != null) {
         final pickedFile = File(result.files.single.path!);
