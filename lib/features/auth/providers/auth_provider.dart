@@ -349,6 +349,40 @@ class AuthProvider extends ChangeNotifier {
     }
   }
   
+  Future<void> runTrashCleanup(String userId) async {
+    final pb = PocketBaseClient.instance.pb;
+    final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30)).toUtc();
+    final formattedDate = thirtyDaysAgo.toIso8601String().replaceFirst('T', ' ').split('.').first;
+
+    debugPrint('🗑️ Starting trash cleanup for user $userId (older than $formattedDate)...');
+
+    // 1. Clean up articles in trash
+    try {
+      final oldArticles = await pb.collection('articles').getFullList(
+        filter: 'post_status = "trash" && updated < "$formattedDate" && author = "$userId"',
+      );
+      for (final article in oldArticles) {
+        debugPrint('🗑️ Hard deleting old trashed article: ${article.id}');
+        await pb.collection('articles').delete(article.id);
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error cleaning up articles: $e');
+    }
+
+    // 2. Clean up invitations in trash
+    try {
+      final oldInvitations = await pb.collection('invitations').getFullList(
+        filter: 'post_status = "trash" && updated < "$formattedDate" && user = "$userId"',
+      );
+      for (final inv in oldInvitations) {
+        debugPrint('🗑️ Hard deleting old trashed invitation: ${inv.id}');
+        await pb.collection('invitations').delete(inv.id);
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error cleaning up invitations: $e');
+    }
+  }
+
   Future<void> _updateUserLocally(UserModel user) async {
     final userWithToken = (user.token == null && _user?.token != null)
         ? user.copyWith(token: _user!.token)
@@ -375,6 +409,9 @@ class AuthProvider extends ChangeNotifier {
         } catch (_) {}
       }
     }
+    
+    // تشغيل تنظيف سلة المحذوفات في الخلفية للمقالات والمواعيد التي مضى عليها أكثر من 30 يوماً
+    unawaited(runTrashCleanup(user.id));
     
     notifyListeners();
   }

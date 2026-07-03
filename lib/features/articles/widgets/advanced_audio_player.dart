@@ -513,6 +513,21 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
   }
 
   void _showAIResultDialog(String title, String content) {
+    if (title == 'التفريغ الصوتي الذكي') {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) {
+          return InteractiveTranscriptionSheet(
+            initialText: content,
+            audioUrl: widget.audioUrl,
+          );
+        },
+      );
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -937,36 +952,35 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
                       child: _buildABLoopButtonLabel(),
                     ),
 
-                     if (widget.onTextGenerated != null) ...[
-                      ElevatedButton.icon(
-                        onPressed: _isSummarizing ? null : () => _callAIService(true),
-                        icon: _isTranscribing
-                            ? const Icon(Icons.stop_rounded, size: 14, color: Colors.redAccent)
-                            : const Icon(Icons.translate_rounded, size: 14),
-                        label: Text(
-                          _isTranscribing ? 'إيقاف التفريغ' : 'تفريغ النص',
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _isTranscribing 
-                              ? Colors.redAccent.withOpacity(0.1) 
-                              : Colors.blueAccent.withOpacity(0.06),
-                          foregroundColor: _isTranscribing ? Colors.redAccent : Colors.blueAccent,
-                          surfaceTintColor: Colors.transparent,
-                          elevation: 0,
-                          side: BorderSide(
-                            color: _isTranscribing ? Colors.redAccent : Colors.blueAccent.withOpacity(0.3),
-                            width: _isTranscribing ? 1.5 : 0.5,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppDimens.radiusS),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
+                    // AI Transcribe Button
+                    ElevatedButton.icon(
+                      onPressed: _isSummarizing ? null : () => _callAIService(true),
+                      icon: _isTranscribing
+                          ? const Icon(Icons.stop_rounded, size: 14, color: Colors.redAccent)
+                          : const Icon(Icons.translate_rounded, size: 14),
+                      label: Text(
+                        _isTranscribing ? 'إيقاف التفريغ' : 'تفريغ النص',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                       ),
-                    ],
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _isTranscribing 
+                            ? Colors.redAccent.withOpacity(0.1) 
+                            : Colors.blueAccent.withOpacity(0.06),
+                        foregroundColor: _isTranscribing ? Colors.redAccent : Colors.blueAccent,
+                        surfaceTintColor: Colors.transparent,
+                        elevation: 0,
+                        side: BorderSide(
+                          color: _isTranscribing ? Colors.redAccent : Colors.blueAccent.withOpacity(0.3),
+                          width: _isTranscribing ? 1.5 : 0.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppDimens.radiusS),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
 
                     // AI Summarize Button
                     ElevatedButton.icon(
@@ -1003,6 +1017,234 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class InteractiveTranscriptionSheet extends StatefulWidget {
+  final String initialText;
+  final String audioUrl;
+
+  const InteractiveTranscriptionSheet({
+    super.key,
+    required this.initialText,
+    required this.audioUrl,
+  });
+
+  @override
+  State<InteractiveTranscriptionSheet> createState() => _InteractiveTranscriptionSheetState();
+}
+
+class _InteractiveTranscriptionSheetState extends State<InteractiveTranscriptionSheet> {
+  late String _text;
+  late String _currentTimestamp;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _text = widget.initialText;
+    _currentTimestamp = "05:00";
+  }
+
+  Future<void> _fetchNextChunk() async {
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final String baseUrl = kIsWeb ? Uri.base.origin : 'https://www.sijilli.com';
+      final serviceUrl = Uri.parse('$baseUrl/api/transcribe');
+
+      final requestBody = {
+        'startTime': _currentTimestamp,
+      };
+
+      final isNetwork = widget.audioUrl.startsWith('http://') || 
+                        widget.audioUrl.startsWith('https://') ||
+                        widget.audioUrl.startsWith('blob:');
+
+      http.Response response;
+      if (isNetwork) {
+        requestBody['url'] = widget.audioUrl;
+        response = await http.post(
+          serviceUrl,
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode(requestBody),
+        ).timeout(const Duration(seconds: 40));
+      } else {
+        final file = File(widget.audioUrl);
+        if (!await file.exists()) {
+          throw Exception('الملف الصوتي المحلي غير موجود');
+        }
+        final bytes = await file.readAsBytes();
+        requestBody['audioData'] = base64Encode(bytes);
+        
+        String mimeType = 'audio/mp3';
+        final lower = widget.audioUrl.toLowerCase();
+        if (lower.endsWith('.wav')) mimeType = 'audio/wav';
+        else if (lower.endsWith('.m4a')) mimeType = 'audio/mp4';
+        else if (lower.endsWith('.ogg')) mimeType = 'audio/ogg';
+        else if (lower.endsWith('.opus')) mimeType = 'audio/opus';
+
+        requestBody['mimeType'] = mimeType;
+
+        response = await http.post(
+          serviceUrl,
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode(requestBody),
+        ).timeout(const Duration(seconds: 50));
+      }
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final generatedText = data['text'] as String?;
+
+        if (generatedText != null && generatedText.trim().isNotEmpty) {
+          setState(() {
+            _text = '$_text\n\n$generatedText';
+            
+            final parts = _currentTimestamp.split(':');
+            if (parts.length == 2) {
+              final mins = int.tryParse(parts[0]) ?? 0;
+              final secs = int.tryParse(parts[1]) ?? 0;
+              final totalSecs = mins * 60 + secs + 300;
+              final nextMins = totalSecs ~/ 60;
+              final nextSecs = totalSecs % 60;
+              
+              if (nextMins < 60 || (nextMins == 60 && nextSecs == 0)) {
+                final nextMinsStr = nextMins.toString().padLeft(2, '0');
+                final nextSecsStr = nextSecs.toString().padLeft(2, '0');
+                _currentTimestamp = '$nextMinsStr:$nextSecsStr';
+              } else {
+                _currentTimestamp = "";
+              }
+            }
+          });
+        } else {
+          setState(() {
+            _currentTimestamp = "";
+          });
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('فشل تفريغ المقطع: رمز الاستجابة ${response.statusCode}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('خطأ أثناء التفريغ: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.75,
+      decoration: BoxDecoration(
+        color: AppColors.getCardBackground(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppDimens.radiusL)),
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'التفريغ الصوتي الذكي',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.getTextPrimary(context),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close_rounded),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const Divider(),
+          const SizedBox(height: 8),
+          Expanded(
+            child: SingleChildScrollView(
+              child: SelectableText(
+                _text,
+                style: TextStyle(
+                  fontSize: 15,
+                  height: 1.6,
+                  color: AppColors.getTextPrimary(context),
+                ),
+                textAlign: TextAlign.right,
+                textDirection: TextDirection.rtl,
+              ),
+            ),
+          ),
+          const Divider(),
+          if (_currentTimestamp.isNotEmpty) ...[
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.0),
+                child: Center(
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              )
+            else
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: OutlinedButton.icon(
+                    onPressed: _fetchNextChunk,
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.primary, width: 1.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    ),
+                    icon: const Icon(Icons.keyboard_double_arrow_down_rounded, size: 16, color: AppColors.primary),
+                    label: Text(
+                      'أكمل $_currentTimestamp',
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ],
       ),
     );
   }
