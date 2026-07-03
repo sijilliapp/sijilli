@@ -14,6 +14,7 @@ import '../../../core/security/secure_storage_service.dart';
 import '../../../models/user.dart';
 import 'package:pocketbase/pocketbase.dart';
 import '../services/pb_claim_service.dart';
+import '../services/pb_role_service.dart';
 
 enum AuthStatus {
   initial,      
@@ -39,6 +40,7 @@ class AuthProvider extends ChangeNotifier {
   final PbUserService _userService = PbUserService();
   final LocalDbService _localDb = LocalDbService.instance;
   final PbClaimService _claimService = PbClaimService();
+  final PbRoleService _roleService = PbRoleService();
   final SecureStorageService _secureStorage = SecureStorageService.instance;
   
   // ====================== Getters ======================
@@ -127,6 +129,18 @@ class AuthProvider extends ChangeNotifier {
           }
         }
       }
+
+      // Fetch roles configuration in the background
+      unawaited(_roleService.fetchAndCacheUserRoles().then((_) async {
+        if (_user != null) {
+          final updatedUser = await _attachRoleMetadata(_user!);
+          if (updatedUser != _user) {
+            _user = updatedUser;
+            await _localDb.saveUser(updatedUser);
+            notifyListeners();
+          }
+        }
+      }));
 
       await _loadRecentUsernames().timeout(const Duration(seconds: 1), onTimeout: () {});
       
@@ -384,9 +398,11 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _updateUserLocally(UserModel user) async {
-    final userWithToken = (user.token == null && _user?.token != null)
+    UserModel userWithToken = (user.token == null && _user?.token != null)
         ? user.copyWith(token: _user!.token)
         : user;
+    
+    userWithToken = await _attachRoleMetadata(userWithToken);
     
     _user = userWithToken;
     _status = AuthStatus.authenticated;
@@ -671,5 +687,102 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('❌ Error checking token expiration: $e');
     }
     return true; // في حال الخطأ نعتبره منتهياً لزيادة الأمان
+  }
+
+  Future<UserModel> _attachRoleMetadata(UserModel user) async {
+    try {
+      final cachedRoles = await _roleService.getCachedUserRoles();
+      if (cachedRoles.isNotEmpty) {
+        final matchingRole = cachedRoles.firstWhere(
+          (r) => r.key == user.role,
+          orElse: () => getDefaultRoleMetadata(user.role),
+        );
+        return user.copyWith(roleMetadata: matchingRole);
+      }
+    } catch (_) {}
+    return user;
+  }
+
+  // ====================== إدارة أصناف وصلاحيات المستخدمين ======================
+
+  /// تقديم طلب ترقية الحساب
+  Future<bool> requestRoleUpgrade(String requestedRole, String userNotes) async {
+    if (_user == null) return false;
+    _updateState(loading: true);
+    try {
+      await _roleService.createUpgradeRequest(
+        userId: _user!.id,
+        requestedRole: requestedRole,
+        userNotes: userNotes,
+      );
+      _updateState(loading: false);
+      return true;
+    } catch (e) {
+      _updateState(loading: false, error: e.toString());
+      return false;
+    }
+  }
+
+  /// جلب طلبات الترقية الخاصة بي
+  Future<List<RecordModel>> getMyUpgradeRequests() async {
+    if (_user == null) return [];
+    try {
+      return await _roleService.fetchMyUpgradeRequests(_user!.id);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// للمشرفين: جلب كافة الطلبات المعلقة لمراجعتها
+  Future<List<RecordModel>> getPendingUpgradeRequests() async {
+    if (_user == null || _user!.role != 'admin') return [];
+    try {
+      return await _roleService.fetchPendingUpgradeRequests();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// للمشرفين: قبول طلب الترقية وتعديل رول المستخدم
+  Future<bool> approveUpgrade(String requestId, String targetUserId, String requestedRole, String adminNotes) async {
+    if (_user == null || _user!.role != 'admin') return false;
+    _updateState(loading: true);
+    try {
+      await _roleService.approveUpgradeRequest(
+        requestId: requestId,
+        targetUserId: targetUserId,
+        requestedRole: requestedRole,
+        adminId: _user!.id,
+        adminNotes: adminNotes,
+      );
+      // تحديث قائمة الأدوار المتاحة وعكسها محلياً إذا كان المستخدم المستهدف هو الحالي
+      if (_user!.id == targetUserId) {
+        final refreshedUser = _user!.copyWith(role: requestedRole);
+        await _updateUserLocally(refreshedUser);
+      }
+      _updateState(loading: false);
+      return true;
+    } catch (e) {
+      _updateState(loading: false, error: e.toString());
+      return false;
+    }
+  }
+
+  /// للمشرفين: رفض طلب ترقية
+  Future<bool> rejectUpgrade(String requestId, String adminNotes) async {
+    if (_user == null || _user!.role != 'admin') return false;
+    _updateState(loading: true);
+    try {
+      await _roleService.rejectUpgradeRequest(
+        requestId: requestId,
+        adminId: _user!.id,
+        adminNotes: adminNotes,
+      );
+      _updateState(loading: false);
+      return true;
+    } catch (e) {
+      _updateState(loading: false, error: e.toString());
+      return false;
+    }
   }
 }

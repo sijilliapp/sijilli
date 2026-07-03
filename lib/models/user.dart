@@ -32,6 +32,9 @@ class UserModel {
   final bool phoneVerified; // 📱 هل تم التحقق من الهاتف؟
   final bool isSuperAdmin; // 🛡️ مشرف عام (صلاحيات كاملة)
   final bool disableCopying; // 🔒 منع نسخ المقالات
+  final UserRoleMetadata? roleMetadata;
+
+  UserRoleMetadata get activeRoleMetadata => roleMetadata ?? getDefaultRoleMetadata(role);
   
   // ====================== التواريخ ======================
   final DateTime? date; // تاريخ الميلاد
@@ -64,6 +67,7 @@ class UserModel {
     this.phoneVerified = false, // Default is false
     this.isSuperAdmin = false, // Default is false
     this.disableCopying = false, // Default is false
+    this.roleMetadata,
     this.date,
     required this.created,
     required this.updated,
@@ -95,6 +99,11 @@ class UserModel {
       phoneVerified: JsonUtils.parseBool(json['phone_verified']) ?? JsonUtils.parseBool(json['phoneVerified']),
       isSuperAdmin: JsonUtils.parseBool(json['is_super_admin']) ?? JsonUtils.parseBool(json['isSuperAdmin']),
       disableCopying: JsonUtils.parseBool(json['disable_copying']) ?? JsonUtils.parseBool(json['disableCopying']),
+      roleMetadata: json['role_metadata'] != null 
+          ? UserRoleMetadata.fromJson(json['role_metadata'] is String 
+              ? jsonDecode(json['role_metadata']) 
+              : json['role_metadata'])
+          : null,
       date: JsonUtils.parseDateTime(json['date']),
       created: JsonUtils.parseDateTime(json['created']) ?? DateTime.now(),
       updated: JsonUtils.parseDateTime(json['updated']) ?? DateTime.now(),
@@ -176,6 +185,7 @@ class UserModel {
       'phone_verified': phoneVerified,
       'is_super_admin': isSuperAdmin,
       'disable_copying': disableCopying,
+      if (roleMetadata != null) 'role_metadata': roleMetadata!.toJson(),
       'date': date?.toIso8601String(),
       'created': created.toIso8601String(),
       'updated': updated.toIso8601String(),
@@ -212,6 +222,7 @@ class UserModel {
     bool? phoneVerified,
     bool? isSuperAdmin,
     bool? disableCopying,
+    UserRoleMetadata? roleMetadata,
     DateTime? date,
     DateTime? created,
     DateTime? updated,
@@ -239,6 +250,7 @@ class UserModel {
       phoneVerified: phoneVerified ?? this.phoneVerified,
       isSuperAdmin: isSuperAdmin ?? this.isSuperAdmin,
       disableCopying: disableCopying ?? this.disableCopying,
+      roleMetadata: roleMetadata ?? this.roleMetadata,
       date: date ?? this.date,
       created: created ?? this.created,
       updated: updated ?? this.updated,
@@ -279,15 +291,7 @@ class UserModel {
   /// الحصول على اسم الدور بالعربية
   String get roleDisplayName {
     if (isSuperAdmin) return 'مشرف عام';
-    switch (role) {
-      case 'admin':
-        return 'مشرف';
-      case 'approved':
-        return 'معتمد';
-      case 'user':
-      default:
-        return 'مستخدم';
-    }
+    return activeRoleMetadata.displayNameAr;
   }
   
   // ====================== المقارنة ======================
@@ -303,5 +307,145 @@ class UserModel {
   @override
   String toString() {
     return 'UserModel(id: $id, username: $username, name: $name, role: $role)';
+  }
+}
+
+class UserRoleMetadata {
+  final String key;
+  final String displayNameAr;
+  final String displayNameEn;
+  final String? badgeTextAr;
+  final String? badgeColor;
+  final String? badgeIcon;
+  final Map<String, dynamic> permissions;
+
+  const UserRoleMetadata({
+    required this.key,
+    required this.displayNameAr,
+    required this.displayNameEn,
+    this.badgeTextAr,
+    this.badgeColor,
+    this.badgeIcon,
+    required this.permissions,
+  });
+
+  factory UserRoleMetadata.fromJson(Map<String, dynamic> json) {
+    return UserRoleMetadata(
+      key: json['key'] ?? 'user',
+      displayNameAr: json['display_name_ar'] ?? '',
+      displayNameEn: json['display_name_en'] ?? '',
+      badgeTextAr: json['badge_text_ar'],
+      badgeColor: json['badge_color'],
+      badgeIcon: json['badge_icon'],
+      permissions: json['permissions'] is Map 
+          ? Map<String, dynamic>.from(json['permissions']) 
+          : {},
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'key': key,
+      'display_name_ar': displayNameAr,
+      'display_name_en': displayNameEn,
+      'badge_text_ar': badgeTextAr,
+      'badge_color': badgeColor,
+      'badge_icon': badgeIcon,
+      'permissions': permissions,
+    };
+  }
+
+  bool hasPermission(String permissionKey, {bool defaultValue = false}) {
+    return permissions[permissionKey] as bool? ?? defaultValue;
+  }
+
+  int getLimit(String permissionKey, {int defaultValue = 0}) {
+    return permissions[permissionKey] as int? ?? defaultValue;
+  }
+}
+
+UserRoleMetadata getDefaultRoleMetadata(String roleKey) {
+  switch (roleKey) {
+    case 'admin':
+      return const UserRoleMetadata(
+        key: 'admin',
+        displayNameAr: 'مشرف عام',
+        displayNameEn: 'General Moderator',
+        badgeTextAr: 'مشرف',
+        badgeColor: '#9C27B0', // Purple
+        badgeIcon: 'shield',
+        permissions: {
+          'can_use_ai_transcribe': true,
+          'can_use_ai_summarize': true,
+          'max_audio_files': 99,
+          'can_publish_public': true,
+          'can_verify_articles': true,
+        },
+      );
+    case 'writer':
+      return const UserRoleMetadata(
+        key: 'writer',
+        displayNameAr: 'كاتب',
+        displayNameEn: 'Writer',
+        badgeTextAr: 'كاتب معتمد',
+        badgeColor: '#1E88E5', // Blue
+        badgeIcon: 'verified',
+        permissions: {
+          'can_use_ai_transcribe': true,
+          'can_use_ai_summarize': true,
+          'max_audio_files': 10,
+          'can_publish_public': true,
+          'can_verify_articles': false,
+        },
+      );
+    case 'organization':
+      return const UserRoleMetadata(
+        key: 'organization',
+        displayNameAr: 'مؤسسة / جهة',
+        displayNameEn: 'Organization',
+        badgeTextAr: 'مؤسسة معتمدة',
+        badgeColor: '#FFB300', // Gold/Amber
+        badgeIcon: 'business',
+        permissions: {
+          'can_use_ai_transcribe': true,
+          'can_use_ai_summarize': true,
+          'max_audio_files': 25,
+          'can_publish_public': true,
+          'can_verify_articles': true,
+        },
+      );
+    case 'approved': // Legacy approved role maps to writer permissions
+      return const UserRoleMetadata(
+        key: 'approved',
+        displayNameAr: 'مستخدم معتمد',
+        displayNameEn: 'Approved User',
+        badgeTextAr: 'معتمد',
+        badgeColor: '#00897B', // Teal
+        badgeIcon: 'verified',
+        permissions: {
+          'can_use_ai_transcribe': true,
+          'can_use_ai_summarize': true,
+          'max_audio_files': 5,
+          'can_publish_public': true,
+          'can_verify_articles': false,
+        },
+      );
+    case 'user':
+    default:
+      return const UserRoleMetadata(
+        key: 'user',
+        displayNameAr: 'مستخدم عادي',
+        displayNameEn: 'Standard User',
+        badgeTextAr: null,
+        badgeColor: null,
+        badgeIcon: null,
+        permissions: {
+          'can_use_ai_transcribe': false,
+          'can_use_ai_summarize': false,
+          'max_audio_files': 1,
+          'can_publish_public': false,
+          'can_verify_articles': false,
+        },
+      );
   }
 }

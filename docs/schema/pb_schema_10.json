@@ -318,7 +318,9 @@
         "values": [
           "user",
           "approved",
-          "admin"
+          "admin",
+          "writer",
+          "organization"
         ]
       },
       {
@@ -2933,5 +2935,222 @@
     ],
     "indexes": [],
     "system": false
+  },
+  {
+    "id": "pbc_user_roles12",
+    "name": "user_roles",
+    "type": "base",
+    "system": false,
+    "listRule": "",
+    "viewRule": "",
+    "createRule": null,
+    "updateRule": null,
+    "deleteRule": null,
+    "fields": [
+      {
+        "id": "text3208210256",
+        "name": "id",
+        "type": "text",
+        "system": true,
+        "required": true,
+        "presentable": false,
+        "primaryKey": true,
+        "autogeneratePattern": "[a-z0-9]{15}"
+      },
+      {
+        "id": "text_key",
+        "name": "key",
+        "type": "text",
+        "system": false,
+        "required": true,
+        "presentable": true,
+        "primaryKey": false
+      },
+      {
+        "id": "text_displayNameAr",
+        "name": "display_name_ar",
+        "type": "text",
+        "system": false,
+        "required": true,
+        "presentable": true,
+        "primaryKey": false
+      },
+      {
+        "id": "text_displayNameEn",
+        "name": "display_name_en",
+        "type": "text",
+        "system": false,
+        "required": true,
+        "presentable": false,
+        "primaryKey": false
+      },
+      {
+        "id": "text_badgeTextAr",
+        "name": "badge_text_ar",
+        "type": "text",
+        "system": false,
+        "required": false,
+        "presentable": false,
+        "primaryKey": false
+      },
+      {
+        "id": "text_badgeColor",
+        "name": "badge_color",
+        "type": "text",
+        "system": false,
+        "required": false,
+        "presentable": false,
+        "primaryKey": false
+      },
+      {
+        "id": "text_badgeIcon",
+        "name": "badge_icon",
+        "type": "text",
+        "system": false,
+        "required": false,
+        "presentable": false,
+        "primaryKey": false
+      },
+      {
+        "id": "json_permissions",
+        "name": "permissions",
+        "type": "json",
+        "system": false,
+        "required": false,
+        "presentable": false,
+        "primaryKey": false
+      },
+      {
+        "id": "autodate2990389176",
+        "name": "created",
+        "type": "autodate",
+        "system": false,
+        "presentable": false,
+        "onCreate": true,
+        "onUpdate": false
+      },
+      {
+        "id": "autodate3332085495",
+        "name": "updated",
+        "type": "autodate",
+        "system": false,
+        "presentable": false,
+        "onCreate": true,
+        "onUpdate": true
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX idx_role_key ON user_roles (key)"
+    ]
+  },
+  {
+    "id": "pbc_role_reqs12",
+    "name": "role_upgrade_requests",
+    "type": "base",
+    "system": false,
+    "listRule": "@request.auth.id = user || @request.auth.role = \"admin\"",
+    "viewRule": "@request.auth.id = user || @request.auth.role = \"admin\"",
+    "createRule": "@request.auth.id != \"\"",
+    "updateRule": "@request.auth.role = \"admin\"",
+    "deleteRule": "@request.auth.role = \"admin\"",
+    "fields": [
+      {
+        "id": "text3208210256",
+        "name": "id",
+        "type": "text",
+        "system": true,
+        "required": true,
+        "presentable": false,
+        "primaryKey": true,
+        "autogeneratePattern": "[a-z0-9]{15}"
+      },
+      {
+        "id": "relation_user",
+        "name": "user",
+        "type": "relation",
+        "system": false,
+        "required": true,
+        "presentable": true,
+        "primaryKey": false,
+        "collectionId": "_pb_users_auth_",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "cascadeDelete": true
+      },
+      {
+        "id": "text_req_role",
+        "name": "requested_role",
+        "type": "text",
+        "system": false,
+        "required": true,
+        "presentable": true,
+        "primaryKey": false
+      },
+      {
+        "id": "select_status",
+        "name": "status",
+        "type": "select",
+        "system": false,
+        "required": true,
+        "presentable": true,
+        "primaryKey": false,
+        "maxSelect": 1,
+        "values": [
+          "pending",
+          "approved",
+          "rejected"
+        ]
+      },
+      {
+        "id": "text_user_notes",
+        "name": "user_notes",
+        "type": "text",
+        "system": false,
+        "required": false,
+        "presentable": false,
+        "primaryKey": false
+      },
+      {
+        "id": "text_admin_notes",
+        "name": "admin_notes",
+        "type": "text",
+        "system": false,
+        "required": false,
+        "presentable": false,
+        "primaryKey": false
+      },
+      {
+        "id": "relation_reviewer",
+        "name": "reviewed_by",
+        "type": "relation",
+        "system": false,
+        "required": false,
+        "presentable": false,
+        "primaryKey": false,
+        "collectionId": "_pb_users_auth_",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "cascadeDelete": false
+      },
+      {
+        "id": "autodate2990389176",
+        "name": "created",
+        "type": "autodate",
+        "system": false,
+        "presentable": false,
+        "onCreate": true,
+        "onUpdate": false
+      },
+      {
+        "id": "autodate3332085495",
+        "name": "updated",
+        "type": "autodate",
+        "system": false,
+        "presentable": false,
+        "onCreate": true,
+        "onUpdate": true
+      }
+    ],
+    "indexes": []
   }
 ]
