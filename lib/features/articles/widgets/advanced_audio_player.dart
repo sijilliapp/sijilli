@@ -532,99 +532,44 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
   }
 
   Widget _buildSummaryContent(String text) {
-    final lines = text.split('\n');
-    final List<Widget> lineWidgets = [];
-    final timestampRegex = RegExp(r'(?:\[)?(\d{1,2}):(\d{2})(?:\])?');
+    // 1. Clean the text and extract all timestamp-description pairs
+    final RegExp timestampRegex = RegExp(r'(?:\[)?(\d{1,2}):(\d{2})(?:\])?');
+    
+    // Find all matches with their start and end positions
+    final matches = timestampRegex.allMatches(text).toList();
+    final List<Map<String, dynamic>> items = [];
 
-    for (final line in lines) {
-      if (line.trim().isEmpty) {
-        lineWidgets.add(const SizedBox(height: 8));
-        continue;
+    for (int i = 0; i < matches.length; i++) {
+      final match = matches[i];
+      final minutes = int.parse(match.group(1)!);
+      final seconds = int.parse(match.group(2)!);
+      final timeStr = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+      final targetDuration = Duration(minutes: minutes, seconds: seconds);
+
+      // Extract description text: from match.end to next match.start, or to end of text
+      int endOffset = (i + 1 < matches.length) ? matches[i + 1].start : text.length;
+      String desc = text.substring(match.end, endOffset).trim();
+
+      // Clean description: strip leading bullets, colons, dashes, etc.
+      desc = desc.replaceFirst(RegExp(r'^[:\s\-\*•\d\.\)]+'), '').trim();
+
+      if (desc.isNotEmpty) {
+        items.add({
+          'timeStr': timeStr,
+          'duration': targetDuration,
+          'description': desc,
+        });
       }
+    }
 
-      final matches = timestampRegex.allMatches(line);
-      if (matches.isNotEmpty) {
-        final List<InlineSpan> spans = [];
-        int lastMatchEnd = 0;
-
-        for (final match in matches) {
-          // Add text before the match
-          if (match.start > lastMatchEnd) {
-            spans.add(TextSpan(text: line.substring(lastMatchEnd, match.start)));
-          }
-
-          final timeStr = match.group(0)!; // e.g. [01:23]
-          final minutes = int.parse(match.group(1)!);
-          final seconds = int.parse(match.group(2)!);
-          final targetDuration = Duration(minutes: minutes, seconds: seconds);
-
-          // Add clickable timestamp span
-          spans.add(
-            WidgetSpan(
-              alignment: PlaceholderAlignment.middle,
-              child: GestureDetector(
-                onTap: () {
-                  _audioPlayer.seek(targetDuration);
-                  if (!_isPlaying) {
-                    _togglePlay();
-                  }
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('انتقال إلى $timeStr'),
-                      duration: const Duration(milliseconds: 800),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  margin: const EdgeInsets.symmetric(horizontal: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.blueAccent.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    timeStr,
-                    style: const TextStyle(
-                      color: Colors.blueAccent,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-
-          lastMatchEnd = match.end;
-        }
-
-        // Add remaining text after the last match
-        if (lastMatchEnd < line.length) {
-          spans.add(TextSpan(text: line.substring(lastMatchEnd)));
-        }
-
-        lineWidgets.add(
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: RichText(
-              textAlign: TextAlign.right,
-              textDirection: TextDirection.rtl,
-              text: TextSpan(
-                style: TextStyle(
-                  fontSize: 15,
-                  height: 1.6,
-                  color: AppColors.getTextPrimary(context),
-                  fontFamily: 'Outfit',
-                ),
-                children: spans,
-              ),
-            ),
-          ),
-        );
-      } else {
-        // Fallback for normal line without timestamp
-        lineWidgets.add(
-          Padding(
+    // If no timestamps found, fallback to rendering lines normally
+    if (items.isEmpty) {
+      final lines = text.split('\n');
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: lines.map((line) {
+          if (line.trim().isEmpty) return const SizedBox(height: 8);
+          return Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Text(
               line,
@@ -636,14 +581,78 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
               textAlign: TextAlign.right,
               textDirection: TextDirection.rtl,
             ),
-          ),
-        );
-      }
+          );
+        }).toList(),
+      );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: lineWidgets,
+    // Render as a beautiful structured vertical list
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: items.length,
+      separatorBuilder: (context, index) => Divider(color: Colors.grey.withOpacity(0.1), height: 12),
+      itemBuilder: (context, index) {
+        final item = items[index];
+        final String timeStr = item['timeStr'];
+        final Duration targetDuration = item['duration'];
+        final String description = item['description'];
+
+        return InkWell(
+          onTap: () {
+            _audioPlayer.seek(targetDuration);
+            if (!_isPlaying) {
+              _togglePlay();
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('انتقال إلى $timeStr'),
+                duration: const Duration(milliseconds: 800),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+            child: Row(
+              textDirection: TextDirection.rtl,
+              children: [
+                // Clickable timestamp chip
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blueAccent.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    timeStr,
+                    style: const TextStyle(
+                      color: Colors.blueAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Description text
+                Expanded(
+                  child: Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 15,
+                      height: 1.4,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.getTextPrimary(context),
+                    ),
+                    textAlign: TextAlign.right,
+                    textDirection: TextDirection.rtl,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
