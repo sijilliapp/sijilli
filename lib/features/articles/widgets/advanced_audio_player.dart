@@ -33,6 +33,7 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
 
   bool _isPlaying = false;
   bool _isBuffering = false;
+  bool _isAudioReady = false;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
   String? _errorMessage;
@@ -65,6 +66,7 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
     try {
       setState(() {
         _isBuffering = true;
+        _isAudioReady = false;
         _errorMessage = null;
       });
 
@@ -91,6 +93,11 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
         await _audioPlayer.setFilePath(resolvedUrl);
       }
 
+      setState(() {
+        _isAudioReady = true;
+        _isBuffering = false;
+      });
+
       _playerStateSubscription = _audioPlayer.playerStateStream.listen((state) {
         if (!mounted) return;
         final bool isCompleted = state.processingState == ProcessingState.completed;
@@ -98,6 +105,9 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
           _isPlaying = state.playing && !isCompleted;
           _isBuffering = state.processingState == ProcessingState.loading ||
               state.processingState == ProcessingState.buffering;
+          if (state.processingState == ProcessingState.ready) {
+            _isAudioReady = true;
+          }
           if (isCompleted) {
             _position = Duration.zero;
             _audioPlayer.pause();
@@ -819,7 +829,7 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
                   ),
                   if (_errorMessage != null)
                     const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 20)
-                  else if (_isBuffering)
+                  else if (!_isAudioReady)
                     const SizedBox(
                       width: 14,
                       height: 14,
