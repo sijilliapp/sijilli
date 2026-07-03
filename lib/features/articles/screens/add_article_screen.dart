@@ -1081,10 +1081,20 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
       }
 
       final result = await FilePicker.platform.pickFiles(
-        type: FileType.audio,
+        type: FileType.any,
       );
       if (result != null && result.files.single.path != null) {
-        final pickedFile = File(result.files.single.path!);
+        final path = result.files.single.path!;
+        final lower = path.toLowerCase();
+        final allowedExtensions = ['.mp3', '.wav', '.m4a', '.aac', '.opus', '.ogg', '.caf'];
+        final isAllowed = allowedExtensions.any((ext) => lower.endsWith(ext));
+        
+        if (!isAllowed) {
+          _showErrorSnackBar('صيغة الملف غير مدعومة. يرجى اختيار ملف صوتي.');
+          return;
+        }
+
+        final pickedFile = File(path);
         _showAudioTypeBottomSheet(pickedFile);
       }
     } catch (e) {
