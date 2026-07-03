@@ -218,7 +218,7 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
 
   // AI services trigger
   Future<void> _callAIService(bool isTranscription) async {
-    final bool isVisitor = widget.onTextGenerated == null;
+    final bool isVisitor = widget.onMetadataUpdated == null;
     final String audioKey = widget.audioUrl.split('/').last.toLowerCase();
 
     if (isVisitor) {
@@ -425,7 +425,25 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
               });
             } else {
               // Read Mode: Open dialog/sheet to show the result
-              _showAIResultDialog('التفريغ الصوتي الذكي', generatedText);
+              _showAIResultDialog('التفريغ الصوتي الذكي', generatedText, isAlreadyCompleted: true);
+              
+              SharedPreferences.getInstance().then((prefs) async {
+                await prefs.setString('transcription_${widget.audioUrl.hashCode}', generatedText);
+                
+                final String audioKey = widget.audioUrl.split('/').last.toLowerCase();
+                final Map<String, dynamic> currentMeta = widget.audioMetadata != null 
+                    ? Map<String, dynamic>.from(widget.audioMetadata!) 
+                    : {};
+                final Map<String, dynamic> fileMeta = currentMeta[audioKey] is Map 
+                    ? Map<String, dynamic>.from(currentMeta[audioKey]!) 
+                    : {};
+                fileMeta['transcription'] = generatedText;
+                currentMeta[audioKey] = fileMeta;
+
+                if (widget.onMetadataUpdated != null) {
+                  widget.onMetadataUpdated!(currentMeta);
+                }
+              });
             }
           } else {
             // Cache the summary
