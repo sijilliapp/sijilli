@@ -219,7 +219,17 @@ class _ProfileHeaderState extends State<ProfileHeader> {
                   _pickAndUploadImage(context, ImageSource.camera);
                 },
               ),
-              if (hasAvatar)
+              if (hasAvatar) ...[
+                ListTile(
+                  leading: const Icon(Icons.zoom_in_rounded, color: AppColors.primary),
+                  title: Text(Localizations.localeOf(sheetContext).languageCode == 'ar'
+                      ? 'استعراض وتنزيل الصورة'
+                      : 'View & Download Image'),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _viewFullAvatar(context, displayUser);
+                  },
+                ),
                 ListTile(
                   leading: const Icon(Icons.delete_outline, color: Colors.red),
                   title: Text(Localizations.localeOf(sheetContext).languageCode == 'ar'
@@ -230,11 +240,87 @@ class _ProfileHeaderState extends State<ProfileHeader> {
                     _removeProfilePicture(context);
                   },
                 ),
+              ],
               const SizedBox(height: 8),
             ],
           ),
         );
       },
+    );
+  }
+
+  Color _parseHexColor(String? hexString) {
+    if (hexString == null || hexString.isEmpty) return AppColors.primary;
+    try {
+      final hex = hexString.replaceAll('#', '');
+      return Color(int.parse('FF$hex', radix: 16));
+    } catch (_) {
+      return AppColors.primary;
+    }
+  }
+
+  IconData _getBadgeIcon(String? iconKey) {
+    switch (iconKey) {
+      case 'shield':
+        return Icons.shield_rounded;
+      case 'business':
+        return Icons.business_rounded;
+      case 'verified':
+      default:
+        return Icons.verified_rounded;
+    }
+  }
+
+  void _viewFullAvatar(BuildContext context, UserModel user) {
+    final avatarUrl = user.getAvatarUrl('https://sijilli.pockethost.io');
+    if (avatarUrl == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            title: Text(
+              Localizations.localeOf(context).languageCode == 'ar'
+                  ? 'استعراض الصورة الشخصية'
+                  : 'View Profile Picture',
+            ),
+            centerTitle: true,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.download_rounded),
+                onPressed: () {
+                  final authProvider = context.read<AuthProvider>();
+                  ProfileActionsHelper.downloadAvatar(context, user, authProvider.user);
+                },
+              ),
+            ],
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              clipBehavior: Clip.none,
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Image.network(
+                avatarUrl,
+                fit: BoxFit.contain,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Center(child: CircularProgressIndicator(color: Colors.white));
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return const Center(child: Icon(Icons.error_outline_rounded, color: Colors.white, size: 48));
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -274,11 +360,89 @@ class _ProfileHeaderState extends State<ProfileHeader> {
                     }
 
                     final isMe = !widget.isPublicView && displayUser.id == authProvider.user?.id;
-   
+                    final showBadge = displayUser.activeRoleMetadata.key != 'user';
+
+                    final locale = Localizations.localeOf(context).languageCode;
+                    final isAr = locale == 'ar';
+                    final badgeText = isAr 
+                        ? (displayUser.activeRoleMetadata.badgeTextAr ?? displayUser.activeRoleMetadata.displayNameAr)
+                        : displayUser.activeRoleMetadata.displayNameEn;
+                    final badgeColor = _parseHexColor(displayUser.activeRoleMetadata.badgeColor);
+                    final badgeIcon = _getBadgeIcon(displayUser.activeRoleMetadata.badgeIcon);
+
                     Widget avatarWidget = PulseAvatar(
                       imageUrl: displayUser.getAvatarUrl('https://sijilli.pockethost.io'),
                       status: currentStatus,
                       size: AppDimens.avatarSizeProfile,
+                    );
+
+                    Widget mainAvatarStack = Stack(
+                      alignment: Alignment.center,
+                      clipBehavior: Clip.none,
+                      children: [
+                        avatarWidget,
+                        if (isMe && _isUploading)
+                          Positioned.fill(
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.black45,
+                              ),
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (showBadge && badgeText != null)
+                          PositionedDirectional(
+                            bottom: -2,
+                            end: -2,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                              decoration: BoxDecoration(
+                                color: badgeColor,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Theme.of(context).scaffoldBackgroundColor,
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
+                                children: [
+                                  Icon(
+                                    badgeIcon,
+                                    size: 11,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    badgeText,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.bold,
+                                      height: 1.1,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+
+                    return GestureDetector(
                       onTap: () {
                         if (authProvider.user == null) {
                           Navigator.push(
@@ -298,63 +462,8 @@ class _ProfileHeaderState extends State<ProfileHeader> {
                           );
                         }
                       },
+                      child: mainAvatarStack,
                     );
-
-                    if (isMe) {
-                      avatarWidget = Stack(
-                        alignment: Alignment.center,
-                        clipBehavior: Clip.none,
-                        children: [
-                          avatarWidget,
-                          if (_isUploading)
-                            Positioned.fill(
-                              child: Container(
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.black45,
-                                ),
-                                child: const Center(
-                                  child: CircularProgressIndicator(
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          PositionedDirectional(
-                            bottom: 2,
-                            end: 2,
-                            child: GestureDetector(
-                              onTap: () => _showImageOptionsSheet(context, displayUser),
-                              child: Container(
-                                padding: const EdgeInsets.all(7),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.white,
-                                    width: 2.5,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.15),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: const Icon(
-                                  Icons.camera_alt_rounded,
-                                  size: 18,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    }
-
-                    return avatarWidget;
                   },
                 ),
                 
