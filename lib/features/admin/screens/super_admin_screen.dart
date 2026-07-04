@@ -10,6 +10,7 @@ import 'admin_users_screen.dart';
 import 'admin_article_prefs_screen.dart';
 import 'admin_system_prefs_screen.dart';
 import 'admin_reports_screen.dart';
+import 'admin_upgrade_requests_screen.dart';
 
 class SuperAdminScreen extends StatefulWidget {
   const SuperAdminScreen({super.key});
@@ -92,6 +93,23 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const AdminUsersScreen()),
+                );
+              },
+            ),
+
+            const SizedBox(height: 8),
+
+            _buildClickableCard(
+              context,
+              isDark: isDark,
+              icon: Icons.workspace_premium_rounded,
+              title: 'طلبات ترقية العضوية',
+              subtitle: 'مراجعة طلبات الانضمام ككُتّاب معتمدين أو جهات رسمية',
+              badgeCount: 0,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AdminUpgradeRequestsScreen()),
                 );
               },
             ),

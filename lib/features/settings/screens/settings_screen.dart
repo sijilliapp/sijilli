@@ -20,6 +20,7 @@ import '../../auth/screens/change_password_screen.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 import 'package:sijilli/features/appointments/screens/saved_appointments_screen.dart';
+import 'request_upgrade_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -140,6 +141,30 @@ class SettingsScreen extends StatelessWidget {
             },
           ),
           const SizedBox(height: 8),
+
+          // ترقية العضوية والصلاحيات (يظهر للمستخدمين غير المشرفين)
+          Consumer<AuthProvider>(
+            builder: (context, auth, _) {
+              if (auth.user?.role == 'admin') return const SizedBox.shrink();
+              return Column(
+                children: [
+                  _buildSettingsCard(
+                    context,
+                    icon: Icons.workspace_premium_rounded,
+                    title: 'ترقية الحساب والصلاحيات',
+                    subtitle: 'طلب الانضمام ككاتب معتمد أو مؤسسة وتفعيل ميزات الذكاء الاصطناعي',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const RequestUpgradeScreen()),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              );
+            },
+          ),
 
           // الخصوصية والأمان
           _buildSettingsCard(
