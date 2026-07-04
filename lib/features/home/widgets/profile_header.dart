@@ -479,46 +479,51 @@ class _ProfileHeaderState extends State<ProfileHeader> {
                 
                 const SizedBox(height: AppDimens.spaceXXS),
               
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    UserNameWithBadge(
-                      name: displayUser.name,
-                      isVerified: displayUser.isOfficial,
-                      style: TextStyle(
-                        fontSize: AppDimens.textSizeXL,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.getTextPrimary(context),
-                      ),
-                    ),
-                    if (showBadge && badgeText != null) ...[
-                      const SizedBox(width: 4),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: badgeColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: badgeColor.withOpacity(0.18),
-                              width: 0.8,
-                            ),
-                          ),
-                          child: Text(
-                            badgeText,
-                            style: TextStyle(
-                              color: badgeColor,
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.bold,
-                              height: 1.1,
-                            ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Flexible(
+                        child: UserNameWithBadge(
+                          name: displayUser.name,
+                          isVerified: displayUser.isOfficial,
+                          style: TextStyle(
+                            fontSize: 20, // أهدأ وأصغر قليلاً لحماية التخطيط من التمدد
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.getTextPrimary(context),
                           ),
                         ),
                       ),
+                      if (showBadge && badgeText != null) ...[
+                        const SizedBox(width: 4),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: badgeColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: badgeColor.withOpacity(0.18),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              badgeText,
+                              style: TextStyle(
+                                color: badgeColor,
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                height: 1.1,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
                 
                 if (widget.showStats) ...[
