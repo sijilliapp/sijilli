@@ -333,6 +333,15 @@ class _ProfileHeaderState extends State<ProfileHeader> {
         if (displayUser == null) {
           return const SizedBox.shrink();
         }
+
+        final showBadge = displayUser.activeRoleMetadata.key != 'user';
+        final locale = Localizations.localeOf(context).languageCode;
+        final isAr = locale == 'ar';
+        final badgeText = isAr 
+            ? (displayUser.activeRoleMetadata.badgeTextAr ?? displayUser.activeRoleMetadata.displayNameAr)
+            : displayUser.activeRoleMetadata.displayNameEn;
+        final badgeColor = _parseHexColor(displayUser.activeRoleMetadata.badgeColor);
+        final badgeIcon = _getBadgeIcon(displayUser.activeRoleMetadata.badgeIcon);
         
         return Container(
           padding: const EdgeInsets.only(top: 20, bottom: 10),
@@ -360,15 +369,6 @@ class _ProfileHeaderState extends State<ProfileHeader> {
                     }
 
                     final isMe = !widget.isPublicView && displayUser.id == authProvider.user?.id;
-                    final showBadge = displayUser.activeRoleMetadata.key != 'user';
-
-                    final locale = Localizations.localeOf(context).languageCode;
-                    final isAr = locale == 'ar';
-                    final badgeText = isAr 
-                        ? (displayUser.activeRoleMetadata.badgeTextAr ?? displayUser.activeRoleMetadata.displayNameAr)
-                        : displayUser.activeRoleMetadata.displayNameEn;
-                    final badgeColor = _parseHexColor(displayUser.activeRoleMetadata.badgeColor);
-                    final badgeIcon = _getBadgeIcon(displayUser.activeRoleMetadata.badgeIcon);
 
                     Widget avatarWidget = PulseAvatar(
                       imageUrl: displayUser.getAvatarUrl('https://sijilli.pockethost.io'),
@@ -392,43 +392,6 @@ class _ProfileHeaderState extends State<ProfileHeader> {
                                 child: CircularProgressIndicator(
                                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                 ),
-                              ),
-                            ),
-                          ),
-                        if (showBadge && badgeText != null)
-                          Positioned(
-                            bottom: -4,
-                            left: -4,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                              decoration: BoxDecoration(
-                                color: badgeColor.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: badgeColor.withOpacity(0.2),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
-                                children: [
-                                  Icon(
-                                    badgeIcon,
-                                    size: 9.5,
-                                    color: badgeColor,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    badgeText,
-                                    style: TextStyle(
-                                      color: badgeColor,
-                                      fontSize: 8.5,
-                                      fontWeight: FontWeight.bold,
-                                      height: 1.1,
-                                    ),
-                                  ),
-                                ],
                               ),
                             ),
                           ),
@@ -516,14 +479,46 @@ class _ProfileHeaderState extends State<ProfileHeader> {
                 
                 const SizedBox(height: AppDimens.spaceXXS),
               
-                UserNameWithBadge(
-                  name: displayUser.name,
-                  isVerified: displayUser.isOfficial,
-                  style: TextStyle(
-                    fontSize: AppDimens.textSizeXL,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.getTextPrimary(context),
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    UserNameWithBadge(
+                      name: displayUser.name,
+                      isVerified: displayUser.isOfficial,
+                      style: TextStyle(
+                        fontSize: AppDimens.textSizeXL,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.getTextPrimary(context),
+                      ),
+                    ),
+                    if (showBadge && badgeText != null) ...[
+                      const SizedBox(width: 4),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: badgeColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: badgeColor.withOpacity(0.18),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Text(
+                            badgeText,
+                            style: TextStyle(
+                              color: badgeColor,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.bold,
+                              height: 1.1,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 
                 if (widget.showStats) ...[
