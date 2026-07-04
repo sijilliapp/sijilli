@@ -380,6 +380,7 @@ UserRoleMetadata getDefaultRoleMetadata(String roleKey) {
           'max_audio_files': 99,
           'can_publish_public': true,
           'can_verify_articles': true,
+          'daily_ai_limit': 999, // Uncapped
         },
       );
     case 'writer':
@@ -396,6 +397,7 @@ UserRoleMetadata getDefaultRoleMetadata(String roleKey) {
           'max_audio_files': 10,
           'can_publish_public': true,
           'can_verify_articles': false,
+          'daily_ai_limit': 10, // Define dynamic limit for writer (e.g. 10 uses per day)
         },
       );
     case 'organization':
@@ -412,6 +414,7 @@ UserRoleMetadata getDefaultRoleMetadata(String roleKey) {
           'max_audio_files': 25,
           'can_publish_public': true,
           'can_verify_articles': true,
+          'daily_ai_limit': 25, // 25 uses per day
         },
       );
     case 'approved': // Legacy approved role maps to writer permissions
@@ -428,6 +431,7 @@ UserRoleMetadata getDefaultRoleMetadata(String roleKey) {
           'max_audio_files': 5,
           'can_publish_public': true,
           'can_verify_articles': false,
+          'daily_ai_limit': 5,
         },
       );
     case 'user':
@@ -440,11 +444,12 @@ UserRoleMetadata getDefaultRoleMetadata(String roleKey) {
         badgeColor: null,
         badgeIcon: null,
         permissions: {
-          'can_use_ai_transcribe': false,
-          'can_use_ai_summarize': false,
+          'can_use_ai_transcribe': true,
+          'can_use_ai_summarize': true,
           'max_audio_files': 1,
           'can_publish_public': false,
           'can_verify_articles': false,
+          'daily_ai_limit': 1, // Only 1 use per day
         },
       );
   }

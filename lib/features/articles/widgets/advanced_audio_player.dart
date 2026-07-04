@@ -11,6 +11,9 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimens.dart';
 import '../../../../core/utils/audio_helper.dart';
 import '../../../../core/utils/audio_cache_manager.dart';
+import 'package:provider/provider.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../settings/screens/request_upgrade_screen.dart';
 
 class AdvancedAudioPlayer extends StatefulWidget {
   final String audioUrl;
@@ -296,6 +299,16 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
         }
       }
 
+      // Validate daily AI usage limit
+      final canProceed = await _checkAndIncrementAIUsage();
+      if (!canProceed) {
+        setState(() {
+          _isTranscribing = false;
+          _isSummarizing = false;
+        });
+        return;
+      }
+
       // Calculate startTime if transcribing
       String? startTimeStr;
       if (isTranscription) {
@@ -369,6 +382,19 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
       if (_isAICancelled) return;
 
       if (response.statusCode == 200) {
+        // Increment daily AI usage count
+        try {
+          final authProvider = context.read<AuthProvider>();
+          final user = authProvider.user;
+          if (user != null) {
+            final prefs = await SharedPreferences.getInstance();
+            final todayStr = DateTime.now().toIso8601String().substring(0, 10);
+            final usageKey = 'ai_usage_${user.id}_$todayStr';
+            final currentUsage = prefs.getInt(usageKey) ?? 0;
+            await prefs.setInt(usageKey, currentUsage + 1);
+          }
+        } catch (_) {}
+
         final data = json.decode(response.body);
         final generatedText = data['text'] as String?;
         final generatedIndex = data['index'] as String?;
@@ -810,7 +836,7 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
     );
   }
 
-  void _showUpgradePromptDialog() {
+  void _showUpgradePromptDialog({String? customMessage}) {
     if (!mounted) return;
     showDialog(
       context: context,
@@ -838,7 +864,7 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
             ],
           ),
           content: Text(
-            'لقد تجاوزت الحد المسموح به للتفريغ والتلخيص المجاني المتاح للمستخدمين العاديين.\n\nيرجى ترقية حسابك من مستخدم إلى كاتب للحصول على باقة مزايا متكاملة تشمل تفريغاً صوتياً غير محدود وتلخيصاً ذكياً فورياً!',
+            customMessage ?? 'لقد تجاوزت الحد المسموح به للتفريغ والتلخيص المجاني المتاح للمستخدمين العاديين.\n\nيرجى ترقية حسابك من مستخدم إلى كاتب للحصول على باقة مزايا متكاملة تشمل تفريغاً صوتياً غير محدود وتلخيصاً ذكياً فورياً!',
             style: TextStyle(
               color: AppColors.getTextSecondary(context),
               fontSize: 14,
@@ -863,11 +889,9 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('سيتم فتح صفحة طلب الترقية قريباً'),
-                    duration: Duration(seconds: 2),
-                  ),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const RequestUpgradeScreen()),
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -879,14 +903,43 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               ),
               child: const Text(
-                'ترقية إلى كاتب',
-                style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+                'ترقية الآن',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Outfit',
+                ),
               ),
             ),
           ],
         );
       },
     );
+  }
+
+  Future<bool> _checkAndIncrementAIUsage() async {
+    try {
+      final authProvider = context.read<AuthProvider>();
+      final user = authProvider.user;
+      if (user == null) return true; // Fallback if no user
+
+      final dailyLimit = user.activeRoleMetadata.getLimit('daily_ai_limit', defaultValue: 1);
+      
+      // If limit is practically unlimited (e.g. 99 or more), skip check
+      if (dailyLimit >= 99) return true;
+
+      final prefs = await SharedPreferences.getInstance();
+      final todayStr = DateTime.now().toIso8601String().substring(0, 10);
+      final usageKey = 'ai_usage_${user.id}_$todayStr';
+      final currentUsage = prefs.getInt(usageKey) ?? 0;
+
+      if (currentUsage >= dailyLimit) {
+        _showUpgradePromptDialog(
+          customMessage: 'لقد استنفدت حدك اليومي المسموح به لاستخدام الذكاء الاصطناعي ($dailyLimit استخدام في اليوم) طبقاً لخطة عضويتك الحالية (${user.roleDisplayName}).\n\nيرجى ترقية حسابك إلى كاتب للحصول على استخدام أكبر للميزات الذكية والحدود المرتفعة.',
+        );
+        return false;
+      }
+    } catch (_) {}
+    return true;
   }
 
   @override
