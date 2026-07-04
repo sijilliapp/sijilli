@@ -396,25 +396,18 @@ class _ProfileHeaderState extends State<ProfileHeader> {
                             ),
                           ),
                         if (showBadge && badgeText != null)
-                          PositionedDirectional(
-                            bottom: -2,
-                            end: -2,
+                          Positioned(
+                            bottom: -4,
+                            left: -4,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                               decoration: BoxDecoration(
-                                color: badgeColor,
-                                borderRadius: BorderRadius.circular(12),
+                                color: badgeColor.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: Theme.of(context).scaffoldBackgroundColor,
-                                  width: 2,
+                                  color: badgeColor.withOpacity(0.2),
+                                  width: 1,
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -422,15 +415,15 @@ class _ProfileHeaderState extends State<ProfileHeader> {
                                 children: [
                                   Icon(
                                     badgeIcon,
-                                    size: 11,
-                                    color: Colors.white,
+                                    size: 9.5,
+                                    color: badgeColor,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
                                     badgeText,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 9.5,
+                                    style: TextStyle(
+                                      color: badgeColor,
+                                      fontSize: 8.5,
                                       fontWeight: FontWeight.bold,
                                       height: 1.1,
                                     ),
