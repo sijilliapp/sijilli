@@ -414,4 +414,28 @@ class PbAppointmentService {
       _activeClaims.remove(lockKey);
     }
   }
+
+  /// إرسال نكزة (PING) إلى مستخدم معين
+  Future<bool> sendPing({
+    required String appointmentId,
+    required String targetUserId,
+    required String hostName,
+  }) async {
+    try {
+      final appt = await getAppointmentById(appointmentId);
+      final apptTitle = appt.title;
+      
+      await _notificationService.createNotification(
+        targetUserId: targetUserId,
+        title: 'PING!!! ⚡',
+        message: 'ينكزك ($hostName) للرد على دعوة الموعد: $apptTitle',
+        type: NotificationType.invite,
+        relatedId: appointmentId,
+      );
+      return true;
+    } catch (e) {
+      print('⚠️ Failed to send ping notification: $e');
+      return false;
+    }
+  }
 }

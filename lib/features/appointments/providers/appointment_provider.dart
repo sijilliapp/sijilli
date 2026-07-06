@@ -1130,4 +1130,23 @@ class AppointmentProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  /// إرسال نكزة (PING) إلى مستخدم معين
+  Future<bool> sendPing({
+    required String appointmentId,
+    required String targetUserId,
+    required String hostName,
+  }) async {
+    try {
+      return await _apptService.sendPing(
+        appointmentId: appointmentId,
+        targetUserId: targetUserId,
+        hostName: hostName,
+      );
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
 }

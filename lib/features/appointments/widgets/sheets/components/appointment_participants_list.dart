@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:sijilli/core/constants/app_colors.dart';
 import 'package:sijilli/core/constants/app_dimens.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
@@ -6,8 +9,12 @@ import 'package:sijilli/models/appointment.dart';
 import 'package:sijilli/core/widgets/pulse_avatar.dart';
 import 'package:sijilli/core/utils/app_date_formatter.dart';
 import 'package:sijilli/features/articles/screens/article_details_screen.dart';
+import '../../../../auth/providers/auth_provider.dart';
+import '../../../../appointments/providers/appointment_provider.dart';
 
 class AppointmentParticipantsList extends StatelessWidget {
+  final String? appointmentId;
+  final bool isHost;
   final String? hostId;
   final String? hostName;
   final String? hostAvatar;
@@ -18,6 +25,8 @@ class AppointmentParticipantsList extends StatelessWidget {
 
   const AppointmentParticipantsList({
     super.key,
+    this.appointmentId,
+    this.isHost = false,
     this.hostId,
     this.hostName,
     this.hostAvatar,
@@ -160,8 +169,19 @@ class AppointmentParticipantsList extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 4),
                 child: _buildGuestStatusTimeline(p, context),
               ),
-              trailing: (p.linkedArticle != null && p.linkedArticle!.isPublished)
-                  ? IconButton(
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isHost && appointmentId != null && p.status == InvitationStatus.pending && p.userId != null) ...[
+                    PingButton(
+                      appointmentId: appointmentId!,
+                      targetUserId: p.userId!,
+                      targetName: p.user?.name ?? p.invitedName ?? 'الضيف',
+                    ),
+                    const SizedBox(width: 4),
+                  ],
+                  if (p.linkedArticle != null && p.linkedArticle!.isPublished)
+                    IconButton(
                       icon: const Icon(Icons.article_rounded, color: AppColors.primary),
                       onPressed: () {
                         Navigator.push(
@@ -171,8 +191,9 @@ class AppointmentParticipantsList extends StatelessWidget {
                           ),
                         );
                       },
-                    )
-                  : null,
+                    ),
+                ],
+              ),
             );
           }).toList(),
         ],
@@ -241,5 +262,108 @@ class AppointmentParticipantsList extends StatelessWidget {
     String result = '$hour:$minute$period $day-$month';
     if (locale == 'ar') result = AppDateFormatter.toEasternArabicDigits(result);
     return result;
+  }
+}
+
+class PingButton extends StatefulWidget {
+  final String appointmentId;
+  final String targetUserId;
+  final String targetName;
+
+  const PingButton({
+    super.key,
+    required this.appointmentId,
+    required this.targetUserId,
+    required this.targetName,
+  });
+
+  @override
+  State<PingButton> createState() => _PingButtonState();
+}
+
+class _PingButtonState extends State<PingButton> {
+  int _cooldownRemaining = 0;
+  Timer? _timer;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _triggerPing() async {
+    if (_cooldownRemaining > 0) return;
+
+    HapticFeedback.heavyImpact();
+
+    setState(() {
+      _cooldownRemaining = 30;
+    });
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        if (_cooldownRemaining > 0) {
+          _cooldownRemaining--;
+        } else {
+          timer.cancel();
+        }
+      });
+    });
+
+    try {
+      final apptProvider = Provider.of<AppointmentProvider>(context, listen: false);
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final hostName = authProvider.user?.name ?? authProvider.user?.username ?? 'المنظم';
+
+      final success = await apptProvider.sendPing(
+        appointmentId: widget.appointmentId,
+        targetUserId: widget.targetUserId,
+        hostName: hostName,
+      );
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم إرسال نكزة (PING!!!) بنجاح إلى ${widget.targetName} ⚡'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      print('⚠️ Failed to send ping: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final active = _cooldownRemaining == 0;
+
+    return OutlinedButton.icon(
+      onPressed: active ? _triggerPing : null,
+      icon: Icon(
+        Icons.flash_on, 
+        size: 14, 
+        color: active ? Colors.amber.shade700 : Colors.grey,
+      ),
+      label: Text(
+        active ? 'PING' : '${_cooldownRemaining}s',
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: active ? Colors.amber.shade800 : Colors.grey,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(color: active ? Colors.amber.shade700 : Colors.grey.shade300, width: 1),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+    );
   }
 }

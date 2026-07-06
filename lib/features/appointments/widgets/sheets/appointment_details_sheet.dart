@@ -310,7 +310,9 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
 
                     const SizedBox(height: AppDimens.spaceL),
 
-                    AppointmentParticipantsList(
+                     AppointmentParticipantsList(
+                      appointmentId: _appointment.id,
+                      isHost: _isHost,
                       hostId: _appointment.hostId,
                       hostName: _appointment.hostName,
                       hostAvatar: _appointment.hostAvatar,
