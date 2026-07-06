@@ -9,6 +9,7 @@ import 'package:sijilli/models/appointment.dart';
 import 'package:sijilli/core/widgets/pulse_avatar.dart';
 import 'package:sijilli/core/utils/app_date_formatter.dart';
 import 'package:sijilli/features/articles/screens/article_details_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../auth/providers/auth_provider.dart';
 import '../../../../appointments/providers/appointment_provider.dart';
 
@@ -282,36 +283,54 @@ class PingButton extends StatefulWidget {
 }
 
 class _PingButtonState extends State<PingButton> {
-  int _cooldownRemaining = 0;
-  Timer? _timer;
+  bool _isActive = true;
 
   @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _checkCooldown();
+  }
+
+  Future<void> _checkCooldown() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lastPingEpoch = prefs.getInt('last_ping_${widget.appointmentId}_${widget.targetUserId}');
+      if (lastPingEpoch != null) {
+        final lastPingTime = DateTime.fromMillisecondsSinceEpoch(lastPingEpoch);
+        final difference = DateTime.now().difference(lastPingTime);
+        if (difference.inHours < 3) {
+          if (mounted) {
+            setState(() {
+              _isActive = false;
+            });
+          }
+          return;
+        }
+      }
+    } catch (_) {}
+    if (mounted) {
+      setState(() {
+        _isActive = true;
+      });
+    }
   }
 
   void _triggerPing() async {
-    if (_cooldownRemaining > 0) return;
+    if (!_isActive) return;
 
     HapticFeedback.heavyImpact();
 
-    setState(() {
-      _cooldownRemaining = 30;
-    });
+    // حفظ وقت النكز الحالي فوراً لمنع التكرار حتى لو تم إغلاق الصفحة
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(
+        'last_ping_${widget.appointmentId}_${widget.targetUserId}', 
+        DateTime.now().millisecondsSinceEpoch
+      );
+    } catch (_) {}
 
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      setState(() {
-        if (_cooldownRemaining > 0) {
-          _cooldownRemaining--;
-        } else {
-          timer.cancel();
-        }
-      });
+    setState(() {
+      _isActive = false;
     });
 
     try {
@@ -340,25 +359,23 @@ class _PingButtonState extends State<PingButton> {
 
   @override
   Widget build(BuildContext context) {
-    final active = _cooldownRemaining == 0;
-
     return OutlinedButton.icon(
-      onPressed: active ? _triggerPing : null,
+      onPressed: _isActive ? _triggerPing : null,
       icon: Icon(
         Icons.flash_on, 
         size: 14, 
-        color: active ? Colors.amber.shade700 : Colors.grey,
+        color: _isActive ? Colors.amber.shade700 : Colors.grey,
       ),
       label: Text(
-        active ? 'PING' : '${_cooldownRemaining}s',
+        'PING',
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.bold,
-          color: active ? Colors.amber.shade800 : Colors.grey,
+          color: _isActive ? Colors.amber.shade800 : Colors.grey,
         ),
       ),
       style: OutlinedButton.styleFrom(
-        side: BorderSide(color: active ? Colors.amber.shade700 : Colors.grey.shade300, width: 1),
+        side: BorderSide(color: _isActive ? Colors.amber.shade700 : Colors.grey.shade300, width: 1),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         minimumSize: Size.zero,
