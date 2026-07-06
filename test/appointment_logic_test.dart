@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sijilli/models/appointment.dart';
+import 'package:sijilli/features/add/utils/smart_parser.dart';
 
 void main() {
   group('Appointment Logic Tests', () {
@@ -153,6 +154,30 @@ void main() {
       final parsed = Appointment.fromJson(json);
       expect(parsed.inviteToken, 'test-uuid-token');
       expect(parsed.inviteLinkActive, isTrue);
+    });
+
+    group('Arabic Smart Parser Tests', () {
+      test('Should parse complex Arabic subject text correctly', () {
+        final text = 'يوم شهادة أمير المؤمنين (ع) في مسجد الصادق صدد س ٨:٠٠ ص';
+        final parsed = ArabicSmartParser.parse(text);
+
+        expect(parsed.title, 'يوم شهادة أمير المؤمنين (ع)');
+        expect(parsed.building, 'مسجد الصادق');
+        expect(parsed.region, 'صدد');
+        expect(parsed.time, '08:00');
+        expect(parsed.timePeriod, 'ص');
+      });
+
+      test('Should parse English digits and PM correctly', () {
+        final text = 'ذكرى شهادة الإمام الحسن في مأتم السنابس س 8:30 م';
+        final parsed = ArabicSmartParser.parse(text);
+
+        expect(parsed.title, 'ذكرى شهادة الإمام الحسن');
+        expect(parsed.building, 'مأتم السنابس');
+        expect(parsed.region, isNull);
+        expect(parsed.time, '08:30');
+        expect(parsed.timePeriod, 'م');
+      });
     });
   });
 }

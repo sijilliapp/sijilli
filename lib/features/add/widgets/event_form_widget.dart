@@ -35,6 +35,7 @@ class EventFormWidget extends StatelessWidget {
   final bool pinAddress;
   final ValueChanged<bool>? onPinAddressChanged;
   final VoidCallback? onOpenLocationPicker;
+  final VoidCallback? onSmartParse;
 
   const EventFormWidget({
     super.key,
@@ -62,6 +63,7 @@ class EventFormWidget extends StatelessWidget {
     this.pinAddress = false,
     this.onPinAddressChanged,
     this.onOpenLocationPicker,
+    this.onSmartParse,
   });
 
   @override
@@ -80,6 +82,13 @@ class EventFormWidget extends StatelessWidget {
           maxLength: 50,
           showCountdown: true,
           validator: titleValidator,
+          suffixIcon: onSmartParse != null
+              ? IconButton(
+                  icon: const Icon(Icons.auto_awesome, color: AppColors.primary, size: 20),
+                  tooltip: 'تفكيك النص الذكي',
+                  onPressed: onSmartParse,
+                )
+              : null,
         ),
         
         LayoutBuilder(

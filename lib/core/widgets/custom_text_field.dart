@@ -66,25 +66,34 @@ class CustomTextField extends StatelessWidget {
         hintText: hint,
         alignLabelWithHint: maxLines > 1,
         prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: AppColors.primary) : null,
-        suffixIcon: showCountdown && maxLength != null && controller != null
-            ? ListenableBuilder(
-                listenable: controller!,
-                builder: (context, _) {
-                  final remaining = maxLength! - controller!.text.length;
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                    child: Text(
-                      remaining.toString(),
-                      style: TextStyle(
-                        color: remaining < 5 ? AppColors.error : AppColors.primary.withValues(alpha: 0.5),
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
+        suffixIcon: (showCountdown && maxLength != null && controller != null) || suffixIcon != null
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (showCountdown && maxLength != null && controller != null)
+                    ListenableBuilder(
+                      listenable: controller!,
+                      builder: (context, _) {
+                        final remaining = maxLength! - controller!.text.length;
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Text(
+                            remaining.toString(),
+                            style: TextStyle(
+                              color: remaining < 5 ? AppColors.error : AppColors.primary.withOpacity(0.5),
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
+                  if (suffixIcon != null) suffixIcon!,
+                  const SizedBox(width: 8),
+                ],
               )
-            : suffixIcon,
+            : null,
         filled: true,
         fillColor: isDark ? Colors.grey.shade800 : Colors.white,
         contentPadding: const EdgeInsets.symmetric(

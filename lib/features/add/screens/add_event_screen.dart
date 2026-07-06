@@ -22,6 +22,7 @@ import '../../../core/utils/app_pickers.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import '../../../core/services/autocomplete_service.dart';
 import 'location_picker_screen.dart';
+import '../utils/smart_parser.dart';
 
 class AddEventScreen extends StatelessWidget {
   final Appointment? initialAppointment;
@@ -215,6 +216,52 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
     final text = _buildingController.text;
     context.read<AddEventProvider>().setBuilding(text);
     context.read<AddEventProvider>().updateBuildingSuggestions(_locationController.text, text);
+  }
+
+  void _onSmartParse() {
+    final text = _titleController.text;
+    if (text.isEmpty) return;
+
+    final parsed = ArabicSmartParser.parse(text);
+    
+    // تحديث قيم حقول الإدخال
+    _titleController.text = parsed.title;
+    context.read<AddEventProvider>().onTitleChanged(parsed.title);
+
+    if (parsed.region != null && parsed.region!.isNotEmpty) {
+      _locationController.text = parsed.region!;
+      context.read<AddEventProvider>().setLocation(parsed.region!);
+    }
+
+    if (parsed.building != null && parsed.building!.isNotEmpty) {
+      _buildingController.text = parsed.building!;
+      context.read<AddEventProvider>().setBuilding(parsed.building!);
+    }
+
+    if (parsed.time != null && parsed.time!.isNotEmpty) {
+      final parts = parsed.time!.split(':');
+      if (parts.length == 2) {
+        int hour = int.tryParse(parts[0]) ?? 0;
+        final minute = int.tryParse(parts[1]) ?? 0;
+        
+        if (parsed.timePeriod != null) {
+          if (parsed.timePeriod == 'م') {
+            if (hour < 12) hour += 12;
+          } else if (parsed.timePeriod == 'ص') {
+            if (hour == 12) hour = 0;
+          }
+        }
+        final parsedTime = TimeOfDay(hour: hour, minute: minute);
+        context.read<AddEventProvider>().setTime(parsedTime);
+      }
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('تم تفكيك النص وتوزيع البيانات بنجاح!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   void _onRegionSelected(String region) {
@@ -436,6 +483,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
                 onWordSelected: _onWordSelected,
                 pivotSuggestions: provider.pivotSuggestions,
                 onPivotSelected: _onPivotSelected,
+                onSmartParse: _onSmartParse,
                 
                 // Location Props
                 locationFocusNode: _locationFocusNode,
