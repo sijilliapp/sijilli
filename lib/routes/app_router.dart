@@ -41,29 +41,7 @@ class AppRouter {
       if (token != null && token.isNotEmpty) {
         return MaterialPageRoute(
           settings: settings,
-          builder: (context) {
-            return FutureBuilder<void>(
-              future: () async {
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.setString('pending_invite_token', token);
-                
-                if (context.mounted) {
-                  final auth = Provider.of<AuthProvider>(context, listen: false);
-                  if (auth.isAuthenticated) {
-                    final apptProvider = Provider.of<AppointmentProvider>(context, listen: false);
-                    final success = await apptProvider.claimAppointmentByToken(token);
-                    if (success && context.mounted) {
-                      auth.setJustClaimedInvitation(true);
-                      Navigator.pushReplacementNamed(context, '/main');
-                    }
-                  }
-                }
-              }(),
-              builder: (context, snapshot) {
-                return const AuthWrapper();
-              },
-            );
-          },
+          builder: (context) => InviteLinkHandler(token: token),
         );
       }
     }
@@ -193,5 +171,56 @@ class AppRouter {
         // بما أن المستخدم متواجد بالفعل، فليس هناك صفحة زائر لعرضها.
       }
     }
+  }
+}
+
+class InviteLinkHandler extends StatefulWidget {
+  final String token;
+  const InviteLinkHandler({super.key, required this.token});
+
+  @override
+  State<InviteLinkHandler> createState() => _InviteLinkHandlerState();
+}
+
+class _InviteLinkHandlerState extends State<InviteLinkHandler> {
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _handleToken());
+  }
+
+  Future<void> _handleToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('pending_invite_token', widget.token);
+
+    if (mounted) {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (auth.isAuthenticated) {
+        final apptProvider = Provider.of<AppointmentProvider>(context, listen: false);
+        final success = await apptProvider.claimAppointmentByToken(widget.token);
+        if (success && mounted) {
+          auth.setJustClaimedInvitation(true);
+          Navigator.pushReplacementNamed(context, '/main');
+          return;
+        }
+      }
+      setState(() {
+        _initialized = true;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_initialized) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    return const AuthWrapper();
   }
 }
