@@ -1096,14 +1096,14 @@ class AppointmentProvider extends ChangeNotifier {
     }
   }
 
-  /// إلغاء صلاحية رابط الدعوة
-  Future<bool> deactivateInviteLink(String appointmentId) async {
+  /// تحديث حالة نشاط رابط الدعوة (تفعيل أو تعطيل)
+  Future<bool> updateInviteLinkStatus(String appointmentId, bool active) async {
     try {
-      final success = await _apptService.deactivateInviteLink(appointmentId);
+      final success = await _apptService.updateInviteLinkStatus(appointmentId, active);
       if (success) {
         final index = _appointments.indexWhere((a) => a.id == appointmentId);
         if (index != -1) {
-          _appointments[index] = _appointments[index].copyWith(inviteLinkActive: false);
+          _appointments[index] = _appointments[index].copyWith(inviteLinkActive: active);
           notifyListeners();
         }
       }

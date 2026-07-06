@@ -330,15 +330,15 @@ class PbAppointmentService {
     return Appointment.fromJson(record.toJson(), contextAdjustment: contextAdjustment);
   }
 
-  /// إلغاء تنشيط رابط الدعوة
-  Future<bool> deactivateInviteLink(String appointmentId) async {
+  /// تحديث حالة نشاط رابط الدعوة (تفعيل أو تعطيل)
+  Future<bool> updateInviteLinkStatus(String appointmentId, bool active) async {
     try {
       await _pb.collection(collectionAppointments).update(appointmentId, body: {
-        'invite_link_active': false,
+        'invite_link_active': active,
       });
       return true;
     } catch (e) {
-      print('⚠️ Failed to deactivate invite link: $e');
+      print('⚠️ Failed to update invite link status: $e');
       return false;
     }
   }
@@ -362,13 +362,15 @@ class PbAppointmentService {
         );
         if (existing.id.isNotEmpty) {
           final String status = existing.getStringValue('status');
-          // إذا كان العضو قد رفض الدعوة سابقاً، نعيد فتحها وتنشيطها له لتظهر مجدداً في صندوقه
-          if (status == 'declined') {
-            await _pb.collection(collectionInvitations).update(existing.id, body: {
-              'status': 'pending',
-              'post_status': 'published',
-            });
+          // وثيقة مرصودة ومقدسة (accepted or deleted_after_accept): لا تنعش ولا تتكرر
+          if (status == 'accepted' || status == 'deleted_after_accept') {
+            return true;
           }
+          // الحالة الوحيدة التي تنعش الطلب ويتم تحديثها هي الحذف/الرفض قبل القبول
+          await _pb.collection(collectionInvitations).update(existing.id, body: {
+            'status': 'pending',
+            'post_status': 'published',
+          });
           return true;
         }
       } catch (_) {}

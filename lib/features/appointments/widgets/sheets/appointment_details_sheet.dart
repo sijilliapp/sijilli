@@ -254,131 +254,7 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
                       },
                     ),
 
-                    if (_isHost && _appointment.inviteToken != null) ...[
-                      const SizedBox(height: AppDimens.spaceL),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: Theme.of(context).brightness == Brightness.dark 
-                              ? Colors.grey.shade800 
-                              : Colors.grey.shade200,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.link, 
-                                  color: _appointment.inviteLinkActive ? AppColors.success : Colors.grey,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  context.l10n.localeName == 'ar' ? 'رابط دعوة الموعد' : 'Appointment Invite Link',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                ),
-                                const Spacer(),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: _appointment.inviteLinkActive 
-                                      ? AppColors.success.withOpacity(0.1) 
-                                      : Colors.grey.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    _appointment.inviteLinkActive 
-                                      ? (context.l10n.localeName == 'ar' ? 'نشط' : 'Active') 
-                                      : (context.l10n.localeName == 'ar' ? 'ملغى' : 'Disabled'),
-                                    style: TextStyle(
-                                      color: _appointment.inviteLinkActive ? AppColors.success : Colors.grey,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              context.l10n.localeName == 'ar'
-                                ? 'رابط مؤقت للضيوف غير المسجلين. بمجرد قيام الضيف بالتسجيل من هذا الرابط، سيتم ربطه بالموعد تلقائياً.'
-                                : 'Temporary link for unregistered guests. Once the guest registers using this link, they will be automatically linked to this appointment.',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade400 : Colors.grey.shade600,
-                                height: 1.4,
-                              ),
-                            ),
-                            if (_appointment.inviteLinkActive) ...[
-                              const SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: ElevatedButton.icon(
-                                      onPressed: () {
-                                        final inviteLink = 'https://sijilli.com/join?token=${_appointment.inviteToken}';
-                                        Clipboard.setData(ClipboardData(text: inviteLink));
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              context.l10n.localeName == 'ar' ? 'تم نسخ الرابط!' : 'Link copied!',
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      icon: const Icon(Icons.copy, size: 16),
-                                      label: Text(context.l10n.localeName == 'ar' ? 'نسخ الرابط' : 'Copy Link'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.primary,
-                                        foregroundColor: Colors.white,
-                                        elevation: 0,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                        padding: const EdgeInsets.symmetric(vertical: 10),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: OutlinedButton.icon(
-                                      onPressed: () async {
-                                        final success = await context.read<AppointmentProvider>().deactivateInviteLink(_appointment.id);
-                                        if (success) {
-                                          setState(() {
-                                            _appointment = _appointment.copyWith(inviteLinkActive: false);
-                                          });
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                context.l10n.localeName == 'ar' ? 'تم تعطيل الرابط بنجاح!' : 'Link disabled successfully!',
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                      },
-                                      icon: const Icon(Icons.link_off, size: 16, color: AppColors.error),
-                                      label: Text(
-                                        context.l10n.localeName == 'ar' ? 'تعطيل الرابط' : 'Disable Link',
-                                        style: const TextStyle(color: AppColors.error),
-                                      ),
-                                      style: OutlinedButton.styleFrom(
-                                        side: const BorderSide(color: AppColors.error),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                        padding: const EdgeInsets.symmetric(vertical: 10),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
+
 
                     if (_isHost || _isAdmin || _appointment.viewerRecord != null) ...[
                       AppointmentActionButtons(
@@ -450,23 +326,122 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
                     if (_isHost) ...[
                       Builder(
                         builder: (context) {
-                          return SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                                print('🔘 [زر الاستضافة] تم الضغط');
-                                _openInviteSheet();
-                              }, 
-                              icon: const Icon(Icons.person_add_alt_1, size: 20),
-                              label: Text(context.l10n.detailsHostGuests, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.success,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                elevation: 2,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    print('🔘 [زر الاستضافة] تم الضغط');
+                                    _openInviteSheet();
+                                  }, 
+                                  icon: const Icon(Icons.person_add_alt_1, size: 20),
+                                  label: Text(context.l10n.detailsHostGuests, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.success,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    elevation: 2,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  ),
+                                ),
                               ),
-                            ),
+                              if (_appointment.inviteToken != null) ...[
+                                const SizedBox(height: 12),
+                                if (_appointment.inviteLinkActive) ...[
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: ElevatedButton.icon(
+                                          onPressed: () {
+                                            final inviteLink = 'https://sijilli.com/join?token=${_appointment.inviteToken}';
+                                            Clipboard.setData(ClipboardData(text: inviteLink));
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  context.l10n.localeName == 'ar' ? 'تم نسخ الرابط!' : 'Link copied!',
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          icon: const Icon(Icons.copy, size: 16),
+                                          label: Text(context.l10n.localeName == 'ar' ? 'نسخ رابط الدعوة' : 'Copy Invite Link'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppColors.primary,
+                                            foregroundColor: Colors.white,
+                                            elevation: 0,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                            padding: const EdgeInsets.symmetric(vertical: 14),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: OutlinedButton.icon(
+                                          onPressed: () async {
+                                            final success = await context.read<AppointmentProvider>().updateInviteLinkStatus(_appointment.id, false);
+                                            if (success) {
+                                              setState(() {
+                                                _appointment = _appointment.copyWith(inviteLinkActive: false);
+                                              });
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    context.l10n.localeName == 'ar' ? 'تم تعطيل الرابط بنجاح!' : 'Link disabled successfully!',
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                          },
+                                          icon: const Icon(Icons.link_off, size: 16, color: AppColors.error),
+                                          label: Text(
+                                            context.l10n.localeName == 'ar' ? 'تعطيل الرابط' : 'Disable Link',
+                                            style: const TextStyle(color: AppColors.error),
+                                          ),
+                                          style: OutlinedButton.styleFrom(
+                                            side: const BorderSide(color: AppColors.error),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                            padding: const EdgeInsets.symmetric(vertical: 14),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ] else ...[
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: OutlinedButton.icon(
+                                      onPressed: () async {
+                                        final success = await context.read<AppointmentProvider>().updateInviteLinkStatus(_appointment.id, true);
+                                        if (success) {
+                                          setState(() {
+                                            _appointment = _appointment.copyWith(inviteLinkActive: true);
+                                          });
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                context.l10n.localeName == 'ar' ? 'تم تفعيل رابط الدعوة!' : 'Invite link enabled!',
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                      icon: const Icon(Icons.link, size: 18, color: AppColors.primary),
+                                      label: Text(
+                                        context.l10n.localeName == 'ar' ? 'تفعيل رابط الاستضافة الموقّف' : 'Enable Invitation Link',
+                                        style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                                      ),
+                                      style: OutlinedButton.styleFrom(
+                                        side: const BorderSide(color: AppColors.primary),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        padding: const EdgeInsets.symmetric(vertical: 14),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ],
                           );
                         }
                       ),
