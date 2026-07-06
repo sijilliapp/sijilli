@@ -361,6 +361,14 @@ class PbAppointmentService {
           'appointment = "$apptId" && user = "$userId"',
         );
         if (existing.id.isNotEmpty) {
+          final String status = existing.getStringValue('status');
+          // إذا كان العضو قد رفض الدعوة سابقاً، نعيد فتحها وتنشيطها له لتظهر مجدداً في صندوقه
+          if (status == 'declined') {
+            await _pb.collection(collectionInvitations).update(existing.id, body: {
+              'status': 'pending',
+              'post_status': 'published',
+            });
+          }
           return true;
         }
       } catch (_) {}
