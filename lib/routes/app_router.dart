@@ -53,9 +53,7 @@ class AppRouter {
                     final apptProvider = Provider.of<AppointmentProvider>(context, listen: false);
                     final success = await apptProvider.claimAppointmentByToken(token);
                     if (success && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('تم ربط دعوة الموعد بحسابك بنجاح!')),
-                      );
+                      auth.setJustClaimedInvitation(true);
                       Navigator.pushReplacementNamed(context, '/main');
                     }
                   }

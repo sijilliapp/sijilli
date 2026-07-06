@@ -58,6 +58,11 @@ class AuthProvider extends ChangeNotifier {
     _hasJustClaimedInvitation = false;
   }
   
+  void setJustClaimedInvitation(bool value) {
+    _hasJustClaimedInvitation = value;
+    notifyListeners();
+  }
+  
   // ====================== مساعدات الحالة الذرية ======================
   
   /// تحديث الحالة والمستخدم في آن واحد لتقليل notifyListeners
