@@ -27,7 +27,13 @@ class MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final userId = context.read<AuthProvider>().user?.id;
+      final auth = context.read<AuthProvider>();
+      if (auth.hasJustClaimedInvitation) {
+        auth.clearJustClaimedInvitation();
+        _showInvitationClaimedDialog();
+      }
+
+      final userId = auth.user?.id;
       if (userId != null) {
         context.read<NotificationProvider>().init(userId);
         
@@ -49,6 +55,66 @@ class MainScreenState extends State<MainScreen> {
         });
       }
     });
+  }
+
+  void _showInvitationClaimedDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.mark_email_unread, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                context.l10n.localeName == 'ar' ? 'لديك دعوة موعد معلقة!' : 'Pending Invitation!',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: Text(
+            context.l10n.localeName == 'ar'
+                ? 'لقد تلقيت دعوة موعد جديدة وتم ربطها بحسابك بنجاح. يرجى زيارة صندوق الوارد لمراجعته وقبوله.'
+                : 'You have received a new appointment invitation. It has been successfully linked to your account. Please visit your Inbox to review and accept it.',
+            style: TextStyle(
+              fontSize: 14,
+              color: isDark ? Colors.grey.shade300 : Colors.grey.shade600,
+              height: 1.4,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text(
+                context.l10n.localeName == 'ar' ? 'لاحقاً' : 'Later',
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                setState(() {
+                  _currentIndex = 3; // Switch to Notifications Tab
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: Text(
+                context.l10n.localeName == 'ar' ? 'صندوق الوارد' : 'Inbox',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void setIndex(int index) {

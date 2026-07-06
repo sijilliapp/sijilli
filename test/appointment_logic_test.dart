@@ -127,5 +127,32 @@ void main() {
       expect(appointment.fullLocation, 'المنطقة الشرقية');
       expect(appointment.smartLocation, 'المنطقة الشرقية');
     });
+
+    test('inviteToken and inviteLinkActive serialization tests', () {
+      final appointment = Appointment(
+        id: '8',
+        title: 'Invite Token Test',
+        hostId: 'host1',
+        startAt: now,
+        duration: 45,
+        date: DateTime.now(),
+        time: '12:00',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        inviteToken: 'test-uuid-token',
+        inviteLinkActive: true,
+      );
+
+      expect(appointment.inviteToken, 'test-uuid-token');
+      expect(appointment.inviteLinkActive, isTrue);
+
+      final json = appointment.toJson();
+      expect(json['invite_token'], 'test-uuid-token');
+      expect(json['invite_link_active'], isTrue);
+
+      final parsed = Appointment.fromJson(json);
+      expect(parsed.inviteToken, 'test-uuid-token');
+      expect(parsed.inviteLinkActive, isTrue);
+    });
   });
 }

@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../appointments/services/pb_appointment_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -30,6 +31,7 @@ class AuthProvider extends ChangeNotifier {
   UserModel? _user;
   String? _errorMessage;
   bool _isLoading = false;
+  bool _hasJustClaimedInvitation = false;
   
   static const String keyRecentUsernames = 'recent_usernames';
   List<String> _recentUsernames = [];
@@ -50,6 +52,11 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _status == AuthStatus.authenticated && _user != null;
   bool get isUnauthenticated => _status == AuthStatus.unauthenticated;
+  bool get hasJustClaimedInvitation => _hasJustClaimedInvitation;
+  
+  void clearJustClaimedInvitation() {
+    _hasJustClaimedInvitation = false;
+  }
   
   // ====================== مساعدات الحالة الذرية ======================
   
@@ -426,6 +433,24 @@ class AuthProvider extends ChangeNotifier {
       }
     }
     
+    // 🔗 فحص رابط الدعوة المحفوظ محلياً
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final pendingToken = prefs.getString('pending_invite_token');
+      if (pendingToken != null && pendingToken.isNotEmpty) {
+        debugPrint('🔗 Found pending invitation token: $pendingToken. Attempting to claim...');
+        final apptService = PbAppointmentService();
+        final success = await apptService.claimAppointmentByToken(pendingToken, user.id);
+        if (success) {
+          debugPrint('✅ Successfully claimed appointment by token.');
+          _hasJustClaimedInvitation = true;
+        }
+        await prefs.remove('pending_invite_token');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error claiming invitation: $e');
+    }
+
     // تشغيل تنظيف سلة المحذوفات في الخلفية للمقالات والمواعيد التي مضى عليها أكثر من 30 يوماً
     unawaited(runTrashCleanup(user.id));
     

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../core/widgets/auth_wrapper.dart';
+import '../features/auth/providers/auth_provider.dart';
+import '../features/appointments/providers/appointment_provider.dart';
 import '../features/home/screens/public_profile_screen.dart';
 import '../features/articles/screens/public_article_screen.dart';
 import '../features/articles/screens/article_details_screen.dart';
@@ -29,6 +33,42 @@ class AppRouter {
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     final name = settings.name;
     if (name == null || name.isEmpty) return null;
+
+    // 0. معالجة روابط الدعوات (/join أو /invite)
+    if (name.startsWith('/join') || name.startsWith('/invite')) {
+      final uri = Uri.parse(name);
+      final token = uri.queryParameters['token'];
+      if (token != null && token.isNotEmpty) {
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) {
+            return FutureBuilder<void>(
+              future: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setString('pending_invite_token', token);
+                
+                if (context.mounted) {
+                  final auth = Provider.of<AuthProvider>(context, listen: false);
+                  if (auth.isAuthenticated) {
+                    final apptProvider = Provider.of<AppointmentProvider>(context, listen: false);
+                    final success = await apptProvider.claimAppointmentByToken(token);
+                    if (success && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('تم ربط دعوة الموعد بحسابك بنجاح!')),
+                      );
+                      Navigator.pushReplacementNamed(context, '/main');
+                    }
+                  }
+                }
+              }(),
+              builder: (context, snapshot) {
+                return const AuthWrapper();
+              },
+            );
+          },
+        );
+      }
+    }
 
     // 1. معالجة المسارات المحجوزة (إذا لم تكن في جدول routes الرئيسي)
     if (reservedRoutes.contains(name)) {

@@ -502,6 +502,61 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
               onRemoveInvitee: provider.removeInvitee,
             ),
 
+            if (provider.selectedUsers.isEmpty) ...[
+              const SizedBox(height: AppDimens.spaceXS),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Theme.of(context).brightness == Brightness.dark 
+                      ? Colors.grey.shade800 
+                      : Colors.grey.shade200,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.link, color: AppColors.primary),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            context.l10n.localeName == 'ar' 
+                              ? 'رابط دعوة لضيف غير مسجل' 
+                              : 'Invite link for unregistered guest',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            context.l10n.localeName == 'ar' 
+                              ? 'سيتم توليد رابط مؤقت لمشاركته مع ضيفك' 
+                              : 'A temporary link will be generated to share with your guest',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Theme.of(context).brightness == Brightness.dark 
+                                ? Colors.grey.shade400 
+                                : Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch.adaptive(
+                      value: provider.generateInviteLink,
+                      onChanged: provider.setGenerateInviteLink,
+                      activeColor: AppColors.primary,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             const SizedBox(height: AppDimens.spaceXS),
 
             // Recurrence
@@ -785,15 +840,111 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
   }
 
   void _showSuccessMessage() {
-    if (widget.initialAppointment != null && Navigator.canPop(context)) {
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) Navigator.pop(context);
-      });
+    final provider = context.read<AddEventProvider>();
+    final token = provider.generatedInviteToken;
+    
+    if (token != null) {
+      _showInviteLinkDialog(token);
     } else {
-      _performClearSilent();
-      // After save is complete, navigate user to MainScreen home tab (index 0) programmatically
-      context.findAncestorStateOfType<MainScreenState>()?.setIndex(0);
+      if (widget.initialAppointment != null && Navigator.canPop(context)) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) Navigator.pop(context);
+        });
+      } else {
+        _performClearSilent();
+        context.findAncestorStateOfType<MainScreenState>()?.setIndex(0);
+      }
     }
+  }
+
+  void _showInviteLinkDialog(String token) {
+    final inviteLink = 'https://sijilli.com/join?token=$token';
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.share, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                context.l10n.localeName == 'ar' ? 'رابط دعوة الضيف' : 'Guest Invite Link',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                context.l10n.localeName == 'ar' 
+                  ? 'تم إنشاء الموعد بنجاح! شارك هذا الرابط المؤقت مع ضيفك ليقوم بالتسجيل وقبول الدعوة مباشرة:' 
+                  : 'Appointment created successfully! Share this temporary link with your guest to sign up and accept the invitation:',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? Colors.grey.shade300 : Colors.grey.shade600,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.grey.shade900 : Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        inviteLink,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontFamily: 'monospace',
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.copy, size: 20, color: AppColors.primary),
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: inviteLink));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              context.l10n.localeName == 'ar' ? 'تم نسخ الرابط!' : 'Link copied!',
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog
+                _performClearSilent();
+                context.findAncestorStateOfType<MainScreenState>()?.setIndex(0);
+              },
+              child: Text(
+                context.l10n.localeName == 'ar' ? 'إغلاق ومتابعة' : 'Close & Continue',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _clearForm() {

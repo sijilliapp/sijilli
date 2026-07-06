@@ -1095,4 +1095,39 @@ class AppointmentProvider extends ChangeNotifier {
       print('Failed to fetch bookmarked: $e');
     }
   }
+
+  /// إلغاء صلاحية رابط الدعوة
+  Future<bool> deactivateInviteLink(String appointmentId) async {
+    try {
+      final success = await _apptService.deactivateInviteLink(appointmentId);
+      if (success) {
+        final index = _appointments.indexWhere((a) => a.id == appointmentId);
+        if (index != -1) {
+          _appointments[index] = _appointments[index].copyWith(inviteLinkActive: false);
+          notifyListeners();
+        }
+      }
+      return success;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// ربط المستخدم بالموعد من خلال التوكن
+  Future<bool> claimAppointmentByToken(String token) async {
+    if (_currentUserId == null) return false;
+    try {
+      final success = await _apptService.claimAppointmentByToken(token, _currentUserId!);
+      if (success) {
+        await fetchAppointments();
+      }
+      return success;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
 }

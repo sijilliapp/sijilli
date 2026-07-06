@@ -329,4 +329,70 @@ class PbAppointmentService {
     );
     return Appointment.fromJson(record.toJson(), contextAdjustment: contextAdjustment);
   }
+
+  /// إلغاء تنشيط رابط الدعوة
+  Future<bool> deactivateInviteLink(String appointmentId) async {
+    try {
+      await _pb.collection(collectionAppointments).update(appointmentId, body: {
+        'invite_link_active': false,
+      });
+      return true;
+    } catch (e) {
+      print('⚠️ Failed to deactivate invite link: $e');
+      return false;
+    }
+  }
+
+  /// ربط المستخدم الجديد بالموعد من خلال التوكن
+  Future<bool> claimAppointmentByToken(String token, String userId) async {
+    try {
+      // 1. Get the appointment by token
+      final result = await _pb.collection(collectionAppointments).getFirstListItem(
+        'invite_token = "$token" && invite_link_active = true',
+        expand: 'host',
+      );
+      
+      final apptId = result.id;
+      final hostId = result.getStringValue('host');
+
+      // 2. Check if an invitation already exists to avoid duplicates
+      try {
+        final existing = await _pb.collection(collectionInvitations).getFirstListItem(
+          'appointment = "$apptId" && user = "$userId"',
+        );
+        if (existing.id.isNotEmpty) {
+          return true;
+        }
+      } catch (_) {}
+
+      // 3. Create a new invitation for the user
+      await _pb.collection(collectionInvitations).create(body: {
+        'appointment': apptId,
+        'user': userId,
+        'status': 'pending',
+        'post_status': 'published',
+        'privacy': result.getStringValue('privacy') ?? 'private',
+      });
+
+      // 4. Send a notification to the host
+      final guestRecord = await _pb.collection('users').getOne(userId);
+      final guestName = guestRecord.data['name'] ?? 'عضو جديد';
+      final apptTitle = result.getStringValue('title');
+      
+      try {
+        await _notificationService.createNotification(
+          targetUserId: hostId,
+          title: 'تسجيل ضيف جديد للموعد',
+          message: 'سجل الضيف ($guestName) حسابه من خلال رابط دعوتك لموعد: $apptTitle',
+          type: NotificationType.invite,
+          relatedId: apptId,
+        );
+      } catch (_) {}
+
+      return true;
+    } catch (e) {
+      print('⚠️ Failed to claim appointment by token: $e');
+      return false;
+    }
+  }
 }

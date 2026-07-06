@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 import 'package:hijri/hijri_calendar.dart';
 import 'package:adhan/adhan.dart';
 import '../../../core/services/location_service.dart';
@@ -64,6 +65,13 @@ class AddEventProvider extends ChangeNotifier {
 
   // First Come First Served
   bool _isFirstComeFirstServed = false;
+
+  // Invitation Link
+  bool _generateInviteLink = false;
+  String? _generatedInviteToken;
+
+  bool get generateInviteLink => _generateInviteLink;
+  String? get generatedInviteToken => _generatedInviteToken;
 
   // Conflict Detection
   List<Appointment> _history = [];
@@ -256,6 +264,8 @@ class AddEventProvider extends ChangeNotifier {
       _streamLink = initialAppointment.streamLink ?? '';
     } else {
       _selectedEndDate = _selectedDate;
+      _generateInviteLink = false;
+      _generatedInviteToken = null;
       await _loadDraft();
       if (_privacy == 'followers' && _lastSelectedPrivacy != 'followers') {
         _privacy = _lastSelectedPrivacy;
@@ -573,6 +583,11 @@ class AddEventProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setGenerateInviteLink(bool value) {
+    _generateInviteLink = value;
+    notifyListeners();
+  }
+
   void addInvitee(UserModel user) {
     if (!_selectedUsers.any((u) => u.id == user.id)) {
       _selectedUsers.add(user);
@@ -879,6 +894,14 @@ class AddEventProvider extends ChangeNotifier {
       if (locale == 'ar') sunsetStr = AppDateFormatter.toEasternArabicDigits(sunsetStr);
     }
 
+    String? inviteToken;
+    if (_generateInviteLink && _selectedUsers.isEmpty) {
+      inviteToken = const Uuid().v4();
+      _generatedInviteToken = inviteToken;
+    } else {
+      _generatedInviteToken = null;
+    }
+
     final newAppt = Appointment.newAppointment(
       title: title,
       hostId: currentUser.id,
@@ -898,6 +921,8 @@ class AddEventProvider extends ChangeNotifier {
       isFirstComeFirstServed: _isFirstComeFirstServed,
       streamLink: streamLink.isNotEmpty ? streamLink : null,
       sunset: sunsetStr,
+      inviteToken: inviteToken,
+      inviteLinkActive: inviteToken != null,
     );
 
     _isSaving = true;

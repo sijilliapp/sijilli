@@ -313,6 +313,10 @@ class Appointment {
   final int? recurrenceCount; // عدد المرات الإجمالي
   final int? recurrenceIndex; // ترتيبه في السلسلة (مثلاً: 2 من 4)
   
+  // ====================== التوكن وروابط الدعوة ======================
+  final String? inviteToken; // توكن الدعوة للضيف غير المسجل
+  final bool inviteLinkActive; // هل رابط الدعوة نشط حالياً
+  
   // ====================== التاريخ الهجري ======================
   final String? hijriDate; // 1447-09-25
   final int? hijriMonth; // 9
@@ -367,6 +371,8 @@ class Appointment {
     this.recurrenceType,
     this.recurrenceCount,
     this.recurrenceIndex,
+    this.inviteToken,
+    this.inviteLinkActive = false,
     this.hijriDate,
     this.hijriMonth, // جديد
     this.sunset,
@@ -502,6 +508,8 @@ class Appointment {
       recurrenceType: JsonUtils.parseString(json['recurrence_type']),
       recurrenceCount: JsonUtils.parseInt(json['recurrence_count']),
       recurrenceIndex: JsonUtils.parseInt(json['recurrence_index']),
+      inviteToken: JsonUtils.parseString(json['invite_token']),
+      inviteLinkActive: JsonUtils.parseBool(json['invite_link_active']),
       hijriDate: hijriDateStr,
       hijriMonth: JsonUtils.parseInt(json['hijri_month']),
       sunset: JsonUtils.parseString(json['sunset']),
@@ -535,6 +543,8 @@ class Appointment {
     String? recurrenceType,
     int? recurrenceCount,
     int? recurrenceIndex,
+    String? inviteToken,
+    bool inviteLinkActive = false,
     String? appointmentGroupId,
     bool isFirstComeFirstServed = false,
     String? streamLink,
@@ -576,6 +586,8 @@ class Appointment {
       recurrenceType: recurrenceType,
       recurrenceCount: recurrenceCount,
       recurrenceIndex: recurrenceIndex,
+      inviteToken: inviteToken,
+      inviteLinkActive: inviteLinkActive,
       hijriDate: hijriDate,
       hijriMonth: hijriMonth,
       sunset: sunset,
@@ -614,6 +626,8 @@ class Appointment {
       'recurrence_type': recurrenceType,
       'recurrence_count': recurrenceCount,
       'recurrence_index': recurrenceIndex,
+      'invite_token': inviteToken,
+      'invite_link_active': inviteLinkActive,
       'hijri_date': hijriDate,
       'hijri_month': hijriMonth,
       'sunset': sunset,
@@ -666,6 +680,8 @@ class Appointment {
     String? recurrenceType,
     int? recurrenceCount,
     int? recurrenceIndex,
+    String? inviteToken,
+    bool? inviteLinkActive,
     String? hijriDate,
     int? hijriMonth,
     String? sunset,
@@ -702,6 +718,8 @@ class Appointment {
       recurrenceType: recurrenceType ?? this.recurrenceType,
       recurrenceCount: recurrenceCount ?? this.recurrenceCount,
       recurrenceIndex: recurrenceIndex ?? this.recurrenceIndex,
+      inviteToken: inviteToken ?? this.inviteToken,
+      inviteLinkActive: inviteLinkActive ?? this.inviteLinkActive,
       hijriDate: hijriDate ?? this.hijriDate,
       hijriMonth: hijriMonth ?? this.hijriMonth,
       sunset: sunset ?? this.sunset,
