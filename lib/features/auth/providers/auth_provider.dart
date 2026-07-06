@@ -443,6 +443,8 @@ class AuthProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final pendingToken = prefs.getString('pending_invite_token');
       if (pendingToken != null && pendingToken.isNotEmpty) {
+        // حذف التوكن فوراً لمنع أي استدعاء متزامن موازٍ
+        await prefs.remove('pending_invite_token');
         debugPrint('🔗 Found pending invitation token: $pendingToken. Attempting to claim...');
         final apptService = PbAppointmentService();
         final success = await apptService.claimAppointmentByToken(pendingToken, user.id);
@@ -450,7 +452,6 @@ class AuthProvider extends ChangeNotifier {
           debugPrint('✅ Successfully claimed appointment by token.');
           _hasJustClaimedInvitation = true;
         }
-        await prefs.remove('pending_invite_token');
       }
     } catch (e) {
       debugPrint('⚠️ Error claiming invitation: $e');

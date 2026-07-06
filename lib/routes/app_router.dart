@@ -198,6 +198,8 @@ class _InviteLinkHandlerState extends State<InviteLinkHandler> {
     if (mounted) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       if (auth.isAuthenticated) {
+        // حذف التوكن من الذاكرة قبل التنشيط لمنع أي استدعاء مزدوج
+        await prefs.remove('pending_invite_token');
         final apptProvider = Provider.of<AppointmentProvider>(context, listen: false);
         final success = await apptProvider.claimAppointmentByToken(widget.token);
         if (success && mounted) {

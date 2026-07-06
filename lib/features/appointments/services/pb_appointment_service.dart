@@ -12,6 +12,7 @@ class PbAppointmentService {
   
   static const String collectionAppointments = 'appointments';
   static const String collectionInvitations = 'invitations';
+  static final Set<String> _activeClaims = {};
 
   /// جلب جميع المواعيد التي يكون المستخدم جزءاً منها (من خلال جدول الدعوات/النسخ)
   Future<List<Appointment>> getAppointments({
@@ -345,6 +346,12 @@ class PbAppointmentService {
 
   /// ربط المستخدم الجديد بالموعد من خلال التوكن
   Future<bool> claimAppointmentByToken(String token, String userId) async {
+    final lockKey = '$token-$userId';
+    if (_activeClaims.contains(lockKey)) {
+      print('🔒 Claim already in progress for $lockKey. Skipping duplicate call.');
+      return true;
+    }
+    _activeClaims.add(lockKey);
     try {
       // 1. Get the appointment by token
       final result = await _pb.collection(collectionAppointments).getFirstListItem(
@@ -403,6 +410,8 @@ class PbAppointmentService {
     } catch (e) {
       print('⚠️ Failed to claim appointment by token: $e');
       return false;
+    } finally {
+      _activeClaims.remove(lockKey);
     }
   }
 }
