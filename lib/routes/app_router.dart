@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/widgets/auth_wrapper.dart';
@@ -35,15 +36,21 @@ class AppRouter {
     if (name == null || name.isEmpty) return null;
 
     // 0. معالجة روابط الدعوات (/join أو /invite)
+    String? token;
     if (name.startsWith('/join') || name.startsWith('/invite')) {
       final uri = Uri.parse(name);
-      final token = uri.queryParameters['token'];
-      if (token != null && token.isNotEmpty) {
-        return MaterialPageRoute(
-          settings: settings,
-          builder: (context) => InviteLinkHandler(token: token),
-        );
+      token = uri.queryParameters['token'];
+    } else if (kIsWeb) {
+      final baseUri = Uri.base;
+      if (baseUri.path.startsWith('/join') || baseUri.path.startsWith('/invite')) {
+        token = baseUri.queryParameters['token'];
       }
+    }
+    if (token != null && token.isNotEmpty) {
+      return MaterialPageRoute(
+        settings: settings,
+        builder: (context) => InviteLinkHandler(token: token!),
+      );
     }
 
     // 1. معالجة المسارات المحجوزة (إذا لم تكن في جدول routes الرئيسي)

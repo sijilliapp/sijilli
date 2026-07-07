@@ -306,24 +306,7 @@ class AuthProvider extends ChangeNotifier {
           ? userResult.copyWith(token: _user!.token)
           : userResult;
           
-      _user = userWithToken;
-      _status = AuthStatus.authenticated;
-      _isLoading = false;
-      
-      // 💾 Save to local DB (for quick access)
-      await _localDb.saveUser(userWithToken);
-      
-      // 🔒 Save token securely (encrypted)
-      if (userWithToken.token != null) {
-        await _secureStorage.saveAuthToken(userWithToken.token!);
-        await _secureStorage.saveUserId(userWithToken.id);
-      }
-      
-      if (userWithToken.username != null) {
-        await _saveRecentUsername(userWithToken.username!);
-      }
-      
-      notifyListeners(); // نبلغ مرة واحدة فقط بعد اكتمال كل شيء
+      await _updateUserLocally(userWithToken);
       return true;
     } catch (e) {
       debugPrint('❌ AuthProvider: Login failed: $e');
@@ -436,6 +419,10 @@ class AuthProvider extends ChangeNotifier {
           pb.authStore.save(userWithToken.token!, pb.authStore.model);
         } catch (_) {}
       }
+    }
+
+    if (userWithToken.username != null) {
+      await _saveRecentUsername(userWithToken.username!);
     }
     
     // 🔗 فحص رابط الدعوة المحفوظ محلياً
