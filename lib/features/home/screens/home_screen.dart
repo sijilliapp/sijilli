@@ -13,6 +13,8 @@ import '../../../core/widgets/folder_tab_bar.dart';
 import '../../settings/screens/contact_screen.dart';
 import '../../appointments/screens/archive_trash_screen.dart';
 import '../../appointments/screens/saved_appointments_screen.dart';
+import 'package:flutter/services.dart';
+import '../../game/widgets/nerve_game_sheet.dart';
 
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/extensions/context_l10n.dart';
@@ -352,7 +354,12 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                   color: Theme.of(context).brightness == Brightness.dark 
                       ? Theme.of(context).scaffoldBackgroundColor 
                       : AppColors.lightSurface,
-                  child: const ProfileHeader(),
+                  child: Column(
+                    children: [
+                      const ProfileHeader(),
+                      _buildNerveGameBanner(context),
+                    ],
+                  ),
                 ),
               ),
 
@@ -438,6 +445,78 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: bodyWidget,
+    );
+  }
+
+  Widget _buildNerveGameBanner(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary,
+            AppColors.primary.withValues(alpha: 0.8),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.flash_on, color: Colors.amber, size: 36),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'تحدّي الأعصاب اليومي ⚡',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'اضغط 10 مرات متتالية بأسرع ما يمكن وسجل نتيجتك!',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              NerveGameSheet.show(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+            child: const Text(
+              'ابدأ 🎮',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

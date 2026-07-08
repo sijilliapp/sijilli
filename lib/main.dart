@@ -30,6 +30,7 @@ import 'package:sijilli/features/auth/services/user_activity_service.dart';
 import 'package:sijilli/features/admin/providers/admin_provider.dart';
 import 'package:sijilli/features/articles/providers/article_provider.dart';
 import 'package:sijilli/features/articles/providers/tag_provider.dart';
+import 'package:sijilli/features/game/providers/nerve_game_provider.dart';
 
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
@@ -237,6 +238,10 @@ class SijilliApp extends StatelessWidget {
         // إدارة الثيم والخطوط (تم تحميلها مسبقاً)
         ChangeNotifierProvider.value(
           value: themeProvider,
+        ),
+        // تحدي الأعصاب اليومي
+        ChangeNotifierProvider(
+          create: (context) => NerveGameProvider(),
         ),
         // إدارة اللغة
         ChangeNotifierProvider.value(
