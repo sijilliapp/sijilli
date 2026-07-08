@@ -13,6 +13,7 @@ import '../features/appointments/services/pb_appointment_service.dart';
 import '../features/appointments/widgets/sheets/appointment_details_sheet.dart';
 import '../features/notifications/providers/notification_provider.dart';
 import '../models/notification.dart';
+import '../features/game/widgets/nerve_game_sheet.dart';
 
 class AppRouter {
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -152,6 +153,10 @@ class AppRouter {
         print('⚠️ Failed to open appointment details: $e');
       }
     } else if (notification.type == NotificationType.visit || notification.type == NotificationType.system) {
+      if (relatedId == 'game_nerve') {
+        NerveGameSheet.show(context);
+        return;
+      }
       // إذا كان معرف المقال بطول 15 حرفاً
       if (relatedId.length == 15) {
         try {
