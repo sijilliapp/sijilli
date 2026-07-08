@@ -14,6 +14,7 @@ import 'package:sijilli/core/utils/app_date_formatter.dart';
 import 'package:adhan/adhan.dart'; // For Sunset Calculation
 import 'package:hijri/hijri_calendar.dart'; // For robust Hijri
 import 'package:sijilli/core/extensions/context_l10n.dart';
+import 'package:uuid/uuid.dart';
 
 // Refactored Components
 import 'components/appointment_header.dart';
@@ -48,6 +49,7 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
   // State
   late String _selectedPrivacy;
   AppointmentCategory? _selectedCategories;
+  bool _isLinkActionLoading = false;
   
   // All Day Specifics
   String? _startDay;
@@ -349,8 +351,8 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
                                   ),
                                 ),
                               ),
+                              const SizedBox(height: 12),
                               if (_appointment.inviteToken != null) ...[
-                                const SizedBox(height: 12),
                                 if (_appointment.inviteLinkActive) ...[
                                   Row(
                                     children: [
@@ -381,22 +383,34 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: OutlinedButton.icon(
-                                          onPressed: () async {
+                                          onPressed: _isLinkActionLoading ? null : () async {
+                                            setState(() => _isLinkActionLoading = true);
                                             final success = await context.read<AppointmentProvider>().updateInviteLinkStatus(_appointment.id, false);
                                             if (success) {
                                               setState(() {
                                                 _appointment = _appointment.copyWith(inviteLinkActive: false);
                                               });
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    context.l10n.localeName == 'ar' ? 'تم تعطيل الرابط بنجاح!' : 'Link disabled successfully!',
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      context.l10n.localeName == 'ar' ? 'تم تعطيل الرابط بنجاح!' : 'Link disabled successfully!',
+                                                    ),
                                                   ),
-                                                ),
-                                              );
+                                                );
+                                              }
+                                            }
+                                            if (mounted) {
+                                              setState(() => _isLinkActionLoading = false);
                                             }
                                           },
-                                          icon: const Icon(Icons.link_off, size: 16, color: AppColors.error),
+                                          icon: _isLinkActionLoading 
+                                              ? const SizedBox(
+                                                  width: 16,
+                                                  height: 16,
+                                                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.error),
+                                                )
+                                              : const Icon(Icons.link_off, size: 16, color: AppColors.error),
                                           label: Text(
                                             context.l10n.localeName == 'ar' ? 'تعطيل الرابط' : 'Disable Link',
                                             style: const TextStyle(color: AppColors.error),
@@ -414,22 +428,34 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
                                   SizedBox(
                                     width: double.infinity,
                                     child: OutlinedButton.icon(
-                                      onPressed: () async {
+                                      onPressed: _isLinkActionLoading ? null : () async {
+                                        setState(() => _isLinkActionLoading = true);
                                         final success = await context.read<AppointmentProvider>().updateInviteLinkStatus(_appointment.id, true);
                                         if (success) {
                                           setState(() {
                                             _appointment = _appointment.copyWith(inviteLinkActive: true);
                                           });
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                context.l10n.localeName == 'ar' ? 'تم تفعيل رابط الدعوة!' : 'Invite link enabled!',
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  context.l10n.localeName == 'ar' ? 'تم تفعيل رابط الدعوة!' : 'Invite link enabled!',
+                                                ),
                                               ),
-                                            ),
-                                          );
+                                            );
+                                          }
+                                        }
+                                        if (mounted) {
+                                          setState(() => _isLinkActionLoading = false);
                                         }
                                       },
-                                      icon: const Icon(Icons.link, size: 18, color: AppColors.primary),
+                                      icon: _isLinkActionLoading 
+                                          ? const SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                                            )
+                                          : const Icon(Icons.link, size: 18, color: AppColors.primary),
                                       label: Text(
                                         context.l10n.localeName == 'ar' ? 'تفعيل رابط الاستضافة الموقّف' : 'Enable Invitation Link',
                                         style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
@@ -442,6 +468,50 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
                                     ),
                                   ),
                                 ],
+                              ] else ...[
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: _isLinkActionLoading ? null : () async {
+                                      setState(() => _isLinkActionLoading = true);
+                                      final token = const Uuid().v4();
+                                      final success = await context.read<AppointmentProvider>().updateInviteLinkStatus(_appointment.id, true, inviteToken: token);
+                                      if (success) {
+                                        setState(() {
+                                          _appointment = _appointment.copyWith(inviteToken: token, inviteLinkActive: true);
+                                        });
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                context.l10n.localeName == 'ar' ? 'تم توليد وتفعيل رابط الاستضافة!' : 'Invite link generated and enabled!',
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      }
+                                      if (mounted) {
+                                        setState(() => _isLinkActionLoading = false);
+                                      }
+                                    },
+                                    icon: _isLinkActionLoading 
+                                        ? const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                                          )
+                                        : const Icon(Icons.link_outlined, size: 18, color: AppColors.primary),
+                                    label: Text(
+                                      context.l10n.localeName == 'ar' ? 'توليد رابط استضافة مؤقت' : 'Generate Temporary Invite Link',
+                                      style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      side: const BorderSide(color: AppColors.primary),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                    ),
+                                  ),
+                                ),
                               ],
                             ],
                           );

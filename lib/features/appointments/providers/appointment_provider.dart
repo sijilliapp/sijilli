@@ -1097,13 +1097,16 @@ class AppointmentProvider extends ChangeNotifier {
   }
 
   /// تحديث حالة نشاط رابط الدعوة (تفعيل أو تعطيل)
-  Future<bool> updateInviteLinkStatus(String appointmentId, bool active) async {
+  Future<bool> updateInviteLinkStatus(String appointmentId, bool active, {String? inviteToken}) async {
     try {
-      final success = await _apptService.updateInviteLinkStatus(appointmentId, active);
+      final success = await _apptService.updateInviteLinkStatus(appointmentId, active, inviteToken: inviteToken);
       if (success) {
         final index = _appointments.indexWhere((a) => a.id == appointmentId);
         if (index != -1) {
-          _appointments[index] = _appointments[index].copyWith(inviteLinkActive: active);
+          _appointments[index] = _appointments[index].copyWith(
+            inviteLinkActive: active,
+            inviteToken: inviteToken ?? _appointments[index].inviteToken,
+          );
           notifyListeners();
         }
       }

@@ -335,11 +335,15 @@ class PbAppointmentService {
   }
 
   /// تحديث حالة نشاط رابط الدعوة (تفعيل أو تعطيل)
-  Future<bool> updateInviteLinkStatus(String appointmentId, bool active) async {
+  Future<bool> updateInviteLinkStatus(String appointmentId, bool active, {String? inviteToken}) async {
     try {
-      await _pb.collection(collectionAppointments).update(appointmentId, body: {
+      final body = <String, dynamic>{
         'invite_link_active': active,
-      });
+      };
+      if (inviteToken != null) {
+        body['invite_token'] = inviteToken;
+      }
+      await _pb.collection(collectionAppointments).update(appointmentId, body: body);
       return true;
     } catch (e) {
       print('⚠️ Failed to update invite link status: $e');
