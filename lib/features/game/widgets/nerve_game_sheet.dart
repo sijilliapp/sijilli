@@ -23,29 +23,16 @@ class NerveGameSheet extends StatefulWidget {
   State<NerveGameSheet> createState() => _NerveGameSheetState();
 }
 
-class _NerveGameSheetState extends State<NerveGameSheet> with SingleTickerProviderStateMixin {
-  late AnimationController _pulseController;
+class _NerveGameSheetState extends State<NerveGameSheet> {
+  bool _isPressed = false;
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-      lowerBound: 0.9,
-      upperBound: 1.1,
-    )..repeat(reverse: true);
-
     // تهيئة الجلسة فور الفتح
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<NerveGameProvider>().startNewSession();
     });
-  }
-
-  @override
-  void dispose() {
-    _pulseController.dispose();
-    super.dispose();
   }
 
   @override
@@ -84,9 +71,7 @@ class _NerveGameSheetState extends State<NerveGameSheet> with SingleTickerProvid
 
             // Game States Router
             switch (provider.state) {
-              NerveGameState.idle => _buildIdleState(context, provider),
-              NerveGameState.countdown => _buildCountdownState(context, provider),
-              NerveGameState.playing => _buildPlayingState(context, provider),
+              NerveGameState.idle || NerveGameState.playing => _buildGameplayState(context, provider),
               NerveGameState.completed => _buildCompletedState(context, provider),
               NerveGameState.submitting => _buildSubmittingState(context),
               NerveGameState.finished => _buildFinishedState(context, provider),
@@ -97,80 +82,11 @@ class _NerveGameSheetState extends State<NerveGameSheet> with SingleTickerProvid
     );
   }
 
-  // 1. واجهة البدء
-  Widget _buildIdleState(BuildContext context, NerveGameProvider provider) {
+  // 1. واجهة اللعب النشط وبدء التحدي
+  Widget _buildGameplayState(BuildContext context, NerveGameProvider provider) {
     return Column(
       children: [
-        const Icon(Icons.flash_on, size: 64, color: Colors.amber),
-        const SizedBox(height: 16),
-        const Text(
-          'تحدّي الأعصاب اليومي ⚡',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'اضغط على الزر العملاق 10 مرات متتالية بأسرع ما يمكن!\nلديك 3 محاولات كحد أقصى، وسنقوم بحفظ وإرسال أفضل توقيت تحققه فقط إلى قائمة التحدي اليومية.',
-          style: TextStyle(
-            fontSize: 14,
-            height: 1.5,
-            color: AppColors.getTextSecondary(context),
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 32),
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton(
-            onPressed: () {
-              HapticFeedback.mediumImpact();
-              provider.startCountdown();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.success,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              elevation: 2,
-            ),
-            child: const Text(
-              'استعد وابدأ التحدي! 🏁',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('إلغاء', style: TextStyle(color: Colors.grey)),
-        ),
-      ],
-    );
-  }
-
-  // 2. واجهة العد التنازلي
-  Widget _buildCountdownState(BuildContext context, NerveGameProvider provider) {
-    return ScaleTransition(
-      scale: _pulseController,
-      child: Container(
-        height: 200,
-        alignment: Alignment.center,
-        child: Text(
-          '${provider.countdownValue}',
-          style: const TextStyle(
-            fontSize: 80,
-            fontWeight: FontWeight.w900,
-            color: Colors.amber,
-          ),
-        ),
-      ),
-    );
-  }
-
-  // 3. واجهة اللعب النشط
-  Widget _buildPlayingState(BuildContext context, NerveGameProvider provider) {
-    return Column(
-      children: [
+        const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -180,11 +96,15 @@ class _NerveGameSheetState extends State<NerveGameSheet> with SingleTickerProvid
             ),
             Text(
               'النقرات: ${provider.tapCount} / 10',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Colors.red,
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 24),
 
         // مؤقت الوقت
         Text(
@@ -195,47 +115,89 @@ class _NerveGameSheetState extends State<NerveGameSheet> with SingleTickerProvid
             fontFamily: 'monospace',
           ),
         ),
-        const SizedBox(height: 40),
+        const SizedBox(height: 16),
 
-        // زر النقر العملاق التفاعلي
+        Text(
+          provider.state == NerveGameState.idle
+              ? 'تحدّي الأعصاب اليومي! ⚡ اضغط 10 مرات بأسرع ما يمكن وتصدر وترقب النتيجة'
+              : 'اضغط بأسرع ما يمكن! ⚡',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: provider.state == NerveGameState.idle ? FontWeight.normal : FontWeight.bold,
+            color: provider.state == NerveGameState.idle 
+                ? AppColors.getTextSecondary(context) 
+                : Colors.red,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 32),
+
+        // زر النقر العملاق التفاعلي 3D أحمر مع إطار أسود عريض
         GestureDetector(
           onTapDown: (_) {
+            setState(() {
+              _isPressed = true;
+            });
             HapticFeedback.lightImpact();
             provider.tap();
           },
+          onTapUp: (_) {
+            setState(() {
+              _isPressed = false;
+            });
+          },
+          onTapCancel: () {
+            setState(() {
+              _isPressed = false;
+            });
+          },
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 80),
-            height: 180,
-            width: 180,
+            duration: const Duration(milliseconds: 50),
+            transform: Matrix4.translationValues(0, _isPressed ? 6 : 0, 0),
+            height: 160,
+            width: 160,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  AppColors.primary,
-                  AppColors.primary.withValues(alpha: 0.8),
-                  AppColors.primary.withValues(alpha: 0.4),
-                ],
-                stops: const [0.4, 0.7, 1.0],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.5),
-                  blurRadius: 20,
-                  spreadRadius: 5,
-                ),
-              ],
+              color: Colors.red[600],
+              border: Border.all(color: Colors.black, width: 6),
+              boxShadow: _isPressed
+                  ? [
+                      const BoxShadow(
+                        color: Colors.black,
+                        offset: Offset(0, 2),
+                        blurRadius: 0,
+                      )
+                    ]
+                  : [
+                      const BoxShadow(
+                        color: Colors.black,
+                        offset: Offset(0, 8),
+                        blurRadius: 0,
+                      ),
+                      BoxShadow(
+                        color: Colors.red.withValues(alpha: 0.3),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                    ],
             ),
             alignment: Alignment.center,
-            child: const Column(
+            child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.touch_app, size: 48, color: Colors.white),
-                SizedBox(height: 8),
+                Icon(
+                  provider.state == NerveGameState.idle 
+                      ? Icons.play_arrow 
+                      : Icons.touch_app, 
+                  size: 40, 
+                  color: Colors.white
+                ),
+                const SizedBox(height: 4),
                 Text(
-                  'اضغط! 🔥',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                  provider.state == NerveGameState.idle ? 'ابدأ! 🔥' : 'اضغط! ⚡',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
                     color: Colors.white,
                   ),
                 ),
@@ -243,12 +205,19 @@ class _NerveGameSheetState extends State<NerveGameSheet> with SingleTickerProvid
             ),
           ),
         ),
-        const SizedBox(height: 40),
+        const SizedBox(height: 24),
+        if (provider.state == NerveGameState.idle)
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء', style: TextStyle(color: Colors.grey)),
+          )
+        else
+          const SizedBox(height: 48), // حفظ المساحة
       ],
     );
   }
 
-  // 4. واجهة النتائج المؤقتة للمحاولات
+  // 2. واجهة النتائج المؤقتة للمحاولات
   Widget _buildCompletedState(BuildContext context, NerveGameProvider provider) {
     final hasMoreAttempts = provider.attemptIndex < 3;
 
@@ -317,7 +286,7 @@ class _NerveGameSheetState extends State<NerveGameSheet> with SingleTickerProvid
                 await provider.submitBestScore();
               },
               icon: const Icon(Icons.send_rounded),
-              label: const Text('إرسال أفضل نتيجة وإنهاء التحدي 💾'),
+              label: const Text('تسجيل النتيجة وإنهاء التحدي 💾'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.success,
                 side: const BorderSide(color: AppColors.success),
@@ -350,7 +319,7 @@ class _NerveGameSheetState extends State<NerveGameSheet> with SingleTickerProvid
     );
   }
 
-  // 5. واجهة الحفظ والانتظار
+  // 3. واجهة الحفظ والانتظار
   Widget _buildSubmittingState(BuildContext context) {
     return const Padding(
       padding: EdgeInsets.symmetric(vertical: 40.0),
@@ -368,7 +337,7 @@ class _NerveGameSheetState extends State<NerveGameSheet> with SingleTickerProvid
     );
   }
 
-  // 6. واجهة لوحة الشرف والانتهاء
+  // 4. واجهة لوحة الشرف والانتهاء
   Widget _buildFinishedState(BuildContext context, NerveGameProvider provider) {
     return Column(
       children: [

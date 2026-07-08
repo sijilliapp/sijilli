@@ -465,15 +465,19 @@ class AdminProvider extends ChangeNotifier {
       if (users.isEmpty) return true;
 
       // 2. إرسال الإشعارات بشكل متوازي لتسريع العملية
-      final futures = users.map((u) {
-        return pb.collection('notifications').create(body: {
-          'user': u.id,
-          'title': title,
-          'message': message,
-          'type': 'system',
-          'related_id': relatedId ?? '',
-          'is_read': false,
-        });
+      final futures = users.map((u) async {
+        try {
+          await pb.collection('notifications').create(body: {
+            'user': u.id,
+            'title': title,
+            'message': message,
+            'type': 'system',
+            'related_id': relatedId ?? '',
+            'is_read': false,
+          });
+        } catch (e) {
+          print('⚠️ Failed to send notification to user ${u.id}: $e');
+        }
       });
 
       await Future.wait(futures);

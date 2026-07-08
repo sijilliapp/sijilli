@@ -19,11 +19,12 @@ void main() {
       expect(provider.elapsedSeconds, 0.0);
     });
 
-    test('Countdown starts and decreases countdownValue', () {
+    test('Timer starts and tapCount increments on first tap', () {
       provider.startNewSession();
-      provider.startCountdown();
-      expect(provider.state, NerveGameState.countdown);
-      expect(provider.countdownValue, 3);
+      expect(provider.state, NerveGameState.idle);
+      provider.tap();
+      expect(provider.state, NerveGameState.playing);
+      expect(provider.tapCount, 1);
     });
 
     test('Attempts are limited to a maximum of 3', () {

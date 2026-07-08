@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:sijilli/features/game/services/pb_nerve_game_service.dart';
 import 'package:sijilli/models/nerve_score.dart';
 
-enum NerveGameState { idle, countdown, playing, completed, submitting, finished }
+enum NerveGameState { idle, playing, completed, submitting, finished }
 
 class NerveGameProvider extends ChangeNotifier {
   final PbNerveGameService _service = PbNerveGameService();
@@ -34,9 +34,6 @@ class NerveGameProvider extends ChangeNotifier {
 
   final Stopwatch _stopwatch = Stopwatch();
   Timer? _timer;
-  int _countdownValue = 3;
-  int get countdownValue => _countdownValue;
-  Timer? _countdownTimer;
 
   /// بدء جلسة جديدة
   void startNewSession() {
@@ -46,55 +43,45 @@ class NerveGameProvider extends ChangeNotifier {
     _bestScoreOfSession = null;
     _currentAttemptScore = null;
     _elapsedSeconds = 0.0;
-    _countdownValue = 3;
     _stopwatch.reset();
     _timer?.cancel();
-    _countdownTimer?.cancel();
     notifyListeners();
   }
 
-  /// بدء العد التنازلي للتحدي
-  void startCountdown() {
-    _state = NerveGameState.countdown;
-    _countdownValue = 3;
+  /// التجهيز للمحاولة التالية
+  void resetForNextAttempt() {
+    _state = NerveGameState.idle;
     _tapCount = 0;
     _elapsedSeconds = 0.0;
     _stopwatch.reset();
-    notifyListeners();
-
-    _countdownTimer?.cancel();
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_countdownValue > 1) {
-        _countdownValue--;
-        notifyListeners();
-      } else {
-        timer.cancel();
-        _startPlaying();
-      }
-    });
-  }
-
-  void _startPlaying() {
-    _state = NerveGameState.playing;
-    _stopwatch.start();
-    notifyListeners();
-
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(milliseconds: 30), (timer) {
-      _elapsedSeconds = _stopwatch.elapsedMilliseconds / 1000.0;
-      notifyListeners();
-    });
+    notifyListeners();
   }
 
-  /// تسجيل نقرة جديدة
+  /// تسجيل نقرة جديدة (تبدأ المؤقت في أول نقرة)
   void tap() {
-    if (_state != NerveGameState.playing) return;
-
-    _tapCount++;
-    if (_tapCount >= 10) {
-      _stopPlaying();
-    } else {
+    if (_state == NerveGameState.idle) {
+      // بدء اللعب فوراً من أول نقرة
+      _state = NerveGameState.playing;
+      _tapCount = 1;
+      _elapsedSeconds = 0.0;
+      _stopwatch.reset();
+      _stopwatch.start();
+      
+      _timer?.cancel();
+      _timer = Timer.periodic(const Duration(milliseconds: 30), (timer) {
+        _elapsedSeconds = _stopwatch.elapsedMilliseconds / 1000.0;
+        notifyListeners();
+      });
+      
       notifyListeners();
+    } else if (_state == NerveGameState.playing) {
+      _tapCount++;
+      if (_tapCount >= 10) {
+        _stopPlaying();
+      } else {
+        notifyListeners();
+      }
     }
   }
 
@@ -117,7 +104,7 @@ class NerveGameProvider extends ChangeNotifier {
   void nextAttempt() {
     if (_attemptIndex >= 3) return;
     _attemptIndex++;
-    startCountdown();
+    resetForNextAttempt();
   }
 
   /// حفظ أفضل نتيجة في قاعدة البيانات
@@ -152,7 +139,6 @@ class NerveGameProvider extends ChangeNotifier {
   @override
   void dispose() {
     _timer?.cancel();
-    _countdownTimer?.cancel();
     super.dispose();
   }
 }
