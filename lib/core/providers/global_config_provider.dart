@@ -26,9 +26,9 @@ class GlobalConfigProvider extends ChangeNotifier {
     return _getBool('user_search_enabled') ?? true;
   }
 
-  /// هل لعبة تحدي الأعصاب مفعلة؟ (القيمة الافتراضية true)
+  /// هل لعبة تحدي الأعصاب مفعلة؟ (القيمة الافتراضية false لضمان الأمان في حال حدوث خلل)
   bool get isNerveGameEnabled {
-    return _getBool('nerve_game_enabled') ?? true;
+    return _getBool('nerve_game_enabled') ?? false;
   }
 
   /// الحد الأقصى لحروف المقال
