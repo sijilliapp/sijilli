@@ -14,6 +14,7 @@ import 'package:sijilli/models/article.dart';
 import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/features/notifications/providers/notification_provider.dart';
 import 'package:sijilli/core/local/local_db_service.dart';
+import 'package:sijilli/core/providers/global_config_provider.dart';
 
 import 'package:pocketbase/pocketbase.dart';
 import '../lib/core/services/pocketbase_client.dart';
@@ -134,6 +135,7 @@ void main() {
     final mockSettings = MockSettingsProvider();
     final mockTheme = MockThemeProvider();
     final mockNotif = MockNotificationProvider();
+    final mockConfig = GlobalConfigProvider();
 
     await tester.pumpWidget(
       MultiProvider(
@@ -145,6 +147,7 @@ void main() {
           ChangeNotifierProvider<SettingsProvider>.value(value: mockSettings),
           ChangeNotifierProvider<ThemeProvider>.value(value: mockTheme),
           ChangeNotifierProvider<NotificationProvider>.value(value: mockNotif),
+          ChangeNotifierProvider<GlobalConfigProvider>.value(value: mockConfig),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,

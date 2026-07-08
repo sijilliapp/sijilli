@@ -26,6 +26,11 @@ class GlobalConfigProvider extends ChangeNotifier {
     return _getBool('user_search_enabled') ?? true;
   }
 
+  /// هل لعبة تحدي الأعصاب مفعلة؟ (القيمة الافتراضية true)
+  bool get isNerveGameEnabled {
+    return _getBool('nerve_game_enabled') ?? true;
+  }
+
   /// الحد الأقصى لحروف المقال
   int get articleMaxChars {
     return _getNumber('article_max_chars')?.toInt() ?? 5000;

@@ -17,6 +17,7 @@ import 'package:flutter/services.dart';
 import '../../game/widgets/nerve_game_sheet.dart';
 
 import '../../../core/providers/settings_provider.dart';
+import '../../../core/providers/global_config_provider.dart';
 import '../../../core/extensions/context_l10n.dart';
 import '../../../core/local/local_db_service.dart';
 
@@ -357,7 +358,8 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                   child: Column(
                     children: [
                       const ProfileHeader(),
-                      _buildNerveGameBanner(context),
+                      if (context.watch<GlobalConfigProvider>().isNerveGameEnabled)
+                        _buildNerveGameBanner(context),
                     ],
                   ),
                 ),
