@@ -155,7 +155,7 @@ class PbAppointmentBrowseService {
          privacyFilter += ' || appointment.invitations_via_appointment.user ?= "$viewerId"';
       }
       
-      filter += ' && ($privacyFilter)';
+      filter += ' && ($privacyFilter) && appointment.is_cancelled = false && appointment.is_deleted = false';
 
       if (kDebugMode) {
         print('🔍 [PbAppointmentBrowseService] Fetching with filter: $filter');

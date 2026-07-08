@@ -29,6 +29,9 @@ class PbAppointmentService {
 
       String statusStr = status.toString().split('.').last;
       String filter = 'user = "$effectiveUserId" && post_status = "$statusStr"';
+      if (status == PostStatus.published) {
+        filter += ' && appointment.is_cancelled = false && appointment.is_deleted = false';
+      }
 
       final resultList = await _pb.collection(collectionInvitations).getList(
         page: page,
