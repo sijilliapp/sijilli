@@ -218,9 +218,38 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
     context.read<AddEventProvider>().updateBuildingSuggestions(_locationController.text, text);
   }
 
-  void _onSmartParse() {
-    final text = _titleController.text;
-    if (text.isEmpty) return;
+  void _onSmartParse() async {
+    String text = '';
+    bool fromClipboard = false;
+    
+    try {
+      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+      if (clipboardData != null && clipboardData.text != null && clipboardData.text!.trim().isNotEmpty) {
+        text = clipboardData.text!.trim();
+        if (text.length > 120) {
+          text = text.substring(0, 120);
+        }
+        fromClipboard = true;
+      }
+    } catch (e) {
+      print('Clipboard error: $e');
+    }
+
+    if (text.isEmpty) {
+      text = _titleController.text.trim();
+    }
+
+    if (text.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('يرجى نسخ نص الدعوة إلى الحافظة أو كتابته في حقل الموضوع أولاً!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
 
     final parsed = ArabicSmartParser.parse(text);
     
@@ -256,12 +285,16 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
       }
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('تم تفكيك النص وتوزيع البيانات بنجاح!'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(fromClipboard 
+              ? 'تم تفكيك النص من الحافظة (أول ١٢٠ حرف) وتوزيع البيانات!' 
+              : 'تم تفكيك نص الموضوع وتوزيع البيانات!'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   void _onRegionSelected(String region) {
