@@ -468,24 +468,35 @@ class AdminProvider extends ChangeNotifier {
       }
 
       int successCount = 0;
-      // 2. إرسال الإشعارات بشكل متوازي لتسريع العملية
-      final futures = users.map((u) async {
-        try {
-          await pb.collection('notifications').create(body: {
-            'user': u.id,
-            'title': title,
-            'message': message,
-            'type': 'system',
-            'related_id': relatedId ?? '',
-            'is_read': false,
-          });
-          successCount++;
-        } catch (e) {
-          print('⚠️ Failed to send notification to user ${u.id}: $e');
-        }
-      });
+      // 2. إرسال الإشعارات على دفعات (Batches) لتجنب حظر الخادم (Rate Limit)
+      const int batchSize = 10;
+      for (int i = 0; i < users.length; i += batchSize) {
+        final chunk = users.sublist(
+          i,
+          i + batchSize > users.length ? users.length : i + batchSize,
+        );
 
-      await Future.wait(futures);
+        final futures = chunk.map((u) async {
+          try {
+            await pb.collection('notifications').create(body: {
+              'user': u.id,
+              'title': title,
+              'message': message,
+              'type': 'system',
+              'related_id': relatedId ?? '',
+              'is_read': false,
+            });
+            successCount++;
+          } catch (e) {
+            print('⚠️ Failed to send notification to user ${u.id}: $e');
+          }
+        });
+
+        await Future.wait(futures);
+        // تأخير 100 ملي ثانية بين كل دفعة لتهدئة معدل الطلبات
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+
       print('ℹ️ Sent system notifications: $successCount out of ${users.length}');
       return successCount > 0;
     } catch (e) {
