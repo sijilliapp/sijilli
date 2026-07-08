@@ -116,6 +116,18 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
 
             const SizedBox(height: 8),
 
+            _buildClickableCard(
+              context,
+              isDark: isDark,
+              icon: Icons.campaign_outlined,
+              title: 'إرسال إشعار للنظام',
+              subtitle: 'بث إشعار جماعي لجميع المستخدمين المسجلين في التطبيق',
+              badgeCount: 0,
+              onTap: () => _showSendGlobalNotificationDialog(context),
+            ),
+
+            const SizedBox(height: 8),
+
             // 📝 القسم الثاني: إدارة المقالات والمحتوى
             Padding(
               padding: const EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 4),
@@ -199,6 +211,120 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showSendGlobalNotificationDialog(BuildContext context) {
+    final titleController = TextEditingController(text: 'تحدّي الأعصاب اليومي ⚡');
+    final messageController = TextEditingController(
+        text: 'اضغط 10 مرات متتالية بأسرع ما يمكن وسجل نتيجتك في قائمة التحدي اليومية!');
+    final relatedIdController = TextEditingController(text: 'game_nerve');
+    
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.campaign, color: AppColors.primary),
+              SizedBox(width: 8),
+              Text('إرسال إشعار للنظام', style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'سيتم إرسال هذا الإشعار لجميع المستخدمين المسجلين في التطبيق حالياً.',
+                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'عنوان الإشعار',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: messageController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'نص الرسالة',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: relatedIdController,
+                  decoration: const InputDecoration(
+                    labelText: 'معرف الارتباط (Related ID)',
+                    helperText: 'اكتب "game_nerve" لتوجيه المستخدم للعبة عند لمس الإشعار',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('إلغاء'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final title = titleController.text.trim();
+                final message = messageController.text.trim();
+                final relatedId = relatedIdController.text.trim();
+                
+                if (title.isEmpty || message.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('الرجاء إدخال العنوان ونص الرسالة')),
+                  );
+                  return;
+                }
+                
+                Navigator.pop(dialogContext);
+                
+                // عرض مؤشر انتظار
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (loadingContext) => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+                
+                final success = await context.read<AdminProvider>().sendSystemNotificationToAll(
+                  title: title,
+                  message: message,
+                  relatedId: relatedId.isNotEmpty ? relatedId : null,
+                );
+                
+                if (context.mounted) {
+                  Navigator.pop(context); // إغلاق مؤشر الانتظار
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(success 
+                          ? 'تم إرسال الإشعار لجميع المستخدمين بنجاح' 
+                          : 'فشل إرسال الإشعار'),
+                      backgroundColor: success ? AppColors.success : Colors.red,
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('إرسال'),
+            ),
+          ],
+        );
+      },
     );
   }
 

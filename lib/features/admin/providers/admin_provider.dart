@@ -445,4 +445,45 @@ class AdminProvider extends ChangeNotifier {
       return null;
     }
   }
+
+  /// إرسال إشعار للنظام لجميع المستخدمين المسجلين
+  Future<bool> sendSystemNotificationToAll({
+    required String title,
+    required String message,
+    String? relatedId,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final pb = PocketBaseClient.instance.pb;
+      // 1. جلب قائمة جميع المستخدمين في التطبيق
+      final users = await pb.collection('users').getFullList(
+        fields: 'id',
+      );
+
+      if (users.isEmpty) return true;
+
+      // 2. إرسال الإشعارات بشكل متوازي لتسريع العملية
+      final futures = users.map((u) {
+        return pb.collection('notifications').create(body: {
+          'user': u.id,
+          'title': title,
+          'message': message,
+          'type': 'system',
+          'related_id': relatedId ?? '',
+          'is_read': false,
+        });
+      });
+
+      await Future.wait(futures);
+      return true;
+    } catch (e) {
+      print('❌ Error sending system notification to all users: $e');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }
