@@ -660,93 +660,109 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.getCardBackground(ctx),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${context.l10n.edit} $label',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        bool isSaving = false;
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.getCardBackground(ctx),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: controller,
-                  decoration: InputDecoration(
-                    hintText: context.l10n.detailsEnterHere(label),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  maxLines: field.contains('Note') || field == 'description' ? 5 : 1,
-                  autofocus: true,
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: Text(context.l10n.cancel),
+                    Text(
+                      '${context.l10n.edit} $label',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(width: 12),
-                    ElevatedButton(
-                      onPressed: () async {
-                        final newValue = controller.text.trim();
-                        if (newValue != currentValue) {
-                            try {
-                              if (field == 'personalNote') {
-                                await context.read<AppointmentProvider>().updateInvitationSettings(
-                                  _appointment.id,
-                                  personalNote: newValue,
-                                  privacy: _selectedPrivacy, 
-                                  categories: _selectedCategories,
-                                );
-                                setState(() {
-                                   final updatedInv = _appointment.currentUserInvitation?.copyWith(personalNote: newValue);
-                                   _appointment = _appointment.copyWith(currentUserInvitation: updatedInv);
-                                });
-                              } else {
-                                await PbAppointmentService().updateAppointment(
-                                  _appointment.id, 
-                                  { 
-                                     if (field == 'description') 'description': newValue,
-                                     if (field == 'streamLink') 'stream_link': newValue,
-                                  }
-                                );
-                                setState(() {
-                                   _appointment = _appointment.copyWith(
-                                      description: field == 'description' ? newValue : null,
-                                      streamLink: field == 'streamLink' ? newValue : null,
-                                   );
-                                });
-                              }
-                              if (mounted) Navigator.pop(ctx);
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.detailsUpdateFailed(e.toString()))));
-                            }
-                        } else {
-                           Navigator.pop(ctx);
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: controller,
+                      decoration: InputDecoration(
+                        hintText: context.l10n.detailsEnterHere(label),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: Text(context.l10n.save, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      maxLines: field.contains('Note') || field == 'description' ? 5 : 1,
+                      autofocus: true,
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: Text(context.l10n.cancel),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton(
+                          onPressed: isSaving ? null : () async {
+                            final newValue = controller.text.trim();
+                            if (newValue != currentValue) {
+                                try {
+                                  setModalState(() => isSaving = true);
+                                  if (field == 'personalNote') {
+                                    await context.read<AppointmentProvider>().updateInvitationSettings(
+                                      _appointment.id,
+                                      personalNote: newValue,
+                                      privacy: _selectedPrivacy, 
+                                      categories: _selectedCategories,
+                                    );
+                                    setState(() {
+                                       final updatedInv = _appointment.currentUserInvitation?.copyWith(personalNote: newValue);
+                                       _appointment = _appointment.copyWith(currentUserInvitation: updatedInv);
+                                    });
+                                  } else {
+                                    await PbAppointmentService().updateAppointment(
+                                      _appointment.id, 
+                                      { 
+                                         if (field == 'description') 'description': newValue,
+                                         if (field == 'streamLink') 'stream_link': newValue,
+                                      }
+                                    );
+                                    setState(() {
+                                       _appointment = _appointment.copyWith(
+                                          description: field == 'description' ? newValue : null,
+                                          streamLink: field == 'streamLink' ? newValue : null,
+                                       );
+                                    });
+                                  }
+                                  if (mounted) Navigator.pop(ctx);
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.detailsUpdateFailed(e.toString()))));
+                                  }
+                                } finally {
+                                  setModalState(() => isSaving = false);
+                                }
+                            } else {
+                               Navigator.pop(ctx);
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          ),
+                          child: isSaving
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : Text(context.l10n.save, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          }
         );
       },
     );
