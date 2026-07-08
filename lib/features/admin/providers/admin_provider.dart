@@ -462,8 +462,12 @@ class AdminProvider extends ChangeNotifier {
         fields: 'id',
       );
 
-      if (users.isEmpty) return true;
+      if (users.isEmpty) {
+        print('⚠️ No users found to send system notification');
+        return false;
+      }
 
+      int successCount = 0;
       // 2. إرسال الإشعارات بشكل متوازي لتسريع العملية
       final futures = users.map((u) async {
         try {
@@ -475,13 +479,15 @@ class AdminProvider extends ChangeNotifier {
             'related_id': relatedId ?? '',
             'is_read': false,
           });
+          successCount++;
         } catch (e) {
           print('⚠️ Failed to send notification to user ${u.id}: $e');
         }
       });
 
       await Future.wait(futures);
-      return true;
+      print('ℹ️ Sent system notifications: $successCount out of ${users.length}');
+      return successCount > 0;
     } catch (e) {
       print('❌ Error sending system notification to all users: $e');
       return false;
