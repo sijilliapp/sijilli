@@ -110,7 +110,7 @@ class _NerveGameSheetState extends State<NerveGameSheet> with SingleTickerProvid
         ),
         const SizedBox(height: 12),
         Text(
-          'اضغط على الزر العملاق 10 مرات متتالية بأسرع ما يمكن!\nلديك 3 محاولات كحد أقصى، وسنقوم بحفظ وإرسال أفضل توقيت تحققه فقط إلى لوحة الشرف.',
+          'اضغط على الزر العملاق 10 مرات متتالية بأسرع ما يمكن!\nلديك 3 محاولات كحد أقصى، وسنقوم بحفظ وإرسال أفضل توقيت تحققه فقط إلى قائمة التحدي اليومية.',
           style: TextStyle(
             fontSize: 14,
             height: 1.5,
@@ -336,7 +336,7 @@ class _NerveGameSheetState extends State<NerveGameSheet> with SingleTickerProvid
                 await provider.submitBestScore();
               },
               icon: const Icon(Icons.emoji_events),
-              label: const Text('إرسال النتيجة إلى لوحة الشرف 🏆', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              label: const Text('تسجيل النتيجة وإنهاء التحدي 🏆', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.success,
                 foregroundColor: Colors.white,
@@ -359,7 +359,7 @@ class _NerveGameSheetState extends State<NerveGameSheet> with SingleTickerProvid
           CircularProgressIndicator(strokeWidth: 3),
           SizedBox(height: 24),
           Text(
-            'جاري إرسال نتيجتك الملحمية وتحديث لوحة الشرف...',
+            'جاري إرسال نتيجتك وتحديث قائمة التحدي اليومية...',
             style: TextStyle(fontWeight: FontWeight.w600),
             textAlign: TextAlign.center,
           ),
@@ -375,7 +375,7 @@ class _NerveGameSheetState extends State<NerveGameSheet> with SingleTickerProvid
         const Icon(Icons.emoji_events, size: 56, color: Colors.amber),
         const SizedBox(height: 12),
         const Text(
-          'لوحة الشرف لليوم 🏆',
+          'نتائج التحدي اليومي ⏱️',
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 6),
