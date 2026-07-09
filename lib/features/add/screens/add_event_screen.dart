@@ -255,19 +255,31 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
     }
 
     final parsed = ArabicSmartParser.parse(text);
+    final provider = context.read<AddEventProvider>();
     
     // تحديث قيم حقول الإدخال
     _titleController.text = parsed.title;
-    context.read<AddEventProvider>().onTitleChanged(parsed.title);
+    provider.onTitleChanged(parsed.title);
 
     if (parsed.region != null && parsed.region!.isNotEmpty) {
       _locationController.text = parsed.region!;
-      context.read<AddEventProvider>().setLocation(parsed.region!);
+      provider.setLocation(parsed.region!);
     }
 
     if (parsed.building != null && parsed.building!.isNotEmpty) {
       _buildingController.text = parsed.building!;
-      context.read<AddEventProvider>().setBuilding(parsed.building!);
+      provider.setBuilding(parsed.building!);
+    }
+
+    // مطابقة الإحداثيات التاريخية إذا تطلب الأمر
+    final parsedRegion = parsed.region ?? '';
+    final parsedBuilding = parsed.building ?? '';
+    if (parsedBuilding.isNotEmpty) {
+      final coords = provider.lookupCoordinates(parsedRegion, parsedBuilding);
+      if (coords != null && coords.isNotEmpty) {
+        provider.setCoordinates(coords);
+        print('ℹ️ Auto-matched historical coordinates for building: $coords');
+      }
     }
 
     if (parsed.time != null && parsed.time!.isNotEmpty) {
@@ -284,7 +296,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
           }
         }
         final parsedTime = TimeOfDay(hour: hour, minute: minute);
-        context.read<AddEventProvider>().setTime(parsedTime);
+        provider.setTime(parsedTime);
       }
     }
 

@@ -792,6 +792,23 @@ class AddEventProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  String? lookupCoordinates(String region, String building) {
+    final reg = region.trim().toLowerCase();
+    final bld = building.trim().toLowerCase();
+    for (final appt in _history) {
+      final apptReg = appt.region?.trim().toLowerCase() ?? '';
+      final apptBld = appt.cleanBuilding.trim().toLowerCase();
+      
+      final matchesRegion = reg.isEmpty || apptReg == reg;
+      final matchesBuilding = apptBld == bld;
+      
+      if (matchesRegion && matchesBuilding && appt.coordinates != null && appt.coordinates!.isNotEmpty) {
+        return appt.coordinates;
+      }
+    }
+    return null;
+  }
+
   // Form Actions
   void clearForm() {
     _selectedDate = DateTime.now();
