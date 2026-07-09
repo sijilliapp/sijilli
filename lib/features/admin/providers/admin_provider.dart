@@ -451,19 +451,27 @@ class AdminProvider extends ChangeNotifier {
     required String title,
     required String message,
     String? relatedId,
+    List<String>? targetRoles,
   }) async {
     _isLoading = true;
     notifyListeners();
 
     try {
       final pb = PocketBaseClient.instance.pb;
-      // 1. جلب قائمة جميع المستخدمين في التطبيق
+      
+      String? filter;
+      if (targetRoles != null && targetRoles.isNotEmpty) {
+        filter = targetRoles.map((role) => 'role = "$role"').join(' || ');
+      }
+
+      // 1. جلب قائمة جميع المستخدمين في التطبيق المطابقين للفلترة
       final users = await pb.collection('users').getFullList(
         fields: 'id',
+        filter: filter,
       );
 
       if (users.isEmpty) {
-        print('⚠️ No users found to send system notification');
+        print('⚠️ No matching users found to send system notification');
         return false;
       }
 

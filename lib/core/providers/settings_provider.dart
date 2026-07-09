@@ -6,7 +6,7 @@ class SettingsProvider extends ChangeNotifier {
   static const String keyArticleFontFamily = 'article_font_family';
   static const String keyShowLocationInfo = 'show_location_info';
   
-  bool _isMagneticScrollEnabled = true;
+  bool _isMagneticScrollEnabled = false;
   String _articleFontFamily = 'Default';
   bool _showLocationInfo = true;
 
@@ -16,7 +16,7 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    _isMagneticScrollEnabled = prefs.getBool(keyMagneticScroll) ?? true;
+    _isMagneticScrollEnabled = prefs.getBool(keyMagneticScroll) ?? false;
     _articleFontFamily = prefs.getString(keyArticleFontFamily) ?? 'Default';
     _showLocationInfo = prefs.getBool(keyShowLocationInfo) ?? true;
     notifyListeners();
@@ -53,7 +53,7 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   Future<void> clearSettings() async {
-    _isMagneticScrollEnabled = true;
+    _isMagneticScrollEnabled = false;
     _articleFontFamily = 'Default';
     _showLocationInfo = true;
     notifyListeners();
