@@ -257,9 +257,13 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
     final parsed = ArabicSmartParser.parse(text);
     final provider = context.read<AddEventProvider>();
     
-    // تحديث قيم حقول الإدخال
-    _titleController.text = parsed.title;
-    provider.onTitleChanged(parsed.title);
+    // تحديث قيم حقول الإدخال مع الحد من طول العنوان إلى 50 حرفاً
+    String parsedTitle = parsed.title;
+    if (parsedTitle.length > 50) {
+      parsedTitle = parsedTitle.substring(0, 50).trim();
+    }
+    _titleController.text = parsedTitle;
+    provider.onTitleChanged(parsedTitle);
 
     if (parsed.region != null && parsed.region!.isNotEmpty) {
       _locationController.text = parsed.region!;

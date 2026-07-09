@@ -91,8 +91,7 @@ class EventFormWidget extends StatelessWidget {
               ? 'اكتب أو الصق نص الدعوة هنا ثم اضغط العصا السحرية لاستخلاص البيانات...'
               : 'Write or paste the invitation text here and tap the magic wand to extract details...',
           maxLength: 1000,
-          maxLines: null,
-          autoScrollHint: true,
+          showCountdown: true,
           suffixIcon: onSmartParse != null
               ? IconButton(
                   icon: const Icon(Icons.auto_awesome, color: AppColors.primary, size: 22),
