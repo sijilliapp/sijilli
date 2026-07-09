@@ -9,7 +9,7 @@ class EventFormWidget extends StatelessWidget {
   final TextEditingController titleController;
   final TextEditingController locationController;
   final TextEditingController buildingController;
-  final TextEditingController? streamLinkController; 
+  final TextEditingController descriptionController;
   final String privacy;
   final ValueChanged<String> onPrivacyChanged;
   final String? Function(String?)? titleValidator;
@@ -42,7 +42,7 @@ class EventFormWidget extends StatelessWidget {
     required this.titleController,
     required this.locationController,
     required this.buildingController,
-    this.streamLinkController,
+    required this.descriptionController,
     required this.privacy,
     required this.onPrivacyChanged,
     this.titleValidator,
@@ -72,7 +72,25 @@ class EventFormWidget extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildPrivacyToggle(context),
-        const SizedBox(height: 6),
+        const SizedBox(height: 12),
+
+        CustomTextField(
+          controller: descriptionController,
+          label: context.l10n.localeName == 'ar' ? 'الملاحظات العامة (مرجع الموعد) 📝' : 'General Notes (Reference) 📝',
+          hint: context.l10n.localeName == 'ar'
+              ? 'اكتب أو الصق نص الدعوة هنا ثم اضغط العصا السحرية لاستخلاص البيانات...'
+              : 'Write or paste the invitation text here and tap the magic wand to extract details...',
+          maxLength: 1000,
+          maxLines: 4,
+          suffixIcon: onSmartParse != null
+              ? IconButton(
+                  icon: const Icon(Icons.auto_awesome, color: AppColors.primary, size: 22),
+                  tooltip: context.l10n.localeName == 'ar' ? 'تفكيك وتحليل النص بالذكاء' : 'AI Parse Text',
+                  onPressed: onSmartParse,
+                )
+              : null,
+        ),
+        const SizedBox(height: 12),
 
         CustomTextField(
           controller: titleController,
@@ -82,13 +100,6 @@ class EventFormWidget extends StatelessWidget {
           maxLength: 50,
           showCountdown: true,
           validator: titleValidator,
-          suffixIcon: onSmartParse != null
-              ? IconButton(
-                  icon: const Icon(Icons.auto_awesome, color: AppColors.primary, size: 20),
-                  tooltip: 'تفكيك النص الذكي',
-                  onPressed: onSmartParse,
-                )
-              : null,
         ),
         
         LayoutBuilder(
@@ -201,37 +212,7 @@ class EventFormWidget extends StatelessWidget {
               : const SizedBox.shrink(key: ValueKey('no_location_suggestions')),
         ),
 
-        if (streamLinkController != null) ...[
-          const SizedBox(height: 6),
-           Text(context.l10n.streamLink, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-           const SizedBox(height: 2),
-           Builder(
-             builder: (context) {
-               final isDark = Theme.of(context).brightness == Brightness.dark;
-               return TextFormField(
-                  controller: streamLinkController,
-                  textDirection: TextDirection.ltr,
-                  keyboardType: TextInputType.url,
-                  maxLength: 500,
-                  decoration: InputDecoration(
-                    hintText: context.l10n.streamLinkHint,
-                    prefixIcon: const Icon(Icons.link),
-                    filled: true,
-                    fillColor: isDark ? Colors.grey.shade800 : Colors.grey.shade50,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
-                    ),
-                  ),
-               );
-             }
-           ),
-        ],
+        // streamLink removed from creation form as it can be added later in details screen
       ],
     );
   }

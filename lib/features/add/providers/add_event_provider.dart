@@ -35,13 +35,13 @@ class AddEventProvider extends ChangeNotifier {
   String _location = '';
   String _building = '';
   String _coordinates = '';
-  String _streamLink = '';
+  String _description = '';
 
   String get draftTitle => _title;
   String get draftLocation => _location;
   String get draftBuilding => _building;
   String get draftCoordinates => _coordinates;
-  String get draftStreamLink => _streamLink;
+  String get draftDescription => _description;
 
 
   // State
@@ -261,7 +261,7 @@ class AddEventProvider extends ChangeNotifier {
       _location = initialAppointment.region ?? '';
       _building = initialAppointment.building ?? '';
       _coordinates = initialAppointment.coordinates ?? '';
-      _streamLink = initialAppointment.streamLink ?? '';
+      _description = initialAppointment.description ?? '';
     } else {
       _selectedEndDate = _selectedDate;
       _generateInviteLink = false;
@@ -330,7 +330,7 @@ class AddEventProvider extends ChangeNotifier {
       _location = draft['location'] ?? '';
       _building = draft['building'] ?? '';
       _coordinates = draft['coordinates'] ?? '';
-      _streamLink = draft['streamLink'] ?? '';
+      _description = draft['description'] ?? '';
       
       _privacy = draft['privacy'] ?? _lastSelectedPrivacy;
       _isHijri = draft['isHijri'] ?? false;
@@ -375,7 +375,7 @@ class AddEventProvider extends ChangeNotifier {
       'location': _location,
       'building': _building,
       'coordinates': _coordinates,
-      'streamLink': _streamLink,
+      'description': _description,
       'privacy': _privacy,
       'isHijri': _isHijri,
       'selectedDate': _selectedDate?.toIso8601String(),
@@ -605,6 +605,12 @@ class AddEventProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void onDescriptionChanged(String text) {
+    _description = text;
+    _saveDraft();
+    notifyListeners();
+  }
+
   // Suggestions Logic
   void onTitleChanged(String text) {
     _title = text;
@@ -811,7 +817,7 @@ class AddEventProvider extends ChangeNotifier {
       _coordinates = '';
     }
 
-    _streamLink = '';
+    _description = '';
     _suggestions = [];
     _pivotSuggestions = [];
     _draftService.clearDraft();
@@ -834,7 +840,7 @@ class AddEventProvider extends ChangeNotifier {
     required String title,
     required String location,
     required String building,
-    required String streamLink,
+    required String description,
     required UserModel currentUser,
     required AppointmentProvider appointmentProvider,
     required String locale,
@@ -919,7 +925,8 @@ class AddEventProvider extends ChangeNotifier {
       recurrenceCount: _isRecurring ? _recurrenceCount : 1,
       recurrenceIndex: _isRecurring ? 1 : null,
       isFirstComeFirstServed: _isFirstComeFirstServed,
-      streamLink: streamLink.isNotEmpty ? streamLink : null,
+      streamLink: null,
+      description: description.isNotEmpty ? description : null,
       sunset: sunsetStr,
       inviteToken: inviteToken,
       inviteLinkActive: inviteToken != null,

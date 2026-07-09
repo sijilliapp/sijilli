@@ -53,7 +53,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
   late final TextEditingController _titleController;
   late final TextEditingController _locationController;
   late final TextEditingController _buildingController;
-  late final TextEditingController _streamLinkController;
+  late final TextEditingController _descriptionController;
   
   // Focus Nodes
   final FocusNode _titleFocusNode = FocusNode();
@@ -84,7 +84,8 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
     _buildingController = TextEditingController(text: appt?.cleanBuilding);
     _buildingController.addListener(_onBuildingChanged);
     
-    _streamLinkController = TextEditingController(text: appt?.streamLink);
+    _descriptionController = TextEditingController(text: appt?.description);
+    _descriptionController.addListener(_onDescriptionChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
        final addEventProvider = context.read<AddEventProvider>();
@@ -115,8 +116,8 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
           if (addEventProvider.draftBuilding.isNotEmpty) {
             _buildingController.text = addEventProvider.draftBuilding;
           }
-          if (addEventProvider.draftStreamLink.isNotEmpty) {
-            _streamLinkController.text = addEventProvider.draftStreamLink;
+          if (addEventProvider.draftDescription.isNotEmpty) {
+            _descriptionController.text = addEventProvider.draftDescription;
           }
        }
 
@@ -140,6 +141,11 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
   void _onTitleChanged() {
     final text = _titleController.text;
     context.read<AddEventProvider>().onTitleChanged(text);
+  }
+
+  void _onDescriptionChanged() {
+    final text = _descriptionController.text;
+    context.read<AddEventProvider>().onDescriptionChanged(text);
   }
 
   void _onWordSelected(String word) {
@@ -219,31 +225,28 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
   }
 
   void _onSmartParse() async {
-    String text = '';
+    String text = _descriptionController.text.trim();
     bool fromClipboard = false;
     
-    try {
-      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
-      if (clipboardData != null && clipboardData.text != null && clipboardData.text!.trim().isNotEmpty) {
-        text = clipboardData.text!.trim();
-        if (text.length > 120) {
-          text = text.substring(0, 120);
-        }
-        fromClipboard = true;
-      }
-    } catch (e) {
-      print('Clipboard error: $e');
-    }
-
     if (text.isEmpty) {
-      text = _titleController.text.trim();
+      try {
+        final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+        if (clipboardData != null && clipboardData.text != null && clipboardData.text!.trim().isNotEmpty) {
+          text = clipboardData.text!.trim();
+          _descriptionController.text = text;
+          context.read<AddEventProvider>().onDescriptionChanged(text);
+          fromClipboard = true;
+        }
+      } catch (e) {
+        print('Clipboard error: $e');
+      }
     }
 
     if (text.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('يرجى نسخ نص الدعوة إلى الحافظة أو كتابته في حقل الموضوع أولاً!'),
+            content: Text('يرجى كتابة نص الدعوة في حقل الملاحظات العامة أو نسخه في الحافظة أولاً!'),
             duration: Duration(seconds: 2),
           ),
         );
@@ -289,8 +292,8 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(fromClipboard 
-              ? 'تم تفكيك النص من الحافظة (أول ١٢٠ حرف) وتوزيع البيانات!' 
-              : 'تم تفكيك نص الموضوع وتوزيع البيانات!'),
+              ? 'تم نسخ النص من الحافظة وتفكيكه وتوزيع البيانات!' 
+              : 'تم تفكيك نص الملاحظات وتوزيع البيانات!'),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -381,7 +384,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
     _titleController.dispose();
     _locationController.dispose();
     _buildingController.dispose();
-    _streamLinkController.dispose();
+    _descriptionController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -508,7 +511,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
                 isTitleFocused: _isTitleFocused,
                 locationController: _locationController,
                 buildingController: _buildingController,
-                streamLinkController: _streamLinkController,
+                descriptionController: _descriptionController,
                 privacy: provider.privacy,
                 onPrivacyChanged: provider.setPrivacy,
                 titleValidator: (val) => val == null || val.trim().isEmpty ? context.l10n.fieldRequired : null,
@@ -900,7 +903,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
       title: _titleController.text,
       location: _locationController.text,
       building: _buildingController.text,
-      streamLink: _streamLinkController.text,
+      description: _descriptionController.text,
       currentUser: auth.user!,
       appointmentProvider: apptProvider,
       locale: context.l10n.localeName,
@@ -1069,7 +1072,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
 
   void _performClearSilent() {
     _titleController.clear();
-    _streamLinkController.clear();
+    _descriptionController.clear();
     
     // Temporarily remove listeners to prevent updating provider with empty values on clear
     _locationController.removeListener(_onLocationChanged);
