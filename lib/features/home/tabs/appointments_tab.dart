@@ -213,16 +213,7 @@ class _AppointmentsTabState extends State<AppointmentsTab> {
                           if (cardContext != null) {
                             final homeState = context.findAncestorStateOfType<HomeScreenState>();
                             if (homeState != null) {
-                              homeState.setSnappingSuspended(true);
-                              Scrollable.ensureVisible(
-                                cardContext,
-                                duration: const Duration(milliseconds: 1200),
-                                curve: Curves.easeInOut,
-                              ).then((_) {
-                                Future.delayed(const Duration(milliseconds: 500), () {
-                                  homeState.setSnappingSuspended(false);
-                                });
-                              });
+                              homeState.scrollToTabAndTarget(cardContext);
                             } else {
                               Scrollable.ensureVisible(
                                 cardContext,

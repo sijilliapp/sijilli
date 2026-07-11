@@ -22,6 +22,7 @@ import '../../../core/extensions/context_l10n.dart';
 import '../../../core/local/local_db_service.dart';
 
 import '../../search/providers/search_provider.dart';
+import '../../add/providers/add_event_provider.dart';
 import '../../../core/services/calendar_sync_service.dart';
 import '../../../main.dart';
 
@@ -96,6 +97,12 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
 
   @override
   void didPopNext() {
+    // If we are returning because we just created an appointment, skip the magnetic snapping to avoid conflict
+    final hasHighlight = context.read<AddEventProvider>().highlightedAppointmentId != null;
+    if (hasHighlight) {
+      return;
+    }
+    
     // When returning to this screen from another screen (Navigator pop)
     // We only want to snap if the profile is currently showing/partially showing
     scrollToMagneticTop(force: false);
@@ -189,6 +196,34 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     if (mounted) {
       setState(() {
         _isSnappingSuspended = suspended;
+      });
+    }
+  }
+
+  Future<void> scrollToTabAndTarget(BuildContext cardContext) async {
+    setSnappingSuspended(true);
+    final user = context.read<AuthProvider>().user;
+    final double snapOffset = (user?.hasBio ?? false) ? 310 : 280;
+    
+    try {
+      if (_scrollController.hasClients) {
+        await _scrollController.animateTo(
+          snapOffset,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeOut,
+        );
+      }
+      
+      await Scrollable.ensureVisible(
+        cardContext,
+        duration: const Duration(milliseconds: 800),
+        curve: Curves.easeInOut,
+      );
+    } catch (e) {
+      debugPrint('Scroll highlight error: $e');
+    } finally {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        setSnappingSuspended(false);
       });
     }
   }
