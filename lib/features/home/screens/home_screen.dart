@@ -111,7 +111,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     final settings = context.read<SettingsProvider>();
     final appointments = context.read<AppointmentProvider>().appointments;
     
-    if (!settings.isMagneticScrollEnabled || appointments.isEmpty) {
+    if (!settings.isMagneticScrollEnabled || appointments.isEmpty || _isSearching) {
       return;
     }
 
@@ -142,7 +142,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     final appointments = context.read<AppointmentProvider>().appointments;
 
     // Logic: If disabled (or no appts), "Magnetic Top" is actually the REAL top (0)
-    final bool isEnabled = settings.isMagneticScrollEnabled && appointments.isNotEmpty;
+    final bool isEnabled = settings.isMagneticScrollEnabled && appointments.isNotEmpty && !_isSearching;
 
     // If already animating, stop current and start new (mostly for double tap)
     if (force && _scrollController.position.isScrollingNotifier.value) {
@@ -263,8 +263,8 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
           final settings = context.read<SettingsProvider>();
           final appointments = context.read<AppointmentProvider>().appointments;
 
-          // Skip snap if disabled, no appointments, or currently snapping
-          if (!settings.isMagneticScrollEnabled || appointments.isEmpty || _isSnapping) {
+          // Skip snap if disabled, no appointments, currently snapping, or searching
+          if (!settings.isMagneticScrollEnabled || appointments.isEmpty || _isSnapping || _isSearching) {
             return false;
           }
 
