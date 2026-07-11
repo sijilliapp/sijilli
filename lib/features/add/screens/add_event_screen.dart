@@ -31,10 +31,7 @@ class AddEventScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AddEventProvider(),
-      child: _AddEventScreenContent(initialAppointment: initialAppointment, initialGuest: initialGuest),
-    );
+    return _AddEventScreenContent(initialAppointment: initialAppointment, initialGuest: initialGuest);
   }
 }
 
