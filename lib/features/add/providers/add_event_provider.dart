@@ -69,9 +69,15 @@ class AddEventProvider extends ChangeNotifier {
   // Invitation Link
   bool _generateInviteLink = false;
   String? _generatedInviteToken;
+  String? _highlightedAppointmentId;
 
   bool get generateInviteLink => _generateInviteLink;
   String? get generatedInviteToken => _generatedInviteToken;
+  String? get highlightedAppointmentId => _highlightedAppointmentId;
+
+  void clearHighlight() {
+    _highlightedAppointmentId = null;
+  }
 
   // Conflict Detection
   List<Appointment> _history = [];
@@ -954,12 +960,13 @@ class AddEventProvider extends ChangeNotifier {
 
     try {
       _ignoreConflictCheck = true; // Set early to prevent flicker during createAppointment rebuilds
-      await appointmentProvider.createAppointment(
+      final createdAppt = await appointmentProvider.createAppointment(
         newAppt, 
         invitees: _selectedUsers,
         inviteTitle: inviteTitle,
         inviteMessage: inviteMessage,
       );
+      _highlightedAppointmentId = createdAppt.id;
 
       // Learn Immediately for Autocomplete
       _autocompleteService.learnSequence(title);

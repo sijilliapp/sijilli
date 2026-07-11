@@ -112,6 +112,13 @@ class AuthProvider extends ChangeNotifier {
     _updateState(loading: true, status: AuthStatus.loading);
     
     try {
+      // تحميل الأدوار المخزنة كاش إلى الذاكرة المؤقتة للـ UserModel فوراً
+      try {
+        await _roleService.getCachedUserRoles();
+      } catch (e) {
+        debugPrint('⚠️ Failed to load cached roles in memory: $e');
+      }
+
       // 1. First priority: The persistent AuthStore from PocketBase
       final pbUser = PocketBaseClient.instance.currentUser;
       

@@ -482,7 +482,7 @@ class AppointmentProvider extends ChangeNotifier {
     return completer.future;
   }
 
-  Future<void> createAppointment(
+  Future<Appointment> createAppointment(
     Appointment appointment, {
     List<UserModel>? invitees,
     String? inviteTitle,
@@ -515,6 +515,8 @@ class AppointmentProvider extends ChangeNotifier {
     _sortAppointments();
     notifyListeners(); // Update UI instantly
 
+    Appointment finalAppt = tempAppt;
+
     try {
       final inviteeIds = invitees
           ?.where((u) => !u.id.startsWith('phone_'))
@@ -544,6 +546,9 @@ class AppointmentProvider extends ChangeNotifier {
               : _appointments[index].participants,
         );
         _appointments[index] = mergedAppt;
+        finalAppt = mergedAppt;
+      } else {
+        finalAppt = newAppt;
       }
       _sortAppointments();
       _errorMessage = null;
@@ -554,6 +559,8 @@ class AppointmentProvider extends ChangeNotifier {
     } finally {
       notifyListeners();
     }
+
+    return finalAppt;
   }
 
   /// الرد على دعوة (قبول/رفض)

@@ -111,7 +111,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     final settings = context.read<SettingsProvider>();
     final appointments = context.read<AppointmentProvider>().appointments;
     
-    if (!settings.isMagneticScrollEnabled || appointments.isEmpty || _isSearching) {
+    if (!settings.isMagneticScrollEnabled || appointments.isEmpty || _isSearching || _isSnappingSuspended) {
       return;
     }
 
@@ -142,7 +142,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     final appointments = context.read<AppointmentProvider>().appointments;
 
     // Logic: If disabled (or no appts), "Magnetic Top" is actually the REAL top (0)
-    final bool isEnabled = settings.isMagneticScrollEnabled && appointments.isNotEmpty && !_isSearching;
+    final bool isEnabled = settings.isMagneticScrollEnabled && appointments.isNotEmpty && !_isSearching && !_isSnappingSuspended;
 
     // If already animating, stop current and start new (mostly for double tap)
     if (force && _scrollController.position.isScrollingNotifier.value) {
@@ -183,6 +183,16 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
   }
 
   bool _isSearching = false;
+  bool _isSnappingSuspended = false;
+  
+  void setSnappingSuspended(bool suspended) {
+    if (mounted) {
+      setState(() {
+        _isSnappingSuspended = suspended;
+      });
+    }
+  }
+
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
 
@@ -263,8 +273,8 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
           final settings = context.read<SettingsProvider>();
           final appointments = context.read<AppointmentProvider>().appointments;
 
-          // Skip snap if disabled, no appointments, currently snapping, or searching
-          if (!settings.isMagneticScrollEnabled || appointments.isEmpty || _isSnapping || _isSearching) {
+          // Skip snap if disabled, no appointments, currently snapping, searching, or snap suspended
+          if (!settings.isMagneticScrollEnabled || appointments.isEmpty || _isSnapping || _isSearching || _isSnappingSuspended) {
             return false;
           }
 

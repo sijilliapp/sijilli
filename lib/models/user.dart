@@ -34,7 +34,16 @@ class UserModel {
   final bool disableCopying; // 🔒 منع نسخ المقالات
   final UserRoleMetadata? roleMetadata;
 
-  UserRoleMetadata get activeRoleMetadata => roleMetadata ?? getDefaultRoleMetadata(role);
+  // 🧠 ذاكرة مؤقتة للمطابقة الديناميكية لبيانات الفئات الآتية من قاعدة البيانات
+  static final Map<String, UserRoleMetadata> rolesCache = {};
+
+  UserRoleMetadata get activeRoleMetadata {
+    if (roleMetadata != null) return roleMetadata!;
+    if (rolesCache.containsKey(role)) {
+      return rolesCache[role]!;
+    }
+    return getDefaultRoleMetadata(role);
+  }
   
   // ====================== التواريخ ======================
   final DateTime? date; // تاريخ الميلاد

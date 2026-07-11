@@ -30,6 +30,11 @@ class PbRoleService {
         );
       }).toList();
 
+      // تحديث الذاكرة المؤقتة للـ UserModel
+      for (var r in roles) {
+        UserModel.rolesCache[r.key] = r;
+      }
+
       // تخزين الكاش المحلي في SharedPreferences
       if (roles.isNotEmpty) {
         final prefs = await SharedPreferences.getInstance();
@@ -50,7 +55,14 @@ class PbRoleService {
       final String? jsonStr = prefs.getString('user_roles_config');
       if (jsonStr != null && jsonStr.isNotEmpty) {
         final List<dynamic> list = jsonDecode(jsonStr);
-        return list.map((item) => UserRoleMetadata.fromJson(Map<String, dynamic>.from(item))).toList();
+        final List<UserRoleMetadata> roles = list.map((item) => UserRoleMetadata.fromJson(Map<String, dynamic>.from(item))).toList();
+        
+        // تحديث الذاكرة المؤقتة للـ UserModel
+        for (var r in roles) {
+          UserModel.rolesCache[r.key] = r;
+        }
+
+        return roles;
       }
     } catch (_) {}
     return [];

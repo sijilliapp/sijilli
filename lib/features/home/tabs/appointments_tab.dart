@@ -12,6 +12,9 @@ import '../widgets/timeline_separator.dart';
 
 import '../../../core/extensions/context_l10n.dart';
 
+import '../../add/providers/add_event_provider.dart';
+import '../screens/home_screen.dart';
+
 class AppointmentsTab extends StatefulWidget {
   const AppointmentsTab({super.key});
 
@@ -20,6 +23,7 @@ class AppointmentsTab extends StatefulWidget {
 }
 
 class _AppointmentsTabState extends State<AppointmentsTab> {
+  final Map<String, GlobalKey> _cardKeys = {};
 
   void _showAppointmentDetails(BuildContext context, Appointment appointment) {
     showModalBottomSheet(
@@ -199,6 +203,38 @@ class _AppointmentsTabState extends State<AppointmentsTab> {
                 if (appointments.isNotEmpty) ...[
                   Builder(
                     builder: (context) {
+                      final addEventProvider = context.watch<AddEventProvider>();
+                      final highlightId = addEventProvider.highlightedAppointmentId;
+
+                      if (highlightId != null) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          final key = _cardKeys[highlightId];
+                          final cardContext = key?.currentContext;
+                          if (cardContext != null) {
+                            final homeState = context.findAncestorStateOfType<HomeScreenState>();
+                            if (homeState != null) {
+                              homeState.setSnappingSuspended(true);
+                              Scrollable.ensureVisible(
+                                cardContext,
+                                duration: const Duration(milliseconds: 1200),
+                                curve: Curves.easeInOut,
+                              ).then((_) {
+                                Future.delayed(const Duration(milliseconds: 500), () {
+                                  homeState.setSnappingSuspended(false);
+                                });
+                              });
+                            } else {
+                              Scrollable.ensureVisible(
+                                cardContext,
+                                duration: const Duration(milliseconds: 1200),
+                                curve: Curves.easeInOut,
+                              );
+                            }
+                          }
+                          context.read<AddEventProvider>().clearHighlight();
+                        });
+                      }
+
                       final List<Widget> timelineWidgets = [];
                       for (int i = 0; i < appointments.length; i++) {
                         final currentAppt = appointments[i];
@@ -210,12 +246,18 @@ class _AppointmentsTabState extends State<AppointmentsTab> {
                           final dateText = AppDateFormatter.formatMediumDate(prevAppt.date, locale);
                           timelineWidgets.add(TimelineSeparator(dateText: dateText, durationText: durationText));
                         }
+                        
+                        final isHighlighted = currentAppt.id == highlightId;
+                        final key = _cardKeys.putIfAbsent(currentAppt.id, () => GlobalKey());
+
                         timelineWidgets.add(
                           Column(
                             key: ValueKey(currentAppt.id),
                             children: [
                               AppointmentCard(
+                                key: key,
                                 appointment: currentAppt,
+                                shouldGlow: isHighlighted,
                               ),
                             ],
                           )
