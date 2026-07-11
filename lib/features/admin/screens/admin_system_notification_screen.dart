@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimens.dart';
+import '../../../models/user.dart';
+import '../../auth/services/pb_role_service.dart';
 import '../providers/admin_provider.dart';
 
 class AdminSystemNotificationScreen extends StatefulWidget {
@@ -16,11 +18,15 @@ class AdminSystemNotificationScreen extends StatefulWidget {
 
 class _AdminSystemNotificationScreenState extends State<AdminSystemNotificationScreen> {
   // Target roles state
-  final Set<String> _selectedRoles = {'user', 'writer', 'admin', 'organization'};
+  final Set<String> _selectedRoles = {};
+  List<UserRoleMetadata> _roles = [];
+  bool _isLoadingRoles = true;
 
   // Nerve Tapping Game form controllers
   late final TextEditingController _nerveTitleController;
   late final TextEditingController _nerveMessageController;
+
+  final PbRoleService _roleService = PbRoleService();
 
   @override
   void initState() {
@@ -29,6 +35,7 @@ class _AdminSystemNotificationScreenState extends State<AdminSystemNotificationS
     _nerveMessageController = TextEditingController(
       text: 'اضغط 10 مرات متتالية بأسرع ما يمكن وسجل نتيجتك في قائمة التحدي اليومية!',
     );
+    _loadRoles();
   }
 
   @override
@@ -36,6 +43,52 @@ class _AdminSystemNotificationScreenState extends State<AdminSystemNotificationS
     _nerveTitleController.dispose();
     _nerveMessageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadRoles() async {
+    // 1. محاولة التحميل من الكاش المحلي أولاً لعرض الواجهة فوراً
+    final cached = await _roleService.getCachedUserRoles();
+    if (cached.isNotEmpty) {
+      setState(() {
+        _roles = cached;
+        _isLoadingRoles = false;
+        // تفعيل كافة الأدوار افتراضياً
+        for (var role in cached) {
+          _selectedRoles.add(role.key);
+        }
+      });
+    }
+
+    // 2. الاستعلام من خادم PocketBase لجلب أحدث الفئات
+    final fresh = await _roleService.fetchAndCacheUserRoles();
+    if (mounted && fresh.isNotEmpty) {
+      setState(() {
+        _roles = fresh;
+        _isLoadingRoles = false;
+        // إذا كان الكاش فارغاً، نحدد الكل افتراضياً
+        if (cached.isEmpty) {
+          _selectedRoles.clear();
+          for (var role in fresh) {
+            _selectedRoles.add(role.key);
+          }
+        }
+      });
+    } else if (mounted && _roles.isEmpty) {
+      // احتياطي طوارئ (Fallback) في حال فشل الاتصال ولم يكن هناك كاش
+      final fallbackRoles = [
+        const UserRoleMetadata(key: 'user', displayNameAr: 'مستخدم', displayNameEn: 'User', permissions: {}),
+        const UserRoleMetadata(key: 'writer', displayNameAr: 'كاتب', displayNameEn: 'Writer', permissions: {}),
+        const UserRoleMetadata(key: 'admin', displayNameAr: 'مشرف', displayNameEn: 'Admin', permissions: {}),
+        const UserRoleMetadata(key: 'organization', displayNameAr: 'مؤسسة', displayNameEn: 'Organization', permissions: {}),
+      ];
+      setState(() {
+        _roles = fallbackRoles;
+        _isLoadingRoles = false;
+        for (var role in fallbackRoles) {
+          _selectedRoles.add(role.key);
+        }
+      });
+    }
   }
 
   void _toggleRole(String role, bool selected) {
@@ -46,7 +99,7 @@ class _AdminSystemNotificationScreenState extends State<AdminSystemNotificationS
         if (_selectedRoles.length > 1) {
           _selectedRoles.remove(role);
         } else {
-          // Prevent unchecking all roles
+          // منع إلغاء تحديد كافة الفئات
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('الرجاء اختيار جهة مستهدفة واحدة على الأقل')),
           );
@@ -163,13 +216,6 @@ class _AdminSystemNotificationScreenState extends State<AdminSystemNotificationS
   }
 
   Widget _buildTargetSelectorCard(bool isDark) {
-    final rolesList = [
-      {'key': 'user', 'label': 'مستخدم (user)'},
-      {'key': 'writer', 'label': 'كاتب (writer)'},
-      {'key': 'admin', 'label': 'مشرف (admin)'},
-      {'key': 'organization', 'label': 'مؤسسة (org)'},
-    ];
-
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -192,35 +238,47 @@ class _AdminSystemNotificationScreenState extends State<AdminSystemNotificationS
               ],
             ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: rolesList.map((role) {
-                final key = role['key']!;
-                final label = role['label']!;
-                final isSelected = _selectedRoles.contains(key);
-
-                return FilterChip(
-                  label: Text(
-                    label,
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : (isDark ? Colors.grey.shade300 : Colors.grey.shade700),
-                      fontSize: 12,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    ),
+            if (_isLoadingRoles && _roles.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  selected: isSelected,
-                  onSelected: (val) => _toggleRole(key, val),
-                  selectedColor: AppColors.primary,
-                  checkmarkColor: Colors.white,
-                  backgroundColor: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                );
-              }).toList(),
-            ),
+                ),
+              )
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _roles.map((role) {
+                  final key = role.key;
+                  final label = role.displayNameAr.isNotEmpty ? role.displayNameAr : role.key;
+                  final isSelected = _selectedRoles.contains(key);
+
+                  return FilterChip(
+                    label: Text(
+                      label,
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : (isDark ? Colors.grey.shade300 : Colors.grey.shade700),
+                        fontSize: 12,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                    selected: isSelected,
+                    onSelected: (val) => _toggleRole(key, val),
+                    selectedColor: AppColors.primary,
+                    checkmarkColor: Colors.white,
+                    backgroundColor: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  );
+                }).toList(),
+              ),
             const SizedBox(height: 8),
             Text(
-              'سيتم تصفية وبث الإشعار حصراً للمستخدمين الذين يحملون الأدوار المحددة أعلاه.',
+              'سيتم تصفية وبث الإشعار حصراً للمستخدمين الذين يحملون الأدوار المحددة أعلاه من جدول الفئات.',
               style: TextStyle(fontSize: 11, color: isDark ? Colors.grey.shade400 : Colors.grey.shade500),
             ),
           ],
