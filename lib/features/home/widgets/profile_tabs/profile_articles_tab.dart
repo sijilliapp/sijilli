@@ -12,6 +12,9 @@ import 'package:sijilli/models/appointment.dart';
 import '../../../../core/constants/app_colors.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import '../../../../core/services/pocketbase_client.dart';
+import '../../../../core/providers/broadcast_provider.dart';
+import '../../../articles/screens/system_articles_screen.dart';
+import '../../../auth/providers/auth_provider.dart';
 
 class ProfileArticlesTab extends StatefulWidget {
   final String userId;
@@ -238,16 +241,40 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
                         },
                       ),
                       if (widget.isCurrentUser)
-                        IconButton(
-                          icon: const Icon(Icons.add_circle_outline, color: AppColors.primary, size: 28),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AddArticleScreen(
-                                  initialTagIds: activeTagIds,
+                        Consumer<BroadcastProvider>(
+                          builder: (context, broadcastProvider, _) {
+                            final user = context.watch<AuthProvider>().user;
+                            final hasUnread = broadcastProvider.hasUnreadArticles(user?.role);
+                            
+                            return Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.campaign_outlined, color: AppColors.primary, size: 28),
+                                  tooltip: 'مقالات النظام',
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => const SystemArticlesScreen(),
+                                      ),
+                                    );
+                                  },
                                 ),
-                              ),
+                                if (hasUnread)
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.red,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             );
                           },
                         ),

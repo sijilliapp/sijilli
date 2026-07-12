@@ -14,6 +14,8 @@ import '../../../core/extensions/context_l10n.dart';
 
 import '../../add/providers/add_event_provider.dart';
 import '../screens/home_screen.dart';
+import '../../../core/providers/broadcast_provider.dart';
+import '../../../models/broadcast.dart';
 
 class AppointmentsTab extends StatefulWidget {
   const AppointmentsTab({super.key});
@@ -97,6 +99,94 @@ class _AppointmentsTabState extends State<AppointmentsTab> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  String _formatArabicDateTime(DateTime dt) {
+    final hourVal = dt.hour == 12 ? 12 : dt.hour % 12;
+    final hourStr = hourVal == 0 ? '12' : hourVal.toString();
+    final minuteStr = dt.minute.toString().padLeft(2, '0');
+    final period = dt.hour >= 12 ? 'مساءً' : 'صباحاً';
+    
+    final day = dt.day.toString();
+    final year = dt.year.toString();
+    
+    const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+    final monthName = months[dt.month - 1];
+    
+    String toArabicDigits(String input) {
+      const english = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+      const arabic = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+      var result = input;
+      for (int i = 0; i < english.length; i++) {
+        result = result.replaceAll(english[i], arabic[i]);
+      }
+      return result;
+    }
+    
+    final timePart = toArabicDigits('$hourStr:$minuteStr');
+    final datePart = toArabicDigits(day) + ' ' + monthName + ' ' + toArabicDigits(year);
+    
+    return '$timePart $period $datePart';
+  }
+
+  Widget _buildBroadcastBanner(BuildContext context, Broadcast b, bool isDark) {
+    final dateText = b.expiresAt != null ? _formatArabicDateTime(b.expiresAt!) : '';
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
+      padding: const EdgeInsets.all(12.0),
+      decoration: BoxDecoration(
+        color: isDark 
+            ? Colors.amber.shade900.withValues(alpha: 0.15) 
+            : const Color(0xFFFFFDE7),
+        border: Border.all(
+          color: isDark ? Colors.amber.shade700.withValues(alpha: 0.3) : Colors.amber.shade300,
+          width: 1.0,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  b.title,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.amber.shade200 : Colors.amber.shade900,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (dateText.isNotEmpty)
+                Text(
+                  dateText,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: isDark ? Colors.amber.shade300.withValues(alpha: 0.7) : Colors.grey.shade700,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            b.content,
+            style: TextStyle(
+              fontSize: 12.5,
+              color: isDark ? Colors.grey.shade300 : Colors.grey.shade800,
+              height: 1.3,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
@@ -199,6 +289,25 @@ class _AppointmentsTabState extends State<AppointmentsTab> {
                   ),
                 ),
                 const SizedBox(height: 2),
+
+                Builder(
+                  builder: (context) {
+                    final user = context.watch<AuthProvider>().user;
+                    final broadcastProvider = context.watch<BroadcastProvider>();
+                    final eventBroadcasts = broadcastProvider.getFilteredBroadcasts(user?.role, type: 'event');
+                    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+                    if (eventBroadcasts.isEmpty) return const SizedBox.shrink();
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 6.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: eventBroadcasts.map((b) => _buildBroadcastBanner(context, b, isDark)).toList(),
+                      ),
+                    );
+                  },
+                ),
 
                 if (appointments.isNotEmpty) ...[
                   Builder(

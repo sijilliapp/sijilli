@@ -32,6 +32,7 @@ import 'package:sijilli/features/articles/providers/article_provider.dart';
 import 'package:sijilli/features/articles/providers/tag_provider.dart';
 import 'package:sijilli/features/game/providers/nerve_game_provider.dart';
 import 'package:sijilli/features/add/providers/add_event_provider.dart';
+import 'package:sijilli/core/providers/broadcast_provider.dart';
 
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
@@ -247,6 +248,10 @@ class SijilliApp extends StatelessWidget {
         // إضافة وإدارة الفعاليات/المواعيد الجديدة
         ChangeNotifierProvider(
           create: (context) => AddEventProvider(),
+        ),
+        // إدارة النشرات العامة والبث الجماعي
+        ChangeNotifierProvider(
+          create: (context) => BroadcastProvider(),
         ),
         // إدارة اللغة
         ChangeNotifierProvider.value(

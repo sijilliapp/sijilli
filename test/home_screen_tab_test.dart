@@ -15,10 +15,23 @@ import 'package:sijilli/l10n/app_localizations.dart';
 import 'package:sijilli/features/notifications/providers/notification_provider.dart';
 import 'package:sijilli/core/local/local_db_service.dart';
 import 'package:sijilli/core/providers/global_config_provider.dart';
+import 'package:sijilli/core/providers/broadcast_provider.dart';
+import 'package:sijilli/models/broadcast.dart';
 
 import 'package:pocketbase/pocketbase.dart';
 import '../lib/core/services/pocketbase_client.dart';
 import 'package:sijilli/core/services/pocketbase_client.dart' as pkg;
+
+class MockBroadcastProvider extends BroadcastProvider {
+  @override
+  List<Broadcast> get broadcasts => [];
+  
+  @override
+  List<Broadcast> getFilteredBroadcasts(String? userRole, {String? type}) => [];
+
+  @override
+  bool hasUnreadArticles(String? userRole) => false;
+}
 
 class MockAuthProvider extends AuthProvider {
   @override
@@ -136,6 +149,7 @@ void main() {
     final mockTheme = MockThemeProvider();
     final mockNotif = MockNotificationProvider();
     final mockConfig = GlobalConfigProvider();
+    final mockBroadcast = MockBroadcastProvider();
 
     await tester.pumpWidget(
       MultiProvider(
@@ -148,6 +162,7 @@ void main() {
           ChangeNotifierProvider<ThemeProvider>.value(value: mockTheme),
           ChangeNotifierProvider<NotificationProvider>.value(value: mockNotif),
           ChangeNotifierProvider<GlobalConfigProvider>.value(value: mockConfig),
+          ChangeNotifierProvider<BroadcastProvider>.value(value: mockBroadcast),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
