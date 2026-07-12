@@ -419,68 +419,71 @@ class ArticleCard extends StatelessWidget {
         ? (locale == 'ar' ? '${(mins / 60).round()} ساعة' : '${(mins / 60).round()} hr')
         : (locale == 'ar' ? '$mins دقيقة' : '$mins min');
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Icon(Icons.access_time_filled, size: 14, color: iconColor),
-        const SizedBox(width: 4),
-        Text(
-          timeago.format(article.createdAt, locale: locale),
-          style: TextStyle(color: textColor, fontSize: 13),
-        ),
-        const SizedBox(width: 10),
-        Icon(Icons.hourglass_empty_rounded, size: 14, color: iconColor),
-        const SizedBox(width: 4),
-        Text(
-          readTimeLabel,
-          style: TextStyle(color: textColor, fontSize: 13),
-        ),
-        if (article.tags.isNotEmpty || (isAuthor && article.tags.isEmpty)) ...[
-          const SizedBox(width: 10),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(Icons.access_time_filled, size: 14, color: iconColor),
+          const SizedBox(width: 4),
           Text(
-            '•',
-            style: TextStyle(color: iconColor.withValues(alpha: 0.5), fontSize: 13),
+            timeago.format(article.createdAt, locale: locale),
+            style: TextStyle(color: textColor, fontSize: 13),
           ),
           const SizedBox(width: 10),
-        ],
-        if (article.tags.isNotEmpty) ...[
-          GestureDetector(
-            onTap: isAuthor ? () {
-              TagSelectorSheet.show(
-                context,
-                initialSelectedTagIds: article.tagIds,
-                onSelectionChanged: (selectedTagIds, selectedTags) async {
-                  await context.read<ArticleProvider>().updateArticle(
-                    id: article.id,
-                    tagIds: selectedTagIds,
-                  );
-                },
-              );
-            } : null,
-            child: MouseRegion(
-              cursor: isAuthor ? SystemMouseCursors.click : SystemMouseCursors.basic,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: article.tags.map((tag) {
-                    return Container(
-                      width: 8,
-                      height: 8,
-                      margin: const EdgeInsets.symmetric(horizontal: 2.0),
-                      decoration: BoxDecoration(
-                        color: tag.color,
-                        shape: BoxShape.circle,
-                      ),
+          Icon(Icons.hourglass_empty_rounded, size: 14, color: iconColor),
+          const SizedBox(width: 4),
+          Text(
+            readTimeLabel,
+            style: TextStyle(color: textColor, fontSize: 13),
+          ),
+          if (article.tags.isNotEmpty || (isAuthor && article.tags.isEmpty)) ...[
+            const SizedBox(width: 10),
+            Text(
+              '•',
+              style: TextStyle(color: iconColor.withValues(alpha: 0.5), fontSize: 13),
+            ),
+            const SizedBox(width: 10),
+          ],
+          if (article.tags.isNotEmpty) ...[
+            GestureDetector(
+              onTap: isAuthor ? () {
+                TagSelectorSheet.show(
+                  context,
+                  initialSelectedTagIds: article.tagIds,
+                  onSelectionChanged: (selectedTagIds, selectedTags) async {
+                    await context.read<ArticleProvider>().updateArticle(
+                      id: article.id,
+                      tagIds: selectedTagIds,
                     );
-                  }).toList(),
+                  },
+                );
+              } : null,
+              child: MouseRegion(
+                cursor: isAuthor ? SystemMouseCursors.click : SystemMouseCursors.basic,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: article.tags.map((tag) {
+                      return Container(
+                        width: 8,
+                        height: 8,
+                        margin: const EdgeInsets.symmetric(horizontal: 2.0),
+                        decoration: BoxDecoration(
+                          color: tag.color,
+                          shape: BoxShape.circle,
+                        ),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
+          if (isAuthor && article.tags.isEmpty) _buildAddTagButton(context, article, isAuthor),
         ],
-        if (isAuthor && article.tags.isEmpty) _buildAddTagButton(context, article, isAuthor),
-      ],
+      ),
     );
   }
 
