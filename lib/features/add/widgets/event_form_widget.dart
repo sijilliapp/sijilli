@@ -82,25 +82,7 @@ class EventFormWidget extends StatelessWidget {
           showCountdown: true,
           validator: titleValidator,
         ),
-        const SizedBox(height: 12),
-
-        CustomTextField(
-          controller: descriptionController,
-          label: context.l10n.localeName == 'ar' ? 'الملاحظات العامة (مرجع الموعد) 📝' : 'General Notes (Reference) 📝',
-          hint: context.l10n.localeName == 'ar'
-              ? 'اكتب أو الصق نص الدعوة هنا ثم اضغط العصا السحرية لاستخلاص البيانات...'
-              : 'Write or paste the invitation text here and tap the magic wand to extract details...',
-          maxLength: 1000,
-          showCountdown: true,
-          suffixIcon: onSmartParse != null
-              ? IconButton(
-                  icon: const Icon(Icons.auto_awesome, color: AppColors.primary, size: 22),
-                  tooltip: context.l10n.localeName == 'ar' ? 'تفكيك وتحليل النص بالذكاء' : 'AI Parse Text',
-                  onPressed: onSmartParse,
-                )
-              : null,
-        ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 6),
         
         LayoutBuilder(
           builder: (context, constraints) {
@@ -127,7 +109,25 @@ class EventFormWidget extends StatelessWidget {
           },
         ),
 
-        const SizedBox(height: 6),
+        const SizedBox(height: 12),
+
+        CustomTextField(
+          controller: descriptionController,
+          label: context.l10n.localeName == 'ar' ? 'الملاحظات العامة (مرجع الموعد) 📝' : 'General Notes (Reference) 📝',
+          hint: context.l10n.localeName == 'ar'
+              ? 'اكتب أو الصق نص الدعوة هنا ثم اضغط العصا السحرية لاستخلاص البيانات...'
+              : 'Write or paste the invitation text here and tap the magic wand to extract details...',
+          maxLength: 1000,
+          showCountdown: true,
+          suffixIcon: onSmartParse != null
+              ? IconButton(
+                  icon: const Icon(Icons.auto_awesome, color: AppColors.primary, size: 22),
+                  tooltip: context.l10n.localeName == 'ar' ? 'تفكيك وتحليل النص بالذكاء' : 'AI Parse Text',
+                  onPressed: onSmartParse,
+                )
+              : null,
+        ),
+        const SizedBox(height: 12),
         
         Row(
           children: [

@@ -470,20 +470,38 @@ class AddEventProvider extends ChangeNotifier {
   }
 
   void _updateConflictStatus() {
-    if (_ignoreConflictCheck || _selectedDate == null || _selectedTime == null || _duration < 0) {
+    final bool isAllDay = _duration == 0;
+    if (_ignoreConflictCheck || _selectedDate == null || (!isAllDay && _selectedTime == null) || _duration < 0) {
       _hasConflict = false;
       return;
     }
 
-    final startAt = DateTime(
+    final newStart = DateTime(
       _selectedDate!.year,
       _selectedDate!.month,
       _selectedDate!.day,
-      _selectedTime!.hour,
-      _selectedTime!.minute,
-    ).toUtc();
+      isAllDay ? 0 : (_selectedTime?.hour ?? 0),
+      isAllDay ? 0 : (_selectedTime?.minute ?? 0),
+    );
 
-    final endAt = startAt.add(Duration(minutes: _duration));
+    int finalNewDuration = _duration;
+    if (isAllDay) {
+       // "All Day" logic
+       int dayCount = 1;
+       if (!_isHijri) {
+          dayCount = (_selectedEndDate?.difference(_selectedDate!).inDays ?? 0) + 1;
+       }
+       finalNewDuration = (dayCount >= 1) ? dayCount * 1440 : 1440;
+    }
+
+    final newRanges = _getAppointmentOccurrences(
+      startAt: newStart,
+      recurrenceType: _isRecurring ? _recurrenceType : null,
+      recurrenceCount: _isRecurring ? _recurrenceCount : 1,
+      recurrenceIndex: 1,
+      duration: finalNewDuration,
+      dateType: _isHijri ? 'hijri' : 'gregorian',
+    );
 
     final conflicts = _history.where((a) {
       if (a.id == _editingId) return false;
@@ -492,23 +510,139 @@ class AddEventProvider extends ChangeNotifier {
       if (a.isCancelled || a.isDeleted || a.isUserDeleted || a.isArchived) return false;
       if (a.viewerRecord?.status == InvitationStatus.declined) return false;
 
-      final aStart = a.startAt;
-      
-      // All-day event check (duration 0 or >= 1440)
-      if (a.duration <= 0 || a.duration >= 1440) {
-        // If it's an all-day event, any appointment on that day is a conflict
-        final aDate = DateTime(a.fullDateTime.year, a.fullDateTime.month, a.fullDateTime.day);
-        final myDate = DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day);
-        return aDate.isAtSameMomentAs(myDate);
+      // Get occurrence ranges for this existing appointment
+      final existingRanges = _getAppointmentOccurrences(
+        startAt: a.startAt,
+        recurrenceType: a.recurrenceType,
+        recurrenceCount: a.recurrenceCount ?? 1,
+        recurrenceIndex: a.recurrenceIndex ?? 1,
+        duration: a.duration,
+        dateType: a.dateType,
+      );
+
+      // Check if any range of the new appointment overlaps with any range of this existing appointment
+      for (final newRange in newRanges) {
+        for (final extRange in existingRanges) {
+          if (newRange.start.isBefore(extRange.end) && extRange.start.isBefore(newRange.end)) {
+            return true; // Overlap detected!
+          }
+        }
       }
 
-      final aEnd = aStart.add(Duration(minutes: a.duration));
-
-      // Overlap check (UTC vs UTC)
-      return aStart.isBefore(endAt) && aEnd.isAfter(startAt);
+      return false;
     });
 
     _hasConflict = conflicts.isNotEmpty;
+  }
+
+  List<DateTimeRange> _getAppointmentOccurrences({
+    required DateTime startAt,
+    required String? recurrenceType,
+    required int recurrenceCount,
+    required int recurrenceIndex,
+    required int duration,
+    required String dateType,
+  }) {
+    final List<DateTimeRange> ranges = [];
+    
+    // The current occurrence (which starts at startAt)
+    DateTime currentLocalStart = startAt.toLocal();
+    int currentDuration = duration;
+    if (currentDuration == 0) {
+      currentDuration = 1440;
+    }
+
+    ranges.add(DateTimeRange(
+      start: currentLocalStart,
+      end: currentLocalStart.add(Duration(minutes: currentDuration)),
+    ));
+
+    // If it's not a recurring event, or count <= index, return just this one
+    if (recurrenceType == null || recurrenceType == 'none' || recurrenceCount <= recurrenceIndex) {
+      return ranges;
+    }
+
+    int remaining = recurrenceCount - recurrenceIndex;
+    
+    // We compute the next occurrences sequentially
+    for (int i = 0; i < remaining; i++) {
+      currentLocalStart = _calculateNextDateLocal(currentLocalStart, recurrenceType, dateType);
+      ranges.add(DateTimeRange(
+        start: currentLocalStart,
+        end: currentLocalStart.add(Duration(minutes: currentDuration)),
+      ));
+    }
+
+    return ranges;
+  }
+
+  DateTime _calculateNextDateLocal(DateTime currentLocal, String recurrenceType, String dateType) {
+    if (dateType == 'hijri') {
+       HijriCalendar.setLocal('ar');
+       final h = HijriCalendar.fromDate(currentLocal);
+       int hYear = h.hYear;
+       int hMonth = h.hMonth;
+       int hDay = h.hDay;
+
+       if (recurrenceType == 'daily') {
+          return currentLocal.add(const Duration(days: 1));
+       } else if (recurrenceType == 'weekly') {
+          return currentLocal.add(const Duration(days: 7));
+       } else if (recurrenceType == 'monthly') {
+          hMonth++;
+          if (hMonth > 12) {
+             hMonth = 1;
+             hYear++;
+          }
+       } else if (recurrenceType == 'annual') {
+          hYear++;
+       }
+
+       final hCalc = HijriCalendar();
+       hCalc.hYear = hYear;
+       hCalc.hMonth = hMonth;
+       hCalc.hDay = hDay;
+       
+       DateTime next;
+       if (hCalc.isValid()) {
+         next = hCalc.hijriToGregorian(hYear, hMonth, hDay);
+       } else {
+          next = hCalc.hijriToGregorian(hYear, hMonth, 29);
+       }
+       
+       // Preserve the exact wall-clock time
+       return DateTime(
+         next.year, next.month, next.day,
+         currentLocal.hour, currentLocal.minute, currentLocal.second
+       );
+
+    } else {
+      switch (recurrenceType) {
+        case 'daily':
+          return currentLocal.add(const Duration(days: 1));
+        case 'weekly':
+          return currentLocal.add(const Duration(days: 7));
+        case 'monthly':
+          int nextMonth = currentLocal.month + 1;
+          int nextYear = currentLocal.year;
+          if (nextMonth > 12) {
+            nextMonth = 1;
+            nextYear++;
+          }
+          final lastDayOfNextMonth = DateTime(nextYear, nextMonth + 1, 0).day;
+          final nextDay = currentLocal.day > lastDayOfNextMonth ? lastDayOfNextMonth : currentLocal.day;
+          return DateTime(nextYear, nextMonth, nextDay, currentLocal.hour, currentLocal.minute);
+          
+        case 'annual':
+           int nextYear = currentLocal.year + 1;
+           if (currentLocal.month == 2 && currentLocal.day == 29) {
+             return DateTime(nextYear, 2, 28, currentLocal.hour, currentLocal.minute);
+           }
+           return DateTime(nextYear, currentLocal.month, currentLocal.day, currentLocal.hour, currentLocal.minute);
+        default:
+          return currentLocal.add(const Duration(days: 1));
+      }
+    }
   }
 
 
