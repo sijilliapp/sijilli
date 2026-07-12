@@ -29,10 +29,8 @@ class ThemeProvider extends ChangeNotifier {
   final List<String> availableFonts = [
     'Default',
     'Manal High',
-    'Manal Bold',
     'Tajawal',
     'Amiri',
-    'Al Amiri',
   ];
 
   Future<void> loadSettings() async {
@@ -59,7 +57,7 @@ class ThemeProvider extends ChangeNotifier {
        
        updateSunsetStatus(coords);
     } catch (e) {
-      print('Theme Sunset Check Error: $e');
+      print('Failed to calculate sunset for auto theme: $e');
     }
   }
   
@@ -84,24 +82,22 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   Future<void> setFontFamily(String font) async {
-    if (!availableFonts.contains(font)) return;
-    
+    if (_fontFamily == font) return;
     _fontFamily = font;
     notifyListeners();
-
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(keyFontFamily, font);
   }
   
   Future<void> setThemeMode(String mode) async {
-    if (!['light', 'dark', 'auto'].contains(mode)) return;
-    
+    if (_currentTheme == mode) return;
     _currentTheme = mode;
-    if (mode == 'auto') {
-      _checkSunset();
-    }
-    notifyListeners();
     
+    if (mode == 'auto') {
+      await _checkSunset();
+    }
+    
+    notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(keyThemeMode, mode);
   }
@@ -111,19 +107,15 @@ class ThemeProvider extends ChangeNotifier {
       switch (_fontFamily) {
         case 'Manal High':
           return base.apply(fontFamily: 'Manal_High');
-        case 'Manal Bold':
-          return base.apply(fontFamily: 'Manal_Bold');
         case 'Tajawal':
           return GoogleFonts.tajawalTextTheme(base);
         case 'Amiri':
           return GoogleFonts.amiriTextTheme(base);
-        case 'Al Amiri':
-          return GoogleFonts.amiriQuranTextTheme(base);
         default:
           if (kIsWeb) {
             return base.apply(fontFamily: 'system-ui');
           }
-          return base;
+          return base.apply(fontFamily: 'sans-serif');
       }
     } catch (e) {
       debugPrint('⚠️ Error loading custom font: $e. Using base theme.');
@@ -133,25 +125,21 @@ class ThemeProvider extends ChangeNotifier {
 
   static TextStyle getTextStyleForFont(String fontName, TextStyle baseStyle) {
     if (fontName == 'Default' || fontName.isEmpty) {
-      return baseStyle.copyWith(fontFamily: null);
+      if (kIsWeb) {
+        return baseStyle.copyWith(fontFamily: 'system-ui');
+      }
+      return baseStyle.copyWith(fontFamily: 'sans-serif');
     }
     if (fontName == 'Manal High') {
       return baseStyle.copyWith(fontFamily: 'Manal_High');
     }
-    if (fontName == 'Manal Bold') {
-      return baseStyle.copyWith(fontFamily: 'Manal_Bold');
-    }
-    String googleFontName = fontName;
-    if (fontName == 'Al Amiri') {
-      googleFontName = 'Amiri Quran';
-    }
     try {
       return GoogleFonts.getFont(
-        googleFontName,
+        fontName,
         textStyle: baseStyle,
       );
     } catch (e) {
-      debugPrint('⚠️ Error loading Google Font $googleFontName: $e');
+      debugPrint('⚠️ Error loading Google Font $fontName: $e');
       return baseStyle;
     }
   }
