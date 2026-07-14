@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Node / npm (for Vercel API functions)
+node_modules/
+package-lock.json
