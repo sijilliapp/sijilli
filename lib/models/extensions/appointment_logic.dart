@@ -11,16 +11,14 @@ extension AppointmentLogic on Appointment {
   }
   
   /// الحصول على الخصوصية الفعلية.
-  /// الخصوصية الخاصة بالمستخدم (دعوة/نسخة) هي المسيطرة على واجهة المستخدم الخاصة به.
-  /// إذا لم تتوفر، يتم الرجوع إلى الخصوصية العالمية للموعد.
+  /// الخصوصية الفعلية للموعد — مصدرها نسخة المستخدم الشخصية (invitations.privacy) فقط.
+  /// جدول appointments لا يحتوي على حقل privacy بعد الآن.
   String get effectivePrivacy {
     final invPrivacy = currentUserInvitation?.privacy;
-    
     if (invPrivacy != null && invPrivacy.isNotEmpty) {
       return invPrivacy;
     }
-    if (privacy.isNotEmpty) return privacy;
-    return 'private';
+    return 'private'; // افتراضي آمن إذا لم تتوفر نسخة شخصية
   }
 
   /// التحقق إذا كان الموعد عاماً

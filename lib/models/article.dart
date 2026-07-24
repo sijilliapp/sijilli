@@ -14,6 +14,7 @@ class Article {
   final DateTime updatedAt;
   final String? image;
   final List<String> audioFiles;
+  final List<String> imageFiles;
   
   // Relations
   final UserModel? author;
@@ -21,6 +22,8 @@ class Article {
   final List<String> tagIds;
   final List<Tag> tags;
   final int viewsCount; // عدد مرات فتح/قراءة المقال
+  final bool isReadOnly; // هل المقال للقراءة فقط (مثل مقالات الترحيب)
+  final bool isHelpArticle; // مقال مساعدة من المشرف يظهر لجميع المستخدمين
   
   // Poetry & Correction Metadata placeholders
   final Map<String, dynamic>? poetryMetadata;
@@ -37,11 +40,14 @@ class Article {
     required this.updatedAt,
     this.image,
     this.audioFiles = const [],
+    this.imageFiles = const [],
     this.author,
     this.likes = const [],
     this.tagIds = const [],
     this.tags = const [],
     this.viewsCount = 0,
+    this.isReadOnly = false,
+    this.isHelpArticle = false,
     this.poetryMetadata,
     this.highlightsMetadata,
     this.audioMetadata,
@@ -61,7 +67,7 @@ class Article {
     
     // Clean all tags and markers
     String clean = text;
-    clean = clean.replaceAll(RegExp(r'\[/?(POEM|CENTER|JUSTIFY|LEFT|RIGHT|B|BOLD|HIGHLIGHT|POEM_LEFT|POEM_CENTER|AUDIO(?:_[^\]]+|:\s*[^\]]+)?)/?\]', caseSensitive: false), '');
+    clean = clean.replaceAll(RegExp(r'\[/?(POEM|CENTER|JUSTIFY|LEFT|RIGHT|B|BOLD|HIGHLIGHT|POEM_LEFT|POEM_CENTER|AUDIO(?:_[^\]]+|:\s*[^\]]+)?|IMAGE(?:_[^\]]+|:\s*[^\]]+)?)/?\]', caseSensitive: false), '');
     clean = clean.replaceAll(RegExp(r'\[/'), '');
     clean = clean.replaceAll(RegExp(r'==|~~|--|\+\+|\*'), '');
     
@@ -146,7 +152,7 @@ class Article {
 
     String res = input;
     // 1. Remove all BBCode tags (including alternate closing tag formats like [BOLD/])
-    res = res.replaceAll(RegExp(r'\[/?(POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT|POEM_LEFT|POEM_CENTER|AUDIO(?:_[^\]]+|:\s*[^\]]+)?)/?\]', caseSensitive: false), '');
+    res = res.replaceAll(RegExp(r'\[/?(POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT|POEM_LEFT|POEM_CENTER|AUDIO(?:_[^\]]+|:\s*[^\]]+)?|IMAGE(?:_[^\]]+|:\s*[^\]]+)?)/?\]', caseSensitive: false), '');
     
     // 2. Remove line alignment/poetry shortcuts at start/end of lines
     final lines = res.split('\n');
@@ -196,7 +202,7 @@ class Article {
         
         // التحقق إذا كان سطر الشعر عبارة عن كلمة واحدة أو أقل (توقيع أو سطر يتيم قصير)
         String cleanForWordCheck = line
-            .replaceAll(RegExp(r'\[/?(BOLD|B|HIGHLIGHT|CENTER|JUSTIFY|LEFT|RIGHT|AUDIO(?:_[^\]]+|:\s*[^\]]+)?)/?\]', caseSensitive: false), '')
+            .replaceAll(RegExp(r'\[/?(BOLD|B|HIGHLIGHT|CENTER|JUSTIFY|LEFT|RIGHT|AUDIO(?:_[^\]]+|:\s*[^\]]+)?|IMAGE(?:_[^\]]+|:\s*[^\]]+)?)/?\]', caseSensitive: false), '')
             .replaceAll(RegExp(r'[=~\-\+\*]'), '')
             .trim();
         final isSingleWord = cleanForWordCheck.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length <= 1;
@@ -243,27 +249,27 @@ class Article {
     });
     
     // 2. إزالة بقية وسوم التنسيق المباشرة (عريض، محاذاة، تظليل) مع وسوم الإغلاق البديلة والوسوم المفتوحة/المكسورة
-    String cleanText = text.replaceAll(RegExp(r'\[/?(POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT|AUDIO(?:_[^\]]+|:\s*[^\]]+)?)/?\]', caseSensitive: false), '');
+    String cleanText = text.replaceAll(RegExp(r'\[/?(POEM|BOLD|CENTER|JUSTIFY|LEFT|RIGHT|B|HIGHLIGHT|AUDIO(?:_[^\]]+|:\s*[^\]]+)?|IMAGE(?:_[^\]]+|:\s*[^\]]+)?)/?\]', caseSensitive: false), '');
     cleanText = cleanText.replaceAll(RegExp(r'\[/', caseSensitive: false), '');
     // إزالة النجمات وعلامات التنسيق المزدوجة القديمة
-    cleanText = cleanText.replaceAll(RegExp(r'==|~~|--|\+\+|\*'), '');
-    
-    // 3. تنظيف علامات المحاذاة الفردية إذا كانت في بداية ونهاية السطر (مثل =مقال=)
-    final lines = cleanText.split('\n');
-    final cleanedLines = lines.map((l) {
-      String trimmed = l.trim();
-      if (trimmed.length > 1) {
-        if ((trimmed.startsWith('=') && trimmed.endsWith('=')) ||
-            (trimmed.startsWith('~') && trimmed.endsWith('~')) ||
-            (trimmed.startsWith('-') && trimmed.endsWith('-')) ||
-            (trimmed.startsWith('+') && trimmed.endsWith('+'))) {
-          trimmed = trimmed.substring(1, trimmed.length - 1).trim();
-        }
+    return cleanText.replaceAll('__POEM_SEP__', '***').trim();
+  }
+  
+  static String stripToPoetry(String input) {
+    if (input.isEmpty) return '';
+    final lines = input.split('\n');
+    final List<String> remainingLines = [];
+    for (final line in lines) {
+      final trimmed = line.trim();
+      if (trimmed.toUpperCase().startsWith('[POEM]') || 
+          trimmed.toUpperCase().endsWith('[/POEM]') ||
+          trimmed.toUpperCase().startsWith('[IMAGE') ||
+          trimmed.toUpperCase().startsWith('[AUDIO')) {
+        continue;
       }
-      return trimmed;
-    });
-    
-    return cleanedLines.join('\n').replaceAll('__POEM_SEP__', '***').trim();
+      remainingLines.add(line);
+    }
+    return remainingLines.join('\n');
   }
 
   /// مدة القراءة المقدرة (استناداً إلى 100 كلمة في الدقيقة كمتوسط)
@@ -348,11 +354,18 @@ class Article {
           : (json['audio'] != null && json['audio'].toString().isNotEmpty)
               ? [json['audio'].toString()]
               : <String>[],
+      imageFiles: (json['images'] is List)
+          ? (json['images'] as List<dynamic>).map((e) => e.toString()).toList()
+          : (json['images'] != null && json['images'].toString().isNotEmpty)
+              ? [json['images'].toString()]
+              : <String>[],
       author: userJson != null ? UserModel.fromJson(userJson) : null,
       likes: likesList,
       tagIds: tagsList,
       tags: resolvedTags,
       viewsCount: JsonUtils.parseInt(json['likes_count']) ?? 0,
+      isReadOnly: JsonUtils.parseBool(json['is_read_only']),
+      isHelpArticle: JsonUtils.parseBool(json['is_help_article']),
       poetryMetadata: json['poetry_metadata'] as Map<String, dynamic>?,
       highlightsMetadata: json['highlights_metadata'] as List<dynamic>?,
       audioMetadata: json['audio_metadata'] as Map<String, dynamic>?,
@@ -375,6 +388,8 @@ class Article {
       'likes': likes,
       'likes_count': viewsCount,
       'tags': tagIds,
+      'is_read_only': isReadOnly,
+      'is_help_article': isHelpArticle,
       'poetry_metadata': poetryMetadata,
       'highlights_metadata': highlightsMetadata,
       'audio_metadata': audioMetadata,
@@ -398,6 +413,8 @@ class Article {
     List<String>? tagIds,
     List<Tag>? tags,
     int? viewsCount,
+    bool? isReadOnly,
+    bool? isHelpArticle,
     Map<String, dynamic>? poetryMetadata,
     List<dynamic>? highlightsMetadata,
     Map<String, dynamic>? audioMetadata,
@@ -424,6 +441,8 @@ class Article {
       tagIds: tagIds ?? this.tagIds,
       tags: tags ?? this.tags,
       viewsCount: viewsCount ?? this.viewsCount,
+      isReadOnly: isReadOnly ?? this.isReadOnly,
+      isHelpArticle: isHelpArticle ?? this.isHelpArticle,
       poetryMetadata: poetryMetadata ?? this.poetryMetadata,
       highlightsMetadata: highlightsMetadata ?? this.highlightsMetadata,
       audioMetadata: audioMetadata ?? this.audioMetadata,

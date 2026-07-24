@@ -5,20 +5,24 @@ class SettingsProvider extends ChangeNotifier {
   static const String keyMagneticScroll = 'magnetic_scroll_enabled';
   static const String keyArticleFontFamily = 'article_font_family';
   static const String keyShowLocationInfo = 'show_location_info';
+  static const String keyJustifyArticles = 'justify_articles';
   
   bool _isMagneticScrollEnabled = false;
   String _articleFontFamily = 'Default';
   bool _showLocationInfo = true;
+  bool _justifyArticles = false;
 
   bool get isMagneticScrollEnabled => _isMagneticScrollEnabled;
   String get articleFontFamily => _articleFontFamily;
   bool get showLocationInfo => _showLocationInfo;
+  bool get justifyArticles => _justifyArticles;
 
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     _isMagneticScrollEnabled = prefs.getBool(keyMagneticScroll) ?? false;
     _articleFontFamily = prefs.getString(keyArticleFontFamily) ?? 'Default';
     _showLocationInfo = prefs.getBool(keyShowLocationInfo) ?? true;
+    _justifyArticles = prefs.getBool(keyJustifyArticles) ?? false;
     notifyListeners();
   }
 
@@ -52,10 +56,21 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setBool(keyShowLocationInfo, enabled);
   }
 
+  Future<void> setJustifyArticles(bool justify) async {
+    if (_justifyArticles == justify) return;
+
+    _justifyArticles = justify;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(keyJustifyArticles, justify);
+  }
+
   Future<void> clearSettings() async {
     _isMagneticScrollEnabled = false;
     _articleFontFamily = 'Default';
     _showLocationInfo = true;
+    _justifyArticles = false;
     notifyListeners();
 
     try {
@@ -63,6 +78,7 @@ class SettingsProvider extends ChangeNotifier {
       await prefs.remove(keyMagneticScroll);
       await prefs.remove(keyArticleFontFamily);
       await prefs.remove(keyShowLocationInfo);
+      await prefs.remove(keyJustifyArticles);
     } catch (_) {}
   }
 }

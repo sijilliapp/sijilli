@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'package:flutter/foundation.dart';
 import '../../../core/widgets/pulse_avatar.dart';
 import '../../appointments/services/pb_appointment_browse_service.dart';
+import '../../articles/services/pb_article_service.dart';
 import '../../../models/appointment.dart';
 
 class UserStatusProvider extends ChangeNotifier {
@@ -11,6 +12,7 @@ class UserStatusProvider extends ChangeNotifier {
   bool _isProcessing = false;
   
   final PbAppointmentBrowseService _apptService = PbAppointmentBrowseService();
+  final PbArticleService _articleService = PbArticleService();
 
   AvatarStatus getStatus(String userId) {
     return _statuses[userId] ?? AvatarStatus.none;
@@ -40,6 +42,26 @@ class UserStatusProvider extends ChangeNotifier {
           newStatus = AvatarStatus.active;
         } else if (appointments.any((a) => a.isUpcoming)) {
           newStatus = AvatarStatus.upcoming;
+        }
+        
+        // If no active/upcoming appointments exist, apply the article-based smart ring policy
+        if (newStatus == AvatarStatus.none) {
+          try {
+            final articles = await _articleService.getArticles(authorId: userId, onlyPublished: true);
+            final hasRecentArticle = articles.any((a) => 
+              a.isPublished && 
+              DateTime.now().difference(a.updatedAt).inHours < 24
+            );
+            final hasPublishedArticles = articles.any((a) => a.isPublished);
+
+            if (hasRecentArticle) {
+              newStatus = AvatarStatus.active;
+            } else if (hasPublishedArticles) {
+              newStatus = AvatarStatus.upcoming;
+            }
+          } catch (e) {
+            print('Error fetching articles for user status $userId: $e');
+          }
         }
         
         _statuses[userId] = newStatus;

@@ -215,7 +215,7 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -240,6 +240,7 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
                           });
                         },
                       ),
+                      const SizedBox(width: 4),
                       if (widget.isCurrentUser)
                         Consumer<BroadcastProvider>(
                           builder: (context, broadcastProvider, _) {
@@ -250,7 +251,7 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
                               clipBehavior: Clip.none,
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.campaign_outlined, color: AppColors.primary, size: 28),
+                                  icon: const Icon(Icons.more_vert, color: AppColors.primary, size: 28),
                                   tooltip: 'مقالات النظام',
                                   onPressed: () {
                                     Navigator.push(
@@ -263,8 +264,8 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
                                 ),
                                 if (hasUnread)
                                   Positioned(
-                                    top: 8,
-                                    right: 8,
+                                    top: 6,
+                                    right: 14,
                                     child: Container(
                                       width: 10,
                                       height: 10,

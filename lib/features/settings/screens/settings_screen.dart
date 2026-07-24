@@ -151,8 +151,8 @@ class SettingsScreen extends StatelessWidget {
                   _buildSettingsCard(
                     context,
                     icon: Icons.workspace_premium_rounded,
-                    title: 'ترقية الحساب والصلاحيات',
-                    subtitle: 'طلب الانضمام ككاتب معتمد أو مؤسسة وتفعيل ميزات الذكاء الاصطناعي',
+                    title: context.l10n.upgradeAccountAndPermissions,
+                    subtitle: context.l10n.upgradeAccountSubtitle,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -185,8 +185,8 @@ class SettingsScreen extends StatelessWidget {
           _buildSettingsCard(
             context,
             icon: Icons.article_outlined,
-            title: 'المقالات',
-            subtitle: 'حماية مقالاتك وتعطيل نسخ المحتوى',
+            title: context.l10n.articlesSettingsTitle,
+            subtitle: context.l10n.articlesSettingsSubtitle,
             onTap: () {
               Navigator.push(
                 context,

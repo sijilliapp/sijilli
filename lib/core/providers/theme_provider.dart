@@ -7,7 +7,7 @@ import '../services/location_service.dart';
 
 class ThemeProvider extends ChangeNotifier {
   // 'Tajawal' = خط التجوال افتراضي للمشترك الجديد
-  String _fontFamily = 'Tajawal';
+  String _fontFamily = 'Default';
   static const String keyFontFamily = 'font_family';
   
   // Theme Mode
@@ -35,7 +35,7 @@ class ThemeProvider extends ChangeNotifier {
 
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    _fontFamily = prefs.getString(keyFontFamily) ?? 'Tajawal';
+    _fontFamily = prefs.getString(keyFontFamily) ?? 'Default';
     _currentTheme = prefs.getString(keyThemeMode) ?? 'auto';
     
     // Automatically check sunset if auto

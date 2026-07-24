@@ -10,37 +10,58 @@ class PbAppointmentBrowseService {
 
   /// جلب مواعيد الحسابات المعتمدة (تبويب الأخبار)
   /// الشروط: عام، منشور، مؤكد، من حساب معتمد، مستقبلي أو جاري (آخر ساعتين)
+  /// يستعلم عبر invitations لأن privacy موجود هناك فقط
   Future<List<Appointment>> getExploreAppointments({String? userRegion, int page = 1, int perPage = 50, int contextAdjustment = 0}) async {
     try {
-      // السماح بظهور المواعيد التي بدأت خلال آخر ساعتين (جارية)
       final now = DateTime.now().toUtc();
       final ongoingThreshold = now.subtract(const Duration(hours: 2)).toIso8601String();
-      
-      // الشروط:
-      // 1. الخصوصية عام (public)
-      // 2. الموعد مؤكد (is_confirmed)
-      // 3. المضيف خصوصية حسابه عام (isPublic)
-      // 4. الموعد مستقبلي أو جاري (start_at > threshold)
-      // 5. غير ملغى وغير محذوف
-      // 6. الأولوية (أو): مضيف معتمد OR الموعد في نفس منطقة المستخدم
-      
-      String filter = 'privacy = "public" && is_confirmed = true && host.isPublic = true && start_at > "$ongoingThreshold" && is_cancelled = false && is_deleted = false';
-      
+
+      // نستعلم من invitations حيث privacy = "public"
+      // ونتحقق من شروط الموعد المركزي عبر العلاقة appointment.*
+      String filter = 'privacy = "public" && status = "accepted" && post_status = "published"'
+          ' && appointment.is_confirmed = true'
+          ' && appointment.host.isPublic = true'
+          ' && appointment.start_at > "$ongoingThreshold"'
+          ' && appointment.is_cancelled = false'
+          ' && appointment.is_deleted = false';
+
       if (userRegion != null && userRegion.isNotEmpty) {
-        filter += ' && (host.role = "approved" || region = "$userRegion")';
+        filter += ' && (appointment.host.role = "approved" || appointment.host.role = "writer"'
+            ' || appointment.host.role = "organization" || appointment.host.role = "admin"'
+            ' || appointment.region = "$userRegion")';
       } else {
-        filter += ' && (host.role = "approved")';
+        filter += ' && (appointment.host.role = "approved" || appointment.host.role = "writer"'
+            ' || appointment.host.role = "organization" || appointment.host.role = "admin")';
       }
 
-      final resultList = await _pb.collection(collectionAppointments).getList(
+      final resultList = await _pb.collection(collectionInvitations).getList(
         page: page,
         perPage: perPage,
         filter: filter,
-        sort: '+start_at',
-        expand: 'host,invitations_via_appointment.user,invitations_via_appointment.linked_article',
+        sort: '+appointment.start_at',
+        expand: 'appointment,appointment.host,appointment.invitations_via_appointment.user,appointment.invitations_via_appointment.linked_article',
       );
 
-      return resultList.items.map((record) => Appointment.fromJson(record.toJson(), contextAdjustment: contextAdjustment)).toList();
+      // بناء قائمة مواعيد مع deduplication
+      final Set<String> seen = {};
+      final List<Appointment> appointments = [];
+
+      for (final record in resultList.items) {
+        final invJson = record.toJson();
+        var apptData = invJson['expand']?['appointment'];
+        if (apptData is List && apptData.isNotEmpty) apptData = apptData.first;
+        final Map<String, dynamic>? apptJson = apptData is Map<String, dynamic> ? apptData : null;
+        if (apptJson == null) continue;
+
+        final apptId = apptJson['id'] as String? ?? '';
+        if (seen.contains(apptId)) continue;
+        seen.add(apptId);
+
+        apptJson['currentUserInvitation'] = invJson;
+        appointments.add(Appointment.fromJson(apptJson, contextAdjustment: contextAdjustment));
+      }
+
+      return appointments;
     } catch (e) {
       print('⚠️ Failed to fetch explore appointments: $e');
       return [];
@@ -72,8 +93,9 @@ class PbAppointmentBrowseService {
       // 2. البحث في جدول الدعوات
       final userIdsFilter = friendIds.map((id) => 'user = "$id"').join(' || ');
       
-      // الشروط: المواعيد العامة (Public) أو للمتابعين (followers) لمنع تسرب الخصوصية في حالة المتابعة من طرف واحد
-      final filter = '($userIdsFilter) && status = "accepted" && post_status = "published" && (appointment.privacy = "public" || appointment.privacy = "followers") && appointment.is_confirmed = true && appointment.start_at > "$ongoingThreshold" && appointment.is_cancelled = false && appointment.is_deleted = false';
+      // الشروط: المواعيد العامة (Public) أو للمتابعين (followers)
+      // privacy هنا من جدول invitations وليس appointments
+      final filter = '($userIdsFilter) && status = "accepted" && post_status = "published" && (privacy = "public" || privacy = "followers") && appointment.is_confirmed = true && appointment.start_at > "$ongoingThreshold"';
       
       final records = await _pb.collection(collectionInvitations).getFullList(
         filter: filter,
@@ -139,7 +161,8 @@ class PbAppointmentBrowseService {
       final startOfDayLocal = DateTime(nowObj.year, nowObj.month, nowObj.day);
       final filterDate = startOfDayLocal.toUtc().toIso8601String();
       
-      // بناء الفلتر الأساسي للرؤية بناءً على العلاقة والخصوصية
+      // بناء الفلتر الأساسي للرؤية بناءً على حقل privacy في invitations (نسخة صاحب الحساب)
+      // وليس appointments.privacy — لأن صاحب الحساب يحدد خصوصية نسخته الشخصية
       String visibilityCriteria = 'privacy = "public"';
       if (includeFollowers) visibilityCriteria += ' || privacy = "followers"';
       if (includePrivate) visibilityCriteria += ' || privacy = "private"';
@@ -155,7 +178,7 @@ class PbAppointmentBrowseService {
          privacyFilter += ' || appointment.invitations_via_appointment.user ?= "$viewerId"';
       }
       
-      filter += ' && ($privacyFilter) && appointment.is_cancelled = false && appointment.is_deleted = false';
+      filter += ' && ($privacyFilter)';
 
       if (kDebugMode) {
         print('🔍 [PbAppointmentBrowseService] Fetching with filter: $filter');

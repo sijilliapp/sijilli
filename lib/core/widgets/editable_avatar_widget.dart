@@ -27,6 +27,7 @@ class _EditableAvatarWidgetState extends State<EditableAvatarWidget> {
   dynamic _imageBytes;
 
   Future<void> _pickImage() async {
+    FocusScope.of(context).unfocus();
     try {
       final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
       if (image != null && mounted) {

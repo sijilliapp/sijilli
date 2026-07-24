@@ -13,8 +13,8 @@ class ArticlePrinter {
 
   /// Generates a clean A4 PDF of the article text only and opens the native system print dialog.
   static Future<void> printArticle(fm.BuildContext context, Article article, {bool useTwoColumns = false}) async {
-    // Detect if the article text is RTL (Arabic)
-    final bool isArabic = BidiUtils.isRtl(article.text);
+    // Detect if the article text is RTL or if the app locale is Arabic
+    final bool isArabic = BidiUtils.isRtl(article.text) || fm.Localizations.localeOf(context).languageCode == 'ar';
 
     // 1. Get user's active font from settings
     String selectedFont = 'Default';
@@ -139,18 +139,43 @@ class ArticlePrinter {
     
     double currentCol1Height = 0;
     double currentCol2Height = 0;
+    bool inColumn2 = false;
     
-    for (final widget in widgets) {
-      // Subtract 32 from columnWidth because _buildPagePartitions adds a horizontal padding of 16 (on both sides)
-      // to each column, meaning the actual text rendering width is columnWidth - 32.
+    for (int i = 0; i < widgets.length; i++) {
+      final widget = widgets[i];
       final double widgetHeight = _estimateWidgetHeight(widget, columnWidth - 32);
       
-      // Fallback if the widget is larger than the column height itself
+      // Fallback if the widget itself is larger than the pageHeight
       if (widgetHeight > pageHeight) {
-        if (currentCol1Height == 0) {
+        if (!inColumn2 && currentCol1Height == 0) {
           currentPageCol1.add(widget);
-          currentCol1Height += widgetHeight;
-        } else if (currentCol2Height == 0) {
+          inColumn2 = true;
+        } else if (inColumn2 && currentCol2Height == 0) {
+          currentPageCol2.add(widget);
+          pages.add(_buildPagePartitions(currentPageCol1, currentPageCol2, isArabic));
+          currentPageCol1 = [];
+          currentPageCol2 = [];
+          currentCol1Height = 0;
+          currentCol2Height = 0;
+          inColumn2 = false;
+        } else {
+          pages.add(_buildPagePartitions(currentPageCol1, currentPageCol2, isArabic));
+          currentPageCol1 = [widget];
+          currentPageCol2 = [];
+          currentCol1Height = widgetHeight;
+          currentCol2Height = 0;
+          inColumn2 = false;
+        }
+      }
+      // If we are currently filling Column 1 and it fits
+      else if (!inColumn2 && (currentCol1Height + widgetHeight <= pageHeight)) {
+        currentPageCol1.add(widget);
+        currentCol1Height += widgetHeight;
+      }
+      // If we are filling Column 1 but it does not fit, switch to Column 2 and check if it fits
+      else if (!inColumn2) {
+        inColumn2 = true;
+        if (currentCol2Height + widgetHeight <= pageHeight) {
           currentPageCol2.add(widget);
           currentCol2Height += widgetHeight;
         } else {
@@ -159,25 +184,22 @@ class ArticlePrinter {
           currentPageCol2 = [];
           currentCol1Height = widgetHeight;
           currentCol2Height = 0;
+          inColumn2 = false;
         }
       }
-      // Fit in Column 1
-      else if (currentCol1Height + widgetHeight <= pageHeight) {
-        currentPageCol1.add(widget);
-        currentCol1Height += widgetHeight;
-      }
-      // Fit in Column 2
-      else if (currentCol2Height + widgetHeight <= pageHeight) {
+      // If we are already filling Column 2 and it fits
+      else if (inColumn2 && (currentCol2Height + widgetHeight <= pageHeight)) {
         currentPageCol2.add(widget);
         currentCol2Height += widgetHeight;
       }
-      // Spill over to next page
+      // If we are in Column 2 but it does not fit, flush page and start next page Column 1
       else {
         pages.add(_buildPagePartitions(currentPageCol1, currentPageCol2, isArabic));
         currentPageCol1 = [widget];
         currentPageCol2 = [];
         currentCol1Height = widgetHeight;
         currentCol2Height = 0;
+        inColumn2 = false;
       }
     }
     
@@ -278,9 +300,9 @@ class ArticlePrinter {
       double height = 1.70; // Slightly higher height multiplier for safety margin (preventing overflow)
       if (widget.text.style != null) {
         fontSize = widget.text.style!.fontSize ?? 11.0;
-        height = widget.text.style!.height ?? 1.70;
+        height = (widget.text.style!.height ?? 1.70) * 1.15; // Slightly pessimistic line height to account for font metrics
       }
-      final double charWidthFactor = BidiUtils.isRtl(text) ? 0.50 : 0.55; // Slightly increased for safe wrapping estimation
+      final double charWidthFactor = BidiUtils.isRtl(text) ? 0.60 : 0.65; // Pessimistic factor to account for word wrap and whitespace
       final double charsPerLine = columnWidth > 0 ? (columnWidth / (fontSize * charWidthFactor)) : 35.0;
 
       final lines = text.split('\n');
@@ -381,7 +403,6 @@ class ArticlePrinter {
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i];
       if (line.trim().isEmpty) {
-        widgets.add(pw.SizedBox(height: 8));
         continue;
       }
 
@@ -440,13 +461,13 @@ class ArticlePrinter {
 
       widgets.add(
         pw.Padding(
-          padding: const pw.EdgeInsets.only(bottom: 6.0),
+          padding: const pw.EdgeInsets.only(bottom: 8.0),
           child: pw.SizedBox(
             width: double.infinity,
             child: pw.Directionality(
               textDirection: isLineArabic ? pw.TextDirection.rtl : pw.TextDirection.ltr,
               child: pw.RichText(
-                text: pw.TextSpan(children: inlineSpans),
+                text: pw.TextSpan(children: inlineSpans, style: textStyle),
                 textAlign: textAlign,
               ),
             ),

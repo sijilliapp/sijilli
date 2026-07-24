@@ -46,14 +46,22 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSContactsUsageDescription</key>
-	<string>نحتاج للوصول لجهات الاتصال لتتمكن من دعوة أصدقائك للمواعيد بسهولة.</string>
+	<string>نحتاج للوصول لجهات الاتصال لتتمكن من دعوة أصدقائك للمواعيد بسهولة. We need access to your contacts to allow you to invite friends to appointments easily.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>نحتاج للوصول للكاميرا لتتمكن من التقاط صورة شخصية وتخصيص ملفك الشخصي.</string>
+	<string>نحتاج للوصول للكاميرا لتتمكن من التقاط صورة شخصية وتخصيص ملفك الشخصي. We need access to the camera to take profile photos and customize your profile.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>نحتاج للوصول لمكتبة الصور لتتمكن من اختيار وحفظ صور المواعيد والملف الشخصي.</string>
+	<string>نحتاج للوصول لمكتبة الصور لتتمكن من اختيار وحفظ صور المواعيد والملف الشخصي. We need access to your photo library to select and save appointment and profile photos.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>نحتاج للوصول لموقعك الجغرافي لتحديد مكان المواعيد وتوفير اتجاهات دقيقة.</string>
+	<string>نحتاج للوصول لموقعك الجغرافي لتحديد مكان المواعيد بدقة وتسهيل الوصول إليها. We need location access to determine appointment locations precisely and facilitate navigation.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>نحتاج للوصول لموقعك الجغرافي لتحديد مكان المواعيد بدقة وتسهيل الوصول إليها. We need location access to determine appointment locations precisely and facilitate navigation.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>نحتاج للوصول لموقعك الجغرافي لتحديد مكان المواعيد بدقة وتسهيل الوصول إليها. We need location access to determine appointment locations precisely and facilitate navigation.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>نحتاج للوصول للميكروفون لتتمكن من إملاء تفاصيل ووصف الموعد صوتياً. We need microphone access to allow you to dictate appointment details and description via voice input.</string>
 	<key>NSCalendarsUsageDescription</key>
-	<string>نحتاج للوصول للتقويم لمزامنة مواعيدك في "سجلي" مع تقويم جهازك وتذكيرك بها.</string>
+	<string>نحتاج للوصول للتقويم لمزامنة مواعيدك في "سجلي" مع تقويم جهازك وتذكيرك بها. We need calendar access to sync your Sijilli appointments with your device calendar and remind you of them.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

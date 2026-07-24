@@ -1,6 +1,6 @@
 import 'package:pocketbase/pocketbase.dart';
 import '../../../core/services/pocketbase_client.dart';
-import '../../../../models/comment.dart';
+import '../../../models/comment.dart';
 
 class PbCommentService {
   final PocketBase _pb = PocketBaseClient.instance.pb;
@@ -8,20 +8,45 @@ class PbCommentService {
   static const String collectionComments = 'comments';
 
   /// جلب تعليقات مقال محدد مرتبة زمنيّاً من الأقدم إلى الأحدث
+  /// مع retry logic لمعالجة حالة إسبات الخادم (cold start)
   Future<List<Comment>> getComments(String articleId) async {
-    try {
-      final resultList = await _pb.collection(collectionComments).getList(
-        page: 1,
-        perPage: 200, // جلب كافة التعليقات كحد أقصى
-        filter: 'article = "$articleId"',
-        sort: 'created', // الأقدم أولاً ليظهر مثل خيط محادثة منسق
-        expand: 'user',
-      );
+    int retries = 0;
+    const maxRetries = 4;
+    const retryDelay = Duration(milliseconds: 1500);
 
-      return resultList.items.map((record) => Comment.fromJson(record.toJson())).toList();
-    } catch (e) {
-      print('PbCommentService getComments error: $e');
-      rethrow;
+    while (true) {
+      try {
+        final resultList = await _pb.collection(collectionComments).getList(
+          page: 1,
+          perPage: 200,
+          filter: 'article = "$articleId"',
+          sort: 'created',
+          expand: 'user',
+        );
+        return resultList.items
+            .map((record) => Comment.fromJson(record.toJson()))
+            .toList();
+      } catch (e) {
+        retries++;
+
+        bool isTemporary = false;
+        if (e is ClientException) {
+          if (e.statusCode == 0 || e.statusCode == 408 || e.statusCode >= 500 || e.isAbort) {
+            isTemporary = true;
+          }
+        } else {
+          isTemporary = true;
+        }
+
+        if (isTemporary && retries < maxRetries) {
+          print('🔄 [PbCommentService] Temporary error for article $articleId (attempt $retries/$maxRetries), retrying...');
+          await Future.delayed(retryDelay);
+          continue;
+        }
+
+        print('PbCommentService getComments error: $e');
+        rethrow;
+      }
     }
   }
 

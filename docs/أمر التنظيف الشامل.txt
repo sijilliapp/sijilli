@@ -16,3 +16,8 @@ dartaotruntime  1636
 
 
 
+أمر تشغيل Xcode 
+open /Users/hussain/Documents/sijilli/build/ios/archive/Runner.xcarchive
+
+أمر تشغيل المحاكي
+open -a Simulator

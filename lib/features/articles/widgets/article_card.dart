@@ -160,7 +160,7 @@ class ArticleCard extends StatelessWidget {
                       },
                     ),
                   ] else ...[
-                    if (isAuthor) ...[
+                    if (isAuthor && !article.isReadOnly) ...[
                       if (article.isPublished)
                         AppActionItem(
                           label: 'إلغاء المشاركة',
@@ -215,6 +215,22 @@ class ArticleCard extends StatelessWidget {
                               const SnackBar(content: Text('تم أرشفة المقال بنجاح 📦')),
                             );
                           }
+                        },
+                      ),
+                      AppActionItem(
+                        label: 'تعديل التصنيفات',
+                        icon: Icons.label_outline,
+                        onTap: () {
+                          TagSelectorSheet.show(
+                            context,
+                            initialSelectedTagIds: article.tagIds,
+                            onSelectionChanged: (selectedTagIds, selectedTags) async {
+                              await context.read<ArticleProvider>().updateArticle(
+                                id: article.id,
+                                tagIds: selectedTagIds,
+                              );
+                            },
+                          );
                         },
                       ),
                     ] else if (article.isPublished)
@@ -446,38 +462,21 @@ class ArticleCard extends StatelessWidget {
             const SizedBox(width: 10),
           ],
           if (article.tags.isNotEmpty) ...[
-            GestureDetector(
-              onTap: isAuthor ? () {
-                TagSelectorSheet.show(
-                  context,
-                  initialSelectedTagIds: article.tagIds,
-                  onSelectionChanged: (selectedTagIds, selectedTags) async {
-                    await context.read<ArticleProvider>().updateArticle(
-                      id: article.id,
-                      tagIds: selectedTagIds,
-                    );
-                  },
-                );
-              } : null,
-              child: MouseRegion(
-                cursor: isAuthor ? SystemMouseCursors.click : SystemMouseCursors.basic,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: article.tags.map((tag) {
-                      return Container(
-                        width: 8,
-                        height: 8,
-                        margin: const EdgeInsets.symmetric(horizontal: 2.0),
-                        decoration: BoxDecoration(
-                          color: tag.color,
-                          shape: BoxShape.circle,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: article.tags.map((tag) {
+                  return Container(
+                    width: 8,
+                    height: 8,
+                    margin: const EdgeInsets.symmetric(horizontal: 2.0),
+                    decoration: BoxDecoration(
+                      color: tag.color,
+                      shape: BoxShape.circle,
+                    ),
+                  );
+                }).toList(),
               ),
             ),
           ],
@@ -530,47 +529,6 @@ class ArticleCard extends StatelessWidget {
             ),
           ],
         ],
-      ),
-    );
-  }
-
-  Widget _buildAddTagButton(BuildContext context, Article article, bool isAuthor) {
-    final primaryColor = AppColors.primary;
-    return GestureDetector(
-      onTap: () {
-        TagSelectorSheet.show(
-          context,
-          initialSelectedTagIds: article.tagIds,
-          onSelectionChanged: (selectedTagIds, selectedTags) async {
-            await context.read<ArticleProvider>().updateArticle(
-              id: article.id,
-              tagIds: selectedTagIds,
-            );
-          },
-        );
-      },
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.add_rounded,
-              size: 13,
-              color: primaryColor,
-            ),
-            const SizedBox(width: 2),
-            Text(
-              context.l10n.articleCategoryLabel,
-              style: TextStyle(
-                fontSize: 13,
-                color: primaryColor,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -631,5 +589,46 @@ class ArticleCard extends StatelessWidget {
   String _getImageUrl(Article article) {
     // PocketBase URL format: http://127.0.0.1:8090/api/files/COLLECTION_ID_OR_NAME/RECORD_ID/FILENAME
     return 'https://sijilli.pockethost.io/api/files/articles/${article.id}/${article.image}';
+  }
+
+  Widget _buildAddTagButton(BuildContext context, Article article, bool isAuthor) {
+    final primaryColor = AppColors.primary;
+    return GestureDetector(
+      onTap: () {
+        TagSelectorSheet.show(
+          context,
+          initialSelectedTagIds: article.tagIds,
+          onSelectionChanged: (selectedTagIds, selectedTags) async {
+            await context.read<ArticleProvider>().updateArticle(
+              id: article.id,
+              tagIds: selectedTagIds,
+            );
+          },
+        );
+      },
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.add_rounded,
+              size: 13,
+              color: primaryColor,
+            ),
+            const SizedBox(width: 2),
+            Text(
+              context.l10n.articleCategoryLabel,
+              style: TextStyle(
+                fontSize: 13,
+                color: primaryColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

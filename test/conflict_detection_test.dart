@@ -56,7 +56,7 @@ void main() {
 
     test('Should detect conflict with recurring future occurrence (Jan 16 7:30 PM)', () async {
       // Initialize provider with history
-      provider.init(null, mockHistory, currentUser: mockUser);
+      await provider.init(null, mockHistory, currentUser: mockUser);
 
       // Set new event details to Jan 16, 7:30 PM
       provider.setDate(DateTime(2026, 1, 16));
@@ -67,7 +67,7 @@ void main() {
     });
 
     test('Should not detect conflict when time does not overlap on Jan 16 (Jan 16 8:00 PM)', () async {
-      provider.init(null, mockHistory, currentUser: mockUser);
+      await provider.init(null, mockHistory, currentUser: mockUser);
 
       provider.setDate(DateTime(2026, 1, 16));
       provider.setTime(const TimeOfDay(hour: 20, minute: 0));
@@ -77,11 +77,109 @@ void main() {
     });
 
     test('Should not detect conflict after recurrence ends (Jan 18 7:00 PM)', () async {
-      provider.init(null, mockHistory, currentUser: mockUser);
+      await provider.init(null, mockHistory, currentUser: mockUser);
 
       provider.setDate(DateTime(2026, 1, 18));
       provider.setTime(const TimeOfDay(hour: 19, minute: 0));
       provider.setDuration(45); // Jan 18 7:00 PM - 7:45 PM (Out of range of 3 days daily recurrence)
+
+      expect(provider.hasConflict, isFalse);
+    });
+
+    test('Should detect conflict with archived appointment', () async {
+      final archivedAppointment = Appointment(
+        id: 'archived_id',
+        title: 'موعد مؤرشف',
+        hostId: 'host_1',
+        startAt: hospitalStartUtc,
+        duration: 45,
+        date: DateTime(2026, 1, 15),
+        time: '19:00',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        currentUserInvitation: Invitation(
+          id: 'inv_1',
+          appointmentId: 'archived_id',
+          userId: 'host_1',
+          postStatus: PostStatus.archived,
+        ),
+      );
+
+      await provider.init(null, [archivedAppointment], currentUser: mockUser);
+
+      provider.setDate(DateTime(2026, 1, 15));
+      provider.setTime(const TimeOfDay(hour: 19, minute: 0));
+      provider.setDuration(45);
+
+      expect(provider.hasConflict, isTrue);
+    });
+
+    test('Should detect conflict with pending request appointment', () async {
+      final pendingAppointment = Appointment(
+        id: 'pending_id',
+        title: 'طلب معلق',
+        hostId: 'host_1',
+        startAt: hospitalStartUtc,
+        duration: 45,
+        date: DateTime(2026, 1, 15),
+        time: '19:00',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        currentUserInvitation: Invitation(
+          id: 'inv_2',
+          appointmentId: 'pending_id',
+          userId: 'host_1',
+          status: InvitationStatus.pending,
+          postStatus: PostStatus.published,
+        ),
+      );
+
+      await provider.init(null, [pendingAppointment], currentUser: mockUser);
+
+      provider.setDate(DateTime(2026, 1, 15));
+      provider.setTime(const TimeOfDay(hour: 19, minute: 0));
+      provider.setDuration(45);
+
+      expect(provider.hasConflict, isTrue);
+    });
+
+    test('Should not detect conflict with declined or deleted/cancelled appointments', () async {
+      final declinedAppointment = Appointment(
+        id: 'declined_id',
+        title: 'موعد مرفوض',
+        hostId: 'host_1',
+        startAt: hospitalStartUtc,
+        duration: 45,
+        date: DateTime(2026, 1, 15),
+        time: '19:00',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        currentUserInvitation: Invitation(
+          id: 'inv_3',
+          appointmentId: 'declined_id',
+          userId: 'host_1',
+          status: InvitationStatus.declined,
+        ),
+      );
+
+      final cancelledAppointment = Appointment(
+        id: 'cancelled_id',
+        title: 'موعد ملغى',
+        hostId: 'host_1',
+        startAt: hospitalStartUtc,
+        duration: 45,
+        date: DateTime(2026, 1, 15),
+        time: '19:00',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        isCancelled: true,
+      );
+
+      await provider.init(null, [declinedAppointment, cancelledAppointment], currentUser: mockUser);
+
+      provider.setDate(DateTime(2026, 1, 15));
+      provider.setTime(const TimeOfDay(hour: 19, minute: 0));
+      provider.setDuration(45);
 
       expect(provider.hasConflict, isFalse);
     });

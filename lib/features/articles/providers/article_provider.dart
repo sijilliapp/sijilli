@@ -31,8 +31,23 @@ class ArticleProvider extends ChangeNotifier {
   List<String> _activeFilterTagIds = [];
   List<String> get activeFilterTagIds => _activeFilterTagIds;
 
+  // مقالات المساعدة (من المشرف، مرئية لجميع المستخدمين)
+  List<Article> _helpArticles = [];
+  List<Article> get helpArticles => _helpArticles;
+  bool _isLoadingHelpArticles = false;
+  bool get isLoadingHelpArticles => _isLoadingHelpArticles;
+
   void setActiveFilterTagIds(List<String> tagIds) {
     _activeFilterTagIds = tagIds;
+    notifyListeners();
+  }
+
+  // هل المستخدم الآن في فلتر "المساعدة"؟ (يُستخدم من main_screen لتمرير isHelpArticle عند إنشاء مقال جديد)
+  bool _isHelpFilterActive = false;
+  bool get isHelpFilterActive => _isHelpFilterActive;
+
+  void setHelpFilterActive(bool value) {
+    _isHelpFilterActive = value;
     notifyListeners();
   }
   
@@ -63,6 +78,7 @@ class ArticleProvider extends ChangeNotifier {
       _trashedArticles = [];
       _articleComments.clear();
       _activeFilterTagIds = [];
+      _helpArticles = [];
       _errorMessage = null;
       _articlesErrorMessage = null;
       _commentsErrorMessage = null;
@@ -303,6 +319,31 @@ class ArticleProvider extends ChangeNotifier {
     }
   }
 
+  /// جلب مقالات المساعدة من المشرف (is_help_article = true && author.role = admin)
+  Future<void> fetchHelpArticles({bool refresh = false}) async {
+    if (_isLoadingHelpArticles) return;
+    _isLoadingHelpArticles = true;
+    if (refresh) _helpArticles = [];
+    notifyListeners();
+    try {
+      final pb = PocketBaseClient.instance.pb;
+      final records = await pb.collection('articles').getFullList(
+        filter: 'is_help_article = true && author.role = "admin"',
+        expand: 'author,tags',
+        sort: '-created',
+      );
+      _helpArticles = records.map((r) => Article.fromJson({
+        ...r.toJson(),
+        'expand': r.expand,
+      })).toList();
+    } catch (e) {
+      debugPrint('⚠️ fetchHelpArticles error: \$e');
+    } finally {
+      _isLoadingHelpArticles = false;
+      notifyListeners();
+    }
+  }
+
   Future<Article> addArticle({
     required String text,
     bool isPublished = true,
@@ -310,8 +351,10 @@ class ArticleProvider extends ChangeNotifier {
     List<String>? tagIds,
     File? imageFile,
     List<File>? audioFiles,
+    List<File>? inlineImageFiles,
     bool silent = false,
     Map<String, dynamic>? audioMetadata,
+    bool isHelpArticle = false,
   }) async {
     if (!silent) {
       _isLoading = true;
@@ -364,6 +407,19 @@ class ArticleProvider extends ChangeNotifier {
             ));
           }
         }
+        List<http.MultipartFile>? multipartInlineImages;
+        if (inlineImageFiles != null && inlineImageFiles.isNotEmpty) {
+          multipartInlineImages = [];
+          for (final inlineImageFile in inlineImageFiles) {
+            final String originalName = inlineImageFile.path.split('/').last;
+            final String fileName = Uri.encodeFull(originalName);
+            multipartInlineImages.add(await http.MultipartFile.fromPath(
+              'images',
+              inlineImageFile.path,
+              filename: fileName,
+            ));
+          }
+        }
   
         final newArticle = await _articleService.createArticle(
           text: text,
@@ -372,7 +428,9 @@ class ArticleProvider extends ChangeNotifier {
           tagIds: tagIds,
           imageFile: multipartFile,
           audioFiles: multipartAudios,
+          inlineImageFiles: multipartInlineImages,
           audioMetadata: audioMetadata,
+          isHelpArticle: isHelpArticle,
         );
 
       // Replace temp with real
@@ -408,6 +466,9 @@ class ArticleProvider extends ChangeNotifier {
     List<File>? audioFiles,
     List<String>? existingAudios,
     bool removeAudio = false,
+    List<File>? inlineImageFiles,
+    List<String>? existingInlineImages,
+    bool removeInlineImages = false,
     bool silent = false,
     Map<String, dynamic>? audioMetadata,
   }) async {
@@ -444,6 +505,19 @@ class ArticleProvider extends ChangeNotifier {
           ));
         }
       }
+      List<http.MultipartFile>? multipartInlineImages;
+      if (inlineImageFiles != null && inlineImageFiles.isNotEmpty) {
+        multipartInlineImages = [];
+        for (final inlineImageFile in inlineImageFiles) {
+          final String originalName = inlineImageFile.path.split('/').last;
+          final String fileName = Uri.encodeFull(originalName);
+          multipartInlineImages.add(await http.MultipartFile.fromPath(
+            'images',
+            inlineImageFile.path,
+            filename: fileName,
+          ));
+        }
+      }
  
       Article updatedArticle;
       if (isTemp) {
@@ -454,6 +528,7 @@ class ArticleProvider extends ChangeNotifier {
           tagIds: tagIds,
           imageFile: multipartFile,
           audioFiles: multipartAudios,
+          inlineImageFiles: multipartInlineImages,
         );
       } else {
         updatedArticle = await _articleService.updateArticle(
@@ -467,6 +542,9 @@ class ArticleProvider extends ChangeNotifier {
           audioFiles: multipartAudios,
           existingAudios: existingAudios,
           removeAudio: removeAudio,
+          inlineImageFiles: multipartInlineImages,
+          existingInlineImages: existingInlineImages,
+          removeInlineImages: removeInlineImages,
           audioMetadata: audioMetadata,
         );
       }
@@ -732,24 +810,42 @@ class ArticleProvider extends ChangeNotifier {
   Future<void> fetchCommentsForArticles(List<String> articleIds) async {
     if (articleIds.isEmpty) return;
     try {
-      // Build a PocketBase filter query: article = "id1" || article = "id2" || ...
-      final filterString = articleIds.map((id) => 'article = "$id"').join(' || ');
-      final resultList = await PocketBaseClient.instance.pb.collection('comments').getList(
-        page: 1,
-        perPage: 500, // Safe batch limit
-        filter: filterString,
-        expand: 'user',
-      );
-      
-      final comments = resultList.items.map((record) => Comment.fromJson(record.toJson())).toList();
-      
+      // Chunk articleIds into batches of 5 to avoid extremely long URL queries
+      // which get aborted (isAbort: true, statusCode: 0) by browsers or PocketBase host.
+      final List<List<String>> chunks = [];
+      const int chunkSize = 5;
+      for (int i = 0; i < articleIds.length; i += chunkSize) {
+        final end = (i + chunkSize < articleIds.length) ? i + chunkSize : articleIds.length;
+        chunks.add(articleIds.sublist(i, end));
+      }
+
+      final List<Comment> allComments = [];
+
+      // Fetch all chunks in parallel
+      await Future.wait(chunks.map((chunk) async {
+        final filterString = chunk.map((id) => 'article = "$id"').join(' || ');
+        try {
+          final resultList = await PocketBaseClient.instance.pb.collection('comments').getList(
+            page: 1,
+            perPage: 250, // Safe batch limit per chunk
+            filter: filterString,
+            expand: 'user',
+            skipTotal: true, // Speeds up the query
+          );
+          final comments = resultList.items.map((record) => Comment.fromJson(record.toJson())).toList();
+          allComments.addAll(comments);
+        } catch (e) {
+          print('⚠️ Error fetching batch comments chunk: $e');
+        }
+      }));
+
       // Initialize lists
       for (final id in articleIds) {
         _articleComments[id] = [];
       }
       
       // Group by articleId
-      for (final comment in comments) {
+      for (final comment in allComments) {
         if (_articleComments.containsKey(comment.articleId)) {
           _articleComments[comment.articleId]!.add(comment);
         } else {

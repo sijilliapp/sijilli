@@ -12,6 +12,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get appName => 'سجلي';
 
   @override
+  String get appSlogan => 'تنظيم المواعيد وإدارة الدعوات';
+
+  @override
   String get login => 'تسجيل الدخول';
 
   @override
@@ -445,6 +448,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get noContactsYet => 'لا يوجد جهات اتصال بعد';
+
+  @override
+  String get inviteFromContacts => 'دعوة من جهات الاتصال';
 
   @override
   String get accreditAction => 'اعتماد..';
@@ -2158,4 +2164,231 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get duplicate => 'مكرر';
+
+  @override
+  String get saved => 'المحفوظات';
+
+  @override
+  String get hideLocation => 'إخفاء معلومات المكان';
+
+  @override
+  String get showLocation => 'إظهار معلومات المكان';
+
+  @override
+  String get upgradeAccountAndPermissions => 'ترقية الحساب والصلاحيات';
+
+  @override
+  String get upgradeAccountSubtitle =>
+      'طلب الانضمام ككاتب معتمد أو مؤسسة وتفعيل ميزات الذكاء الاصطناعي';
+
+  @override
+  String get articlesSettingsTitle => 'المقالات';
+
+  @override
+  String get articlesSettingsSubtitle => 'حماية مقالاتك وتعطيل نسخ المحتوى';
+
+  @override
+  String get membershipUpgradeRequests => 'طلبات ترقية العضوية';
+
+  @override
+  String get reviewUpgradeRequestsSubtitle =>
+      'مراجعة طلبات الانضمام ككُتّاب معتمدين أو جهات رسمية';
+
+  @override
+  String get sendSystemNotification => 'إرسال إشعار للنظام';
+
+  @override
+  String get broadcastNotificationSubtitle =>
+      'بث إشعار جماعي لجميع المستخدمين المسجلين في التطبيق';
+
+  @override
+  String newBadgeCount(int count) {
+    return '$count جديد';
+  }
+
+  @override
+  String get noPendingUpgradeRequests => 'لا توجد طلبات ترقية معلقة حالياً';
+
+  @override
+  String get allUpgradeRequestsReviewed =>
+      'جميع طلبات الأعضاء تمت مراجعتها بالكامل.';
+
+  @override
+  String get leftAlignTooltip => 'محاذاة لليسار (تغيير الاتجاه)';
+
+  @override
+  String get highlightTooltip => 'قلم التظليل';
+
+  @override
+  String get quranVerseTooltip => 'تنسيق آية قرآنية';
+
+  @override
+  String get spellCheckTooltip => 'تصحيح إملائي';
+
+  @override
+  String get clearFormattingTooltip => 'مسح التنسيقات';
+
+  @override
+  String get searchReplaceTooltip => 'بحث واستبدال';
+
+  @override
+  String get removeCoverImageTooltip => 'إزالة الصورة';
+
+  @override
+  String get addCoverImageTooltip => 'إضافة صورة غلاف';
+
+  @override
+  String get addAudioTooltip => 'إضافة ملف صوتي/واتساب 🎙️';
+
+  @override
+  String get insertImageTooltip => 'إدراج صورة في المقال 🖼️';
+
+  @override
+  String get undoTooltip => 'تراجع (Undo)';
+
+  @override
+  String get redoTooltip => 'إعادة/تقدم (Redo)';
+
+  @override
+  String get pasteFromClipboardTooltip => 'لصق من الحافظة';
+
+  @override
+  String commentsCount(int count) {
+    return 'عدد التعليقات: $count';
+  }
+
+  @override
+  String get browseApp => 'تصفح تطبيق سجلي';
+
+  @override
+  String publishedDate(String date) {
+    return 'تاريخ النشر: $date';
+  }
+
+  @override
+  String get accountUnavailable => 'هذا الحساب غير متاح حالياً';
+
+  @override
+  String get newProfileVisitTitle => 'زيارة جديدة';
+
+  @override
+  String get newProfileVisitMessage => 'قام أحد الأعضاء بزيارة ملفك الشخصي';
+
+  @override
+  String get newArticleVisitTitle => 'زيارة جديدة لمقالك';
+
+  @override
+  String get newArticleVisitMessage => 'قام أحد القراء بزيارة وقراءة مقالك';
+
+  @override
+  String get unfollowedTitle => 'إلغاء الاعتماد';
+
+  @override
+  String unfollowedMessage(String name) {
+    return '$name قام بإلغاء اعتمادك';
+  }
+
+  @override
+  String get acceptAndUpgrade => 'قبول وترقية';
+
+  @override
+  String get rejectRequest => 'رفض الطلب';
+
+  @override
+  String get acceptUpgradeConfirm => 'هل أنت متأكد من رغبتك في قبول هذا الطلب؟';
+
+  @override
+  String get rejectUpgradeConfirm => 'هل أنت متأكد من رغبتك في رفض هذا الطلب؟';
+
+  @override
+  String get upgradeSuccess => 'تم ترقية الطلب بنجاح وتحديث الرول';
+
+  @override
+  String get rejectSuccess => 'تم رفض الطلب بنجاح';
+
+  @override
+  String get upgradeError => 'حدث خطأ أثناء معالجة الطلب';
+
+  @override
+  String get writeRejectReason => 'الرجاء كتابة سبب رفض الطلب';
+
+  @override
+  String get rejectReasonHint => 'سبب الرفض وتوجيه العضو (مطلوب)...';
+
+  @override
+  String get acceptNoteHint => 'تعليق الإدارة أو الترحيب بالعضو (اختياري)...';
+
+  @override
+  String get systemArticlesTitle => 'مقالات ونشرات النظام';
+
+  @override
+  String get noSystemArticles => 'لا توجد نشرات أو مقالات عامة حالياً.';
+
+  @override
+  String get closeButton => 'إغلاق';
+
+  @override
+  String get cancelButton => 'إلغاء';
+
+  @override
+  String get roleWriter => 'كاتب معتمد';
+
+  @override
+  String get roleOrganization => 'مؤسسة / جهة';
+
+  @override
+  String upgradeTo(String role) {
+    return 'ترقية لـ: $role';
+  }
+
+  @override
+  String get applyReasonLabel => 'رسالة ومبررات التقديم:';
+
+  @override
+  String requestDate(String date, String time) {
+    return 'تاريخ الطلب: $date | الساعة: $time';
+  }
+
+  @override
+  String get unknownMember => 'عضو غير معروف';
+
+  @override
+  String get likesTitle => 'إعجابات';
+
+  @override
+  String get commentsTitle => 'تعليقات';
+
+  @override
+  String likedYourArticle(String name) {
+    return 'أعجب $name بمقالك';
+  }
+
+  @override
+  String commentedOnYourArticle(String name) {
+    return 'علق $name على مقالك';
+  }
+
+  @override
+  String visitedYourProfile(String name) {
+    return 'زار $name ملفك الشخصي';
+  }
+
+  @override
+  String get invitationsAwaitingResponse => 'دعوات بانتظار ردك 📥';
+
+  @override
+  String get notificationsAndActivity => 'صندوق الإشعارات والأنشطة 🔔';
+
+  @override
+  String get mutualAccreditationTitle => 'اعتماد متبادل';
+
+  @override
+  String mutualAccreditedYou(String name) {
+    return 'قام $name باعتمادك المتبادل';
+  }
+
+  @override
+  String readerReadYourArticle(String name) {
+    return 'قام $name بقراءة مقالك';
+  }
 }

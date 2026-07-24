@@ -6,6 +6,7 @@ import '../../../core/constants/app_dimens.dart';
 import '../../../core/providers/broadcast_provider.dart';
 import '../../../models/broadcast.dart';
 import '../../auth/providers/auth_provider.dart';
+import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class SystemArticlesScreen extends StatefulWidget {
   const SystemArticlesScreen({super.key});
@@ -15,6 +16,13 @@ class SystemArticlesScreen extends StatefulWidget {
 }
 
 class _SystemArticlesScreenState extends State<SystemArticlesScreen> {
+  String _formatDateTime(DateTime dt, String locale) {
+    if (locale == 'ar') {
+      return _formatArabicDateTime(dt);
+    }
+    return DateFormat('h:mm a d MMMM yyyy', 'en').format(dt);
+  }
+
   String _formatArabicDateTime(DateTime dt) {
     final hourVal = dt.hour == 12 ? 12 : dt.hour % 12;
     final hourStr = hourVal == 0 ? '12' : hourVal.toString();
@@ -75,7 +83,7 @@ class _SystemArticlesScreenState extends State<SystemArticlesScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    _formatArabicDateTime(article.createdAt),
+                    _formatDateTime(article.createdAt, Localizations.localeOf(context).languageCode),
                     style: TextStyle(
                       fontSize: 12,
                       color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
@@ -96,7 +104,7 @@ class _SystemArticlesScreenState extends State<SystemArticlesScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('إغلاق', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                child: Text(context.l10n.closeButton, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
               ),
             ],
           ),
@@ -112,7 +120,7 @@ class _SystemArticlesScreenState extends State<SystemArticlesScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('مقالات ونشرات النظام', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(context.l10n.systemArticlesTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       body: Directionality(
@@ -139,7 +147,7 @@ class _SystemArticlesScreenState extends State<SystemArticlesScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'لا توجد نشرات أو مقالات عامة حالياً.',
+                        context.l10n.noSystemArticles,
                         style: TextStyle(
                           fontSize: 16,
                           color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
@@ -229,7 +237,7 @@ class _SystemArticlesScreenState extends State<SystemArticlesScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          _formatArabicDateTime(a.createdAt),
+                          _formatDateTime(a.createdAt, Localizations.localeOf(context).languageCode),
                           style: TextStyle(
                             fontSize: 11,
                             color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,

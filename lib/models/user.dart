@@ -274,8 +274,8 @@ class UserModel {
   /// التحقق إذا كان المستخدم مشرفاً
   bool get isAdmin => role == 'admin';
   
-  /// التحقق إذا كان المستخدم معتمداً
-  bool get isApproved => role == 'approved';
+  /// التحقق إذا كان المستخدم معتمداً (له رتبة مميزة تمنحه صلاحية إنشاء مواعيد وحجز ونشر)
+  bool get isApproved => role == 'approved' || role == 'writer' || role == 'organization' || role == 'admin';
   
   /// الحصول على رابط الصورة الشخصية
   String? getAvatarUrl(String baseUrl, {String? thumb}) {

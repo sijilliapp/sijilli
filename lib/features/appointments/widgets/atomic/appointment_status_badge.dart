@@ -44,6 +44,8 @@ class AppointmentStatusBadge extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             AppointmentCardHelper.getStatusText(appointment, context),
+            maxLines: 1,
+            softWrap: false,
             style: TextStyle(
               color: statusColor,
               fontSize: 12,

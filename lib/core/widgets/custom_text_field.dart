@@ -147,34 +147,34 @@ class _CustomTextFieldState extends State<CustomTextField> {
         floatingLabelBehavior: widget.autoScrollHint ? FloatingLabelBehavior.always : null,
         alignLabelWithHint: widget.maxLines == null || widget.maxLines! > 1,
         prefixIcon: widget.prefixIcon != null ? Icon(widget.prefixIcon, color: AppColors.primary) : null,
-        suffixIcon: (widget.showCountdown && widget.maxLength != null && widget.controller != null) || widget.suffixIcon != null
+        suffixIcon: (widget.showCountdown && widget.maxLength != null && widget.controller != null)
             ? Row(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  if (widget.showCountdown && widget.maxLength != null && widget.controller != null)
-                    ListenableBuilder(
-                      listenable: widget.controller!,
-                      builder: (context, _) {
-                        final remaining = widget.maxLength! - widget.controller!.text.length;
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Text(
-                            remaining.toString(),
-                            style: TextStyle(
-                              color: remaining < 5 ? AppColors.error : AppColors.primary.withOpacity(0.5),
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
+                  ListenableBuilder(
+                    listenable: widget.controller!,
+                    builder: (context, _) {
+                      final remaining = widget.maxLength! - widget.controller!.text.length;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Text(
+                          remaining.toString(),
+                          style: TextStyle(
+                            color: remaining < 5 ? AppColors.error : AppColors.primary.withOpacity(0.5),
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
+                  ),
                   if (widget.suffixIcon != null) widget.suffixIcon!,
                   const SizedBox(width: 8),
                 ],
               )
-            : null,
+            : widget.suffixIcon,
+
         filled: true,
         fillColor: isDark ? Colors.grey.shade800 : Colors.white,
         contentPadding: const EdgeInsets.symmetric(

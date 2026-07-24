@@ -346,7 +346,7 @@ class NotificationProvider extends ChangeNotifier {
 
     try {
       print('🔌 [NotificationProvider] Subscribing to realtime for user: $userId');
-      _unsubscribeFunc = await _service.subscribe(userId, (e) {
+      _unsubscribeFunc = await _service.subscribe(userId, (e) async {
         try {
           print('🔔 [NotificationProvider] RAW EVENT: ${e.action} - ${e.record}');
           if (e.action == 'create') {
@@ -382,10 +382,20 @@ class NotificationProvider extends ChangeNotifier {
 
             if (shouldShow) {
               print('🔔 [NotificationProvider] Attempting to show local notification (ID: ${newNotification.id})...');
+              
+              // Load selected locale from SharedPreferences to translate local notification
+              final prefs = await SharedPreferences.getInstance();
+              final selectedLocale = prefs.getString('selected_locale') ?? 'ar';
+              final localized = NotificationLocalizer.localize(
+                newNotification.title,
+                newNotification.message,
+                selectedLocale,
+              );
+
               _showLocalNotification(
                 id: newNotification.id.hashCode,
-                title: newNotification.title,
-                message: newNotification.message,
+                title: localized['title'] ?? newNotification.title,
+                message: localized['message'] ?? newNotification.message,
                 payload: jsonEncode(newNotification.toJson()),
               );
             }
@@ -662,5 +672,110 @@ class NotificationProvider extends ChangeNotifier {
       _unsubscribeFriendshipFunc!();
     }
     super.dispose();
+  }
+}
+
+class NotificationLocalizer {
+  static Map<String, String> localize(String originalTitle, String originalMessage, String locale) {
+    if (locale == 'ar') {
+      return {
+        'title': originalTitle,
+        'message': originalMessage,
+      };
+    }
+
+    final titleLower = originalTitle.toLowerCase();
+    final msgLower = originalMessage.toLowerCase();
+    
+    final words = originalMessage.trim().split(RegExp(r'\s+'));
+    final namePart = words.isNotEmpty ? words.first : '';
+
+    String title = originalTitle;
+    String message = originalMessage;
+
+    // Follows & Accreditations
+    if (originalTitle == 'اعتماد جديد' || titleLower.contains('new follow') || titleLower.contains('new accreditation')) {
+      title = 'New Accreditation';
+      message = '$namePart accredited you';
+    } else if (originalTitle == 'طلب اعتماد' || titleLower.contains('follow request') || titleLower.contains('accredit request')) {
+      title = 'Accreditation Request';
+      message = '$namePart wants to accredit you';
+    } else if (originalTitle == 'تراجع عن الاعتماد' || originalTitle == 'إلغاء الاعتماد' || titleLower.contains('unfollow') || titleLower.contains('unaccredit')) {
+      title = 'Accreditation Removed';
+      message = '$namePart removed their accreditation of you';
+    } else if (originalTitle == 'اعتماد متبادل' || titleLower.contains('mutual')) {
+      title = 'Mutual Accreditation';
+      final mutualRegex = RegExp(r'(.+?)\s+قام\s+باعتمادك');
+      final match = mutualRegex.firstMatch(originalMessage);
+      if (match != null) {
+        message = '${match.group(1)!.trim()} mutually accredited you';
+      } else {
+        message = '$namePart mutually accredited you';
+      }
+    }
+    // Visits (including توافد الجمهور)
+    else if (originalTitle == 'زيارة جديدة للملف الشخصي' || 
+             originalTitle == 'زيارة ملف شخصي' || 
+             originalTitle == 'زيارة جديدة' || 
+             originalTitle == 'توافد الجمهور' || 
+             titleLower.contains('profile visit') || 
+             titleLower.contains('audience visit')) {
+      
+      final readRegex = RegExp(r'قام\s+(.+?)\s+بقراءة\s+مقالك');
+      final browseRegex = RegExp(r'قام\s+(.+?)\s+بتصفح\s+ملفك');
+
+      final readMatch = readRegex.firstMatch(originalMessage);
+      final browseMatch = browseRegex.firstMatch(originalMessage);
+
+      if (readMatch != null) {
+        title = 'New Article Visit';
+        message = '${readMatch.group(1)!.trim()} read your article';
+      } else if (browseMatch != null) {
+        title = 'New Profile Visit';
+        message = '${browseMatch.group(1)!.trim()} visited your profile';
+      } else {
+        title = 'New Profile Visit';
+        if (namePart == 'شخص' || namePart == 'قام' || namePart == 'أحد' || namePart == 'Someone' || namePart == 'A') {
+          message = 'A member visited your profile';
+        } else {
+          message = '$namePart visited your profile';
+        }
+      }
+    } else if (originalTitle == 'زيارة جديدة لمقالك' || titleLower.contains('article visit')) {
+      title = 'New Article Visit';
+      message = 'A reader visited and read your article';
+    }
+    // Likes & Comments
+    else if (originalTitle == 'إعجابات' || titleLower.contains('like') || msgLower.contains('إعجاب') || msgLower.contains('أعجب')) {
+      title = 'Likes';
+      message = '$namePart liked your article';
+    } else if (originalTitle == 'تعليقات' || titleLower.contains('comment') || msgLower.contains('علق') || msgLower.contains('تعليق')) {
+      title = 'Comments';
+      message = '$namePart commented on your article';
+    }
+    // Invites
+    else if (originalTitle == 'دعوة جديدة' || originalTitle == 'دعوة موعد' || titleLower.contains('invite') || titleLower.contains('invitation')) {
+      title = 'New Appointment Invitation';
+      if (namePart.isNotEmpty && namePart != 'لقد' && namePart != 'تم') {
+        message = '$namePart invited you to an appointment';
+      } else {
+        message = 'You have received a new appointment invitation';
+      }
+    } else if (originalTitle == 'إلغاء موعد' || originalTitle == 'تم إلغاء الموعد' || titleLower.contains('cancel')) {
+      title = 'Appointment Cancelled';
+      if (namePart.isNotEmpty && namePart != 'لقد' && namePart != 'تم') {
+        message = '$namePart cancelled the appointment';
+      } else {
+        message = 'An appointment was cancelled';
+      }
+    } else if (originalTitle == 'تأكيد موعد' || originalTitle == 'تم تأكيد الموعد' || titleLower.contains('confirm')) {
+      title = 'Appointment Confirmed';
+      message = 'The appointment has been confirmed';
+    }
+
+    return {
+      'title': title,
+      'message': message,
+    };
   }
 }

@@ -25,11 +25,13 @@ class InvitationActionButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final inv = appointment.currentUserInvitation;
-    final bool isFCFSCancelled = (appointment.isConfirmed && status == InvitationStatus.pending) ||
+    final bool isFCFSCancelled = (appointment.isFirstComeFirstServed && appointment.isConfirmed && status != InvitationStatus.accepted) ||
                                 (status == InvitationStatus.declined && 
                                  (inv?.personalNote?.contains(context.l10n.priorityFeature) == true || 
                                   inv?.personalNote?.contains('FCFS') == true ||
-                                  inv?.personalNote?.contains('cancelled') == true));
+                                  inv?.personalNote?.contains('cancelled') == true ||
+                                  inv?.personalNote?.contains('الأسبقية') == true ||
+                                  inv?.personalNote?.contains('الأسرع') == true));
 
     // 1. إذا تم الرد مسبقاً (الأولوية لتاريخ المستخدم)
     if (status == InvitationStatus.accepted) {

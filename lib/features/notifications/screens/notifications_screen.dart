@@ -152,11 +152,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
                 if (filteredList.isNotEmpty) ...[
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Text(
-                      'دعوات بانتظار ردك 📥',
-                      style: TextStyle(
+                      context.l10n.invitationsAwaitingResponse,
+                      style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
@@ -171,7 +171,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Text(
-                      'صندوق الإشعارات والأنشطة 🔔',
+                      context.l10n.notificationsAndActivity,
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,

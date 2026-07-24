@@ -23,10 +23,15 @@ class MainScreen extends StatefulWidget {
 
 class MainScreenState extends State<MainScreen> {
   final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
+
+  // Keep a reference so we can remove it in dispose() and prevent listener accumulation.
+  VoidCallback? _apptListenerRef;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final auth = context.read<AuthProvider>();
       if (auth.hasJustClaimedInvitation) {
         auth.clearJustClaimedInvitation();
@@ -36,23 +41,24 @@ class MainScreenState extends State<MainScreen> {
       final userId = auth.user?.id;
       if (userId != null) {
         context.read<NotificationProvider>().init(userId);
-        
+
         // Sync reminders initially
         final apptProvider = context.read<AppointmentProvider>();
         context.read<NotificationProvider>().syncReminders(
           apptProvider.appointments,
           apptProvider.bookmarkedAppointments,
         );
-        
-        // Listen for future updates
-        apptProvider.addListener(() {
+
+        // Store a named reference so we can removeListener in dispose.
+        _apptListenerRef = () {
           if (mounted) {
-             context.read<NotificationProvider>().syncReminders(
-               apptProvider.appointments,
-               apptProvider.bookmarkedAppointments,
-             );
+            context.read<NotificationProvider>().syncReminders(
+              apptProvider.appointments,
+              apptProvider.bookmarkedAppointments,
+            );
           }
-        });
+        };
+        apptProvider.addListener(_apptListenerRef!);
       }
     });
   }
@@ -184,13 +190,18 @@ class MainScreenState extends State<MainScreen> {
             final homeState = _homeKey.currentState;
             final isInArticlesTab = homeState?.isInArticlesTab ?? false;
             
-            if (_currentIndex == 0 && isInArticlesTab) {
+             if (_currentIndex == 0 && isInArticlesTab) {
               // إذا كان المستخدم في تبويب المقالات، نفتح شاشة إضافة مقال
+              final articleProvider = context.read<ArticleProvider>();
+              final authProvider = context.read<AuthProvider>();
+              final isHelpActive = articleProvider.isHelpFilterActive && (authProvider.user?.isAdmin ?? false);
+              
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => AddArticleScreen(
-                    initialTagIds: context.read<ArticleProvider>().activeFilterTagIds,
+                    initialTagIds: articleProvider.activeFilterTagIds,
+                    isHelpArticle: isHelpActive,
                   ),
                 ),
               );
@@ -280,10 +291,16 @@ class MainScreenState extends State<MainScreen> {
     
     if (isInArticlesTab) {
       // إذا كان في تبويب المقالات، افتح شاشة إضافة مقال
+      final articleProvider = context.read<ArticleProvider>();
+      final authProvider = context.read<AuthProvider>();
+      final isHelpActive = articleProvider.isHelpFilterActive && (authProvider.user?.isAdmin ?? false);
+
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => const AddArticleScreen(),
+          builder: (context) => AddArticleScreen(
+            isHelpArticle: isHelpActive,
+          ),
         ),
       );
     } else {
@@ -299,6 +316,13 @@ class MainScreenState extends State<MainScreen> {
 
   @override
   void dispose() {
+    // Remove the appointments listener to avoid accumulation across re-mounts.
+    if (_apptListenerRef != null) {
+      try {
+        context.read<AppointmentProvider>().removeListener(_apptListenerRef!);
+      } catch (_) {}
+      _apptListenerRef = null;
+    }
     super.dispose();
   }
 

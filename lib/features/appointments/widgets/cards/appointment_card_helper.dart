@@ -108,7 +108,8 @@ class AppointmentCardHelper {
   static String getRemainingTimeText(Appointment appointment, BuildContext context) {
     final result = _getRawRemainingTimeText(appointment, context);
     final locale = Localizations.localeOf(context).languageCode;
-    return locale == 'ar' ? AppDateFormatter.toEasternArabicDigits(result) : result;
+    final formatted = locale == 'ar' ? AppDateFormatter.toEasternArabicDigits(result) : result;
+    return formatted.replaceAll(' ', '\u00A0');
   }
 
   static String _getRawRemainingTimeText(Appointment appointment, BuildContext context) {

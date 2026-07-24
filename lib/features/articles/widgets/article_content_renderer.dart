@@ -13,17 +13,21 @@ import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../../../core/utils/bidi_utils.dart';
 import 'inline_audio_player.dart';
 import 'advanced_audio_player.dart';
+import 'youtube_video_with_actions.dart';
 import 'dart:convert';
 import 'dart:io' show File;
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import '../providers/article_provider.dart';
+import '../../../core/providers/settings_provider.dart';
 
 class ArticleContentRenderer extends StatelessWidget {
   final String text;
   final String? fontFamily;
   final List<String>? audioUrls;
+  final List<String>? imageFiles;
+  final String? articleId;
   final Function(String text, String audioUrl, bool isFinal)? onTextGenerated;
   final Function(String updatedText)? onTextUpdated;
   final Map<String, dynamic>? audioMetadata;
@@ -34,13 +38,15 @@ class ArticleContentRenderer extends StatelessWidget {
     required this.text,
     this.fontFamily,
     this.audioUrls,
+    this.imageFiles,
+    this.articleId,
     this.onTextGenerated,
     this.onTextUpdated,
     this.audioMetadata,
     this.onMetadataUpdated,
   });
 
-  TextSpan _parseInlineFormatting(String text, BuildContext context) {
+  TextSpan _parseInlineFormatting(String text, BuildContext context, {bool isJustified = false}) {
     const double fontSize = 22.0;
     const double lineHeight = 1.75;
 
@@ -49,6 +55,7 @@ class ArticleContentRenderer extends StatelessWidget {
       height: lineHeight,
       color: AppColors.getTextPrimary(context),
       fontWeight: FontWeight.w600, // Thickened to w600 for better clarity and sharpness
+      wordSpacing: isJustified ? -0.4 : 0.0, // Prevent huge gaps when justifying
     );
 
     final defaultStyle = ThemeProvider.getTextStyleForFont(fontFamily ?? 'Default', baseStyle);
@@ -175,13 +182,19 @@ class ArticleContentRenderer extends StatelessWidget {
   Widget _buildYoutubePlayer(BuildContext context, String videoId) {
     return _buildEdgeToEdge(
       context,
-      YoutubePreviewCard(videoId: videoId),
+      YoutubeVideoWithActions(videoId: videoId),
     );
   }
 
-  List<Widget> _renderTextBlock(BuildContext context, String blockText, _AudioIndex audioIndexWrapper) {
+  List<Widget> _renderTextBlock(BuildContext context, String blockText, _AudioIndex audioIndexWrapper, _ImageIndex imageIndexWrapper) {
     final List<Widget> widgets = [];
     final lines = blockText.split('\n');
+    
+    SettingsProvider? settingsProvider;
+    try {
+      settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+    } catch (_) {}
+    final bool isGlobalJustify = settingsProvider?.justifyArticles ?? false;
     
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i];
@@ -225,6 +238,15 @@ class ArticleContentRenderer extends StatelessWidget {
           cleanLine = cleanLine.substring(2, cleanLine.length - 2).trim();
         } else {
           cleanLine = cleanLine.substring('[RIGHT]'.length, cleanLine.length - '[/RIGHT]'.length).trim();
+        }
+      }
+
+      if (textAlign == TextAlign.start && isGlobalJustify) {
+        // Smart justification: only justify lines with a healthy word count (10 or more words)
+        // to prevent ugly spacing on short lines.
+        final wordCount = cleanLine.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+        if (wordCount >= 10) {
+          textAlign = TextAlign.justify;
         }
       }
 
@@ -419,6 +441,117 @@ class ArticleContentRenderer extends StatelessWidget {
         continue;
       }
       
+      // 4. [IMAGE] embedding tag (supports [IMAGE], [IMAGE: filename], [IMAGE_filename], and [IMAGE: URL])
+      final imageMatch = RegExp(r'^\[IMAGE(?:_|:\s*)(.+?)\]$', caseSensitive: false).firstMatch(normalizedLine);
+      final isImageTag = normalizedLine.toUpperCase() == '[IMAGE]' || imageMatch != null;
+
+      if (isImageTag) {
+        String? resolvedUrl;
+        
+        if (imageMatch != null) {
+          final content = imageMatch.group(1)!.trim();
+          if (content.toLowerCase().startsWith('http://') || content.toLowerCase().startsWith('https://')) {
+            resolvedUrl = content;
+          } else {
+            // Find file by name matching
+            final filenameQuery = content.toLowerCase();
+            if (imageFiles != null) {
+              for (final url in imageFiles!) {
+                final cleanFile = url.split('/').last.split('?').first.toLowerCase();
+                if (cleanFile == filenameQuery || 
+                    cleanFile.contains(filenameQuery) || 
+                    filenameQuery.contains(cleanFile)) {
+                  resolvedUrl = url;
+                  break;
+                }
+              }
+            }
+          }
+        }
+        
+        // Fallback: sequential mapping if not resolved
+        if (resolvedUrl == null) {
+          if (imageFiles != null && imageFiles!.isNotEmpty && imageIndexWrapper.value < imageFiles!.length) {
+            resolvedUrl = imageFiles![imageIndexWrapper.value];
+            imageIndexWrapper.value++;
+          }
+        }
+
+        if (resolvedUrl != null) {
+          final resolvedUrlCopy = resolvedUrl;
+          final isLocal = !resolvedUrlCopy.startsWith('http');
+          widgets.add(Padding(
+            padding: EdgeInsets.only(bottom: i == lines.length - 1 ? 0.0 : 8.0),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FullScreenImageViewer(imageUrl: resolvedUrlCopy),
+                  ),
+                );
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AppDimens.radiusM),
+                child: isLocal
+                    ? Image.file(
+                        File(resolvedUrlCopy),
+                        fit: BoxFit.cover,
+                        height: 200,
+                        width: double.infinity,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          height: 200,
+                          color: Colors.grey.shade200,
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
+                        ),
+                      )
+                    : CachedNetworkImage(
+                        imageUrl: resolvedUrlCopy,
+                        fit: BoxFit.cover,
+                        height: 200,
+                        width: double.infinity,
+                        placeholder: (context, url) => Container(
+                          height: 200,
+                          color: Colors.grey.shade200,
+                          alignment: Alignment.center,
+                          child: const CircularProgressIndicator(),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          height: 200,
+                          color: Colors.grey.shade200,
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
+                        ),
+                      ),
+              ),
+            ),
+          ));
+        } else {
+          widgets.add(Padding(
+            padding: EdgeInsets.only(bottom: i == lines.length - 1 ? 0.0 : 8.0),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.redAccent.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(AppDimens.radiusS),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
+                  SizedBox(width: 8),
+                  Text(
+                    'الصورة المدمجة الخاصة بهذا التضمين غير متوفرة',
+                    style: TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+          ));
+        }
+        continue;
+      }
+      
       final continueMatch = RegExp(r'^\[(?:أكمل|Continue)\s*(\d{1,2}:\d{2})\]$', caseSensitive: false).firstMatch(normalizedLine);
       if (continueMatch != null) {
         final timestamp = continueMatch.group(1)!;
@@ -440,7 +573,7 @@ class ArticleContentRenderer extends StatelessWidget {
       widgets.add(Padding(
         padding: EdgeInsets.only(bottom: i == lines.length - 1 ? 0.0 : 8.0),
         child: SelectableText.rich(
-          _parseInlineFormatting(cleanLine, context),
+          _parseInlineFormatting(cleanLine, context, isJustified: textAlign == TextAlign.justify),
           textAlign: textAlign,
         ),
       ));
@@ -451,6 +584,11 @@ class ArticleContentRenderer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Watch settings to trigger rebuilds when justification or fonts change
+    try {
+      Provider.of<SettingsProvider>(context);
+    } catch (_) {}
+    
     if (text.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -468,6 +606,7 @@ class ArticleContentRenderer extends StatelessWidget {
     final poemPattern = RegExp(r'\[POEM(?:\s+TYPE="([^"]+?)")?\](.*?)\[/POEM\]', dotAll: true, caseSensitive: false);
     
     final audioIndexWrapper = _AudioIndex();
+    final imageIndexWrapper = _ImageIndex();
     int lastMatchEnd = 0;
     
     for (final match in poemPattern.allMatches(cleanedText)) {
@@ -478,7 +617,7 @@ class ArticleContentRenderer extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: _renderTextBlock(context, preText, audioIndexWrapper),
+            children: _renderTextBlock(context, preText, audioIndexWrapper, imageIndexWrapper),
           ),
         ));
       }
@@ -498,13 +637,13 @@ class ArticleContentRenderer extends StatelessWidget {
     if (postText.isNotEmpty) {
       widgets.add(Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: _renderTextBlock(context, postText, audioIndexWrapper),
+        children: _renderTextBlock(context, postText, audioIndexWrapper, imageIndexWrapper),
       ));
     }
     
     // If no text or poems were added at all, just render the original string
     if (widgets.isEmpty && cleanedText.isNotEmpty) {
-      widgets.addAll(_renderTextBlock(context, cleanedText, audioIndexWrapper));
+      widgets.addAll(_renderTextBlock(context, cleanedText, audioIndexWrapper, imageIndexWrapper));
     }
     final isArabic = BidiUtils.isRtl(text, fallbackToRtl: Localizations.localeOf(context).languageCode == 'ar');
 
@@ -523,267 +662,126 @@ class FullScreenImageViewer extends StatelessWidget {
 
   const FullScreenImageViewer({super.key, required this.imageUrl});
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          Center(
-            child: InteractiveViewer(
-              minScale: 0.5,
-              maxScale: 4.0,
-              child: CachedNetworkImage(
-                imageUrl: imageUrl,
-                fit: BoxFit.contain,
-                placeholder: (context, url) => const CircularProgressIndicator(
-                  color: Colors.white,
-                ),
-                errorWidget: (context, url, error) => const Icon(
-                  Icons.error_outline,
-                  color: Colors.white,
-                  size: 48,
-                ),
-              ),
+  /// فتح الصورة كـ dialog مركزي بخلفية سوداء شفافة (بدون slide جانبي)
+  static Future<void> show(BuildContext context, String imageUrl) {
+    return showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: '',
+      barrierColor: Colors.black.withValues(alpha: 0.92),
+      transitionDuration: const Duration(milliseconds: 250),
+      transitionBuilder: (context, anim, _, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(parent: anim, curve: Curves.easeOut),
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.88, end: 1.0).animate(
+              CurvedAnimation(parent: anim, curve: Curves.easeOut),
             ),
+            child: child,
           ),
-          SafeArea(
-            child: Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: CircleAvatar(
-                  backgroundColor: Colors.black.withOpacity(0.5),
-                  child: IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          SafeArea(
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 24.0),
-                child: FloatingActionButton.extended(
-                  backgroundColor: Colors.white.withOpacity(0.25),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  onPressed: () async {
-                    final filename = 'image_${DateTime.now().millisecondsSinceEpoch}.jpg';
-                    final success = await ImageSaverUtil.saveImageFromUrl(imageUrl, filename);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            success
-                                ? 'تم حفظ الصورة في ألبوم الصور بنجاح 🖼️'
-                                : 'فشل حفظ الصورة ❌',
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.download),
-                  label: const Text('حفظ الصورة'),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class YoutubePreviewCard extends StatefulWidget {
-  final String videoId;
-
-  const YoutubePreviewCard({super.key, required this.videoId});
-
-  @override
-  State<YoutubePreviewCard> createState() => _YoutubePreviewCardState();
-}
-
-class _YoutubePreviewCardState extends State<YoutubePreviewCard> {
-  late List<String> _thumbnailUrls;
-  int _currentUrlIndex = 0;
-  bool _isPlaying = false;
-  YoutubePlayerController? _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _thumbnailUrls = [
-      'https://img.youtube.com/vi/${widget.videoId}/maxresdefault.jpg',
-      'https://img.youtube.com/vi/${widget.videoId}/hqdefault.jpg',
-      'https://img.youtube.com/vi/${widget.videoId}/mqdefault.jpg',
-    ];
-  }
-
-  @override
-  void dispose() {
-    _controller?.close();
-    super.dispose();
-  }
-
-  void _handleImageError() {
-    if (_currentUrlIndex < _thumbnailUrls.length - 1) {
-      setState(() {
-        _currentUrlIndex++;
-      });
-    }
-  }
-
-  Future<void> _openInYoutubeApp() async {
-    final youtubeUrl = 'https://www.youtube.com/watch?v=${widget.videoId}';
-    final uri = Uri.parse(youtubeUrl);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تعذر فتح رابط يوتيوب')),
         );
-      }
-    }
-  }
-
-  Widget _buildPlayer() {
-    _controller ??= YoutubePlayerController.fromVideoId(
-      videoId: widget.videoId,
-      autoPlay: true,
-      params: const YoutubePlayerParams(
-        showFullscreenButton: true,
-        mute: false,
-        showControls: true,
-      ),
-    );
-    
-    return YoutubePlayer(
-      controller: _controller!,
-      aspectRatio: 16 / 9,
-    );
-  }
-
-  Widget _buildPreview() {
-    final thumbnailUrl = _thumbnailUrls[_currentUrlIndex];
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _isPlaying = true;
-        });
       },
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          CachedNetworkImage(
-            imageUrl: thumbnailUrl,
-            fit: BoxFit.cover,
-            placeholder: (context, url) => Container(
-              color: Colors.black87,
-              child: const Center(
-                child: CircularProgressIndicator(color: Colors.white),
-              ),
-            ),
-            errorWidget: (context, url, error) {
-              if (_currentUrlIndex < _thumbnailUrls.length - 1) {
-                WidgetsBinding.instance.addPostFrameCallback((_) => _handleImageError());
-                return Container(
-                  color: Colors.black87,
-                  child: const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  ),
-                );
-              }
-              
-              return Container(
-                color: Colors.black87,
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.video_library_outlined, color: Colors.white54, size: 48),
-                    SizedBox(height: 8),
-                    Text(
-                      'تشغيل الفيديو',
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.2),
-                  Colors.black.withOpacity(0.6),
-                ],
-              ),
-            ),
-          ),
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade600.withOpacity(0.9),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 15,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.play_arrow,
-                    color: Colors.white,
-                    size: 36,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.4),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    'تشغيل الفيديو',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      pageBuilder: (context, _, __) => FullScreenImageViewer(imageUrl: imageUrl),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 16 / 9,
-      child: _isPlaying ? _buildPlayer() : _buildPreview(),
+    final isLocal = !imageUrl.startsWith('http');
+    return GestureDetector(
+      onTap: () => Navigator.pop(context),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Stack(
+          children: [
+            Center(
+              child: GestureDetector(
+                onTap: () {}, // منع إغلاق عند الضغط على الصورة نفسها
+                child: InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: isLocal
+                        ? Image.file(
+                            File(imageUrl),
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) => const Icon(
+                              Icons.error_outline,
+                              color: Colors.white,
+                              size: 48,
+                            ),
+                          )
+                        : CachedNetworkImage(
+                            imageUrl: imageUrl,
+                            fit: BoxFit.contain,
+                            placeholder: (context, url) => const CircularProgressIndicator(
+                              color: Colors.white,
+                            ),
+                            errorWidget: (context, url, error) => const Icon(
+                              Icons.error_outline,
+                              color: Colors.white,
+                              size: 48,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+            ),
+            SafeArea(
+              child: Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: CircleAvatar(
+                    backgroundColor: Colors.white.withValues(alpha: 0.15),
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            SafeArea(
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 24.0),
+                  child: FloatingActionButton.extended(
+                    backgroundColor: Colors.white.withValues(alpha: 0.2),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    onPressed: () async {
+                      final filename = 'image_${DateTime.now().millisecondsSinceEpoch}.jpg';
+                      final success = await ImageSaverUtil.saveImageFromUrl(imageUrl, filename);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              success
+                                  ? 'تم حفظ الصورة في ألبوم الصور بنجاح 🖼️'
+                                  : 'فشل حفظ الصورة ❌',
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.download),
+                    label: const Text('حفظ الصورة'),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
+
+
 
 class EdgeToEdgeLayout extends StatelessWidget {
   final Widget child;
@@ -877,6 +875,10 @@ class RenderEdgeToEdgeLayout extends RenderShiftedBox {
 }
 
 class _AudioIndex {
+  int value = 0;
+}
+
+class _ImageIndex {
   int value = 0;
 }
 

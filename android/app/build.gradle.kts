@@ -16,7 +16,7 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.sijilli.app"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -32,7 +32,7 @@ android {
     defaultConfig {
         applicationId = "com.sijilli.app"
         minSdk = flutter.minSdkVersion  // Android 5.0 - أكثر أماناً
-        targetSdk = 35  // إصدار مستقر
+        targetSdk = 36  // مستهدف Android 16 (API 36)
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         

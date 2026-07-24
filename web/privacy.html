@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سجلي - سياسة الخصوصية | Sijilli - Privacy Policy</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    
+    <!-- Tajawal and Inter Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --primary-color: #3b82f6; /* Blue for Sijilli theme */
+            --primary-hover: #2563eb;
+            --accent-color: #10b981;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Tajawal', sans-serif;
+            line-height: 1.6;
+            padding: 2rem 1rem;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+        }
+
+        [data-lang="en"] {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 2.5rem;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .lang-switch {
+            position: absolute;
+            top: 2rem;
+            left: 2.5rem;
+        }
+        
+        html[dir="ltr"] .lang-switch {
+            left: auto;
+            right: 2.5rem;
+        }
+
+        .lang-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            padding: 0.5rem 1.2rem;
+            border-radius: 9999px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .lang-btn:hover {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo-icon {
+            font-size: 3.5rem;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 2.5rem;
+            color: var(--text-primary);
+        }
+
+        .section {
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 1.5rem;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        p, li {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-bottom: 0.8rem;
+        }
+
+        ul {
+            padding-right: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        html[dir="ltr"] ul {
+            padding-right: 0;
+            padding-left: 1.5rem;
+        }
+
+        .permission-badge {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--primary-color);
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--card-border);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Show/Hide elements based on language */
+        .lang-content-ar { display: block; }
+        .lang-content-en { display: none; }
+
+        body[data-lang="en"] .lang-content-ar { display: none; }
+        body[data-lang="en"] .lang-content-en { display: block; }
+    </style>
+</head>
+<body data-lang="ar">
+
+    <div class="container">
+        <!-- Language Switcher Button -->
+        <div class="lang-switch">
+            <button class="lang-btn" onclick="toggleLanguage()" id="langBtn">English</button>
+        </div>
+
+        <div class="logo-container">
+            <div class="logo-icon">📅</div>
+        </div>
+
+        <!-- Arabic Privacy Policy -->
+        <div class="lang-content-ar">
+            <h1>سياسة الخصوصية لتطبيق سجلي</h1>
+            
+            <div class="section">
+                <h2>1. مقدمة العامة</h2>
+                <p>تطبيق <strong>سجلي</strong> (Sijilli) هو منصة اجتماعية مخصصة لتنظيم المواعيد، وإدارة الدعوات، ومزامنة اللقاءات مع التقويم الخاص بك. نحن نلتزم بحماية خصوصيتك وضمان أمان بياناتك الشخصية.</p>
+            </div>
+
+            <div class="section">
+                <h2>2. الأذونات الحساسة والغرض منها</h2>
+                <p>يطلب تطبيق سجلي بعض الأذونات الحساسة من جهازك لتقديم ميزاته الأساسية. نود توضيح الغرض منها للمستخدم بصراحة وبساطة:</p>
+                <ul>
+                    <li>
+                        <strong>تحديد الموقع الجغرافي (GPS) <span class="permission-badge">Location</span>:</strong> 
+                        نحتاج للوصول لموقعك الجغرافي لتحديد مكان المواعيد بدقة على الخريطة، وتسهيل حساب الاتجاهات، ومساعدتك في اختيار القاعات والمباني المتاحة حولك بدقة عالية.
+                    </li>
+                    <li>
+                        <strong>الوصول للميكروفون <span class="permission-badge">Microphone</span>:</strong> 
+                        نحتاج للوصول للميكروفون لتمكينك من إملاء تفاصيل اللقاء والموعد صوتياً (إدخال الموعد بالصوت) دون الحاجة للكتابة اليدوية.
+                    </li>
+                    <li>
+                        <strong>جهات الاتصال <span class="permission-badge">Contacts</span>:</strong> 
+                        نطلب هذا الإذن للبحث عن أصدقائك وتسهيل اختيارهم وإرسال الدعوات المباشرة إليهم لحضور المواعيد المشتركة.
+                    </li>
+                    <li>
+                        <strong>التقويم <span class="permission-badge">Calendar</span>:</strong> 
+                        نحتاج له لربط ومزامنة مواعيد تطبيق سجلي مع تقويم هاتفك المحلي وإرسال تذكيرات مسبقة.
+                    </li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2>3. حماية البيانات ومشاركتها</h2>
+                <p>نحن لا نبيع أو نشارك بياناتك الحساسة مع أي طرف ثالث لأغراض تسويقية أو دعائية. يتم حفظ وتأمين كافة بياناتك ومعلوماتك الشخصية في قواعد بيانات مغلقة وآمنة ويتم تشفير الاتصالات بالكامل.</p>
+            </div>
+
+            <div class="section">
+                <h2>4. حقوق حذف البيانات والتحكم بها</h2>
+                <p>لديك السيطرة الكاملة على بياناتك. يمكنك في أي وقت تعديل بياناتك أو حذف حسابك بشكل نهائي من داخل إعدادات التطبيق أو عبر صفحة الدعم الخاصة بحذف الحساب.</p>
+            </div>
+            
+            <div class="footer">
+                جميع الحقوق محفوظة &copy; سجلي 2026.
+            </div>
+        </div>
+
+        <!-- English Privacy Policy -->
+        <div class="lang-content-en">
+            <h1>Privacy Policy for Sijilli</h1>
+            
+            <div class="section">
+                <h2>1. Introduction</h2>
+                <p><strong>Sijilli</strong> is a social scheduler app dedicated to organizing appointments, managing invitations, and syncing events with your local calendar. We are fully committed to protecting your privacy and securing your personal information.</p>
+            </div>
+
+            <div class="section">
+                <h2>2. Sensitive Permissions & Purpose</h2>
+                <p>Sijilli requests several sensitive permissions to provide its core features. Here is why we need them:</p>
+                <ul>
+                    <li>
+                        <strong>GPS Location <span class="permission-badge">Location</span>:</strong> 
+                        We require location access to pin appointment venues accurately on the map, calculate directions, and help you select buildings and rooms near you with high precision.
+                    </li>
+                    <li>
+                        <strong>Microphone Access <span class="permission-badge">Microphone</span>:</strong> 
+                        We need microphone access to allow you to dictate appointment details and descriptions via voice input, eliminating the need to type.
+                    </li>
+                    <li>
+                        <strong>Contacts <span class="permission-badge">Contacts</span>:</strong> 
+                        Used to locate and display friends quickly, making it effortless to send them direct invitation links for joint appointments.
+                    </li>
+                    <li>
+                        <strong>Calendar <span class="permission-badge">Calendar</span>:</strong> 
+                        Required to sync Sijilli appointments with your device's native calendar and schedule alerts.
+                    </li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2>3. Data Protection and Sharing</h2>
+                <p>We do not sell or share your sensitive data with any third parties for advertising or marketing. All database records are securely transmitted and hosted using industry-standard encryption protocols.</p>
+            </div>
+
+            <div class="section">
+                <h2>4. User Rights & Data Deletion</h2>
+                <p>You retain full ownership and control of your data. You may modify your data or permanently delete your account at any time directly through the application settings or the dedicated account deletion support web page.</p>
+            </div>
+            
+            <div class="footer">
+                All rights reserved &copy; Sijilli 2026.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleLanguage() {
+            const body = document.body;
+            const currentLang = body.getAttribute('data-lang');
+            const newLang = currentLang === 'ar' ? 'en' : 'ar';
+            
+            body.setAttribute('data-lang', newLang);
+            document.documentElement.lang = newLang;
+            document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
+            
+            document.getElementById('langBtn').innerText = newLang === 'ar' ? 'English' : 'العربية';
+        }
+    </script>
+</body>
+</html>

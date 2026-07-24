@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sijilli/core/constants/app_colors.dart';
+import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -83,7 +84,7 @@ class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProvider
             
             // اسم التطبيق
             Text(
-              'سجلي',
+              context.l10n.appName,
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
@@ -94,7 +95,7 @@ class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProvider
             
             // الوصف
             Text(
-              'تنظيم المواعيد وإدارة الدعوات',
+              context.l10n.appSlogan,
               style: TextStyle(
                 fontSize: 16,
                 color: isDark ? Colors.white70 : AppColors.lightTextSecondary,
@@ -116,7 +117,7 @@ class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProvider
             
             // نص التحميل
             Text(
-              'جاري التحميل...',
+              context.l10n.loading,
               style: TextStyle(
                 fontSize: 14,
                 color: isDark ? Colors.white70 : AppColors.lightTextSecondary,

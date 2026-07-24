@@ -94,7 +94,9 @@ class PbArticleService {
     List<String>? tagIds,
     http.MultipartFile? imageFile,
     List<http.MultipartFile>? audioFiles,
+    List<http.MultipartFile>? inlineImageFiles,
     Map<String, dynamic>? audioMetadata,
+    bool isHelpArticle = false,
   }) async {
     try {
       final authorId = _pb.authStore.record?.id;
@@ -118,6 +120,7 @@ class PbArticleService {
         'likes': [],
         if (tagIds != null) 'tags': tagIds,
         if (audioMetadata != null) 'audio_metadata': audioMetadata,
+        if (isHelpArticle) 'is_help_article': true,
       };
 
       final List<http.MultipartFile> files = [];
@@ -126,6 +129,9 @@ class PbArticleService {
       }
       if (audioFiles != null) {
         files.addAll(audioFiles);
+      }
+      if (inlineImageFiles != null) {
+        files.addAll(inlineImageFiles);
       }
 
       final record = await _pb.collection(collectionArticles).create(
@@ -156,6 +162,9 @@ class PbArticleService {
     List<http.MultipartFile>? audioFiles,
     List<String>? existingAudios,
     bool removeAudio = false,
+    List<http.MultipartFile>? inlineImageFiles,
+    List<String>? existingInlineImages,
+    bool removeInlineImages = false,
     Map<String, dynamic>? audioMetadata,
   }) async {
     try {
@@ -200,6 +209,15 @@ class PbArticleService {
       } else if (removeAudio) {
         body['audio'] = '';
       }
+      if (existingInlineImages != null) {
+        if (existingInlineImages.isEmpty) {
+          body['images'] = '';
+        } else {
+          body['images'] = existingInlineImages;
+        }
+      } else if (removeInlineImages) {
+        body['images'] = '';
+      }
       if (tagIds != null) body['tags'] = tagIds;
  
       final List<http.MultipartFile> files = [];
@@ -208,6 +226,9 @@ class PbArticleService {
       }
       if (audioFiles != null) {
         files.addAll(audioFiles);
+      }
+      if (inlineImageFiles != null) {
+        files.addAll(inlineImageFiles);
       }
 
       final record = await _pb.collection(collectionArticles).update(

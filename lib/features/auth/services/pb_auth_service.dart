@@ -52,7 +52,9 @@ class PbAuthService {
     // بعد التسجيل، نقوم بتسجيل الدخول تلقائياً للحصول على التوكن وصلاحية الجلسة
     final authData = await _pb.collection(collectionUsers).authWithPassword(email.toLowerCase().trim(), password);
     
-    return UserModel.fromJson(authData.record.toJson(), token: authData.token);
+    final newUser = UserModel.fromJson(authData.record.toJson(), token: authData.token);
+
+    return newUser;
   }
 
   void logout() {

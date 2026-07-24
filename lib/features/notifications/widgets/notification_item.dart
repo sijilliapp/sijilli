@@ -124,31 +124,106 @@ class NotificationItem extends StatelessWidget {
 
   // Intercept titles from backend
   String _getLocalizedTitle(String originalTitle, BuildContext context) {
-    if (originalTitle == 'اعتماد جديد' || originalTitle.toLowerCase().contains('new follow')) {
+    final titleLower = originalTitle.toLowerCase();
+    if (originalTitle == 'اعتماد جديد' || titleLower.contains('new follow') || titleLower.contains('new accreditation')) {
        return context.l10n.newFollowerTitle; 
     }
-    if (originalTitle == 'طلب اعتماد' || originalTitle.toLowerCase().contains('follow request')) {
+    if (originalTitle == 'طلب اعتماد' || titleLower.contains('follow request') || titleLower.contains('accredit request')) {
        return context.l10n.followRequestTitle;
     }
-    if (originalTitle == 'تراجع عن الاعتماد' || originalTitle == 'إلغاء الاعتماد') {
-       return 'تراجع عن الاعتماد';
+    if (originalTitle == 'تراجع عن الاعتماد' || originalTitle == 'إلغاء الاعتماد' || titleLower.contains('unfollow') || titleLower.contains('unaccredit')) {
+       return context.l10n.unfollowedTitle;
+    }
+    if (originalTitle == 'زيارة جديدة للملف الشخصي' || originalTitle == 'زيارة ملف شخصي' || originalTitle == 'زيارة جديدة' || titleLower.contains('profile visit')) {
+       return context.l10n.newProfileVisitTitle;
+    }
+    if (originalTitle == 'زيارة جديدة لمقالك' || titleLower.contains('article visit')) {
+       return context.l10n.newArticleVisitTitle;
+    }
+    if (originalTitle == 'توافد الجمهور' || originalTitle.contains('توافد') || originalTitle.contains('جمهور')) {
+       // Check message to determine if it is a profile or article visit
+       return context.l10n.newProfileVisitTitle;
+    }
+    if (originalTitle == 'اعتماد متبادل' || titleLower.contains('mutual')) {
+       return context.l10n.mutualAccreditationTitle;
+    }
+    if (originalTitle == 'إعجابات' || titleLower.contains('like')) {
+       return context.l10n.likesTitle;
+    }
+    if (originalTitle == 'تعليقات' || titleLower.contains('comment')) {
+       return context.l10n.commentsTitle;
     }
     return originalTitle;
   }
 
   // Intercept messages based on title pattern
   String _getLocalizedMessage(String originalTitle, String originalMessage, BuildContext context) {
-    if (originalTitle == 'اعتماد جديد' || originalTitle == 'طلب اعتماد') {
-       final namePart = originalMessage.split(' ').first; // Extract "Ammar" from "Ammar بدأ باغتمادك"
-       if (originalTitle == 'اعتماد جديد') {
-          return context.l10n.startedFollowingYou(namePart);
-       } else {
-          return context.l10n.wantsToFollowYou(namePart);
+    final words = originalMessage.trim().split(RegExp(r'\s+'));
+    if (words.isEmpty || words.first.isEmpty) return originalMessage;
+    final namePart = words.first;
+
+    final titleLower = originalTitle.toLowerCase();
+    final msgLower = originalMessage.toLowerCase();
+
+    // Accredit / Follow requests
+    if (originalTitle == 'اعتماد جديد' || titleLower.contains('new follow') || titleLower.contains('new accreditation')) {
+       return context.l10n.startedFollowingYou(namePart);
+    }
+    if (originalTitle == 'طلب اعتماد' || titleLower.contains('follow request') || titleLower.contains('accredit request')) {
+       return context.l10n.wantsToFollowYou(namePart);
+    }
+    if (originalTitle == 'تراجع عن الاعتماد' || originalTitle == 'إلغاء الاعتماد' || titleLower.contains('unfollow') || titleLower.contains('unaccredit')) {
+       return context.l10n.unfollowedMessage(namePart);
+    }
+
+    // Mutual Accreditations
+    if (originalTitle == 'اعتماد متبادل' || titleLower.contains('mutual')) {
+       final mutualRegex = RegExp(r'(.+?)\s+قام\s+باعتمادك');
+       final match = mutualRegex.firstMatch(originalMessage);
+       if (match != null) {
+          return context.l10n.mutualAccreditedYou(match.group(1)!.trim());
        }
+       return context.l10n.mutualAccreditedYou(namePart);
     }
-    if (originalTitle == 'تراجع عن الاعتماد' || originalTitle == 'إلغاء الاعتماد') {
-       return originalMessage; // Show full name and message directly from PocketBase
+
+    // Profile & Article Visits (including توافد الجمهور)
+    if (originalTitle == 'زيارة جديدة للملف الشخصي' || 
+        originalTitle == 'زيارة ملف شخصي' || 
+        originalTitle == 'زيارة جديدة' || 
+        originalTitle == 'توافد الجمهور' || 
+        titleLower.contains('profile visit') || 
+        titleLower.contains('audience visit')) {
+       
+       final readRegex = RegExp(r'قام\s+(.+?)\s+بقراءة\s+مقالك');
+       final browseRegex = RegExp(r'قام\s+(.+?)\s+بتصفح\s+ملفك');
+
+       final readMatch = readRegex.firstMatch(originalMessage);
+       if (readMatch != null) {
+          return context.l10n.readerReadYourArticle(readMatch.group(1)!.trim());
+       }
+
+       final browseMatch = browseRegex.firstMatch(originalMessage);
+       if (browseMatch != null) {
+          return context.l10n.visitedYourProfile(browseMatch.group(1)!.trim());
+       }
+
+       if (namePart == 'شخص' || namePart == 'قام' || namePart == 'أحد' || namePart == 'Someone' || namePart == 'A') {
+          return context.l10n.newProfileVisitMessage;
+       }
+       return context.l10n.visitedYourProfile(namePart);
     }
+    if (originalTitle == 'زيارة جديدة لمقالك' || titleLower.contains('article visit')) {
+       return context.l10n.newArticleVisitMessage;
+    }
+
+    // Likes & Comments
+    if (originalTitle == 'إعجابات' || titleLower.contains('like') || msgLower.contains('إعجاب') || msgLower.contains('أعجب')) {
+       return context.l10n.likedYourArticle(namePart);
+    }
+    if (originalTitle == 'تعليقات' || titleLower.contains('comment') || msgLower.contains('علق') || msgLower.contains('تعليق')) {
+       return context.l10n.commentedOnYourArticle(namePart);
+    }
+
     return originalMessage;
   }
 }

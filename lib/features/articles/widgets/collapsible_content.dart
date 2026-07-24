@@ -6,18 +6,23 @@ class CollapsibleContent extends StatefulWidget {
   final double maxHeight;
   final String buttonText;
 
+  /// يُستدعى عند ضغط المستخدم على زر "المقال كاملاً"
+  final VoidCallback? onExpand;
+
   const CollapsibleContent({
     super.key,
     required this.child,
-    this.maxHeight = 750.0,
+    this.maxHeight = 420.0, // مختصر أكثر حتى يظهر الزر مباشرة
     required this.buttonText,
+    this.onExpand,
   });
 
   @override
   State<CollapsibleContent> createState() => _CollapsibleContentState();
 }
 
-class _CollapsibleContentState extends State<CollapsibleContent> with SingleTickerProviderStateMixin {
+class _CollapsibleContentState extends State<CollapsibleContent>
+    with SingleTickerProviderStateMixin {
   bool _isExpanded = false;
   double? _naturalHeight;
   final GlobalKey _childKey = GlobalKey();
@@ -27,7 +32,8 @@ class _CollapsibleContentState extends State<CollapsibleContent> with SingleTick
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final renderBox = _childKey.currentContext?.findRenderObject() as RenderBox?;
+      final renderBox =
+          _childKey.currentContext?.findRenderObject() as RenderBox?;
       if (renderBox != null) {
         setState(() {
           _naturalHeight = renderBox.size.height;
@@ -38,7 +44,8 @@ class _CollapsibleContentState extends State<CollapsibleContent> with SingleTick
 
   @override
   Widget build(BuildContext context) {
-    final bool exceeds = _naturalHeight == null || _naturalHeight! > widget.maxHeight;
+    final bool exceeds =
+        _naturalHeight == null || _naturalHeight! > widget.maxHeight;
 
     if (!exceeds) {
       return Container(
@@ -50,8 +57,9 @@ class _CollapsibleContentState extends State<CollapsibleContent> with SingleTick
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // المحتوى المطوي / الممتد
         AnimatedSize(
-          duration: const Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 350),
           curve: Curves.easeInOut,
           alignment: Alignment.topCenter,
           child: Stack(
@@ -73,34 +81,37 @@ class _CollapsibleContentState extends State<CollapsibleContent> with SingleTick
                         ),
                       ),
                     ),
+              // تدرج يوحي بأن هناك محتوى تحت
               if (!_isExpanded)
                 Container(
-                  height: 140,
+                  height: 120,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
                         AppColors.getBackground(context).withValues(alpha: 0.0),
-                        AppColors.getBackground(context).withValues(alpha: 0.8),
+                        AppColors.getBackground(context).withValues(alpha: 0.75),
                         AppColors.getBackground(context),
                       ],
-                      stops: const [0.0, 0.6, 1.0],
+                      stops: const [0.0, 0.55, 1.0],
                     ),
                   ),
                 ),
             ],
           ),
         ),
+
+        // زر "المقال كاملاً" — يظهر دائماً أسفل المحتوى مباشرة بدون سحب
         if (!_isExpanded) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
             child: TextButton(
               style: TextButton.styleFrom(
                 backgroundColor: AppColors.primary.withValues(alpha: 0.08),
                 foregroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                padding: const EdgeInsets.symmetric(vertical: 14.0),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16.0),
                   side: const BorderSide(color: AppColors.primary, width: 1.0),
@@ -108,9 +119,8 @@ class _CollapsibleContentState extends State<CollapsibleContent> with SingleTick
                 elevation: 0,
               ),
               onPressed: () {
-                setState(() {
-                  _isExpanded = true;
-                });
+                setState(() => _isExpanded = true);
+                widget.onExpand?.call();
               },
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,

@@ -148,20 +148,35 @@ class EventFormWidget extends StatelessWidget {
                 label: context.l10n.building,
                 hint: context.l10n.buildingHint,
                 maxLength: 60, // Increased to support building name + coordinate string suffix
-                suffixIcon: IconButton(
-                  icon: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.primary, width: 1.5),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Icon(
-                      Icons.map_outlined,
-                      size: 16,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  onPressed: onOpenLocationPicker,
+                suffixIcon: Builder(
+                  builder: (context) {
+                    final isRTL = Directionality.of(context) == TextDirection.rtl;
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        top: 4.0,
+                        bottom: 4.0,
+                        left: isRTL ? 4.0 : 0.0,
+                        right: isRTL ? 0.0 : 4.0,
+                      ),
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: AppColors.primary, width: 1.5),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Icon(
+                            Icons.map_outlined,
+                            size: 20,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        onPressed: onOpenLocationPicker,
+                      ),
+                    );
+                  },
                 ),
               ),
             ),

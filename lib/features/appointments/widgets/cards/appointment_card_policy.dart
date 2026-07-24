@@ -55,6 +55,10 @@ abstract class AppointmentCardPolicy {
   }
   bool get canReport;
 
+  /// هل يُسمح بحذف الموعد من قائمة الإجراءات (اللمس المطول)؟
+  /// false في الصفحات العامة — الحذف يكون فقط من الصفحة الشخصية للمستخدم
+  bool get canDeleteFromLongPress => true;
+
   // --- Layout ---
   EdgeInsetsGeometry get margin => const EdgeInsets.symmetric(horizontal: 0, vertical: 8.0); // Default spaceS
 }

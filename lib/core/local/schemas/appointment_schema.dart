@@ -92,6 +92,9 @@ class LocalAppointment extends HiveObject {
 
   @HiveField(27)
   String? coordinates;
+
+  @HiveField(28)
+  bool isFirstComeFirstServed = false;
 }
 
 @HiveType(typeId: 2)

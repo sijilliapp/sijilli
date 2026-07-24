@@ -58,6 +58,7 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
   }
 
   Future<void> _handleRegister() async {
+    FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
     if (!_isCaptchaVerified) return;
     if (!_acceptTerms) {

@@ -107,7 +107,11 @@ class PublicPolicy extends AppointmentCardPolicy {
     
     final isOwner = appointment.hostId == auth.user?.id;
     final isAdmin = auth.user?.isAdmin == true;
-    final canDelete = isOwner || isAdmin;
+    // في الصفحة العامة (PublicPolicy) لا يُسمح بالحذف مطلقاً —
+    // المستخدم يرى موعداً في صفحة شخص آخر، سلطته محدودة بسجله هو فقط
+    // والوصول لسجله يكون من صفحته الشخصية لا من هنا.
+    // المشرف فقط يملك صلاحية طارئة تُدار من لوحة التحكم لا من هذه البطاقة.
+    const canDelete = false;
     final isBookmarked = appointment.currentUserInvitation?.postStatus == PostStatus.bookmarked;
 
     AppActionSheet.show(
@@ -267,4 +271,7 @@ class PublicPolicy extends AppointmentCardPolicy {
 
   @override
   bool get canReport => false;
+
+  @override
+  bool get canDeleteFromLongPress => false;
 }

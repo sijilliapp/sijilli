@@ -4,6 +4,7 @@ import 'package:sijilli/features/articles/widgets/tag_chip.dart';
 import 'package:sijilli/models/tag.dart';
 import 'package:sijilli/models/user.dart';
 import 'package:sijilli/features/articles/widgets/article_content_renderer.dart';
+import 'package:sijilli/features/articles/widgets/youtube_video_with_actions.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 void main() {
@@ -26,7 +27,7 @@ void main() {
     expect(find.text('شعر'), findsOneWidget);
   });
 
-  testWidgets('ArticleContentRenderer renders YoutubePreviewCard for youtube link', (WidgetTester tester) async {
+  testWidgets('ArticleContentRenderer renders YoutubeVideoWithActions for youtube link', (WidgetTester tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
@@ -35,7 +36,7 @@ void main() {
       ),
     );
 
-    expect(find.byType(YoutubePreviewCard), findsOneWidget);
+    expect(find.byType(YoutubeVideoWithActions), findsOneWidget);
     expect(find.text('تشغيل الفيديو'), findsOneWidget);
   });
 

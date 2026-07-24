@@ -231,8 +231,8 @@ class AddEventProvider extends ChangeNotifier {
       
       _selectedEndDate = initialAppointment.fullDateTime.add(Duration(minutes: initialAppointment.duration));
       
-      // 1. Privacy
-      _privacy = initialAppointment.currentUserInvitation?.privacy ?? initialAppointment.privacy;
+      // 1. Privacy — من نسخة المستضيف الشخصية فقط، لا من appointments.privacy
+      _privacy = initialAppointment.currentUserInvitation?.privacy ?? 'private';
       
       // 2. Date Type
       if (initialAppointment.dateType == 'hijri') {
@@ -506,9 +506,14 @@ class AddEventProvider extends ChangeNotifier {
     final conflicts = _history.where((a) {
       if (a.id == _editingId) return false;
       
-      // Ignore cancelled/deleted/archived
-      if (a.isCancelled || a.isDeleted || a.isUserDeleted || a.isArchived) return false;
-      if (a.viewerRecord?.status == InvitationStatus.declined) return false;
+      // Ignore cancelled or deleted (global or personal trash)
+      if (a.isCancelled || a.isDeleted || a.isUserDeleted) return false;
+      
+      // Ignore declined (rejected) and deletedAfterAccept
+      if (a.viewerRecord?.status == InvitationStatus.declined || 
+          a.viewerRecord?.status == InvitationStatus.deletedAfterAccept) {
+        return false;
+      }
 
       // Get occurrence ranges for this existing appointment
       final existingRanges = _getAppointmentOccurrences(

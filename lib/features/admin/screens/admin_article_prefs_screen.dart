@@ -186,6 +186,25 @@ class _AdminArticlePrefsScreenState extends State<AdminArticlePrefsScreen> {
     );
 
     if (result != null && context.mounted) {
+      if (configKey == 'article_max_chars' && result < 5000) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('عذراً، لا يمكن وضع حد أقصى للحروف أقل من 5000 حرف (الحد الافتراضي للمستخدم).'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      if (configKey == 'audio_max_files' && result < 1) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('عذراً، لا يمكن وضع حد أقصى للملفات الصوتية أقل من ملف واحد (الحد الافتراضي للمستخدم).'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
       await adminProvider.updateConfigNumber(
         configKey,
         result.toDouble(),

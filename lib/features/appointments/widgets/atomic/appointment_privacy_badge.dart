@@ -60,6 +60,8 @@ class AppointmentPrivacyBadge extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
+            maxLines: 1,
+            softWrap: false,
             style: TextStyle(
               fontSize: 11,
               color: contentColor,

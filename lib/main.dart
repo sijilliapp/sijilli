@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -63,6 +64,14 @@ void main() async { // Changed to async
     } catch (e) {
       debugPrint('⚠️ Flutter Error (Safe Log): ${details.exception}');
     }
+  };
+
+  // معالجة أخطاء المنصة غير المتزامنة (Uncaught Async Errors)
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    try {
+      debugPrint('⚠️ Uncaught Async Error: $error\n$stack');
+    } catch (_) {}
+    return false; // نرجع false للسماح للخطأ بالظهور الطبيعي ومنع تجميد إطار عمل Flutter في حالات غير متناسقة
   };
 
   // تهيئة PocketBase أولاً لأن الخدمات الأخرى تعتمد عليه

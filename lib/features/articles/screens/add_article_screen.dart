@@ -18,7 +18,6 @@ import '../providers/tag_provider.dart';
 import '../widgets/formatting_text_controller.dart';
 import '../widgets/article_content_renderer.dart';
 import '../widgets/tag_selector_sheet.dart';
-import '../widgets/inline_audio_player.dart';
 import 'package:file_picker/file_picker.dart';
 import '../widgets/tag_chip.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
@@ -26,11 +25,15 @@ import '../../../core/providers/global_config_provider.dart';
 import '../services/quran_service.dart';
 import '../../../core/utils/bidi_utils.dart';
 
+import '../widgets/editor_toolbar.dart';
+import 'package:sijilli/features/auth/providers/auth_provider.dart';
+
 class AddArticleScreen extends StatefulWidget {
   final Article? article;
   final List<String>? initialTagIds;
+  final bool isHelpArticle;
   
-  const AddArticleScreen({super.key, this.article, this.initialTagIds});
+  const AddArticleScreen({super.key, this.article, this.initialTagIds, this.isHelpArticle = false});
 
   @override
   State<AddArticleScreen> createState() => _AddArticleScreenState();
@@ -44,11 +47,11 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
   bool _deleteExistingImage = false;
   List<File> _selectedAudios = [];
   List<String> _existingAudios = [];
+  List<File> _selectedInlineImages = [];
+  List<String> _existingInlineImages = [];
   bool _isPublished = false;
   bool _isLoading = false;
   bool _isPreviewMode = false;
-  bool _isSelecting = false;
-  int? _selectionAnchor;
   String? _draftArticleId;
 
   Timer? _debounce;
@@ -59,7 +62,6 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
   bool _isCreating = false;
   List<String> _selectedTagIds = [];
   TextSelection? _lastSelection;
-  Offset? _lastPointerDownOffset;
   late final ScrollController _editorScrollController;
 
   String? _activeStreamingAudioUrl;
@@ -645,12 +647,6 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
       if (_textController.highlightQuery != null) {
         _textController.highlightQuery = null;
       }
-      if (_isSelecting) {
-        setState(() {
-          _isSelecting = false;
-          _selectionAnchor = null;
-        });
-      }
 
       if (widget.article == null && _draftArticleId == null && !_isCreating) {
         if (_debounce?.isActive ?? false) _debounce!.cancel();
@@ -667,6 +663,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                   silent: true,
                   tagIds: _selectedTagIds,
                   audioMetadata: _audioMetadata,
+                  isHelpArticle: widget.isHelpArticle,
                 );
                 if (draft != null && mounted) {
                   final oldId = 'local_draft';
@@ -1006,15 +1003,20 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
     final totalFiles = _existingAudios.length + _selectedAudios.length;
     final bool hasAdvanced = _textController.rawText.toUpperCase().contains('[AUDIO_ADVANCED');
 
-    if (isAdvanced) {
-      if (totalFiles > 0) {
-        _showErrorSnackBar('المشغل المتقدم يتطلب أن يكون هو الملف الوحيد في المقال. يرجى حذف الملفات الصوتية الحالية أولاً.');
-        return;
-      }
-    } else {
-      if (hasAdvanced) {
-        _showErrorSnackBar('هذا المقال مخصص لملف صوتي متقدم وحيد. لا يمكن إدراج ملفات بسيطة إضافية.');
-        return;
+    final user = context.read<AuthProvider>().user;
+    final bool isWriterOrAdmin = user?.role == 'writer' || user?.role == 'admin';
+
+    if (!isWriterOrAdmin) {
+      if (isAdvanced) {
+        if (totalFiles > 0) {
+          _showErrorSnackBar('المشغل المتقدم يتطلب أن يكون هو الملف الوحيد في المقال. يرجى حذف الملفات الصوتية الحالية أولاً.');
+          return;
+        }
+      } else {
+        if (hasAdvanced) {
+          _showErrorSnackBar('هذا المقال مخصص لملف صوتي متقدم وحيد. لا يمكن إدراج ملفات بسيطة إضافية.');
+          return;
+        }
       }
     }
 
@@ -1075,7 +1077,10 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
       final maxFiles = globalConfig.audioMaxFiles;
       final bool hasAdvanced = _textController.rawText.toUpperCase().contains('[AUDIO_ADVANCED');
 
-      if (hasAdvanced) {
+      final user = context.read<AuthProvider>().user;
+      final bool isWriterOrAdmin = user?.role == 'writer' || user?.role == 'admin';
+
+      if (hasAdvanced && !isWriterOrAdmin) {
         _showErrorSnackBar('هذا المقال مخصص لملف صوتي متقدم وحيد. لا يمكن إدراج ملفات إضافية.');
         return;
       }
@@ -1107,7 +1112,46 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
       debugPrint('Error picking audio: $e');
     }
   }
- 
+
+  Future<void> _pickInlineImage() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+
+      if (image != null) {
+        final pickedFile = File(image.path);
+        
+        setState(() {
+          _selectedInlineImages.add(pickedFile);
+        });
+
+        final String originalName = pickedFile.path.split('/').last;
+        final String imageTag = '\n[IMAGE_$originalName]\n';
+
+        final currentSelection = _textController.selection;
+        final rawText = _textController.rawText;
+        
+        String newText;
+        int newCursorOffset;
+        if (currentSelection.isValid) {
+          final start = currentSelection.start;
+          final end = currentSelection.end;
+          newText = rawText.replaceRange(start, end, imageTag);
+          newCursorOffset = start + imageTag.length;
+        } else {
+          newText = rawText + imageTag;
+          newCursorOffset = newText.length;
+        }
+        
+        _textController.setRawText(newText);
+        _textController.selection = TextSelection.collapsed(offset: newCursorOffset);
+        _textFocusNode.requestFocus();
+      }
+    } catch (e) {
+      debugPrint('Error picking inline image: $e');
+    }
+  }
+
   void _confirmDeleteExistingAudio(String fileName) {
     showDialog(
       context: context,
@@ -1173,6 +1217,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
         audioFiles: _selectedAudios,
         tagIds: _selectedTagIds,
         audioMetadata: _audioMetadata,
+        isHelpArticle: widget.isHelpArticle,
       );
     }
 
@@ -1247,110 +1292,6 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
         ],
       ),
     );
-  }
-
-  int? _getCorrectedOffset(Offset localPosition) {
-    final text = _textController.text;
-    if (text.isEmpty) return null;
-
-    final RenderBox? renderBox = _textFocusNode.context?.findRenderObject() as RenderBox?;
-    if (renderBox == null) return null;
-
-    final double paddingLeft = 16.0;
-    final double paddingTop = 16.0;
-    final double paddingRight = 16.0;
-    
-    final double scrollY = _editorScrollController.hasClients ? _editorScrollController.offset : 0.0;
-    
-    final double x = localPosition.dx - paddingLeft;
-    final double y = localPosition.dy - paddingTop + scrollY;
-
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: TextStyle(
-          fontSize: 18,
-          height: 1.5,
-          color: AppColors.getTextPrimary(context),
-        ),
-      ),
-      textDirection: BidiUtils.getDirection(text, fallback: Localizations.localeOf(context).languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr),
-      textAlign: TextAlign.start,
-    );
-
-    final double maxWidth = renderBox.size.width - (paddingLeft + paddingRight);
-    if (maxWidth <= 0) return null;
-    
-    textPainter.layout(maxWidth: maxWidth);
-
-    // Get line metrics
-    final lineMetrics = textPainter.computeLineMetrics();
-    if (lineMetrics.isEmpty) return null;
-
-    // Find which line the tap y-coordinate belongs to
-    int tapLineIdx = -1;
-    double currentY = 0;
-    for (int i = 0; i < lineMetrics.length; i++) {
-      final lineH = lineMetrics[i].height;
-      if (y >= currentY && y <= currentY + lineH) {
-        tapLineIdx = i;
-        break;
-      }
-      currentY += lineH;
-    }
-
-    if (tapLineIdx == -1) {
-      if (y > currentY) {
-        return text.length;
-      }
-      return null;
-    }
-
-    // Get the default resolved position for this offset
-    final TextPosition resolvedPosition = textPainter.getPositionForOffset(Offset(x, y));
-    final int originalResolvedOffset = resolvedPosition.offset;
-
-    // Helper to find the visual line index of a vertical caret coordinate
-    int getVisualLineIdxForY(double yCoordinate) {
-      double curY = 0;
-      for (int i = 0; i < lineMetrics.length; i++) {
-        final lineH = lineMetrics[i].height;
-        if (yCoordinate >= curY && yCoordinate < curY + lineH) {
-          return i;
-        }
-        curY += lineH;
-      }
-      if (yCoordinate >= curY) {
-        return lineMetrics.length - 1;
-      }
-      return 0;
-    }
-
-    // Find visual line of original resolved offset using caret dy position
-    final double originalResolvedCaretY = textPainter.getOffsetForCaret(resolvedPosition, Rect.zero).dy;
-    final int originalResolvedLineIdx = getVisualLineIdxForY(originalResolvedCaretY);
-
-    if (originalResolvedLineIdx > tapLineIdx) {
-      // Compute center of tapLineIdx
-      double tapLineCenterY = 0;
-      for (int i = 0; i < tapLineIdx; i++) {
-        tapLineCenterY += lineMetrics[i].height;
-      }
-      tapLineCenterY += lineMetrics[tapLineIdx].height / 2;
-
-      final int leftOffset = textPainter.getPositionForOffset(Offset(0, tapLineCenterY)).offset;
-      final int rightOffset = textPainter.getPositionForOffset(Offset(maxWidth, tapLineCenterY)).offset;
-      int correctedOffset = leftOffset > rightOffset ? leftOffset : rightOffset;
-      
-      // Apply newline correction to the corrected offset as well
-      if (correctedOffset > 0 && text.codeUnitAt(correctedOffset - 1) == 10) {
-        correctedOffset--;
-      }
-
-      return correctedOffset;
-    }
-
-    return null;
   }
 
   String _generatePoemTemplate({
@@ -1591,384 +1532,27 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
         children: [
           _buildCategoriesBar(),
           // Text Formatting Toolbar
-          Container(
-            color: AppColors.getCardBackground(context),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            // 1. الضبط: الفقرة الحالية
-                            ListenableBuilder(
-                              listenable: _textController,
-                              builder: (context, _) {
-                                final active = _textController.currentParagraphFormat == ParagraphFormat.justify;
-                                return IconButton(
-                                  tooltip: context.l10n.justifyTooltip,
-                                  icon: const Icon(Icons.format_align_justify),
-                                  color: active ? AppColors.error : AppColors.primary,
-                                  onPressed: () {
-                                    _textController.toggleParagraphFormat(ParagraphFormat.justify);
-                                    _textFocusNode.requestFocus();
-                                  },
-                                );
-                              },
-                            ),
-                            // 2. التوسيط: الفقرة الحالية
-                            ListenableBuilder(
-                              listenable: _textController,
-                              builder: (context, _) {
-                                final active = _textController.currentParagraphFormat == ParagraphFormat.center;
-                                return IconButton(
-                                  tooltip: context.l10n.centerTooltip,
-                                  icon: const Icon(Icons.format_align_center),
-                                  color: active ? AppColors.error : AppColors.primary,
-                                  onPressed: () {
-                                    _textController.toggleParagraphFormat(ParagraphFormat.center);
-                                    _textFocusNode.requestFocus();
-                                  },
-                                );
-                              },
-                            ),
-                            // 3. محاذاة يسار / تغيير الاتجاه: الفقرة الحالية
-                            ListenableBuilder(
-                              listenable: _textController,
-                              builder: (context, _) {
-                                final active = _textController.currentParagraphFormat == ParagraphFormat.left;
-                                return IconButton(
-                                  tooltip: 'محاذاة لليسار (تغيير الاتجاه)',
-                                  icon: const Icon(Icons.format_align_left),
-                                  color: active ? AppColors.error : AppColors.primary,
-                                  onPressed: () {
-                                    _textController.toggleParagraphFormat(ParagraphFormat.left);
-                                    _textFocusNode.requestFocus();
-                                  },
-                                );
-                              },
-                            ),
-                            // 4. تنسيق الشعر: الفقرة الحالية (مع استخدام رمز عمودين مخصص)
-                            if (Localizations.localeOf(context).languageCode == 'ar')
-                              ListenableBuilder(
-                                listenable: _textController,
-                                builder: (context, _) {
-                                  final active = _textController.currentParagraphFormat == ParagraphFormat.poem;
-                                  return IconButton(
-                                    tooltip: context.l10n.poemTooltip,
-                                    icon: SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: Center(
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: List.generate(5, (index) {
-                                            return Padding(
-                                              padding: EdgeInsets.only(bottom: index == 4 ? 0 : 2),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Container(
-                                                    width: 8,
-                                                    height: 2,
-                                                    decoration: BoxDecoration(
-                                                      color: active ? AppColors.error : AppColors.primary,
-                                                      borderRadius: BorderRadius.circular(1),
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Container(
-                                                    width: 8,
-                                                    height: 2,
-                                                    decoration: BoxDecoration(
-                                                      color: active ? AppColors.error : AppColors.primary,
-                                                      borderRadius: BorderRadius.circular(1),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          }),
-                                        ),
-                                      ),
-                                    ),
-                                    onPressed: _handlePoemToolbarAction,
-                                  );
-                                },
-                              ),
-                            // 5. تعريض الخط: الجزء المحدد
-                            ListenableBuilder(
-                              listenable: _textController,
-                              builder: (context, _) => IconButton(
-                                tooltip: context.l10n.boldTooltip,
-                                icon: const Icon(Icons.format_bold),
-                                color: AppColors.primary,
-                                onPressed: () {
-                                  _textController.toggleBoldAtCursor();
-                                  _textFocusNode.requestFocus();
-                                },
-                              ),
-                            ),
-                            // 5.5. تمييز النص (قلم التظليل)
-                            ListenableBuilder(
-                              listenable: _textController,
-                              builder: (context, _) => IconButton(
-                                tooltip: 'قلم التظليل',
-                                icon: SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: Center(
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        // Cap/Tip (Black)
-                                        Container(
-                                          width: 5,
-                                          height: 3,
-                                          decoration: const BoxDecoration(
-                                            color: Colors.black,
-                                            borderRadius: BorderRadius.vertical(top: Radius.circular(1)),
-                                          ),
-                                        ),
-                                        // Body (Yellow)
-                                        Container(
-                                          width: 7,
-                                          height: 11,
-                                          color: const Color(0xFFFFEB3B), // Yellow color for highlighter
-                                        ),
-                                        // Base (Black)
-                                        Container(
-                                          width: 7,
-                                          height: 3,
-                                          decoration: const BoxDecoration(
-                                            color: Colors.black,
-                                            borderRadius: BorderRadius.vertical(bottom: Radius.circular(1)),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                onPressed: () {
-                                  _textController.toggleHighlightAtCursor();
-                                  _textFocusNode.requestFocus();
-                                },
-                              ),
-                            ),
-                            // 5.7. تنسيق آية قرآنية
-                            if (Localizations.localeOf(context).languageCode == 'ar')
-                              IconButton(
-                                tooltip: 'تنسيق آية قرآنية',
-                                icon: Text(
-                                  '﴿آية﴾',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                                onPressed: _formatQuranVerse,
-                              ),
-                            // 6. تصحيح إملائي
-                            IconButton(
-                              tooltip: 'تصحيح إملائي',
-                              icon: const Icon(Icons.auto_fix_high),
-                              color: AppColors.primary,
-                              onPressed: _applyMagicFormatting,
-                            ),
-                            // 7. إلغاء التنسيق
-                            IconButton(
-                              tooltip: 'مسح التنسيقات',
-                              icon: const Icon(Icons.format_clear),
-                              color: AppColors.error,
-                              onPressed: _clearFormatting,
-                            ),
-                            // 8. بحث واستبدال
-                            IconButton(
-                              tooltip: 'بحث واستبدال',
-                              icon: const Icon(Icons.find_replace),
-                              color: AppColors.primary,
-                              onPressed: _showSearchAndReplaceDialog,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+          EditorToolbar(
+            textController: _textController,
+            textFocusNode: _textFocusNode,
+            isPreviewMode: _isPreviewMode,
+            onTogglePreview: () {
+              setState(() {
+                _isPreviewMode = !_isPreviewMode;
+              });
+            },
+            onPickCoverImage: _pickImage,
+            onConfirmDeleteCoverImage: _confirmDeleteImage,
+            hasCoverImage: _selectedImage != null || (widget.article?.image != null && widget.article!.image!.isNotEmpty && !_deleteExistingImage),
+            onPickAudio: _pickAudio,
+            onPickInlineImage: _pickInlineImage,
+            onFormatQuranVerse: _formatQuranVerse,
+            onApplyMagicFormatting: _applyMagicFormatting,
+            onClearFormatting: _clearFormatting,
+            onShowSearchAndReplace: _showSearchAndReplaceDialog,
+            onPoemAction: _handlePoemToolbarAction,
+            onPasteFromClipboard: _pasteFromClipboard,
           ),
-          // السطر الثاني للأزرار (مرتب من اليسار إلى اليمين LTR)
-          Container(
-            color: AppColors.getCardBackground(context),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Directionality(
-              textDirection: TextDirection.ltr,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // من اليسار: زر الصورة وزر الصوت
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Builder(
-                        builder: (context) {
-                          final hasImage = _selectedImage != null || (widget.article?.image != null && widget.article!.image!.isNotEmpty && !_deleteExistingImage);
-                          return IconButton(
-                            visualDensity: VisualDensity.compact,
-                            tooltip: hasImage ? 'إزالة الصورة' : 'إضافة صورة غلاف',
-                            icon: Icon(
-                              hasImage ? Icons.no_photography : Icons.add_photo_alternate_outlined,
-                              color: hasImage ? AppColors.error : AppColors.primary,
-                            ),
-                            onPressed: hasImage ? _confirmDeleteImage : _pickImage,
-                          );
-                        },
-                      ),
-                      IconButton(
-                        visualDensity: VisualDensity.compact,
-                        tooltip: 'إضافة ملف صوتي/واتساب 🎙️',
-                        icon: const Icon(
-                          Icons.mic_none_outlined,
-                          color: AppColors.primary,
-                        ),
-                        onPressed: _pickAudio,
-                      ),
-                    ],
-                  ),
-                  // بالوسط: أدوات تحريك المؤشر والتظليل
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        visualDensity: VisualDensity.compact,
-                        tooltip: 'تحريك المؤشر لليمين',
-                        icon: const Icon(Icons.arrow_back, size: 20),
-                        color: AppColors.primary,
-                        onPressed: () {
-                          final text = _textController.text;
-                          final selection = _textController.selection;
-                          if (selection.isValid) {
-                            setState(() {
-                              final currentExtent = selection.extentOffset;
-                              final newOffset = currentExtent < text.length ? currentExtent + 1 : text.length;
-                              if (_isSelecting && _selectionAnchor != null) {
-                                _textController.selection = TextSelection(baseOffset: _selectionAnchor!, extentOffset: newOffset);
-                              } else {
-                                _textController.selection = TextSelection.collapsed(offset: newOffset);
-                              }
-                            });
-                            _textFocusNode.requestFocus();
-                          }
-                        },
-                      ),
-                      IconButton(
-                        visualDensity: VisualDensity.compact,
-                        tooltip: _isSelecting ? 'إلغاء التظليل' : 'بدء التظليل',
-                        icon: Icon(_isSelecting ? Icons.highlight_remove : Icons.highlight, size: 20),
-                        color: _isSelecting ? AppColors.error : AppColors.primary,
-                        onPressed: () {
-                          setState(() {
-                            _isSelecting = !_isSelecting;
-                            if (_isSelecting) {
-                              _selectionAnchor = _textController.selection.isValid ? _textController.selection.extentOffset : 0;
-                            } else {
-                              _selectionAnchor = null;
-                            }
-                          });
-                          _textFocusNode.requestFocus();
-                        },
-                      ),
-                      IconButton(
-                        visualDensity: VisualDensity.compact,
-                        tooltip: 'تحريك المؤشر لليسار',
-                        icon: const Icon(Icons.arrow_forward, size: 20),
-                        color: AppColors.primary,
-                        onPressed: () {
-                          final selection = _textController.selection;
-                          if (selection.isValid) {
-                            setState(() {
-                              final currentExtent = selection.extentOffset;
-                              final newOffset = currentExtent > 0 ? currentExtent - 1 : 0;
-                              if (_isSelecting && _selectionAnchor != null) {
-                                _textController.selection = TextSelection(baseOffset: _selectionAnchor!, extentOffset: newOffset);
-                              } else {
-                                _textController.selection = TextSelection.collapsed(offset: newOffset);
-                              }
-                            });
-                            _textFocusNode.requestFocus();
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                  // باليمين: أزرار التراجع والتقدم، زر المعاينة، وزر اللصق
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ListenableBuilder(
-                        listenable: _textController,
-                        builder: (context, _) => IconButton(
-                          visualDensity: VisualDensity.compact,
-                          tooltip: 'تراجع (Undo)',
-                          icon: const Icon(Icons.undo),
-                          color: _textController.canUndo ? AppColors.primary : AppColors.getHintColor(context).withValues(alpha: 0.5),
-                          onPressed: _textController.canUndo
-                              ? () {
-                                  _textController.undo();
-                                  _textFocusNode.requestFocus();
-                                }
-                              : null,
-                        ),
-                      ),
-                      ListenableBuilder(
-                        listenable: _textController,
-                        builder: (context, _) => IconButton(
-                          visualDensity: VisualDensity.compact,
-                          tooltip: 'إعادة/تقدم (Redo)',
-                          icon: const Icon(Icons.redo),
-                          color: _textController.canRedo ? AppColors.primary : AppColors.getHintColor(context).withValues(alpha: 0.5),
-                          onPressed: _textController.canRedo
-                              ? () {
-                                  _textController.redo();
-                                  _textFocusNode.requestFocus();
-                                }
-                              : null,
-                        ),
-                      ),
-                      IconButton(
-                        visualDensity: VisualDensity.compact,
-                        tooltip: _isPreviewMode ? context.l10n.closePreview : context.l10n.livePreview,
-                        icon: Icon(
-                          _isPreviewMode ? Icons.visibility_off : Icons.visibility,
-                          color: _isPreviewMode ? AppColors.error : AppColors.primary,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _isPreviewMode = !_isPreviewMode;
-                          });
-                        },
-                      ),
-                      IconButton(
-                        visualDensity: VisualDensity.compact,
-                        tooltip: 'لصق من الحافظة',
-                        icon: const Icon(Icons.content_paste),
-                        color: AppColors.primary,
-                        onPressed: _pasteFromClipboard,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          const Divider(height: 1),
-
           const Divider(height: 1),
 
           // Hide cover image preview when keyboard is visible to free up vertical space for the text editor
@@ -2209,45 +1793,29 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                 // 1. Scroll conflict made touch-hold selection in the first line unreliable.
                 // 2. Keyboard avoidance computed wrong offsets for the first few lines.
                 Expanded(
-                  child: Listener(
-                    onPointerDown: (event) {
-                      _lastPointerDownOffset = event.localPosition;
-                    },
-                    child: TextField(
-                      controller: _textController,
-                      focusNode: _textFocusNode,
-                      scrollController: _editorScrollController,
-                      maxLines: null,
-                      expands: true,
-                      keyboardType: TextInputType.multiline,
-                      textAlignVertical: TextAlignVertical.top,
-                      textDirection: BidiUtils.getDirection(_textController.text, fallback: Localizations.localeOf(context).languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr),
-                      selectionWidthStyle: ui.BoxWidthStyle.tight,
-                      selectionHeightStyle: ui.BoxHeightStyle.tight,
-                      style: TextStyle(
-                        fontSize: 18,
-                        height: 1.5,
-                        color: AppColors.getTextPrimary(context),
-                      ),
-                      onTap: () {
-                        if (_lastPointerDownOffset != null && mounted) {
-                          final corrected = _getCorrectedOffset(_lastPointerDownOffset!);
-                          if (corrected != null) {
-                            setState(() {
-                              _textController.selection = TextSelection.collapsed(offset: corrected);
-                            });
-                          }
-                          _lastPointerDownOffset = null;
-                        }
-                      },
-                      decoration: InputDecoration(
-                        hintText: context.l10n.writeArticleHint,
-                        hintStyle: TextStyle(color: AppColors.getHintColor(context)),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.all(16.0),
-                      ),
-                      maxLength: context.read<GlobalConfigProvider>().articleMaxChars,
+                  child: TextField(
+                    controller: _textController,
+                    focusNode: _textFocusNode,
+                    scrollController: _editorScrollController,
+                    maxLines: null,
+                    expands: true,
+                    keyboardType: TextInputType.multiline,
+                    textAlignVertical: TextAlignVertical.top,
+                    textDirection: BidiUtils.getDirection(_textController.text, fallback: Localizations.localeOf(context).languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr),
+                    selectionWidthStyle: ui.BoxWidthStyle.tight,
+                    selectionHeightStyle: ui.BoxHeightStyle.tight,
+                    style: TextStyle(
+                      fontSize: 18,
+                      height: 1.5,
+                      color: AppColors.getTextPrimary(context),
                     ),
+                    decoration: InputDecoration(
+                      hintText: context.l10n.writeArticleHint,
+                      hintStyle: TextStyle(color: AppColors.getHintColor(context)),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.all(16.0),
+                    ),
+                    maxLength: context.read<GlobalConfigProvider>().articleMaxChars,
                   ),
                 ),
               ],

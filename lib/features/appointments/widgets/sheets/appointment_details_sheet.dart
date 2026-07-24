@@ -241,26 +241,26 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
                       ),
                     ),
 
-                    const SizedBox(height: AppDimens.spaceL),
-
-                    AppointmentPrivacyToggle(
-                      selectedPrivacy: _selectedPrivacy,
-                      onPrivacyChanged: (val) {
-                        setState(() => _selectedPrivacy = val);
-                        context.read<AppointmentProvider>().updateInvitationSettings(
-                          widget.appointment.id,
-                          privacy: _selectedPrivacy,
-                          categories: _selectedCategories,
-                        );
-                        Navigator.pop(context);
-                      },
-                    ),
-
-
+                    if (!_appointment.isReadOnly) ...[
+                      AppointmentPrivacyToggle(
+                        selectedPrivacy: _selectedPrivacy,
+                        onPrivacyChanged: (val) {
+                          setState(() => _selectedPrivacy = val);
+                          context.read<AppointmentProvider>().updateInvitationSettings(
+                            widget.appointment.id,
+                            privacy: _selectedPrivacy,
+                            categories: _selectedCategories,
+                          );
+                          Navigator.pop(context);
+                        },
+                      ),
+                      const SizedBox(height: AppDimens.spaceL),
+                    ],
 
                     if (_isHost || _isAdmin || _appointment.viewerRecord != null) ...[
                       AppointmentActionButtons(
                         isArchived: _appointment.isArchived,
+                        isReadOnly: _appointment.isReadOnly,
                         onClone: () {
                            Navigator.pop(context);
                            Navigator.push(
@@ -286,25 +286,26 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
 
                     // --- 2. Bottom Section ---
 
-                    AppointmentCategorySelector(
-                      appointment: _appointment,
-                      selectedCategory: _selectedCategories,
-                      onCategoryChanged: (cat) {
-                         setState(() => _selectedCategories = cat);
-                         context.read<AppointmentProvider>().updateInvitationSettings(
-                           widget.appointment.id,
-                           privacy: _selectedPrivacy,
-                           categories: cat,
-                         );
-                      },
-                      onAddCategory: () => _showAddCategoryDialog(context),
-                    ),
-
-                    const SizedBox(height: AppDimens.spaceL),
+                    if (!_appointment.isReadOnly) ...[
+                      AppointmentCategorySelector(
+                        appointment: _appointment,
+                        selectedCategory: _selectedCategories,
+                        onCategoryChanged: (cat) {
+                           setState(() => _selectedCategories = cat);
+                           context.read<AppointmentProvider>().updateInvitationSettings(
+                             widget.appointment.id,
+                             privacy: _selectedPrivacy,
+                             categories: cat,
+                           );
+                        },
+                        onAddCategory: () => _showAddCategoryDialog(context),
+                      ),
+                      const SizedBox(height: AppDimens.spaceL),
+                    ],
 
                     AppointmentNotesSection(
                       appointment: _appointment,
-                      isHost: _isHost,
+                      isHost: _appointment.isReadOnly ? false : _isHost,
                       sunsetTime: _sunsetTime,
                       durationText: _durationText,
                       onEdit: (field, value) => _editField(field, value),
@@ -327,7 +328,7 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
                     const SizedBox(height: 40),
 
                     // K. Main Action Button (Bottom)
-                    if (_isHost) ...[
+                    if (_isHost && !_appointment.isReadOnly) ...[
                       Builder(
                         builder: (context) {
                           return Column(

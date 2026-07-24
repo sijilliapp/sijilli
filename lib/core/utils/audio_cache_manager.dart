@@ -15,6 +15,9 @@ class AudioCacheManager {
       return url; // Local file path or asset
     }
 
+    // الويب لا يدعم الكاش المحلي — نعيد الـ URL مباشرة
+    if (kIsWeb) return url;
+
     try {
       final cacheDir = await getTemporaryDirectory();
       final audioCacheDir = Directory('${cacheDir.path}/audio_cache');
@@ -50,6 +53,7 @@ class AudioCacheManager {
   }
 
   Future<void> _downloadInBackground(String url, File localFile) async {
+    if (kIsWeb) return; // لا كاش على الويب
     try {
       debugPrint('📥 AudioCacheManager: Starting background download for $url');
       final client = HttpClient();

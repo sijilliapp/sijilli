@@ -85,7 +85,6 @@ class _TagSelectorSheetState extends State<TagSelectorSheet> {
         _selectedTagIds.add(tag.id);
       }
     });
-    _notifyChanges();
   }
 
   void _notifyChanges() {
@@ -107,7 +106,6 @@ class _TagSelectorSheetState extends State<TagSelectorSheet> {
         _searchController.clear();
         _isCreatingNew = false;
       });
-      _notifyChanges();
     }
   }
 
@@ -198,10 +196,7 @@ class _TagSelectorSheetState extends State<TagSelectorSheet> {
                     final newName = nameController.text.trim();
                     if (newName.isNotEmpty) {
                       final tagProvider = dialogCtx.read<TagProvider>();
-                      final updated = await tagProvider.updateTag(tag.id, newName, selectedColorHex);
-                      if (updated != null && mounted) {
-                        _notifyChanges();
-                      }
+                      await tagProvider.updateTag(tag.id, newName, selectedColorHex);
                       if (dialogCtx.mounted) {
                         Navigator.pop(dialogCtx);
                       }
@@ -490,7 +485,6 @@ class _TagSelectorSheetState extends State<TagSelectorSheet> {
                                           setState(() {
                                             _selectedTagIds.remove(tag.id);
                                           });
-                                          _notifyChanges();
                                         }
                                       },
                                     ),
@@ -504,7 +498,10 @@ class _TagSelectorSheetState extends State<TagSelectorSheet> {
               
               // Done close button
               ElevatedButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  _notifyChanges();
+                  Navigator.pop(context);
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isDark ? Colors.white24 : Colors.grey.shade100,
                   foregroundColor: isDark ? Colors.white : Colors.black87,

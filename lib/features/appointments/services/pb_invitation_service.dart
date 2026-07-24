@@ -175,9 +175,8 @@ class PbInvitationService {
         throw 'تمت دعوة هذا الرقم مسبقاً لهذا الموعد';
       }
 
-      final appt = await _pb.collection(collectionAppointments).getOne(appointmentId);
-      final globalPrivacy = appt.getStringValue('privacy', 'public');
-
+      // نسخة الضيف المدعو تبدأ بخصوصية private افتراضياً
+      // صاحب الموعد يتحكم بخصوصية نسخته الشخصية بشكل منفصل
       await _pb.collection(collectionInvitations).create(body: {
         'appointment': appointmentId,
         'invited_phone': phone,
@@ -185,7 +184,7 @@ class PbInvitationService {
         'user': null,
         'status': 'pending',
         'post_status': 'published',
-        'privacy': globalPrivacy,
+        'privacy': 'private',
       });
       
       await evaluateAppointmentConfirmation(appointmentId);
@@ -210,16 +209,15 @@ class PbInvitationService {
         throw 'هذا المستخدم مدعو مسبقاً لهذا الموعد';
       }
 
-      // Fetch the appointment to get its global privacy
-      final appt = await _pb.collection(collectionAppointments).getOne(appointmentId);
-      final globalPrivacy = appt.getStringValue('privacy', 'public');
-
+      // Fetch the appointment to get its global privacy — REMOVED
+      // نسخة الضيف المدعو تبدأ بخصوصية private افتراضياً
+      // صاحب الموعد يتحكم بخصوصية نسخته الشخصية بشكل منفصل
       await _pb.collection(collectionInvitations).create(body: {
         'appointment': appointmentId,
         'user': userId,
         'status': 'pending',
         'post_status': 'published',
-        'privacy': globalPrivacy,
+        'privacy': 'private',
       });
 
       try {
@@ -248,14 +246,13 @@ class PbInvitationService {
 
     try {
       final currentUserId = _pb.authStore.record?.id;
-      final globalPrivacy = appointment.privacy;
-      
+      // نسخة الطالب للانضمام تبدأ بخصوصية private
       await _pb.collection(collectionInvitations).create(body: {
         'appointment': appointment.id,
         'user': currentUserId,
         'status': 'pending',
         'post_status': 'published',
-        'privacy': globalPrivacy,
+        'privacy': 'private',
       });
 
       try {
@@ -359,16 +356,14 @@ class PbInvitationService {
         return;
       }
 
-      // Fetch appointment to get privacy
-      final appt = await _pb.collection(collectionAppointments).getOne(appointmentId);
-      final privacy = appt.getStringValue('privacy', 'public');
-
+      // Fetch appointment to get privacy — REMOVED
+      // نسخة المستخدم الجديد تبدأ بخصوصية private افتراضياً
       await _pb.collection(collectionInvitations).create(body: {
         'appointment': appointmentId,
         'user': userId,
         'status': 'accepted',
         'post_status': 'published',
-        'privacy': privacy,
+        'privacy': 'private',
         'accepted_at': DateTime.now().toUtc().toIso8601String(),
       });
       

@@ -167,80 +167,16 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       key: _formKey,
       child: Column(
         children: [
-          Consumer<AuthProvider>(
-            builder: (context, auth, _) {
-              return Autocomplete<String>(
-                optionsBuilder: (TextEditingValue textEditingValue) {
-                  if (textEditingValue.text.isEmpty) {
-                    return auth.recentUsernames;
-                  }
-                  return auth.recentUsernames.where((String option) {
-                    return option.contains(textEditingValue.text.toLowerCase());
-                  });
-                },
-                onSelected: (String selection) {
-                  _identifierController.text = selection;
-                  _passwordFocusNode.requestFocus();
-                },
-                fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                  // تعيين القيمة الابتدائية مرة واحدة فقط عند الحاجة
-                  if (_identifierController.text.isNotEmpty && controller.text.isEmpty) {
-                    controller.text = _identifierController.text;
-                  }
-                  
-                  return AuthTextField(
-                    controller: controller,
-                    focusNode: focusNode,
-                    label: context.l10n.emailOrUsername,
-                    hint: context.l10n.emailOrUsername,
-                    prefixIcon: Icons.person_outline_rounded,
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
-                    onFieldSubmitted: (value) {
-                      _identifierController.text = value; // تحديث المتحكم الرئيسي عند الإرسال
-                      onFieldSubmitted();
-                      _passwordFocusNode.requestFocus();
-                    },
-                    onChanged: (value) => _identifierController.text = value, // تحديث المتحكم الرئيسي عند التغيير
-                    validator: (value) => (value?.isEmpty ?? true) ? context.l10n.fieldRequired : null,
-                  );
-                },
-                optionsViewBuilder: (context, onSelected, options) {
-                  return Align(
-                    alignment: AlignmentDirectional.topStart,
-                    child: Material(
-                      elevation: 4,
-                      borderRadius: BorderRadius.circular(16),
-                      color: Theme.of(context).cardColor,
-                      child: Container(
-                        width: MediaQuery.of(context).size.width - (AppDimens.spaceXL * 2),
-                        constraints: const BoxConstraints(maxHeight: 250),
-                        child: ListView.separated(
-                          padding: EdgeInsets.zero,
-                          shrinkWrap: true,
-                          itemCount: options.length,
-                          separatorBuilder: (context, index) => Divider(height: 1, color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
-                          itemBuilder: (context, index) {
-                            final option = options.elementAt(index);
-                            return ListTile(
-                              leading: const Icon(Icons.history, size: 20),
-                              title: Text(option, style: const TextStyle(fontSize: 14)),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.close, size: 16),
-                                onPressed: () => auth.removeRecentUsername(option),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                              ),
-                              onTap: () => onSelected(option),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
+          AuthTextField(
+            controller: _identifierController,
+            focusNode: _identifierFocusNode,
+            label: context.l10n.emailOrUsername,
+            hint: context.l10n.emailOrUsername,
+            prefixIcon: Icons.person_outline_rounded,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            onFieldSubmitted: (_) => _passwordFocusNode.requestFocus(),
+            validator: (value) => (value?.isEmpty ?? true) ? context.l10n.fieldRequired : null,
           ),
           const SizedBox(height: 12),
           AuthTextField(
@@ -259,7 +195,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             ),
             validator: (value) {
               if (value?.isEmpty ?? true) return context.l10n.fieldRequired;
-              if (value!.length < 8) return context.l10n.invalidPassword;
+              // تم تسهيل التحقق في شاشة الدخول لتفادي حظر كلمات مرور الحسابات التجريبية للمراجعين
               return null;
             },
             textInputAction: _failedAttempts >= 3 ? TextInputAction.next : TextInputAction.done,
@@ -382,6 +318,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   Future<void> _handleLogin() async {
+    FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
     if (_failedAttempts >= 3 && !_isCaptchaVerified) return;
 

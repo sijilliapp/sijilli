@@ -1,6 +1,7 @@
 {
   "@@locale": "en",
   "appName": "Sijilli",
+  "appSlogan": "Organizing appointments and managing invitations",
   "login": "Login",
   "register": "Register",
   "settings": "Settings",
@@ -158,6 +159,7 @@
   "waitingTheirAccreditation": "Waiting for their accreditation",
   "accreditedEntities": "Accredited Entities",
   "noContactsYet": "No contacts yet",
+  "inviteFromContacts": "Invite from Contacts",
   "accreditAction": "Accredit..",
   "waitingAction": "Waiting..",
   "verifyUsernameOrNetwork": "Verify username or network connection",
@@ -265,7 +267,7 @@
   "hostAndConnect": "Host & Connect",
   "searchUserHint": "Search by name or username...",
   "invitationSentSuccessfully": "Invitation sent successfully",
-  "noResultsFound": "No results found",
+  "noResultsFound": "No results",
   "morning": "Morning",
   "night": "Night",
   "evening": "Evening",
@@ -423,7 +425,6 @@
   "durationDays": "{count, plural, one{1 day} other{{count} days}}",
   "durationHours": "{count, plural, one{1 hour} other{{count} hours}}",
   "durationLessThanHour": "Less than an hour",
-  "recurrenceOf": "of",
   "extraGuestsCount": "+{count}",
   "contactInquiry": "General Inquiry",
   "contactComplaint": "Complaint / Issue",
@@ -490,7 +491,6 @@
   "privacyLastUpdate": "Last Update: Jan 2026",
   "noArchivedAppointments": "No archived appointments",
   "searchArchive": "Search archive...",
-  "noResultsFound": "No results",
   "trashEmpty": "Trash is empty",
   "newFollowerTitle": "New Accreditation",
   "followRequestTitle": "Accreditation Request",
@@ -888,6 +888,164 @@
   "readingFontTooltip": "Change reading font",
   "fullArticle": "Full Article...",
   "noCategoryAddedYet": "No category has been added to the article yet",
-  "duplicate": "Duplicate"
+  "duplicate": "Duplicate",
+  "noon": "Noon",
+  "afternoon": "Afternoon",
+  "copiedToClipboard": "Copied {url} to clipboard",
+  "@copiedToClipboard": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "errorFetchingArticle": "Failed to fetch article data. Please check the link.",
+  "article": "Article",
+  "saved": "Saved",
+  "hideLocation": "Hide Location Info",
+  "showLocation": "Show Location Info",
+  "upgradeAccountAndPermissions": "Upgrade Account & Permissions",
+  "upgradeAccountSubtitle": "Apply to join as a certified writer or organization and enable AI features",
+  "articlesSettingsTitle": "Articles",
+  "articlesSettingsSubtitle": "Protect your articles and disable content copying",
+  "membershipUpgradeRequests": "Membership Upgrade Requests",
+  "reviewUpgradeRequestsSubtitle": "Review requests to join as certified writers or official entities",
+  "sendSystemNotification": "Send System Notification",
+  "broadcastNotificationSubtitle": "Broadcast a notification to all registered users in the app",
+  "newBadgeCount": "{count} new",
+  "@newBadgeCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noPendingUpgradeRequests": "No pending upgrade requests currently",
+  "allUpgradeRequestsReviewed": "All member requests have been fully reviewed.",
+  "leftAlignTooltip": "Align Left (Change Direction)",
+  "highlightTooltip": "Highlighter Pen",
+  "quranVerseTooltip": "Format Quranic Verse",
+  "spellCheckTooltip": "Spell Check",
+  "clearFormattingTooltip": "Clear Formatting",
+  "searchReplaceTooltip": "Search & Replace",
+  "removeCoverImageTooltip": "Remove cover image",
+  "addCoverImageTooltip": "Add cover image",
+  "addAudioTooltip": "Add audio file / WhatsApp voice 🎙️",
+  "insertImageTooltip": "Insert image in article 🖼️",
+  "undoTooltip": "Undo",
+  "redoTooltip": "Redo",
+  "pasteFromClipboardTooltip": "Paste from clipboard",
+  "commentsCount": "Comments: {count}",
+  "@commentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "browseApp": "Browse Sijilli App",
+  "publishedDate": "Published: {date}",
+  "@publishedDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "accountUnavailable": "This account is currently unavailable",
+  "newProfileVisitTitle": "New Profile Visit",
+  "newProfileVisitMessage": "A member visited your profile",
+  "newArticleVisitTitle": "New Article Visit",
+  "newArticleVisitMessage": "A reader visited and read your article",
+  "unfollowedTitle": "Accreditation Removed",
+  "unfollowedMessage": "{name} removed their accreditation of you",
+  "@unfollowedMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "acceptAndUpgrade": "Accept & Upgrade",
+  "rejectRequest": "Reject Request",
+  "acceptUpgradeConfirm": "Are you sure you want to accept this request?",
+  "rejectUpgradeConfirm": "Are you sure you want to reject this request?",
+  "upgradeSuccess": "Request accepted successfully and role updated",
+  "rejectSuccess": "Request rejected successfully",
+  "upgradeError": "An error occurred while processing the request",
+  "writeRejectReason": "Please write a reason for rejecting the request",
+  "rejectReasonHint": "Reason for rejection (required)...",
+  "acceptNoteHint": "Admin comment or welcome note (optional)...",
+  "systemArticlesTitle": "System Articles & Announcements",
+  "noSystemArticles": "No public newsletters or articles currently.",
+  "closeButton": "Close",
+  "cancelButton": "Cancel",
+  "roleWriter": "Certified Writer",
+  "roleOrganization": "Certified Organization",
+  "upgradeTo": "Upgrade to: {role}",
+  "@upgradeTo": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "applyReasonLabel": "Application Reason & Cover Letter:",
+  "requestDate": "Request Date: {date} | Time: {time}",
+  "@requestDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "unknownMember": "Unknown Member",
+  "likesTitle": "Likes",
+  "commentsTitle": "Comments",
+  "likedYourArticle": "{name} liked your article",
+  "@likedYourArticle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "commentedOnYourArticle": "{name} commented on your article",
+  "@commentedOnYourArticle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "visitedYourProfile": "{name} visited your profile",
+  "@visitedYourProfile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "invitationsAwaitingResponse": "Invitations awaiting response 📥",
+  "notificationsAndActivity": "Notification & Activity Box 🔔",
+  "mutualAccreditationTitle": "Mutual Accreditation",
+  "mutualAccreditedYou": "{name} mutually accredited you",
+  "@mutualAccreditedYou": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "readerReadYourArticle": "{name} read your article",
+  "@readerReadYourArticle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }
-

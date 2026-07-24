@@ -104,8 +104,8 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
               context,
               isDark: isDark,
               icon: Icons.workspace_premium_rounded,
-              title: 'طلبات ترقية العضوية',
-              subtitle: 'مراجعة طلبات الانضمام ككُتّاب معتمدين أو جهات رسمية',
+              title: context.l10n.membershipUpgradeRequests,
+              subtitle: context.l10n.reviewUpgradeRequestsSubtitle,
               badgeCount: 0,
               onTap: () {
                 Navigator.push(
@@ -120,9 +120,9 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
             _buildClickableCard(
               context,
               isDark: isDark,
-              icon: Icons.campaign_outlined,
-              title: 'إرسال إشعار للنظام',
-              subtitle: 'بث إشعار جماعي لجميع المستخدمين المسجلين في التطبيق',
+              icon: Icons.campaign_rounded,
+              title: context.l10n.sendSystemNotification,
+              subtitle: context.l10n.broadcastNotificationSubtitle,
               badgeCount: 0,
               onTap: () {
                 Navigator.push(
@@ -282,7 +282,7 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
-                              '$badgeCount جديد',
+                              context.l10n.newBadgeCount(badgeCount),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 10,

@@ -352,7 +352,8 @@ class LocalDbService {
       ..streamLink = app.streamLink
       ..appointmentGroupId = app.appointmentGroupId
       ..hijriDate = app.hijriDate
-      ..hijriMonth = app.hijriMonth;
+      ..hijriMonth = app.hijriMonth
+      ..isFirstComeFirstServed = app.isFirstComeFirstServed;
   }
 
   Appointment _toModelAppointment(LocalAppointment la) {
@@ -380,6 +381,7 @@ class LocalDbService {
       participants: la.participants?.map(_toModelInvitation).toList(),
       currentUserInvitation: currentUserInvitation,
       isConfirmed: la.isConfirmed,
+      isFirstComeFirstServed: la.isFirstComeFirstServed,
       dateType: la.dateType,
       streamLink: la.streamLink,
       appointmentGroupId: la.appointmentGroupId,

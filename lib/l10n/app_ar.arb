@@ -4,6 +4,7 @@
   "@appName": {
     "description": "اسم التطبيق"
   },
+  "appSlogan": "تنظيم المواعيد وإدارة الدعوات",
   "login": "تسجيل الدخول",
   "register": "إنشاء حساب",
   "settings": "الإعدادات",
@@ -161,6 +162,7 @@
   "waitingTheirAccreditation": "بانتظار اعتمادهم",
   "accreditedEntities": "جهات معتمدة",
   "noContactsYet": "لا يوجد جهات اتصال بعد",
+  "inviteFromContacts": "دعوة من جهات الاتصال",
   "accreditAction": "اعتماد..",
   "waitingAction": "انتظار..",
   "verifyUsernameOrNetwork": "تأكد من صحة اسم المستخدم أو الاتصال بالشبكة",
@@ -448,7 +450,6 @@
   "durationDays": "{count, plural, one{يوم واحد} two{يومين} few{{count} أيام} many{{count} يوماً} other{{count} يوم}}",
   "durationHours": "{count, plural, one{ساعة واحدة} two{ساعتين} few{{count} ساعات} many{{count} ساعة} other{{count} ساعة}}",
   "durationLessThanHour": "أقل من ساعة",
-  "recurrenceOf": "من",
   "extraGuestsCount": "+{count}",
   "contactInquiry": "استفسار عام",
   "contactComplaint": "شكوى / مشكلة",
@@ -515,7 +516,6 @@
   "privacyLastUpdate": "آخر تحديث: يناير 2026",
   "noArchivedAppointments": "لا توجد مواعيد مؤرشفة",
   "searchArchive": "بحث في الأرشيف...",
-  "noResultsFound": "لا توجد نتائج",
   "trashEmpty": "سلة المحذوفات فارغة",
   "newFollowerTitle": "اعتماد جديد",
   "followRequestTitle": "طلب اعتماد",
@@ -923,5 +923,152 @@
   "readingFontTooltip": "تغيير خط القراءة",
   "fullArticle": "المقال كاملاً...",
   "noCategoryAddedYet": "لم يتم إضافة تصنيف للمقال بعد",
-  "duplicate": "مكرر"
+  "duplicate": "مكرر",
+  "saved": "المحفوظات",
+  "hideLocation": "إخفاء معلومات المكان",
+  "showLocation": "إظهار معلومات المكان",
+  "upgradeAccountAndPermissions": "ترقية الحساب والصلاحيات",
+  "upgradeAccountSubtitle": "طلب الانضمام ككاتب معتمد أو مؤسسة وتفعيل ميزات الذكاء الاصطناعي",
+  "articlesSettingsTitle": "المقالات",
+  "articlesSettingsSubtitle": "حماية مقالاتك وتعطيل نسخ المحتوى",
+  "membershipUpgradeRequests": "طلبات ترقية العضوية",
+  "reviewUpgradeRequestsSubtitle": "مراجعة طلبات الانضمام ككُتّاب معتمدين أو جهات رسمية",
+  "sendSystemNotification": "إرسال إشعار للنظام",
+  "broadcastNotificationSubtitle": "بث إشعار جماعي لجميع المستخدمين المسجلين في التطبيق",
+  "newBadgeCount": "{count} جديد",
+  "@newBadgeCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noPendingUpgradeRequests": "لا توجد طلبات ترقية معلقة حالياً",
+  "allUpgradeRequestsReviewed": "جميع طلبات الأعضاء تمت مراجعتها بالكامل.",
+  "leftAlignTooltip": "محاذاة لليسار (تغيير الاتجاه)",
+  "highlightTooltip": "قلم التظليل",
+  "quranVerseTooltip": "تنسيق آية قرآنية",
+  "spellCheckTooltip": "تصحيح إملائي",
+  "clearFormattingTooltip": "مسح التنسيقات",
+  "searchReplaceTooltip": "بحث واستبدال",
+  "removeCoverImageTooltip": "إزالة الصورة",
+  "addCoverImageTooltip": "إضافة صورة غلاف",
+  "addAudioTooltip": "إضافة ملف صوتي/واتساب 🎙️",
+  "insertImageTooltip": "إدراج صورة في المقال 🖼️",
+  "undoTooltip": "تراجع (Undo)",
+  "redoTooltip": "إعادة/تقدم (Redo)",
+  "pasteFromClipboardTooltip": "لصق من الحافظة",
+  "commentsCount": "عدد التعليقات: {count}",
+  "@commentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "browseApp": "تصفح تطبيق سجلي",
+  "publishedDate": "تاريخ النشر: {date}",
+  "@publishedDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "accountUnavailable": "هذا الحساب غير متاح حالياً",
+  "newProfileVisitTitle": "زيارة جديدة",
+  "newProfileVisitMessage": "قام أحد الأعضاء بزيارة ملفك الشخصي",
+  "newArticleVisitTitle": "زيارة جديدة لمقالك",
+  "newArticleVisitMessage": "قام أحد القراء بزيارة وقراءة مقالك",
+  "unfollowedTitle": "إلغاء الاعتماد",
+  "unfollowedMessage": "{name} قام بإلغاء اعتمادك",
+  "@unfollowedMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "acceptAndUpgrade": "قبول وترقية",
+  "rejectRequest": "رفض الطلب",
+  "acceptUpgradeConfirm": "هل أنت متأكد من رغبتك في قبول هذا الطلب؟",
+  "rejectUpgradeConfirm": "هل أنت متأكد من رغبتك في رفض هذا الطلب؟",
+  "upgradeSuccess": "تم ترقية الطلب بنجاح وتحديث الرول",
+  "rejectSuccess": "تم رفض الطلب بنجاح",
+  "upgradeError": "حدث خطأ أثناء معالجة الطلب",
+  "writeRejectReason": "الرجاء كتابة سبب رفض الطلب",
+  "rejectReasonHint": "سبب الرفض وتوجيه العضو (مطلوب)...",
+  "acceptNoteHint": "تعليق الإدارة أو الترحيب بالعضو (اختياري)...",
+  "systemArticlesTitle": "مقالات ونشرات النظام",
+  "noSystemArticles": "لا توجد نشرات أو مقالات عامة حالياً.",
+  "closeButton": "إغلاق",
+  "cancelButton": "إلغاء",
+  "roleWriter": "كاتب معتمد",
+  "roleOrganization": "مؤسسة / جهة",
+  "upgradeTo": "ترقية لـ: {role}",
+  "@upgradeTo": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "applyReasonLabel": "رسالة ومبررات التقديم:",
+  "requestDate": "تاريخ الطلب: {date} | الساعة: {time}",
+  "@requestDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "unknownMember": "عضو غير معروف",
+  "likesTitle": "إعجابات",
+  "commentsTitle": "تعليقات",
+  "likedYourArticle": "أعجب {name} بمقالك",
+  "@likedYourArticle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "commentedOnYourArticle": "علق {name} على مقالك",
+  "@commentedOnYourArticle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "visitedYourProfile": "زار {name} ملفك الشخصي",
+  "@visitedYourProfile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "invitationsAwaitingResponse": "دعوات بانتظار ردك 📥",
+  "notificationsAndActivity": "صندوق الإشعارات والأنشطة 🔔",
+  "mutualAccreditationTitle": "اعتماد متبادل",
+  "mutualAccreditedYou": "قام {name} باعتمادك المتبادل",
+  "@mutualAccreditedYou": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "readerReadYourArticle": "قام {name} بقراءة مقالك",
+  "@readerReadYourArticle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

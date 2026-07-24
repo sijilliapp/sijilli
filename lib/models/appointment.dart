@@ -124,6 +124,7 @@ class Invitation {
   final String? dateType; // جديد من PB
   final String? invitedPhone; // جديد لنظام الاستضافة عبر الهاتف
   final String? invitedName; // جديد لنظام الاستضافة عبر الهاتف
+  final bool isReadOnly; // هل الدعوة/الموعد للقراءة فقط
   
   // Getters للتوافق مع الكود القديم والـ DNA
   bool get isDeleted => postStatus == PostStatus.trash;
@@ -150,6 +151,7 @@ class Invitation {
     this.dateType,
     this.invitedPhone,
     this.invitedName,
+    this.isReadOnly = false,
     this.acceptedAt,
     this.declinedAt,
     this.deletedAt,
@@ -202,6 +204,7 @@ class Invitation {
       categories: categoryJson != null ? AppointmentCategory.fromJson(categoryJson) : null,
       invitedPhone: JsonUtils.parseString(json['invited_phone']),
       invitedName: JsonUtils.parseString(json['invited_name']),
+      isReadOnly: JsonUtils.parseBool(json['is_read_only']),
       acceptedAt: JsonUtils.parseDateTime(json['accepted_at']),
       declinedAt: JsonUtils.parseDateTime(json['declined_at']),
       deletedAt: JsonUtils.parseDateTime(json['deleted_at']),
@@ -222,6 +225,7 @@ class Invitation {
      String? dateType,
      String? invitedPhone,
      String? invitedName,
+     bool? isReadOnly,
      DateTime? acceptedAt,
      DateTime? declinedAt,
      DateTime? deletedAt,
@@ -242,6 +246,7 @@ class Invitation {
       dateType: dateType ?? this.dateType,
       invitedPhone: invitedPhone ?? this.invitedPhone,
       invitedName: invitedName ?? this.invitedName,
+      isReadOnly: isReadOnly ?? this.isReadOnly,
       acceptedAt: acceptedAt ?? this.acceptedAt,
       declinedAt: declinedAt ?? this.declinedAt,
       deletedAt: deletedAt ?? this.deletedAt,
@@ -262,6 +267,7 @@ class Invitation {
     'personal_note': personalNote,
     'invited_phone': invitedPhone,
     'invited_name': invitedName,
+    'is_read_only': isReadOnly,
     'accepted_at': acceptedAt?.toIso8601String(),
     'declined_at': declinedAt?.toIso8601String(),
     'deleted_at': deletedAt?.toIso8601String(),
@@ -340,6 +346,7 @@ class Appointment {
   // ====================== المقال المرتبط ======================
   Article? get linkedArticle => currentUserInvitation?.linkedArticle ?? viewerInvitation?.linkedArticle;
   String? get linkedArticleId => currentUserInvitation?.linkedArticleId ?? viewerInvitation?.linkedArticleId;
+  bool get isReadOnly => currentUserInvitation?.isReadOnly ?? false;
 
   // ====================== بيانات المضيف المساعدة ======================
   String? get hostName => host?.name;
@@ -494,7 +501,9 @@ class Appointment {
       region: JsonUtils.parseString(json['region']),
       building: JsonUtils.parseString(json['building']),
       coordinates: JsonUtils.parseString(json['coordinates']),
-      privacy: JsonUtils.parseString(json['privacy']) ?? 'private',
+      // privacy لا يُقرأ من appointments — مصدره invitations.privacy عبر currentUserInvitation
+      // نضع 'private' كافتراضي آمن، و effectivePrivacy ستقرأ من currentUserInvitation
+      privacy: 'private',
       description: JsonUtils.parseString(json['description']),
       participantsCount: JsonUtils.parseInt(json['participants_count']) ?? 0,
       invitedCount: JsonUtils.parseInt(json['invited_count']) ?? 0,
@@ -611,7 +620,7 @@ class Appointment {
       'region': region,
       'building': building,
       'coordinates': coordinates,
-      'privacy': privacy,
+      // 'privacy' محذوف — الخصوصية تُخزَّن في invitations فقط
       'description': description,
       'participants_count': participantsCount,
       'invited_count': invitedCount,

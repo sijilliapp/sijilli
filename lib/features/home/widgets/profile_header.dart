@@ -174,6 +174,7 @@ class _ProfileHeaderState extends State<ProfileHeader> {
   }
 
   void _showImageOptionsSheet(BuildContext context, UserModel displayUser) {
+    FocusScope.of(context).unfocus();
     final hasAvatar = displayUser.hasAvatar;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     

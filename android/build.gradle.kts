@@ -3,6 +3,11 @@ allprojects {
         google()
         mavenCentral()
     }
+
+    // كتم تحذيرات Java source/target 8 القادمة من المكتبات الخارجية
+    tasks.withType<JavaCompile>().configureEach {
+        options.compilerArgs.addAll(listOf("-Xlint:-options"))
+    }
 }
 
 val newBuildDir: Directory =

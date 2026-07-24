@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:sijilli/core/constants/app_colors.dart';
 import 'package:sijilli/core/constants/app_dimens.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
+import 'package:geolocator/geolocator.dart';
 
 class LocationPickerResult {
   final double latitude;
@@ -50,6 +51,121 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     super.initState();
     if (widget.initialLatitude != null && widget.initialLongitude != null) {
       _currentCenter = LatLng(widget.initialLatitude!, widget.initialLongitude!);
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _locateUser();
+      });
+    }
+  }
+
+  Future<void> _locateUser() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                context.l10n.localeName == 'ar'
+                    ? 'خدمات الموقع معطلة. يرجى تفعيلها.'
+                    : 'Location services are disabled. Please enable them.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  context.l10n.localeName == 'ar'
+                      ? 'تم رفض إذن الموقع.'
+                      : 'Location permission was denied.',
+                ),
+              ),
+            );
+          }
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                context.l10n.localeName == 'ar'
+                    ? 'إذن الموقع مرفوض دائماً. يرجى تفعيله من الإعدادات.'
+                    : 'Location permissions are permanently denied.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      Position? position;
+      try {
+        position = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            timeLimit: Duration(seconds: 4),
+          ),
+        );
+      } catch (e) {
+        debugPrint('Geolocator.getCurrentPosition failed: $e');
+        
+        // Fallback 1: try last known position
+        try {
+          position = await Geolocator.getLastKnownPosition();
+        } catch (err) {
+          debugPrint('Geolocator.getLastKnownPosition failed: $err');
+        }
+        
+        // Fallback 2: try with lower accuracy
+        if (position == null) {
+          try {
+            position = await Geolocator.getCurrentPosition(
+              locationSettings: const LocationSettings(
+                accuracy: LocationAccuracy.low,
+                timeLimit: Duration(seconds: 4),
+              ),
+            );
+          } catch (err) {
+            debugPrint('Low accuracy getCurrentPosition failed: $err');
+          }
+        }
+      }
+
+      if (position == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                context.l10n.localeName == 'ar'
+                    ? 'فشل تحديد الموقع الحالي. يرجى التأكد من تفعيل الـ GPS وموقع المحاكي.'
+                    : 'Failed to determine location. Please verify GPS and simulator location settings.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      final target = LatLng(position.latitude, position.longitude);
+      setState(() {
+        _currentCenter = target;
+      });
+      _mapController.move(target, 16.0);
+      _reverseGeocode(target);
+    } catch (e) {
+      debugPrint('Locate user failed: $e');
     }
   }
 
@@ -237,7 +353,11 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.sijilli.app',
+                tileProvider: NetworkTileProvider(
+                  headers: {
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                  },
+                ),
               ),
             ],
           ),
@@ -338,6 +458,20 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                     ),
                   ),
               ],
+            ),
+          ),
+
+          // My Location Button
+          Positioned(
+            bottom: 190,
+            right: 16,
+            child: FloatingActionButton(
+              heroTag: 'locate_user_fab',
+              mini: true,
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              onPressed: _locateUser,
+              child: const Icon(Icons.my_location),
             ),
           ),
 

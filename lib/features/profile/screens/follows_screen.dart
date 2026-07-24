@@ -610,7 +610,7 @@ class _FollowsScreenState extends State<FollowsScreen> {
                             isAccrediting = true;
                           });
                           try {
-                            await _userService.accreditUser(user.id);
+                            await _userService.accreditUser(user.id, isSuggested: true);
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(

@@ -353,7 +353,7 @@ class _UserInviteeSheetState extends State<UserInviteeSheet> {
             child: OutlinedButton.icon(
               onPressed: _pickFromContacts,
               icon: const Icon(Icons.contacts, size: 18),
-              label: const Text('دعوة من جهات الاتصال', style: TextStyle(fontWeight: FontWeight.bold)),
+              label: Text(context.l10n.inviteFromContacts, style: const TextStyle(fontWeight: FontWeight.bold)),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primary,
                 side: const BorderSide(color: AppColors.primary),

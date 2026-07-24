@@ -37,8 +37,9 @@ class ArticleDetailsScreen extends StatefulWidget {
 }
 
 class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
-  bool _isImageExpanded = false;
   late ScrollController _scrollController;
+  // 0 = مطوية (بنر)، 1 = كاملة بزوايا، 2 = ملء شاشة dialog
+  int _coverState = 0;
 
   @override
   void initState() {
@@ -98,6 +99,9 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
     
     final hasImage = updatedArticle.image != null && updatedArticle.image!.isNotEmpty;
     final List<String> audioUrls = updatedArticle.audioFiles
+        .map((file) => 'https://sijilli.pockethost.io/api/files/articles/${updatedArticle.id}/$file')
+        .toList();
+    final List<String> imageUrls = updatedArticle.imageFiles
         .map((file) => 'https://sijilli.pockethost.io/api/files/articles/${updatedArticle.id}/$file')
         .toList();
     final currentUserId = context.read<AuthProvider>().user?.id;
@@ -161,28 +165,53 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                                 Flexible(
                                   child: ListView(
                                     shrinkWrap: true,
-                                    children: themeProvider.availableFonts.map((font) {
-                                      final isSelected = fontFamily == font;
-                                      return ListTile(
-                                        title: Text(
-                                          font == 'Default' ? context.l10n.defaultFontStyle : font,
-                                          style: TextStyle(
-                                            fontFamily: font == 'Default' ? null : font,
-                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                            color: isSelected ? AppColors.primary : null,
+                                    children: [
+                                      ...themeProvider.availableFonts.map((font) {
+                                        final isSelected = fontFamily == font;
+                                        return ListTile(
+                                          title: Text(
+                                            font == 'Default' ? context.l10n.defaultFontStyle : font,
+                                            style: TextStyle(
+                                              fontFamily: font == 'Default' ? null : font,
+                                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                              color: isSelected ? AppColors.primary : null,
+                                            ),
                                           ),
+                                          trailing: isSelected 
+                                              ? const Icon(Icons.check_circle, color: AppColors.primary)
+                                              : null,
+                                          onTap: () async {
+                                            await settingsProvider.setArticleFontFamily(font);
+                                            if (context.mounted) {
+                                              Navigator.pop(context);
+                                            }
+                                          },
+                                        );
+                                      }).toList(),
+                                      const Divider(),
+                                      ListenableBuilder(
+                                        listenable: settingsProvider,
+                                        builder: (context, _) => SwitchListTile(
+                                          title: const Text(
+                                            'ضبط أسطر الفقرات تلقائياً',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          subtitle: const Text(
+                                            'توزيع الكلمات بالتساوي لمحاذاة النص من الجانبين ومنع الفراغات الزائدة',
+                                            style: TextStyle(fontSize: 12),
+                                          ),
+                                          value: settingsProvider.justifyArticles,
+                                          activeColor: AppColors.primary,
+                                          onChanged: (val) async {
+                                            await settingsProvider.setJustifyArticles(val);
+                                          },
                                         ),
-                                        trailing: isSelected 
-                                            ? const Icon(Icons.check_circle, color: AppColors.primary)
-                                            : null,
-                                        onTap: () async {
-                                          await settingsProvider.setArticleFontFamily(font);
-                                          if (context.mounted) {
-                                            Navigator.pop(context);
-                                          }
-                                        },
-                                      );
-                                    }).toList(),
+                                      ),
+                                      const SizedBox(height: 8),
+                                    ],
                                   ),
                                 ),
                               ],
@@ -192,7 +221,7 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                       );
                     },
                   ),
-                  if (isAuthor)
+                  if (isAuthor && !updatedArticle.isReadOnly)
                     IconButton(
                       tooltip: isArabic ? 'تعديل المقال' : 'Edit article',
                       icon: const Icon(Icons.edit_outlined),
@@ -231,67 +260,29 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // غلاف المقال
                       if (hasImage) ...[
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _isImageExpanded = !_isImageExpanded;
-                            });
-                          },
-                          child: AnimatedSize(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            child: Stack(
-                              alignment: Alignment.bottomCenter,
-                              children: [
-                                Container(
-                                  width: double.infinity,
-                                  height: _isImageExpanded ? null : 120.0,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Image.network(
-                                      'https://sijilli.pockethost.io/api/files/articles/${updatedArticle.id}/${updatedArticle.image}',
-                                      fit: _isImageExpanded ? BoxFit.contain : BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-                                if (_isImageExpanded)
-                                  Positioned(
-                                    bottom: 12,
-                                    right: 12,
-                                    child: Material(
-                                      color: Colors.black.withValues(alpha: 0.5),
-                                      borderRadius: BorderRadius.circular(20),
-                                      child: InkWell(
-                                        onTap: () async {
-                                          final imageUrl = 'https://sijilli.pockethost.io/api/files/articles/${updatedArticle.id}/${updatedArticle.image}';
-                                          final success = await ImageSaverUtil.saveImageFromUrl(imageUrl, '${updatedArticle.id}_image.jpg');
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text(success 
-                                                    ? 'تم حفظ الصورة في ألبوم الصور بنجاح 🖼️' 
-                                                    : 'فشل حفظ الصورة ❌'),
-                                              ),
-                                            );
-                                          }
-                                        },
-                                        borderRadius: BorderRadius.circular(20),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(8),
-                                          child: const Icon(
-                                            Icons.arrow_downward,
-                                            size: 24,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 380),
+                          curve: Curves.easeInOut,
+                          alignment: Alignment.topCenter,
+                          child: GestureDetector(
+                            onTap: () {
+                              if (_coverState == 0) {
+                                setState(() => _coverState = 1);
+                              } else if (_coverState == 1) {
+                                final imageUrl = 'https://sijilli.pockethost.io/api/files/articles/${updatedArticle.id}/${updatedArticle.image}';
+                                FullScreenImageViewer.show(context, imageUrl);
+                              }
+                            },
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Image.network(
+                                'https://sijilli.pockethost.io/api/files/articles/${updatedArticle.id}/${updatedArticle.image}',
+                                width: double.infinity,
+                                height: _coverState == 0 ? 120.0 : null,
+                                fit: _coverState == 0 ? BoxFit.cover : BoxFit.fitWidth,
+                              ),
                             ),
                           ),
                         ),
@@ -300,7 +291,10 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                       // Text Content
                       CollapsibleContent(
                         buttonText: context.l10n.fullArticle,
-                        child: isAuthor
+                        onExpand: hasImage
+                            ? () => setState(() => _coverState = 1)
+                            : null,
+                        child: (isAuthor && !updatedArticle.isReadOnly)
                             ? GestureDetector(
                                 onTap: () {
                                   Navigator.push(
@@ -314,14 +308,16 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                                   text: updatedArticle.text,
                                   fontFamily: fontFamily,
                                   audioUrls: audioUrls,
+                                  imageFiles: imageUrls,
+                                  articleId: updatedArticle.id,
                                   audioMetadata: updatedArticle.audioMetadata,
-                                  onTextUpdated: isAuthor ? (updatedText) async {
+                                  onTextUpdated: (isAuthor && !updatedArticle.isReadOnly) ? (updatedText) async {
                                     await Provider.of<ArticleProvider>(context, listen: false).updateArticle(
                                       id: updatedArticle.id,
                                       text: updatedText,
                                     );
                                   } : null,
-                                  onMetadataUpdated: isAuthor ? (updatedMetadata) async {
+                                  onMetadataUpdated: (isAuthor && !updatedArticle.isReadOnly) ? (updatedMetadata) async {
                                     await Provider.of<ArticleProvider>(context, listen: false).updateArticle(
                                       id: updatedArticle.id,
                                       audioMetadata: updatedMetadata,
@@ -333,14 +329,16 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                                 text: updatedArticle.text,
                                 fontFamily: fontFamily,
                                 audioUrls: audioUrls,
+                                imageFiles: imageUrls,
+                                articleId: updatedArticle.id,
                                 audioMetadata: updatedArticle.audioMetadata,
-                                onTextUpdated: isAuthor ? (updatedText) async {
+                                onTextUpdated: (isAuthor && !updatedArticle.isReadOnly) ? (updatedText) async {
                                   await Provider.of<ArticleProvider>(context, listen: false).updateArticle(
                                     id: updatedArticle.id,
                                     text: updatedText,
                                   );
                                 } : null,
-                                onMetadataUpdated: isAuthor ? (updatedMetadata) async {
+                                onMetadataUpdated: (isAuthor && !updatedArticle.isReadOnly) ? (updatedMetadata) async {
                                   await Provider.of<ArticleProvider>(context, listen: false).updateArticle(
                                     id: updatedArticle.id,
                                     audioMetadata: updatedMetadata,
@@ -362,7 +360,7 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                                 crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
                                   ...updatedArticle.tags.map((tag) => TagChip(tag: tag)),
-                                  if (isAuthor)
+                                  if (isAuthor && !updatedArticle.isReadOnly)
                                     GestureDetector(
                                       onTap: () {
                                         TagSelectorSheet.show(
@@ -488,7 +486,7 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                                 Icon(Icons.calendar_today_outlined, size: 18, color: AppColors.getTextSecondary(context)),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'تاريخ النشر: ${AppDateFormatter.formatArticleDateTime(updatedArticle.createdAt, Localizations.localeOf(context).languageCode)}',
+                                  context.l10n.publishedDate(AppDateFormatter.formatArticleDateTime(updatedArticle.createdAt, Localizations.localeOf(context).languageCode)),
                                   style: TextStyle(fontSize: 14, color: AppColors.getTextSecondary(context)),
                                 ),
                               ],

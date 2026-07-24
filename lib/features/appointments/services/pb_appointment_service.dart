@@ -29,9 +29,8 @@ class PbAppointmentService {
 
       String statusStr = status.toString().split('.').last;
       String filter = 'user = "$effectiveUserId" && post_status = "$statusStr"';
-      if (status == PostStatus.published) {
-        filter += ' && appointment.is_cancelled = false && appointment.is_deleted = false';
-      }
+      // ملاحظة: نعرض المواعيد حتى لو كانت is_cancelled أو is_deleted على السجل المركزي
+      // لأن الضيوف يجب أن يروا الطوق الأحمر/الرمادي — نسخهم الشخصية لم تُحذف
 
       final resultList = await _pb.collection(collectionInvitations).getList(
         page: page,
@@ -113,6 +112,7 @@ class PbAppointmentService {
       body.remove('id');
       body.remove('created');
       body.remove('updated');
+      body.remove('privacy'); // الخصوصية تُخزَّن في invitations فقط — لا تُكتب في appointments
       body['host'] = userId;
       body['appointmentGroupId'] = groupId;
       body['recurrence_type'] = appointment.recurrenceType ?? 'none';
@@ -186,43 +186,51 @@ class PbAppointmentService {
     await _pb.collection(collectionAppointments).update(id, body: data);
   }
 
-  /// إلغاء الموعد وتنبيه كافة الضيوف (للمضيف)
+  /// إلغاء/حذف الموعد من قِبل المستضيف
+  /// القاعدة: المستضيف يحذف نسخته الشخصية فقط.
+  /// التغيير الوحيد على الآخرين هو تحديث السجل المركزي (is_cancelled أو is_deleted)
+  /// بحيث يرون الطوق الأحمر/الرمادي — لكن نسخهم لا تُحذف أبداً.
   Future<void> cancelAppointment(String id, {String? cancelTitle, String? cancelMessage, String? personalNote}) async {
     try {
       final invites = await _pb.collection(collectionInvitations).getFullList(
         filter: 'appointment = "$id"',
       );
 
-      bool hasAcceptance = false;
-      for (final inv in invites) {
-        if (inv.data['status'] == 'accepted' && inv.data['user'] != _pb.authStore.record?.id) {
-          hasAcceptance = true;
-          break;
-        }
-      }
+      // هل وافق أحد الضيوف؟ (غير المستضيف)
+      final hostId = _pb.authStore.record?.id;
+      final hasAcceptedGuest = invites.any((inv) =>
+        inv.data['status'] == 'accepted' &&
+        inv.data['user'] != hostId,
+      );
 
+      // تحديث السجل المركزي فقط:
+      // - لا أحد قبل → is_cancelled (طوق رمادي عند الضيوف)
+      // - أحدهم قبل  → is_deleted  (طوق أحمر عند الضيوف)
       await _pb.collection(collectionAppointments).update(id, body: {
-        'is_deleted': hasAcceptance,
-        'is_cancelled': !hasAcceptance,
+        'is_cancelled': !hasAcceptedGuest,
+        'is_deleted': hasAcceptedGuest,
       });
 
+      // حذف نسخة المستضيف الشخصية فقط
+      final hostInvite = invites.firstWhere(
+        (inv) => inv.data['user'] == hostId,
+        orElse: () => invites.first, // fallback آمن
+      );
+
+      try {
+        await _pb.collection(collectionInvitations).update(hostInvite.id, body: {
+          'post_status': 'trash',
+          'deleted_at': DateTime.now().toUtc().toIso8601String(),
+        });
+      } catch (e) {
+        print('⚠️ Could not trash host invitation: $e');
+      }
+
+      // إرسال إشعار للضيوف الذين قبلوا فقط
       for (final inv in invites) {
-        try {
-          String newStatus = 'declined';
-          if (inv.data['status'] == 'accepted') {
-            newStatus = 'deleted_after_accept';
-          }
-
-          await _pb.collection(collectionInvitations).update(inv.id, body: {
-            'status': newStatus, 
-            'post_status': 'trash',
-            'personal_note': personalNote ?? 'Appointment cancelled by organizer',
-          });
-        } catch (e) {}
-
         final userId = inv.data['user'];
-        if (userId != _pb.authStore.record?.id) {
-           _sendCancelNotification(userId, id, title: cancelTitle, message: cancelMessage);
+        if (userId != null && userId != hostId) {
+          _sendCancelNotification(userId, id, title: cancelTitle, message: cancelMessage);
         }
       }
     } catch (e) {
@@ -395,7 +403,7 @@ class PbAppointmentService {
         'user': userId,
         'status': 'pending',
         'post_status': 'published',
-        'privacy': result.getStringValue('privacy') ?? 'private',
+        'privacy': 'private',
       });
 
       // 4. Send a notification to the host

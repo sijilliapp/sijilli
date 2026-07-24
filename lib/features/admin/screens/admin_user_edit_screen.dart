@@ -34,9 +34,9 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
     super.initState();
     
     // التحقق من الرتبة وتعيين قيمة افتراضية آمنة في حال كانت فارغة أو غير معروفة لمنع انهيار القائمة المنسدلة
-    const validRoles = ['user', 'approved', 'admin'];
+    const validRoles = ['user', 'approved', 'writer', 'organization', 'admin'];
     if (validRoles.contains(widget.user.role)) {
-      _selectedRole = widget.user.role;
+      _selectedRole = widget.user.role == 'approved' ? 'writer' : widget.user.role;
     } else {
       _selectedRole = 'user';
     }
@@ -257,7 +257,8 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
   Widget _buildRoleCard(bool isDark) {
     final roleOptions = [
       {'key': 'user', 'label': context.l10n.roleUserOption},
-      {'key': 'approved', 'label': context.l10n.roleApprovedOption},
+      {'key': 'writer', 'label': 'كاتب معتمد'},
+      {'key': 'organization', 'label': 'جهة / مؤسسة'},
       {'key': 'admin', 'label': context.l10n.roleAdminOption},
     ];
 
@@ -536,6 +537,8 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
       _isSaving = true;
     });
 
+    final isCurrentUserSuperAdmin = context.read<AuthProvider>().user?.isSuperAdmin == true;
+
     // تجميع كافة الحقول المعدلة لإرسالها دفعة واحدة
     final Map<String, dynamic> updatedFields = {
       'role': _selectedRole,
@@ -544,8 +547,11 @@ class _AdminUserEditScreenState extends State<AdminUserEditScreen> {
       'isPublic': _isPublic,
       'hideFromSearch': _hideFromSearch,
       'isSuggested': _isSuggested,
-      'isSuperAdmin': _isSuperAdmin,
     };
+
+    if (isCurrentUserSuperAdmin) {
+      updatedFields['isSuperAdmin'] = _isSuperAdmin;
+    }
 
     final success = await context.read<AdminProvider>().updateUserFields(
       widget.user.id,

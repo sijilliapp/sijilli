@@ -208,13 +208,13 @@ class AppointmentProvider extends ChangeNotifier {
     
     // الفلترة الفورية بناءً على الكبسولات المحددة بالكامل
     if (rawQuery == '(عام)') {
-      return base.where((a) => a.privacy == 'public').toList();
+      return base.where((a) => a.effectivePrivacy == 'public').toList();
     }
     if (rawQuery == '(خاص)') {
-      return base.where((a) => a.privacy == 'private').toList();
+      return base.where((a) => a.effectivePrivacy == 'private').toList();
     }
     if (rawQuery == '(معتمدون)' || rawQuery == 'معتمدون') {
-      return base.where((a) => a.host?.role == 'approved' || a.host?.role == 'admin').toList();
+      return base.where((a) => a.host?.isApproved == true).toList();
     }
 
     // دالة مساعدة لتوحيد النصوص وإزالة التشكيل العربي لتبسيط البحث والتوثيق
@@ -238,7 +238,7 @@ class AppointmentProvider extends ChangeNotifier {
       return queryWords.every((word) {
         // إذا كتب المستخدم كلمة "معتمدون" أو "معتمد"، نتحقق مما إذا كان المضيف معتمداً/مشرفاً أولاً
         if (word == 'معتمدون' || word == 'معتمد') {
-          final isHostApproved = a.host?.role == 'approved' || a.host?.role == 'admin';
+          final isHostApproved = a.host?.isApproved == true;
           if (isHostApproved) return true;
         }
         
@@ -464,6 +464,7 @@ class AppointmentProvider extends ChangeNotifier {
         );
         _appointments = fresh;
         _sortAppointments();
+        await _localDb.saveAppointments(_appointments);
         completer.complete();
       } catch (e) {
         if (e.toString().contains('isAbort: true')) {
@@ -608,6 +609,7 @@ class AppointmentProvider extends ChangeNotifier {
         currentUserInvitation: appointment.currentUserInvitation == appointment.viewerRecord ? updatedInv : null,
         viewerInvitation: appointment.viewerInvitation == appointment.viewerRecord ? updatedInv : null,
       );
+      await _localDb.saveAppointments(_appointments);
       notifyListeners();
 
       // Delay fetching to allow PocketBase to process hooks and evaluation logic
@@ -661,11 +663,9 @@ class AppointmentProvider extends ChangeNotifier {
         linkedArticleId: linkedArticleId,
       );
       
-      // 3. If Host, ALSO update the Master Appointment Record for global consistency
-      final bool isHost = appointment.hostId == _currentUserId;
-      if (isHost && privacy != null) {
-        await _apptService.updateAppointment(appointment.id, {'privacy': privacy});
-      }
+      // 3. If Host, ALSO update invitations privacy for consistency
+      // ملاحظة: الخصوصية تُخزَّن في invitations فقط — لا نُحدِّث appointments.privacy
+      // لذلك نكتفي بتحديث نسخة المستضيف في invitations (تم أعلاه)
 
       // 4. Update local cache after successful network request
       await _localDb.saveAppointments(_appointments);
@@ -858,7 +858,7 @@ class AppointmentProvider extends ChangeNotifier {
 
       final now = DateTime.now();
       var newStatus = appointment.viewerRecord?.status ?? InvitationStatus.pending;
-      if (!isHost && newStatus == InvitationStatus.accepted) {
+      if (newStatus == InvitationStatus.accepted) {
         newStatus = InvitationStatus.deletedAfterAccept;
       }
 
@@ -868,9 +868,9 @@ class AppointmentProvider extends ChangeNotifier {
         deletedAt: now,
       );
 
+      // نسخة المستضيف تُحذف شخصياً — السجل المركزي يبقى كما هو في الذاكرة
+      // (سيتحدث بعد fetchAppointments من السيرفر)
       final trashedAppt = appointment.copyWith(
-        isCancelled: (isHost || _isAdmin) ? true : appointment.isCancelled,
-        isDeleted: (isHost || _isAdmin) ? true : appointment.isDeleted,
         currentUserInvitation: appointment.currentUserInvitation == appointment.viewerRecord ? updatedInv : null,
         viewerInvitation: appointment.viewerInvitation == appointment.viewerRecord ? updatedInv : null,
       );
@@ -883,7 +883,10 @@ class AppointmentProvider extends ChangeNotifier {
 
     try {
       // 2. Perform Network Call
+      // القاعدة: أي شخص (مستضيف أو ضيف) يحذف نسخته الشخصية فقط.
+      // المستضيف: يُضاف تحديث السجل المركزي (is_cancelled/is_deleted) كأثر جانبي فقط.
       if (isHost || _isAdmin) {
+        // cancelAppointment تحدّث السجل المركزي وتحذف نسخة المستضيف فقط
         await _apptService.cancelAppointment(appointmentId);
       } else {
         if (appointment != null) {
@@ -1052,9 +1055,12 @@ class AppointmentProvider extends ChangeNotifier {
     return _appointments.where((appt) {
       if (appt.id == excludeId) return false;
       
-      if (appt.isCancelled || appt.isDeleted || appt.isUserDeleted || appt.isArchived) return false;
+      if (appt.isCancelled || appt.isDeleted || appt.isUserDeleted) return false;
       if (appt.viewerRecord?.postStatus == PostStatus.trash) return false;
-      if (appt.viewerRecord?.status == InvitationStatus.declined) return false;
+      if (appt.viewerRecord?.status == InvitationStatus.declined || 
+          appt.viewerRecord?.status == InvitationStatus.deletedAfterAccept) {
+        return false;
+      }
       
       // All-day event check (Synchronized with AddEventProvider)
       if (appt.duration <= 0 || appt.duration >= 1440) {

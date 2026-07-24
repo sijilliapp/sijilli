@@ -236,12 +236,14 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
 
   @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     _tabController.dispose();
     _scrollController.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
   }
+
 
   Future<void> _handleBatchSync() async {
     final searchProvider = context.read<SearchProvider>();
@@ -709,7 +711,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
             children: [
               const Icon(Icons.bookmarks_outlined, size: 20, color: AppColors.primary),
               const SizedBox(width: 8),
-              const Text('المحفوظات'),
+              Text(context.l10n.saved),
             ],
           ),
         ),
@@ -723,7 +725,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                 color: AppColors.primary,
               ),
               const SizedBox(width: 8),
-              Text(showLoc ? 'إخفاء معلومات المكان' : 'إظهار معلومات المكان'),
+              Text(showLoc ? context.l10n.hideLocation : context.l10n.showLocation),
             ],
           ),
         ),

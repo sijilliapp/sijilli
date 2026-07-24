@@ -104,6 +104,12 @@ abstract class AppLocalizations {
   /// **'سجلي'**
   String get appName;
 
+  /// No description provided for @appSlogan.
+  ///
+  /// In ar, this message translates to:
+  /// **'تنظيم المواعيد وإدارة الدعوات'**
+  String get appSlogan;
+
   /// No description provided for @login.
   ///
   /// In ar, this message translates to:
@@ -961,6 +967,12 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'لا يوجد جهات اتصال بعد'**
   String get noContactsYet;
+
+  /// No description provided for @inviteFromContacts.
+  ///
+  /// In ar, this message translates to:
+  /// **'دعوة من جهات الاتصال'**
+  String get inviteFromContacts;
 
   /// No description provided for @accreditAction.
   ///
@@ -3865,6 +3877,408 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'مكرر'**
   String get duplicate;
+
+  /// No description provided for @saved.
+  ///
+  /// In ar, this message translates to:
+  /// **'المحفوظات'**
+  String get saved;
+
+  /// No description provided for @hideLocation.
+  ///
+  /// In ar, this message translates to:
+  /// **'إخفاء معلومات المكان'**
+  String get hideLocation;
+
+  /// No description provided for @showLocation.
+  ///
+  /// In ar, this message translates to:
+  /// **'إظهار معلومات المكان'**
+  String get showLocation;
+
+  /// No description provided for @upgradeAccountAndPermissions.
+  ///
+  /// In ar, this message translates to:
+  /// **'ترقية الحساب والصلاحيات'**
+  String get upgradeAccountAndPermissions;
+
+  /// No description provided for @upgradeAccountSubtitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'طلب الانضمام ككاتب معتمد أو مؤسسة وتفعيل ميزات الذكاء الاصطناعي'**
+  String get upgradeAccountSubtitle;
+
+  /// No description provided for @articlesSettingsTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'المقالات'**
+  String get articlesSettingsTitle;
+
+  /// No description provided for @articlesSettingsSubtitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'حماية مقالاتك وتعطيل نسخ المحتوى'**
+  String get articlesSettingsSubtitle;
+
+  /// No description provided for @membershipUpgradeRequests.
+  ///
+  /// In ar, this message translates to:
+  /// **'طلبات ترقية العضوية'**
+  String get membershipUpgradeRequests;
+
+  /// No description provided for @reviewUpgradeRequestsSubtitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'مراجعة طلبات الانضمام ككُتّاب معتمدين أو جهات رسمية'**
+  String get reviewUpgradeRequestsSubtitle;
+
+  /// No description provided for @sendSystemNotification.
+  ///
+  /// In ar, this message translates to:
+  /// **'إرسال إشعار للنظام'**
+  String get sendSystemNotification;
+
+  /// No description provided for @broadcastNotificationSubtitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'بث إشعار جماعي لجميع المستخدمين المسجلين في التطبيق'**
+  String get broadcastNotificationSubtitle;
+
+  /// No description provided for @newBadgeCount.
+  ///
+  /// In ar, this message translates to:
+  /// **'{count} جديد'**
+  String newBadgeCount(int count);
+
+  /// No description provided for @noPendingUpgradeRequests.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد طلبات ترقية معلقة حالياً'**
+  String get noPendingUpgradeRequests;
+
+  /// No description provided for @allUpgradeRequestsReviewed.
+  ///
+  /// In ar, this message translates to:
+  /// **'جميع طلبات الأعضاء تمت مراجعتها بالكامل.'**
+  String get allUpgradeRequestsReviewed;
+
+  /// No description provided for @leftAlignTooltip.
+  ///
+  /// In ar, this message translates to:
+  /// **'محاذاة لليسار (تغيير الاتجاه)'**
+  String get leftAlignTooltip;
+
+  /// No description provided for @highlightTooltip.
+  ///
+  /// In ar, this message translates to:
+  /// **'قلم التظليل'**
+  String get highlightTooltip;
+
+  /// No description provided for @quranVerseTooltip.
+  ///
+  /// In ar, this message translates to:
+  /// **'تنسيق آية قرآنية'**
+  String get quranVerseTooltip;
+
+  /// No description provided for @spellCheckTooltip.
+  ///
+  /// In ar, this message translates to:
+  /// **'تصحيح إملائي'**
+  String get spellCheckTooltip;
+
+  /// No description provided for @clearFormattingTooltip.
+  ///
+  /// In ar, this message translates to:
+  /// **'مسح التنسيقات'**
+  String get clearFormattingTooltip;
+
+  /// No description provided for @searchReplaceTooltip.
+  ///
+  /// In ar, this message translates to:
+  /// **'بحث واستبدال'**
+  String get searchReplaceTooltip;
+
+  /// No description provided for @removeCoverImageTooltip.
+  ///
+  /// In ar, this message translates to:
+  /// **'إزالة الصورة'**
+  String get removeCoverImageTooltip;
+
+  /// No description provided for @addCoverImageTooltip.
+  ///
+  /// In ar, this message translates to:
+  /// **'إضافة صورة غلاف'**
+  String get addCoverImageTooltip;
+
+  /// No description provided for @addAudioTooltip.
+  ///
+  /// In ar, this message translates to:
+  /// **'إضافة ملف صوتي/واتساب 🎙️'**
+  String get addAudioTooltip;
+
+  /// No description provided for @insertImageTooltip.
+  ///
+  /// In ar, this message translates to:
+  /// **'إدراج صورة في المقال 🖼️'**
+  String get insertImageTooltip;
+
+  /// No description provided for @undoTooltip.
+  ///
+  /// In ar, this message translates to:
+  /// **'تراجع (Undo)'**
+  String get undoTooltip;
+
+  /// No description provided for @redoTooltip.
+  ///
+  /// In ar, this message translates to:
+  /// **'إعادة/تقدم (Redo)'**
+  String get redoTooltip;
+
+  /// No description provided for @pasteFromClipboardTooltip.
+  ///
+  /// In ar, this message translates to:
+  /// **'لصق من الحافظة'**
+  String get pasteFromClipboardTooltip;
+
+  /// No description provided for @commentsCount.
+  ///
+  /// In ar, this message translates to:
+  /// **'عدد التعليقات: {count}'**
+  String commentsCount(int count);
+
+  /// No description provided for @browseApp.
+  ///
+  /// In ar, this message translates to:
+  /// **'تصفح تطبيق سجلي'**
+  String get browseApp;
+
+  /// No description provided for @publishedDate.
+  ///
+  /// In ar, this message translates to:
+  /// **'تاريخ النشر: {date}'**
+  String publishedDate(String date);
+
+  /// No description provided for @accountUnavailable.
+  ///
+  /// In ar, this message translates to:
+  /// **'هذا الحساب غير متاح حالياً'**
+  String get accountUnavailable;
+
+  /// No description provided for @newProfileVisitTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'زيارة جديدة'**
+  String get newProfileVisitTitle;
+
+  /// No description provided for @newProfileVisitMessage.
+  ///
+  /// In ar, this message translates to:
+  /// **'قام أحد الأعضاء بزيارة ملفك الشخصي'**
+  String get newProfileVisitMessage;
+
+  /// No description provided for @newArticleVisitTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'زيارة جديدة لمقالك'**
+  String get newArticleVisitTitle;
+
+  /// No description provided for @newArticleVisitMessage.
+  ///
+  /// In ar, this message translates to:
+  /// **'قام أحد القراء بزيارة وقراءة مقالك'**
+  String get newArticleVisitMessage;
+
+  /// No description provided for @unfollowedTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'إلغاء الاعتماد'**
+  String get unfollowedTitle;
+
+  /// No description provided for @unfollowedMessage.
+  ///
+  /// In ar, this message translates to:
+  /// **'{name} قام بإلغاء اعتمادك'**
+  String unfollowedMessage(String name);
+
+  /// No description provided for @acceptAndUpgrade.
+  ///
+  /// In ar, this message translates to:
+  /// **'قبول وترقية'**
+  String get acceptAndUpgrade;
+
+  /// No description provided for @rejectRequest.
+  ///
+  /// In ar, this message translates to:
+  /// **'رفض الطلب'**
+  String get rejectRequest;
+
+  /// No description provided for @acceptUpgradeConfirm.
+  ///
+  /// In ar, this message translates to:
+  /// **'هل أنت متأكد من رغبتك في قبول هذا الطلب؟'**
+  String get acceptUpgradeConfirm;
+
+  /// No description provided for @rejectUpgradeConfirm.
+  ///
+  /// In ar, this message translates to:
+  /// **'هل أنت متأكد من رغبتك في رفض هذا الطلب؟'**
+  String get rejectUpgradeConfirm;
+
+  /// No description provided for @upgradeSuccess.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم ترقية الطلب بنجاح وتحديث الرول'**
+  String get upgradeSuccess;
+
+  /// No description provided for @rejectSuccess.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم رفض الطلب بنجاح'**
+  String get rejectSuccess;
+
+  /// No description provided for @upgradeError.
+  ///
+  /// In ar, this message translates to:
+  /// **'حدث خطأ أثناء معالجة الطلب'**
+  String get upgradeError;
+
+  /// No description provided for @writeRejectReason.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرجاء كتابة سبب رفض الطلب'**
+  String get writeRejectReason;
+
+  /// No description provided for @rejectReasonHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'سبب الرفض وتوجيه العضو (مطلوب)...'**
+  String get rejectReasonHint;
+
+  /// No description provided for @acceptNoteHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعليق الإدارة أو الترحيب بالعضو (اختياري)...'**
+  String get acceptNoteHint;
+
+  /// No description provided for @systemArticlesTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'مقالات ونشرات النظام'**
+  String get systemArticlesTitle;
+
+  /// No description provided for @noSystemArticles.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد نشرات أو مقالات عامة حالياً.'**
+  String get noSystemArticles;
+
+  /// No description provided for @closeButton.
+  ///
+  /// In ar, this message translates to:
+  /// **'إغلاق'**
+  String get closeButton;
+
+  /// No description provided for @cancelButton.
+  ///
+  /// In ar, this message translates to:
+  /// **'إلغاء'**
+  String get cancelButton;
+
+  /// No description provided for @roleWriter.
+  ///
+  /// In ar, this message translates to:
+  /// **'كاتب معتمد'**
+  String get roleWriter;
+
+  /// No description provided for @roleOrganization.
+  ///
+  /// In ar, this message translates to:
+  /// **'مؤسسة / جهة'**
+  String get roleOrganization;
+
+  /// No description provided for @upgradeTo.
+  ///
+  /// In ar, this message translates to:
+  /// **'ترقية لـ: {role}'**
+  String upgradeTo(String role);
+
+  /// No description provided for @applyReasonLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'رسالة ومبررات التقديم:'**
+  String get applyReasonLabel;
+
+  /// No description provided for @requestDate.
+  ///
+  /// In ar, this message translates to:
+  /// **'تاريخ الطلب: {date} | الساعة: {time}'**
+  String requestDate(String date, String time);
+
+  /// No description provided for @unknownMember.
+  ///
+  /// In ar, this message translates to:
+  /// **'عضو غير معروف'**
+  String get unknownMember;
+
+  /// No description provided for @likesTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'إعجابات'**
+  String get likesTitle;
+
+  /// No description provided for @commentsTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعليقات'**
+  String get commentsTitle;
+
+  /// No description provided for @likedYourArticle.
+  ///
+  /// In ar, this message translates to:
+  /// **'أعجب {name} بمقالك'**
+  String likedYourArticle(String name);
+
+  /// No description provided for @commentedOnYourArticle.
+  ///
+  /// In ar, this message translates to:
+  /// **'علق {name} على مقالك'**
+  String commentedOnYourArticle(String name);
+
+  /// No description provided for @visitedYourProfile.
+  ///
+  /// In ar, this message translates to:
+  /// **'زار {name} ملفك الشخصي'**
+  String visitedYourProfile(String name);
+
+  /// No description provided for @invitationsAwaitingResponse.
+  ///
+  /// In ar, this message translates to:
+  /// **'دعوات بانتظار ردك 📥'**
+  String get invitationsAwaitingResponse;
+
+  /// No description provided for @notificationsAndActivity.
+  ///
+  /// In ar, this message translates to:
+  /// **'صندوق الإشعارات والأنشطة 🔔'**
+  String get notificationsAndActivity;
+
+  /// No description provided for @mutualAccreditationTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'اعتماد متبادل'**
+  String get mutualAccreditationTitle;
+
+  /// No description provided for @mutualAccreditedYou.
+  ///
+  /// In ar, this message translates to:
+  /// **'قام {name} باعتمادك المتبادل'**
+  String mutualAccreditedYou(String name);
+
+  /// No description provided for @readerReadYourArticle.
+  ///
+  /// In ar, this message translates to:
+  /// **'قام {name} بقراءة مقالك'**
+  String readerReadYourArticle(String name);
 }
 
 class _AppLocalizationsDelegate

@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:pocketbase/pocketbase.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../auth/providers/auth_provider.dart';
+import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class AdminUpgradeRequestsScreen extends StatefulWidget {
   const AdminUpgradeRequestsScreen({super.key});
@@ -40,14 +41,14 @@ class _AdminUpgradeRequestsScreenState extends State<AdminUpgradeRequestsScreen>
   Future<void> _processRequest(RecordModel request, bool approve) async {
     final theme = Theme.of(context);
     final notesController = TextEditingController();
-    final actionText = approve ? 'قبول' : 'رفض';
+    final actionText = approve ? context.l10n.acceptAndUpgrade : context.l10n.rejectRequest;
     final actionColor = approve ? Colors.green : Colors.red;
 
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          '$actionText طلب الترقية',
+          actionText,
           textAlign: TextAlign.right,
           style: TextStyle(color: actionColor, fontWeight: FontWeight.bold),
         ),
@@ -56,7 +57,7 @@ class _AdminUpgradeRequestsScreenState extends State<AdminUpgradeRequestsScreen>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'هل أنت متأكد من رغبتك في $actionText هذا الطلب؟',
+              approve ? context.l10n.acceptUpgradeConfirm : context.l10n.rejectUpgradeConfirm,
               textAlign: TextAlign.right,
             ),
             const SizedBox(height: 12),
@@ -67,8 +68,8 @@ class _AdminUpgradeRequestsScreenState extends State<AdminUpgradeRequestsScreen>
               textDirection: TextDirection.rtl,
               decoration: InputDecoration(
                 hintText: approve 
-                    ? 'تعليق الإدارة أو الترحيب بالعضو (اختياري)...' 
-                    : 'سبب الرفض وتوجيه العضو (مطلوب)...',
+                    ? context.l10n.acceptNoteHint
+                    : context.l10n.rejectReasonHint,
                 hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
@@ -78,13 +79,13 @@ class _AdminUpgradeRequestsScreenState extends State<AdminUpgradeRequestsScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('إلغاء'),
+            child: Text(context.l10n.cancelButton),
           ),
           ElevatedButton(
             onPressed: () {
               if (!approve && notesController.text.trim().isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('الرجاء كتابة سبب رفض الطلب')),
+                  SnackBar(content: Text(context.l10n.writeRejectReason)),
                 );
                 return;
               }
@@ -122,16 +123,16 @@ class _AdminUpgradeRequestsScreenState extends State<AdminUpgradeRequestsScreen>
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('تم $actionText الطلب بنجاح وتحديث الرول'),
+              content: Text(approve ? context.l10n.upgradeSuccess : context.l10n.rejectSuccess),
               backgroundColor: Colors.green,
             ),
           );
           _fetchRequests();
         } else {
-          final error = context.read<AuthProvider>().errorMessage ?? 'حدث خطأ أثناء معالجة الطلب';
+          final error = context.read<AuthProvider>().errorMessage ?? context.l10n.upgradeError;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('فشل تنفيذ العملية: $error'),
+              content: Text(context.l10n.operationFailed(error)),
               backgroundColor: Colors.red,
             ),
           );
@@ -149,7 +150,7 @@ class _AdminUpgradeRequestsScreenState extends State<AdminUpgradeRequestsScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('طلبات ترقية العضوية'),
+        title: Text(context.l10n.membershipUpgradeRequests),
         centerTitle: true,
         backgroundColor: isDark ? null : AppColors.primary,
         foregroundColor: isDark ? null : Colors.white,
@@ -184,14 +185,14 @@ class _AdminUpgradeRequestsScreenState extends State<AdminUpgradeRequestsScreen>
               child: const Icon(Icons.check_circle_outline_rounded, color: Colors.green, size: 64),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'لا توجد طلبات ترقية معلقة حالياً',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Text(
+              context.l10n.noPendingUpgradeRequests,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'جميع طلبات الأعضاء تمت مراجعتها بالكامل.',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
+            Text(
+              context.l10n.allUpgradeRequestsReviewed,
+              style: const TextStyle(fontSize: 13, color: Colors.grey),
             ),
           ],
         ),
@@ -208,13 +209,13 @@ class _AdminUpgradeRequestsScreenState extends State<AdminUpgradeRequestsScreen>
         final req = _pendingRequests[index];
         final userExpandList = req.expand['user'] as List<RecordModel>?;
         final userExpand = (userExpandList != null && userExpandList.isNotEmpty) ? userExpandList.first : null;
-        final userName = userExpand?.getStringValue('name') ?? 'عضو غير معروف';
+        final userName = userExpand?.getStringValue('name') ?? context.l10n.unknownMember;
         final userUsername = userExpand?.getStringValue('username') ?? '';
         final roleKey = req.getStringValue('requested_role');
         final userNotes = req.getStringValue('user_notes');
         final created = req.getStringValue('created');
 
-        String roleDisplay = roleKey == 'writer' ? 'كاتب معتمد' : 'مؤسسة / جهة';
+        String roleDisplay = roleKey == 'writer' ? context.l10n.roleWriter : context.l10n.roleOrganization;
         Color roleBadgeColor = roleKey == 'writer' ? Colors.blueAccent : Colors.amber.shade700;
 
         return Card(
@@ -256,7 +257,7 @@ class _AdminUpgradeRequestsScreenState extends State<AdminUpgradeRequestsScreen>
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        'ترقية لـ: $roleDisplay',
+                        context.l10n.upgradeTo(roleDisplay),
                         style: TextStyle(color: roleBadgeColor, fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -265,9 +266,9 @@ class _AdminUpgradeRequestsScreenState extends State<AdminUpgradeRequestsScreen>
                 const SizedBox(height: 12),
                 const Divider(),
                 const SizedBox(height: 6),
-                const Text(
-                  'رسالة ومبررات التقديم:',
-                  style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold),
+                Text(
+                  context.l10n.applyReasonLabel,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.right,
                 ),
                 const SizedBox(height: 4),
@@ -284,7 +285,7 @@ class _AdminUpgradeRequestsScreenState extends State<AdminUpgradeRequestsScreen>
                       child: OutlinedButton.icon(
                         onPressed: () => _processRequest(req, false),
                         icon: const Icon(Icons.cancel_rounded, color: Colors.red, size: 18),
-                        label: const Text('رفض الطلب', style: TextStyle(color: Colors.red)),
+                        label: Text(context.l10n.rejectRequest, style: const TextStyle(color: Colors.red)),
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Colors.red),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -296,7 +297,7 @@ class _AdminUpgradeRequestsScreenState extends State<AdminUpgradeRequestsScreen>
                       child: ElevatedButton.icon(
                         onPressed: () => _processRequest(req, true),
                         icon: const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
-                        label: const Text('قبول وترقية', style: TextStyle(color: Colors.white)),
+                        label: Text(context.l10n.acceptAndUpgrade, style: const TextStyle(color: Colors.white)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -307,7 +308,7 @@ class _AdminUpgradeRequestsScreenState extends State<AdminUpgradeRequestsScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'تاريخ الطلب: ${created.substring(0, 10)} | الساعة: ${created.substring(11, 16)}',
+                  context.l10n.requestDate(created.substring(0, 10), created.substring(11, 16)),
                   style: const TextStyle(fontSize: 10, color: Colors.grey),
                   textAlign: TextAlign.left,
                 ),

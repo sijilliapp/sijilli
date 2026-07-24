@@ -1,6 +1,7 @@
 // 📍 lib/features/admin/widgets/message_detail_sheet.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimens.dart';
@@ -237,6 +238,82 @@ class _MessageDetailSheetState extends State<_MessageDetailSheet> {
                 ],
               ),
             ),
+            if (hasUser) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.info_outline_rounded, color: Colors.amber, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'يتم الرد على هذا المشترك خارج التطبيق عبر البريد الإلكتروني أو الواتساب الموضحين أدناه.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark ? Colors.amber.shade200 : Colors.amber.shade800,
+                              height: 1.4,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        if (widget.message.user!.email.isNotEmpty)
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                              ),
+                              icon: const Icon(Icons.email_outlined, size: 16),
+                              label: const Text('نسخ البريد', style: TextStyle(fontSize: 12)),
+                              onPressed: () {
+                                Clipboard.setData(ClipboardData(text: widget.message.user!.email));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('تم نسخ البريد الإلكتروني بنجاح')),
+                                );
+                              },
+                            ),
+                          ),
+                        if (widget.message.user!.email.isNotEmpty && widget.message.user!.phone != null && widget.message.user!.phone!.isNotEmpty)
+                          const SizedBox(width: 8),
+                        if (widget.message.user!.phone != null && widget.message.user!.phone!.isNotEmpty)
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                              ),
+                              icon: const Icon(Icons.phone_outlined, size: 16),
+                              label: const Text('نسخ الهاتف', style: TextStyle(fontSize: 12)),
+                              onPressed: () {
+                                Clipboard.setData(ClipboardData(text: widget.message.user!.phone!));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('تم نسخ رقم الهاتف بنجاح')),
+                                );
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
             
             const SizedBox(height: 24),
             

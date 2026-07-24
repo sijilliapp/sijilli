@@ -205,11 +205,11 @@ class _UserFollowButtonState extends State<UserFollowButton> {
         return;
     }
 
-    // Default Follow Action
+    // Default Follow Action — دائماً pending، بلا استثناء
     // ⚡ Optimistic Update
     setState(() {
       if (oldStatus == 'none') {
-        _status = widget.isPublic == true ? 'accepted' : 'pending';
+        _status = 'pending'; // الكل ينتظر — لا قبول فوري
       } else {
         _status = 'none';
       }

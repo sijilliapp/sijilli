@@ -309,18 +309,22 @@ class PbUserService {
       return [];
     }
   }
-  Future<void> accreditUser(String targetUserId) async {
+  /// اعتماد مستخدم (قبول طلبه أو اعتماد مقترح فوري)
+  /// - إذا كان الطرف الآخر بعث طلباً (theirStatus == 'pending') → اعتماد متبادل فوري
+  /// - إذا كان is_suggested (يُستدعى صراحة من الواجهة) → اعتماد متبادل فوري
+  /// - في كل الأحوال: حالة الطرف الطالب فقط تُضبط على accepted
+  Future<void> accreditUser(String targetUserId, {bool isSuggested = false}) async {
     try {
       if (!_pb.authStore.isValid || _pb.authStore.record == null) {
         throw Exception('الجلسة منتهية، يرجى إعادة تسجيل الدخول');
       }
       
       final userId = _pb.authStore.record!.id;
-      if (userId == targetUserId) return; // منع اعتماد النفس
+      if (userId == targetUserId) return;
 
       final pair = _getPair(userId, targetUserId);
+      final isUserA = pair['a'] == userId;
 
-      // البحث عن أي سجل موجود مسبقاً (سواء كان معلقاً أو محظوراً أو غيره)
       RecordModel? record;
       try {
         final records = await _pb.collection('friendship').getFullList(
@@ -331,32 +335,46 @@ class PbUserService {
         debugPrint('⚠️ Error checking existing friendship: $e');
       }
 
-      final body = {
+      // حالة الطرف الآخر الحالية
+      final theirCurrentStatus = record != null
+          ? record.getStringValue(isUserA ? 'b_status' : 'a_status')
+          : 'none';
+
+      // الاعتماد متبادل فوري فقط في حالتين:
+      // 1. الطرف الآخر بعث طلباً مسبقاً (pending)
+      // 2. الحساب مقترح (is_suggested) → قبول فوري بلا انتظار
+      final theirNewStatus = (theirCurrentStatus == 'pending' || isSuggested)
+          ? 'accepted'
+          : theirCurrentStatus; // نترك حالته كما هي
+
+      final body = <String, dynamic>{
         'user_a': pair['a'],
         'user_b': pair['b'],
-        'a_status': 'accepted',
-        'b_status': 'accepted',
+        isUserA ? 'a_status' : 'b_status': 'accepted',
+        isUserA ? 'b_status' : 'a_status': theirNewStatus,
         'last_action_by': userId,
       };
 
       if (record == null) {
-        debugPrint('🆕 [Accredit] Creating new mutual friendship record...');
+        debugPrint('🆕 [Accredit] Creating new friendship record...');
         await _pb.collection('friendship').create(body: body);
-        debugPrint('✅ [Accredit] Created successfully');
       } else {
-        debugPrint('📝 [Accredit] Updating existing record (${record.id}) to mutual accepted...');
+        debugPrint('📝 [Accredit] Updating existing record (${record.id})...');
         await _pb.collection('friendship').update(record.id, body: body);
-        debugPrint('✅ [Accredit] Updated successfully');
       }
+      debugPrint('✅ [Accredit] Done');
 
-      // 🔔 Trigger Notification
+      // 🔔 إشعار
       final myName = _pb.authStore.record?.data['name'] ?? 'مستخدم';
+      final isMutual = theirNewStatus == 'accepted';
       try {
         await _notificationService.createNotification(
           targetUserId: targetUserId,
-          title: 'اعتماد متبادل',
-          message: '$myName قام باعتمادك المتبادل',
-          type: NotificationType.follow,
+          title: isMutual ? 'اعتماد متبادل' : 'طلب اعتماد',
+          message: isMutual
+              ? '$myName قام باعتمادك المتبادل'
+              : '$myName يريد اعتمادك',
+          type: isMutual ? NotificationType.follow : NotificationType.approvalRequest,
           relatedId: userId,
         );
       } catch (e) {
@@ -387,7 +405,9 @@ class PbUserService {
       final targetUser = await getPublicProfile(targetUserId);
       if (targetUser == null) throw Exception('المستخدم غير موجود');
 
-      final initialStatus = targetUser.isPublic ? 'accepted' : 'pending';
+      // الاعتماد دائماً ينتظر — لا قبول فوري إلا للحسابات المقترحة (is_suggested)
+      // is_suggested تُعالَج عبر accreditUser() مباشرة من الواجهة
+      const initialStatus = 'pending';
       final pair = _getPair(userId, targetUserId);
       final isUserA = pair['a'] == userId;
 

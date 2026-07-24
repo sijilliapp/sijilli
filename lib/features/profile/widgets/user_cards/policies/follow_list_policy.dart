@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:sijilli/features/profile/providers/moderation_provider.dart';
 import 'package:sijilli/core/utils/app_date_formatter.dart';
 import 'package:sijilli/core/constants/app_colors.dart';
+import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class FollowListPolicy extends UserCardPolicy {
   final Widget? actionWidget;
@@ -24,7 +25,7 @@ class FollowListPolicy extends UserCardPolicy {
 
   @override
   Widget buildSecondaryText() {
-    final lastSeen = AppDateFormatter.formatLastSeen(user.lastActive);
+    final lastSeen = AppDateFormatter.formatLastSeen(user.lastActive, Localizations.localeOf(context).languageCode);
     return Text(
       lastSeen ?? '@${user.username}',
       style: lastSeen != null 
@@ -47,7 +48,7 @@ class FollowListPolicy extends UserCardPolicy {
         final moderation = context.read<ModerationProvider>();
         if (moderation.isUserBlocked(user.id)) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('هذا الحساب غير متاح حالياً')),
+            SnackBar(content: Text(context.l10n.accountUnavailable)),
           );
           return;
         }

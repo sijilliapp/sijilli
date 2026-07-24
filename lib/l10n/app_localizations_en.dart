@@ -12,6 +12,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appName => 'Sijilli';
 
   @override
+  String get appSlogan => 'Organizing appointments and managing invitations';
+
+  @override
   String get login => 'Login';
 
   @override
@@ -451,6 +454,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noContactsYet => 'No contacts yet';
 
   @override
+  String get inviteFromContacts => 'Invite from Contacts';
+
+  @override
   String get accreditAction => 'Accredit..';
 
   @override
@@ -755,10 +761,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get morning => 'Morning';
 
   @override
-  String get noon => 'ظهرًا';
+  String get noon => 'Noon';
 
   @override
-  String get afternoon => 'عصرًا';
+  String get afternoon => 'Afternoon';
 
   @override
   String get evening => 'Evening';
@@ -1604,15 +1610,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String copiedToClipboard(String url) {
-    return 'تم نسخ $url للحافظة';
+    return 'Copied $url to clipboard';
   }
 
   @override
   String get errorFetchingArticle =>
-      'تعذر جلب بيانات المقال. الرجاء التحقق من الرابط.';
+      'Failed to fetch article data. Please check the link.';
 
   @override
-  String get article => 'المقال';
+  String get article => 'Article';
 
   @override
   String get adminPanelTitle => 'Super Admin Panel';
@@ -2140,4 +2146,236 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get duplicate => 'Duplicate';
+
+  @override
+  String get saved => 'Saved';
+
+  @override
+  String get hideLocation => 'Hide Location Info';
+
+  @override
+  String get showLocation => 'Show Location Info';
+
+  @override
+  String get upgradeAccountAndPermissions => 'Upgrade Account & Permissions';
+
+  @override
+  String get upgradeAccountSubtitle =>
+      'Apply to join as a certified writer or organization and enable AI features';
+
+  @override
+  String get articlesSettingsTitle => 'Articles';
+
+  @override
+  String get articlesSettingsSubtitle =>
+      'Protect your articles and disable content copying';
+
+  @override
+  String get membershipUpgradeRequests => 'Membership Upgrade Requests';
+
+  @override
+  String get reviewUpgradeRequestsSubtitle =>
+      'Review requests to join as certified writers or official entities';
+
+  @override
+  String get sendSystemNotification => 'Send System Notification';
+
+  @override
+  String get broadcastNotificationSubtitle =>
+      'Broadcast a notification to all registered users in the app';
+
+  @override
+  String newBadgeCount(int count) {
+    return '$count new';
+  }
+
+  @override
+  String get noPendingUpgradeRequests =>
+      'No pending upgrade requests currently';
+
+  @override
+  String get allUpgradeRequestsReviewed =>
+      'All member requests have been fully reviewed.';
+
+  @override
+  String get leftAlignTooltip => 'Align Left (Change Direction)';
+
+  @override
+  String get highlightTooltip => 'Highlighter Pen';
+
+  @override
+  String get quranVerseTooltip => 'Format Quranic Verse';
+
+  @override
+  String get spellCheckTooltip => 'Spell Check';
+
+  @override
+  String get clearFormattingTooltip => 'Clear Formatting';
+
+  @override
+  String get searchReplaceTooltip => 'Search & Replace';
+
+  @override
+  String get removeCoverImageTooltip => 'Remove cover image';
+
+  @override
+  String get addCoverImageTooltip => 'Add cover image';
+
+  @override
+  String get addAudioTooltip => 'Add audio file / WhatsApp voice 🎙️';
+
+  @override
+  String get insertImageTooltip => 'Insert image in article 🖼️';
+
+  @override
+  String get undoTooltip => 'Undo';
+
+  @override
+  String get redoTooltip => 'Redo';
+
+  @override
+  String get pasteFromClipboardTooltip => 'Paste from clipboard';
+
+  @override
+  String commentsCount(int count) {
+    return 'Comments: $count';
+  }
+
+  @override
+  String get browseApp => 'Browse Sijilli App';
+
+  @override
+  String publishedDate(String date) {
+    return 'Published: $date';
+  }
+
+  @override
+  String get accountUnavailable => 'This account is currently unavailable';
+
+  @override
+  String get newProfileVisitTitle => 'New Profile Visit';
+
+  @override
+  String get newProfileVisitMessage => 'A member visited your profile';
+
+  @override
+  String get newArticleVisitTitle => 'New Article Visit';
+
+  @override
+  String get newArticleVisitMessage => 'A reader visited and read your article';
+
+  @override
+  String get unfollowedTitle => 'Accreditation Removed';
+
+  @override
+  String unfollowedMessage(String name) {
+    return '$name removed their accreditation of you';
+  }
+
+  @override
+  String get acceptAndUpgrade => 'Accept & Upgrade';
+
+  @override
+  String get rejectRequest => 'Reject Request';
+
+  @override
+  String get acceptUpgradeConfirm =>
+      'Are you sure you want to accept this request?';
+
+  @override
+  String get rejectUpgradeConfirm =>
+      'Are you sure you want to reject this request?';
+
+  @override
+  String get upgradeSuccess => 'Request accepted successfully and role updated';
+
+  @override
+  String get rejectSuccess => 'Request rejected successfully';
+
+  @override
+  String get upgradeError => 'An error occurred while processing the request';
+
+  @override
+  String get writeRejectReason =>
+      'Please write a reason for rejecting the request';
+
+  @override
+  String get rejectReasonHint => 'Reason for rejection (required)...';
+
+  @override
+  String get acceptNoteHint => 'Admin comment or welcome note (optional)...';
+
+  @override
+  String get systemArticlesTitle => 'System Articles & Announcements';
+
+  @override
+  String get noSystemArticles => 'No public newsletters or articles currently.';
+
+  @override
+  String get closeButton => 'Close';
+
+  @override
+  String get cancelButton => 'Cancel';
+
+  @override
+  String get roleWriter => 'Certified Writer';
+
+  @override
+  String get roleOrganization => 'Certified Organization';
+
+  @override
+  String upgradeTo(String role) {
+    return 'Upgrade to: $role';
+  }
+
+  @override
+  String get applyReasonLabel => 'Application Reason & Cover Letter:';
+
+  @override
+  String requestDate(String date, String time) {
+    return 'Request Date: $date | Time: $time';
+  }
+
+  @override
+  String get unknownMember => 'Unknown Member';
+
+  @override
+  String get likesTitle => 'Likes';
+
+  @override
+  String get commentsTitle => 'Comments';
+
+  @override
+  String likedYourArticle(String name) {
+    return '$name liked your article';
+  }
+
+  @override
+  String commentedOnYourArticle(String name) {
+    return '$name commented on your article';
+  }
+
+  @override
+  String visitedYourProfile(String name) {
+    return '$name visited your profile';
+  }
+
+  @override
+  String get invitationsAwaitingResponse => 'Invitations awaiting response 📥';
+
+  @override
+  String get notificationsAndActivity => 'Notification & Activity Box 🔔';
+
+  @override
+  String get mutualAccreditationTitle => 'Mutual Accreditation';
+
+  @override
+  String mutualAccreditedYou(String name) {
+    return '$name mutually accredited you';
+  }
+
+  @override
+  String readerReadYourArticle(String name) {
+    return '$name read your article';
+  }
 }

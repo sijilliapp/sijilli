@@ -5,6 +5,7 @@ import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class AppointmentActionButtons extends StatelessWidget {
   final bool isArchived;
+  final bool isReadOnly; // جديد
   final VoidCallback onClone;
   final VoidCallback onArchive;
   final VoidCallback onDelete;
@@ -12,6 +13,7 @@ class AppointmentActionButtons extends StatelessWidget {
   const AppointmentActionButtons({
     super.key,
     required this.isArchived,
+    this.isReadOnly = false, // افتراضي false
     required this.onClone,
     required this.onArchive,
     required this.onDelete,
@@ -36,20 +38,22 @@ class AppointmentActionButtons extends StatelessWidget {
         const SizedBox(height: AppDimens.space),
         Row(
           children: [
-            _buildQuickActionBtn(
-              icon: Icons.copy_rounded,
-              label: context.l10n.detailsClone,
-              color: AppColors.primary,
-              onTap: onClone,
-            ),
-            const SizedBox(width: AppDimens.space),
-            _buildQuickActionBtn(
-              icon: isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
-              label: isArchived ? context.l10n.detailsUnarchive : context.l10n.detailsArchive,
-              color: isArchived ? Colors.green : Colors.amber.shade700,
-              onTap: onArchive,
-            ),
-            const SizedBox(width: AppDimens.space),
+            if (!isReadOnly) ...[
+              _buildQuickActionBtn(
+                icon: Icons.copy_rounded,
+                label: context.l10n.detailsClone,
+                color: AppColors.primary,
+                onTap: onClone,
+              ),
+              const SizedBox(width: AppDimens.space),
+              _buildQuickActionBtn(
+                icon: isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
+                label: isArchived ? context.l10n.detailsUnarchive : context.l10n.detailsArchive,
+                color: isArchived ? Colors.green : Colors.amber.shade700,
+                onTap: onArchive,
+              ),
+              const SizedBox(width: AppDimens.space),
+            ],
             _buildQuickActionBtn(
               icon: Icons.delete_outline_rounded,
               label: context.l10n.delete,

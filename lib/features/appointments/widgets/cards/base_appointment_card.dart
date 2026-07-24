@@ -53,7 +53,9 @@ class BaseAppointmentCard extends StatelessWidget {
               final moderation = context.read<ModerationProvider>();
               final isOwner = appointment.hostId == auth.user?.id;
               final isAdmin = auth.user?.isAdmin == true;
-              final canDelete = isOwner || isAdmin;
+              // canDeleteFromLongPress = false في الصفحات العامة (PublicPolicy, FeaturedPolicy)
+              // لمنع أي مستخدم من حذف سجلات الآخرين عبر اللمس المطول
+              final canDelete = (isOwner || isAdmin) && policy.canDeleteFromLongPress;
               
               if (!canDelete && !policy.canReport) return;
 
@@ -216,18 +218,15 @@ class _AppointmentCardHeader extends StatelessWidget {
           offset: const Offset(0, 2),
         ),
       ],
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            AppointmentCardHelper.getRemainingTimeText(appointment, context), 
-            style: TextStyle(
-              fontSize: 13, 
-              color: textColor,
-              fontWeight: fontWeight,
-            ),
-          ),
-        ],
+      child: Text(
+        AppointmentCardHelper.getRemainingTimeText(appointment, context), 
+        maxLines: 1,
+        softWrap: false,
+        style: TextStyle(
+          fontSize: 13, 
+          color: textColor,
+          fontWeight: fontWeight,
+        ),
       ),
     );
 

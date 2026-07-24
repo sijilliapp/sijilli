@@ -1,9 +1,20 @@
-# Task Checklist - User Roles, Subscription Plans & Upgrade Requests
+# المهام المطلوبة لتنفيذ الصور المدمجة وضوابط صلاحيات الرتب وإعادة الهيكلة
 
-- `[x]` Update database schemas in `pb_schema_10.json`
-  - `[x]` Add `user_roles` collection
-  - `[x]` Add `role_upgrade_requests` collection
-  - `[x]` Update `users` collection role field and add relation
-- `[x]` Update `UserModel` class in Dart to support roles & metadata
-- `[x]` Add services and provider methods for managing roles and upgrade requests
-- `[x]` Verification & local testing
+- [x] تعديل موديل المقال `Article` لدعم قائمة الصور `imageFiles` وتنظيف وسومها
+- [x] تعديل خدمة `PbArticleService` لإرسال وتحديث الصور المرفقة في حقل `images`
+- [x] تعديل شاشة التحرير `add_article_screen.dart` لإدراج وسم الصورة عند موضع مؤشر الكتابة
+- [x] تعديل عارض المقال `article_content_renderer.dart` لقراءة وسم الصورة وعرضها مدمجة مع النص
+- [x] إضافة ضابط تحقق في لوحة المشرفين يمنع تخفيض صلاحيات الكاتب عن مستوى المستخدم العادي
+- [x] كتابة اختبارات وحدة للتحقق من التغييرات والتأكد من نجاحها
+- [x] عزل حوار تدقيق النصوص التلقائي إلى `magic_formatting_progress_dialog.dart`
+- [x] عزل حوار إعداد قالب القصيدة إلى `poem_setup_dialog.dart`
+- [x] تبسيط شاشة `add_article_screen.dart` وتقليص حجم الكود واستيراد الحوارات الجديدة
+- [x] تهيئة PlatformDispatcher في main.dart لمعالجة الأخطاء غير المتزامنة وأمان التطبيق
+- [x] تفعيل التخزين المؤقت وقراءة المقالات العامة بلا اتصال (Offline Cache fallback) في public_article_screen.dart
+- [x] دمج وتبسيط الرتب البرمجية وإلغاء رتبة approved القديمة وتحديث الصلاحيات
+- [x] إضافة تلميح للمشرفين لنسخ البريد والواتساب والرد على رسائل الدعم الفني خارج التطبيق
+- [x] تحسين أداء التدقيق الإملائي السريع عن طريق تنفيذ المعالجة في Isolate خلفي
+- [x] جعل شريط الأدوات السفلي لغرفة التحرير (Formatting Toolbar) قابلاً للتمرير الأفقي لمنع مشاكل تجاوز الحواف (RenderFlex overflow) في الشاشات الصغيرة
+- [x] إزالة التخصيص غير الدقيق لإحداثيات اللمس والرجوع لآلية التحديد الأصلية (Native selection) لحل مشاكل إزاحة وعشوائية مؤشر الكتابة (Cursor Offset)
+- [x] إصلاح مشكلة تراجع وتناسي حالة الطلبات المرفوضة/الملغاة (FCFS) بعد إغلاق التطبيق ومزامنة تحديثاتها في قاعدة البيانات المحلية (Hive) ودعم المحاذاة في اللغتين العربية والإنجليزية
+

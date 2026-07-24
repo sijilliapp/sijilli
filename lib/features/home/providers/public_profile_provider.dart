@@ -36,13 +36,13 @@ class PublicProfileProvider extends ChangeNotifier {
     
     // الفلترة الفورية بناءً على الكبسولات المحددة بالكامل
     if (rawQuery == '(عام)') {
-      return _appointments.where((a) => a.privacy == 'public').toList();
+      return _appointments.where((a) => a.effectivePrivacy == 'public').toList();
     }
     if (rawQuery == '(خاص)') {
-      return _appointments.where((a) => a.privacy == 'private').toList();
+      return _appointments.where((a) => a.effectivePrivacy == 'private').toList();
     }
     if (rawQuery == '(معتمدون)' || rawQuery == 'معتمدون') {
-      return _appointments.where((a) => a.host?.role == 'approved' || a.host?.role == 'admin').toList();
+      return _appointments.where((a) => a.host?.isApproved == true).toList();
     }
 
     // دالة مساعدة لتوحيد النصوص وإزالة التشكيل العربي لتبسيط البحث والتوثيق
@@ -66,7 +66,7 @@ class PublicProfileProvider extends ChangeNotifier {
       return queryWords.every((word) {
         // إذا كتب المستخدم كلمة "معتمدون" أو "معتمد"، نتحقق مما إذا كان المضيف معتمداً/مشرفاً أولاً
         if (word == 'معتمدون' || word == 'معتمد') {
-          final isHostApproved = a.host?.role == 'approved' || a.host?.role == 'admin';
+          final isHostApproved = a.host?.isApproved == true;
           if (isHostApproved) return true;
         }
         
@@ -120,24 +120,13 @@ class PublicProfileProvider extends ChangeNotifier {
       } catch (e) {
         debugPrint('Error tracking profile click locally: $e');
       }
-      
-      // 1.5 Check if Viewer is Blocked BY the target user
-      if (currentUserId != null && currentUserId != user.id) {
-        final blockedByOther = await _moderationService.isBlockedBy(user.id);
-        if (blockedByOther) {
-           _error = 'BLOCK_RESTRICTED'; 
-           _isLoading = false;
-           notifyListeners();
-           return;
-        }
-      }
 
-      // 2. Fetch Relationship Status and Appointments Concurrently
+      // 1. Fetch Relationship Status, Block Status, and Appointments Concurrently
       final isSelf = user.id == currentUserId;
       final int hijriAdj = (user.hijriAdjustment ?? 0).toInt();
 
       Future<Map<String, dynamic>> statusFuture = isSelf || currentUserId == null 
-          ? Future.value({'status': 'none', 'isFriend': false, 'isBeingFollowed': false}) 
+          ? Future.value({'status': 'none', 'isFriend': false, 'isBeingFollowed': false, 'isBlocked': false, 'isBlockingMe': false}) 
           : _userService.getAccreditationStatus(user.id);
           
       // Fetch both public and follower appointments. 
@@ -154,17 +143,39 @@ class PublicProfileProvider extends ChangeNotifier {
       final statusData = results[0] as Map<String, dynamic>;
       final allAppts = results[1] as List<Appointment>;
 
+      // Check if Viewer is Blocked BY the target user or vice versa
+      if (statusData['isBlockingMe'] == true || statusData['isBlocked'] == true) {
+         _error = 'BLOCK_RESTRICTED'; 
+         _isLoading = false;
+         notifyListeners();
+         return;
+      }
+
       _isFollowing = statusData['status'] == 'accepted';
       _isFriend = isSelf ? true : (statusData['isFriend'] as bool);
+      
+      // هل صاحب الحساب اعتمد الزائر فعلاً؟
+      // من منظور getAccreditationStatus:
+      //   status       = myStatus (حالة الزائر تجاه صاحب الحساب)
+      //   isBeingFollowed = theirStatus == accepted || pending (هل صاحب الحساب يتابعني)
+      //   isFriend     = كلانا accepted
+      // الزائر معتمد لدى صاحب الحساب = theirStatus == accepted
+      //                                = isFriend (كلانا accepted)
+      //                                أو isBeingFollowed فقط إذا كان theirStatus accepted وليس pending
+      // أبسط تعبير: isFriend أو (isBeingFollowed && أنا accepted عنده = isFriend) →
+      // في الواقع: صاحب الحساب قبل الزائر = isFriend (متبادل) أو عندما قبلني هو بدون أن أكون قبلته
+      // لكن هذا لا يحدث في نظام الاعتمادات المتبادل — القبول دائماً يُنتج isFriend
+      // إذن: isAccreditedByOwner = _isFriend
+      final bool isAccreditedByOwner = isSelf ? true : _isFriend;
       
       List<Appointment> appts = [];
       
       if (user.isPublic || _isFollowing || isSelf) {
-        // Filter out followers-only appointments if not a friend
-        if (!_isFriend && !isSelf) {
+        // إظهار مواعيد "معتمدون" فقط للزوار المعتمدين لدى صاحب الحساب
+        if (!isSelf) {
           appts = allAppts.where((a) => 
               a.effectivePrivacy == 'public' || 
-              (a.effectivePrivacy == 'followers' && _isFriend) || 
+              (a.effectivePrivacy == 'followers' && isAccreditedByOwner) || 
               a.viewerInvitation != null
           ).toList();
         } else {

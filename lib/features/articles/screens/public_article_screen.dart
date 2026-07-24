@@ -23,6 +23,8 @@ import '../widgets/collapsible_content.dart';
 import 'package:sijilli/core/utils/image_saver_util.dart';
 import '../../../core/utils/article_printer.dart';
 import '../../../core/utils/audio_helper.dart';
+import '../../../core/local/local_db_service.dart';
+
 class PublicArticleScreen extends StatefulWidget {
   final String username;
   final String articleId;
@@ -45,7 +47,8 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
   UserModel? _authorProfile;
   bool _isLoading = true;
   String? _error;
-  bool _isImageExpanded = false;
+  // 0 = مطوية (بنر)، 1 = كاملة بزوايا، 2 = ملء شاشة dialog
+  int _coverState = 0;
 
   String? _activeStreamingAudioUrl;
   int _streamingStartIndex = -1;
@@ -177,34 +180,32 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
       if (!article.isPublished) {
         throw Exception(context.l10n.errorArticleNotPublished);
       }
-      
-      // جلب البروفايل والتعليقات بالتوازي لضمان التحضير المسبق وسرعة الاستجابة
-      final profileFuture = (article.author == null || article.author?.avatar == null)
-          ? _userService.getPublicProfile(widget.username)
-          : Future.value(article.author);
 
-      final commentsFuture = Provider.of<ArticleProvider>(context, listen: false).fetchComments(article.id);
+      // نعرض المقال فوراً بدون انتظار المؤلف حتى لا يتأخر الزائر
+      // إذا كان المؤلف موجوداً ضمن الـ expand نستخدمه مباشرة
+      UserModel? profile = article.author;
 
-      final results = await Future.wait([
-        profileFuture.catchError((_) => null),
-        commentsFuture.catchError((_) => null),
-      ]);
-
-      UserModel? profile = results[0] as UserModel?;
-      if (profile == null) {
-        profile = article.author;
-      }
-      
-      final updatedArticle = article.copyWith(viewsCount: article.viewsCount + 1);
-      
       setState(() {
-        _article = updatedArticle;
+        _article = article.copyWith(viewsCount: article.viewsCount + 1);
         _authorProfile = profile;
         _isLoading = false;
       });
 
+      // جلب التعليقات في الخلفية
       if (mounted) {
-        Provider.of<ArticleProvider>(context, listen: false).incrementViews(article.id, article: article);
+        Provider.of<ArticleProvider>(context, listen: false)
+            .fetchComments(article.id)
+            .catchError((_) {});
+      }
+
+      // جلب بيانات المؤلف بشكل مستقل في الخلفية:
+      // نجلبه دائماً للحصول على بيانات محدثة (اسم، صورة، إلخ)
+      // حتى لو كان موجوداً من الـ expand، لأنه قد يكون ناقصاً بعد cold-start
+      _fetchAuthorProfile(widget.username, article.authorId);
+
+      if (mounted) {
+        Provider.of<ArticleProvider>(context, listen: false)
+            .incrementViews(article.id, article: article);
       }
 
       // تتبع قراءة المقال للجمهور العابر (الزوار المجهولين)
@@ -222,8 +223,37 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
           }
         }
       }
+
+      // حفظ النسخة محلياً في الـ Cache لتمكين قراءتها لاحقاً دون إنترنت
+      try {
+        final cachedList = await LocalDbService.instance.getArticles();
+        final idx = cachedList.indexWhere((a) => a.id == article.id);
+        if (idx != -1) {
+          cachedList[idx] = article;
+        } else {
+          cachedList.add(article);
+        }
+        await LocalDbService.instance.saveArticles(cachedList);
+      } catch (e) {
+        print('⚠️ Failed to save public article to local DB: $e');
+      }
+
       removeWebLoader();
     } catch (e) {
+      // محاولة التحميل من قاعدة البيانات المحلية في حال عدم وجود اتصال بالإنترنت
+      try {
+        final cached = await LocalDbService.instance.getArticles();
+        final localArticle = cached.firstWhere((a) => a.id == widget.articleId);
+        setState(() {
+          _article = localArticle;
+          _authorProfile = localArticle.author;
+          _isLoading = false;
+          _error = null;
+        });
+        removeWebLoader();
+        return;
+      } catch (_) {}
+
       setState(() {
         _error = context.l10n.errorFetchingArticle;
         _isLoading = false;
@@ -231,6 +261,38 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
       removeWebLoader();
     }
   }
+
+  /// جلب بيانات المؤلف بشكل مستقل في الخلفية مع إعادة المحاولة عند الفشل.
+  /// يُحدِّث الـ state بمجرد وصول البيانات، دون التأثير على عرض المقال.
+  Future<void> _fetchAuthorProfile(String username, String authorId) async {
+    int retries = 0;
+    const maxRetries = 4;
+    const retryDelay = Duration(milliseconds: 2000);
+
+    while (retries <= maxRetries) {
+      try {
+        // نحاول أولاً بالـ username، وإذا فشل نحاول بالـ authorId
+        UserModel? fetched = await _userService.getPublicProfile(username);
+        fetched ??= await _userService.getPublicProfile(authorId);
+
+        if (fetched != null && mounted) {
+          setState(() {
+            _authorProfile = fetched;
+          });
+        }
+        return;
+      } catch (e) {
+        retries++;
+        if (retries <= maxRetries) {
+          print('🔄 [PublicArticleScreen] Retrying author fetch (attempt $retries/$maxRetries): $e');
+          await Future.delayed(retryDelay);
+        } else {
+          print('❌ [PublicArticleScreen] Failed to fetch author after $maxRetries retries: $e');
+        }
+      }
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -304,28 +366,53 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
                                       Flexible(
                                         child: ListView(
                                           shrinkWrap: true,
-                                          children: themeProvider.availableFonts.map((font) {
-                                            final isSelected = fontFamily == font;
-                                            return ListTile(
-                                              title: Text(
-                                                font == 'Default' ? context.l10n.defaultFontStyle : font,
-                                                style: TextStyle(
-                                                  fontFamily: font == 'Default' ? null : font,
-                                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                                  color: isSelected ? AppColors.primary : null,
+                                          children: [
+                                            ...themeProvider.availableFonts.map((font) {
+                                              final isSelected = fontFamily == font;
+                                              return ListTile(
+                                                title: Text(
+                                                  font == 'Default' ? context.l10n.defaultFontStyle : font,
+                                                  style: TextStyle(
+                                                    fontFamily: font == 'Default' ? null : font,
+                                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                                    color: isSelected ? AppColors.primary : null,
+                                                  ),
                                                 ),
+                                                trailing: isSelected 
+                                                    ? const Icon(Icons.check_circle, color: AppColors.primary)
+                                                    : null,
+                                                onTap: () async {
+                                                  await settingsProvider.setArticleFontFamily(font);
+                                                  if (context.mounted) {
+                                                    Navigator.pop(context);
+                                                  }
+                                                },
+                                              );
+                                            }).toList(),
+                                            const Divider(),
+                                            ListenableBuilder(
+                                              listenable: settingsProvider,
+                                              builder: (context, _) => SwitchListTile(
+                                                title: const Text(
+                                                  'ضبط أسطر الفقرات تلقائياً',
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                                subtitle: const Text(
+                                                  'توزيع الكلمات بالتساوي لمحاذاة النص من الجانبين ومنع الفراغات الزائدة',
+                                                  style: TextStyle(fontSize: 12),
+                                                ),
+                                                value: settingsProvider.justifyArticles,
+                                                activeColor: AppColors.primary,
+                                                onChanged: (val) async {
+                                                  await settingsProvider.setJustifyArticles(val);
+                                                },
                                               ),
-                                              trailing: isSelected 
-                                                  ? const Icon(Icons.check_circle, color: AppColors.primary)
-                                                  : null,
-                                              onTap: () async {
-                                                await settingsProvider.setArticleFontFamily(font);
-                                                if (context.mounted) {
-                                                  Navigator.pop(context);
-                                                }
-                                              },
-                                            );
-                                          }).toList(),
+                                            ),
+                                            const SizedBox(height: 8),
+                                          ],
                                         ),
                                       ),
                                     ],
@@ -464,6 +551,9 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
     final List<String> audioUrls = _article!.audioFiles
         .map((file) => 'https://sijilli.pockethost.io/api/files/articles/${_article!.id}/$file')
         .toList();
+    final List<String> imageUrls = _article!.imageFiles
+        .map((file) => 'https://sijilli.pockethost.io/api/files/articles/${_article!.id}/$file')
+        .toList();
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isDesktop = screenWidth > 800;
@@ -487,74 +577,28 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
   
         // غلاف المقال
         if (hasImage) ...[
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _isImageExpanded = !_isImageExpanded;
-              });
-            },
-            child: AnimatedSize(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              child: Stack(
-                alignment: Alignment.bottomCenter,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    height: _isImageExpanded ? null : 120.0,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.network(
-                        'https://sijilli.pockethost.io/api/files/articles/${_article!.id}/${_article!.image}',
-                        fit: _isImageExpanded ? BoxFit.contain : BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                      ),
-                    ),
-                  ),
-                  if (_isImageExpanded)
-                    Positioned(
-                      bottom: 12,
-                      right: 12,
-                      child: Material(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(20),
-                        child: InkWell(
-                          onTap: () async {
-                            final imageUrl = 'https://sijilli.pockethost.io/api/files/articles/${_article!.id}/${_article!.image}';
-                            final success = await ImageSaverUtil.saveImageFromUrl(imageUrl, '${_article!.id}_image.jpg');
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(success 
-                                      ? 'تم حفظ الصورة في ألبوم الصور بنجاح 🖼️' 
-                                      : 'فشل حفظ الصورة ❌'),
-                                ),
-                              );
-                            }
-                          },
-                          borderRadius: BorderRadius.circular(20),
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            child: const Icon(
-                              Icons.arrow_downward,
-                              size: 24,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+          AnimatedSize(
+            duration: const Duration(milliseconds: 380),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: GestureDetector(
+              onTap: () {
+                if (_coverState == 0) {
+                  setState(() => _coverState = 1);
+                } else if (_coverState == 1) {
+                  final imageUrl = 'https://sijilli.pockethost.io/api/files/articles/${_article!.id}/${_article!.image}';
+                  FullScreenImageViewer.show(context, imageUrl);
+                }
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(
+                  'https://sijilli.pockethost.io/api/files/articles/${_article!.id}/${_article!.image}',
+                  width: double.infinity,
+                  height: _coverState == 0 ? 120.0 : null,
+                  fit: _coverState == 0 ? BoxFit.cover : BoxFit.fitWidth,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
               ),
             ),
           ),
@@ -564,10 +608,15 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
         // محتوى المقال
         CollapsibleContent(
           buttonText: context.l10n.fullArticle,
+          onExpand: hasImage
+              ? () => setState(() => _coverState = 1)
+              : null,
           child: ArticleContentRenderer(
             text: _article!.text,
             fontFamily: fontFamily,
             audioUrls: audioUrls,
+            imageFiles: imageUrls,
+            articleId: _article!.id,
             audioMetadata: _article!.audioMetadata,
             onTextGenerated: isAuthor ? _handleReadModeAITextGenerated : null,
             onTextUpdated: isAuthor ? (updatedText) async {
@@ -694,7 +743,7 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
                     child: Text(
-                      'عدد التعليقات: $commentsCount',
+                      context.l10n.commentsCount(commentsCount),
                       style: TextStyle(
                         fontSize: AppDimens.textSizeM,
                         fontWeight: FontWeight.bold,
@@ -717,7 +766,7 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
         Center(
           child: OutlinedButton(
             onPressed: () => Navigator.of(context).pushReplacementNamed('/main'),
-            child: const Text('تصفح تطبيق سجلي'),
+            child: Text(context.l10n.browseApp),
           ),
         ),
         const SizedBox(height: 40),
