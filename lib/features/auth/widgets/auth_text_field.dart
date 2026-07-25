@@ -18,6 +18,7 @@ class AuthTextField extends StatelessWidget {
   final void Function(String)? onChanged;
   final bool enabled;
   final List<TextInputFormatter>? inputFormatters;
+  final Iterable<String>? autofillHints; // ADDED
 
   const AuthTextField({
     super.key,
@@ -35,6 +36,7 @@ class AuthTextField extends StatelessWidget {
     this.onChanged,
     this.enabled = true,
     this.inputFormatters,
+    this.autofillHints, // ADDED
   });
 
   @override
@@ -52,6 +54,7 @@ class AuthTextField extends StatelessWidget {
       onChanged: onChanged,
       enabled: enabled,
       inputFormatters: inputFormatters,
+      autofillHints: autofillHints, // ADDED
       style: TextStyle(
         color: isDark ? Colors.white : Colors.black87,
         fontSize: AppDimens.textSize,

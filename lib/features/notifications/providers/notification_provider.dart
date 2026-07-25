@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -174,6 +176,26 @@ class NotificationProvider extends ChangeNotifier {
     await fetchPendingFollowsCount(userId);
     await _subscribeToRealtime(userId);
     await _subscribeToFriendshipRealtime(userId);
+    // Sync APNs token for iOS push notifications
+    syncAPNSToken(userId);
+  }
+
+  Future<void> syncAPNSToken(String userId) async {
+    if (!Platform.isIOS) return;
+    try {
+      const channel = MethodChannel('com.sijilli.app/apns');
+      final String? token = await channel.invokeMethod<String>('getAPNSToken');
+      print('🔔 [NotificationProvider] Retrieved APNs Token: $token');
+      if (token != null && token.isNotEmpty) {
+        final pb = PocketBaseClient.instance.pb;
+        await pb.collection('users').update(userId, body: {
+          'apnsToken': token,
+        });
+        print('✅ [NotificationProvider] APNs Token synced to PocketBase successfully.');
+      }
+    } catch (e) {
+      print('⚠️ [NotificationProvider] Failed to sync APNs Token: $e');
+    }
   }
 
   Future<void> _loadSettings() async {

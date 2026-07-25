@@ -165,48 +165,51 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   Widget _buildLoginForm() {
     return Form(
       key: _formKey,
-      child: Column(
-        children: [
-          AuthTextField(
-            controller: _identifierController,
-            focusNode: _identifierFocusNode,
-            label: context.l10n.emailOrUsername,
-            hint: context.l10n.emailOrUsername,
-            prefixIcon: Icons.person_outline_rounded,
-            keyboardType: TextInputType.emailAddress,
-            textInputAction: TextInputAction.next,
-            onFieldSubmitted: (_) => _passwordFocusNode.requestFocus(),
-            validator: (value) => (value?.isEmpty ?? true) ? context.l10n.fieldRequired : null,
-          ),
-          const SizedBox(height: 12),
-          AuthTextField(
-            controller: _passwordController,
-            focusNode: _passwordFocusNode,
-            label: context.l10n.password,
-            hint: context.l10n.enterPassword,
-            prefixIcon: Icons.lock_outline_rounded,
-            obscureText: _obscurePassword,
-            suffixIcon: IconButton(
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-              icon: Icon(
-                _obscurePassword ? Icons.visibility_rounded : Icons.visibility_off_rounded,
-                size: 20,
-              ),
+      child: AutofillGroup(
+        child: Column(
+          children: [
+            AuthTextField(
+              controller: _identifierController,
+              focusNode: _identifierFocusNode,
+              label: context.l10n.emailOrUsername,
+              hint: context.l10n.emailOrUsername,
+              prefixIcon: Icons.person_outline_rounded,
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              onFieldSubmitted: (_) => _passwordFocusNode.requestFocus(),
+              validator: (value) => (value?.isEmpty ?? true) ? context.l10n.fieldRequired : null,
+              autofillHints: const [AutofillHints.username, AutofillHints.email],
             ),
-            validator: (value) {
-              if (value?.isEmpty ?? true) return context.l10n.fieldRequired;
-              // تم تسهيل التحقق في شاشة الدخول لتفادي حظر كلمات مرور الحسابات التجريبية للمراجعين
-              return null;
-            },
-            textInputAction: _failedAttempts >= 3 ? TextInputAction.next : TextInputAction.done,
-            onFieldSubmitted: (_) {
-              if (_failedAttempts >= 3) {
-                _captchaFocusNode.requestFocus();
-              } else {
-                _handleLogin();
-              }
-            },
-          ),
+            const SizedBox(height: 12),
+            AuthTextField(
+              controller: _passwordController,
+              focusNode: _passwordFocusNode,
+              label: context.l10n.password,
+              hint: context.l10n.enterPassword,
+              prefixIcon: Icons.lock_outline_rounded,
+              obscureText: _obscurePassword,
+              autofillHints: const [AutofillHints.password],
+              suffixIcon: IconButton(
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                  size: 20,
+                ),
+              ),
+              validator: (value) {
+                if (value?.isEmpty ?? true) return context.l10n.fieldRequired;
+                // تم تسهيل التحقق في شاشة الدخول لتفادي حظر كلمات مرور الحسابات التجريبية للمراجعين
+                return null;
+              },
+              textInputAction: _failedAttempts >= 3 ? TextInputAction.next : TextInputAction.done,
+              onFieldSubmitted: (_) {
+                if (_failedAttempts >= 3) {
+                  _captchaFocusNode.requestFocus();
+                } else {
+                  _handleLogin();
+                }
+              },
+            ),
           if (_failedAttempts >= 3) ...[
             const SizedBox(height: 12),
             CaptchaWidget(
@@ -217,6 +220,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           ],
         ],
       ),
+     ),
     );
   }
 
@@ -330,6 +334,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     );
     
     if (success) {
+      TextInput.finishAutofillContext();
       if (mounted) setState(() => _failedAttempts = 0);
     } else if (mounted) {
       setState(() => _failedAttempts++);

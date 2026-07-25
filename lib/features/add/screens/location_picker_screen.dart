@@ -352,12 +352,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             ),
             children: [
               TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                tileProvider: NetworkTileProvider(
-                  headers: {
-                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                  },
-                ),
+                urlTemplate: 'https://tile.openstreetmap.fr/osm/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.sijilli.app',
               ),
             ],
           ),

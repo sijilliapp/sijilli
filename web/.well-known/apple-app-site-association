@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "77J9U344FR.com.sijilli.app",
+        "paths": [
+          "/join*",
+          "/invite*",
+          "/profile/*"
+        ]
+      }
+    ]
+  }
+}

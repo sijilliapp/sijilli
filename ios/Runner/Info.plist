@@ -63,5 +63,7 @@
 	<string>نحتاج للوصول للتقويم لمزامنة مواعيدك في "سجلي" مع تقويم جهازك وتذكيرك بها. We need calendar access to sync your Sijilli appointments with your device calendar and remind you of them.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>FlutterDeepLinkingEnabled</key>
+	<true/>
 </dict>
 </plist>
