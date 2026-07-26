@@ -14,6 +14,7 @@ import 'package:sijilli/core/widgets/user_name_with_badge.dart';
 import 'profile/social_stats_row.dart';
 import 'profile/profile_actions_helper.dart';
 import '../../profile/widgets/user_follow_button.dart';
+import 'package:sijilli/features/home/providers/public_profile_provider.dart';
 import 'package:sijilli/features/profile/screens/follows_screen.dart';
 import 'package:sijilli/features/notifications/providers/notification_provider.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
@@ -557,7 +558,16 @@ class _ProfileHeaderState extends State<ProfileHeader> {
                         userId: displayUser.id,
                         isHeaderStyle: true,
                         isPublic: displayUser.isPublic,
-                        onFollowChanged: () {},
+                        onFollowChanged: () {
+                          try {
+                            context.read<PublicProfileProvider>().fetchData(
+                              displayUser.id,
+                              currentUserId: authProvider.user?.id,
+                            );
+                          } catch (e) {
+                            debugPrint('Error reloading PublicProfileProvider: $e');
+                          }
+                        },
                       ),
                     ] else ...[
                       Consumer<NotificationProvider>(

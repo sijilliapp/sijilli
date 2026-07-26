@@ -627,7 +627,8 @@ class PbUserService {
         } catch (_) {}
       } else {
         await _pb.collection('friendship').update(friendshipId, body: {
-          isUserA ? 'a_status' : 'b_status': 'none',
+          'a_status': 'none',
+          'b_status': 'none',
           'last_action_by': userId,
         });
       }

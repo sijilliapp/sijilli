@@ -54,6 +54,31 @@ class _UserFollowButtonState extends State<UserFollowButton> {
     }
   }
 
+  @override
+  void didUpdateWidget(UserFollowButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.userId != oldWidget.userId ||
+        widget.initialStatusData != oldWidget.initialStatusData) {
+      if (widget.initialStatusData != null) {
+        setState(() {
+          _applyStatusData(widget.initialStatusData!);
+        });
+      } else {
+        setState(() {
+          _status = 'none';
+          _isFriend = false;
+          _isBeingFollowed = false;
+          _isBlocked = false;
+          _isBlockingMe = false;
+          _isLoading = false;
+        });
+        if (!widget.isCompact) {
+          _checkStatus();
+        }
+      }
+    }
+  }
+
   void _applyStatusData(Map<String, dynamic> data) {
     _status = data['status'] as String? ?? 'none';
     _isFriend = data['isFriend'] as bool? ?? false;
