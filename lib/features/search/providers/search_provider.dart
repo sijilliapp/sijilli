@@ -246,4 +246,31 @@ class SearchProvider extends ChangeNotifier {
   Future<void> init() async {
     await _fetchDefaultContent();
   }
+
+  Future<void> fetchRecentSearchesStatuses(List<String> userIds) async {
+    if (userIds.isEmpty || _currentUser == null) return;
+    try {
+      final friendships = await _userService.fetchFriendships(userIds);
+      final currentUserId = _currentUser!.id;
+      
+      for (var record in friendships) {
+        final isUserA = record.getStringValue('user_a') == currentUserId;
+        final targetId = record.getStringValue(isUserA ? 'user_b' : 'user_a');
+        
+        final myStatus = record.getStringValue(isUserA ? 'a_status' : 'b_status');
+        final theirStatus = record.getStringValue(isUserA ? 'b_status' : 'a_status');
+        
+        _userStatuses[targetId] = {
+          'status': myStatus,
+          'isFriend': myStatus == 'accepted' && theirStatus == 'accepted',
+          'isBeingFollowed': theirStatus == 'accepted' || theirStatus == 'pending',
+          'isBlocked': myStatus == 'blocked',
+          'isBlockingMe': theirStatus == 'blocked',
+        };
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error fetching recent searches statuses: $e');
+    }
+  }
 }

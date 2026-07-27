@@ -52,6 +52,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   Future<void> _loadRecentSearches() async {
     try {
       final recent = await LocalDbService.instance.getRecentSearches();
+      if (recent.isNotEmpty && mounted) {
+        final provider = context.read<SearchProvider>();
+        await provider.fetchRecentSearchesStatuses(recent.map((u) => u.id).toList());
+      }
       if (mounted) {
         setState(() {
           _recentSearches = recent;
@@ -238,9 +242,11 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
               itemCount: _recentSearches.length,
               itemBuilder: (context, index) {
                 final user = _recentSearches[index];
+                final provider = context.read<SearchProvider>();
                 return UserCard(
                   user: user,
                   mode: UserCardMode.standard,
+                  initialStatusData: provider.getUserStatus(user.id),
                   onTap: () => _onUserTapped(user),
                 );
               },
