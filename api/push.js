@@ -111,9 +111,9 @@ module.exports = async function handler(req, res) {
     // 1. Try sending to Production APNs server
     let result = await sendRequest('api.push.apple.com', jwtToken, deviceToken, bundleId, payload);
     
-    // 2. If it's a BadDeviceToken, it might be a Sandbox/TestFlight token. Retry on Sandbox server.
-    if (result.status !== 200 && result.data.reason === 'BadDeviceToken') {
-      console.log('🔄 BadDeviceToken on production, retrying on sandbox server...');
+    // 2. If it's a BadDeviceToken or BadEnvironmentKeyInToken, it might be a Sandbox/TestFlight token. Retry on Sandbox server.
+    if (result.status !== 200 && (result.data.reason === 'BadDeviceToken' || result.data.reason === 'BadEnvironmentKeyInToken')) {
+      console.log('🔄 APNs environment mismatch on production, retrying on sandbox server...');
       result = await sendRequest('api.development.push.apple.com', jwtToken, deviceToken, bundleId, payload);
     }
 

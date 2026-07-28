@@ -9,7 +9,7 @@ onRecordAfterCreateRequest((e) => {
   const relatedId = record.get("related_id");
 
   // Configure your Vercel endpoint here (Change this to your actual Vercel domain)
-  const VERCEL_PUSH_URL = "https://sijilli-api.vercel.app/api/push";
+  const VERCEL_PUSH_URL = "https://sijilli.vercel.app/api/push";
 
   try {
     // Fetch target user's apnsToken
