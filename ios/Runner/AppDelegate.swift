@@ -4,6 +4,7 @@ import UIKit
 @main
 @objc class AppDelegate: FlutterAppDelegate {
   private static var apnsToken: String?
+  private var apnsChannel: FlutterMethodChannel?
 
   override func application(
     _ application: UIApplication,
@@ -12,11 +13,11 @@ import UIKit
     GeneratedPluginRegistrant.register(with: self)
 
     let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
-    let apnsChannel = FlutterMethodChannel(name: "com.sijilli.app/apns",
+    apnsChannel = FlutterMethodChannel(name: "com.sijilli.app/apns",
                                            binaryMessenger: controller.binaryMessenger)
     
-    apnsChannel.setMethodCallHandler({
-      (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+    apnsChannel?.setMethodCallHandler({
+      [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       if call.method == "getAPNSToken" {
         result(AppDelegate.apnsToken)
       } else {
@@ -38,6 +39,10 @@ import UIKit
     let token = tokenParts.joined()
     AppDelegate.apnsToken = token
     print("Device Token: \(token)")
+    
+    // Notify Flutter side immediately!
+    apnsChannel?.invokeMethod("onTokenReceived", arguments: token)
+    
     super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
   }
 

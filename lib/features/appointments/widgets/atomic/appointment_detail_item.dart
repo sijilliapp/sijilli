@@ -21,6 +21,7 @@ class AppointmentDetailItem extends StatelessWidget {
     final defaultTextColor = isDark ? Colors.grey.shade300 : Colors.grey.shade700;
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Icon(icon, size: 16, color: color ?? defaultIconColor),
         const SizedBox(width: 6),
@@ -30,6 +31,7 @@ class AppointmentDetailItem extends StatelessWidget {
             style: TextStyle(
               color: color ?? defaultTextColor,
               fontSize: 14,
+              height: 1.2,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

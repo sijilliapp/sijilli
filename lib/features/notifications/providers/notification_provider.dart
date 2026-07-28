@@ -184,6 +184,22 @@ class NotificationProvider extends ChangeNotifier {
     if (!Platform.isIOS) return;
     try {
       const channel = MethodChannel('com.sijilli.app/apns');
+      
+      // Set handler to listen for dynamic callbacks from native code on first launch
+      channel.setMethodCallHandler((call) async {
+        if (call.method == 'onTokenReceived') {
+          final String? token = call.arguments as String?;
+          print('🔔 [NotificationProvider] Realtime APNs Token received: $token');
+          if (token != null && token.isNotEmpty) {
+            final pb = PocketBaseClient.instance.pb;
+            await pb.collection('users').update(userId, body: {
+              'apnsToken': token,
+            });
+            print('✅ [NotificationProvider] APNs Token synced to PocketBase in real-time.');
+          }
+        }
+      });
+
       final String? token = await channel.invokeMethod<String>('getAPNSToken');
       print('🔔 [NotificationProvider] Retrieved APNs Token: $token');
       if (token != null && token.isNotEmpty) {

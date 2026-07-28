@@ -337,6 +337,9 @@ class _AppointmentCardBody extends StatelessWidget {
     final appointment = policy.appointment;
     final category = appointment.currentUserInvitation?.categories;
     
+    // Scale vertical gaps based on system text scale to prevent ugly gaps on smaller fonts
+    final textScale = MediaQuery.textScaleFactorOf(context).clamp(0.7, 1.3);
+    
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -375,7 +378,7 @@ class _AppointmentCardBody extends StatelessWidget {
                 child: Text(
                   policy.hostName,
                   style: TextStyle(
-                    height: 1, 
+                    height: 1.1, 
                     color: policy.hostNameColor, 
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
@@ -384,7 +387,7 @@ class _AppointmentCardBody extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8 * textScale),
               Text(
                 appointment.title,
                 style: TextStyle(
@@ -396,7 +399,7 @@ class _AppointmentCardBody extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12 * textScale),
               
               if (appointment.hasLocation && policy.showLocation) ...[
                 AppointmentDetailItem(
@@ -404,7 +407,7 @@ class _AppointmentCardBody extends StatelessWidget {
                   text: appointment.smartLocation!,
                   color: policy.iconColor == Colors.red ? Colors.red : null,
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2 * textScale),
               ],
 
               _buildTimeRow(appointment, context),
@@ -436,6 +439,7 @@ class _AppointmentCardBody extends StatelessWidget {
     final timeColor = isDark ? Colors.white : Colors.black;
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Icon(Icons.access_time_filled, size: 16, color: iconColor),
         const SizedBox(width: 6),
@@ -464,6 +468,7 @@ class _AppointmentCardBody extends StatelessWidget {
                 text: TextSpan(
                   style: TextStyle(
                     fontSize: 13, 
+                    height: 1.2,
                     fontFamily: Theme.of(context).textTheme.bodyMedium?.fontFamily,
                   ),
                   children: [
@@ -496,6 +501,7 @@ class _AppointmentCardBody extends StatelessWidget {
   Widget _buildRecurrenceIndicator(Appointment appointment, BuildContext context) {
     return Row(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const Icon(Icons.repeat, size: 14, color: AppColors.textSecondary),
           const SizedBox(width: 4),
@@ -505,6 +511,7 @@ class _AppointmentCardBody extends StatelessWidget {
                 : '${appointment.recurrenceIndex ?? 1} ${context.l10n.recurrenceOf} ${appointment.recurrenceCount}',
             style: const TextStyle(
               fontSize: 12, 
+              height: 1.2,
               fontWeight: FontWeight.w600, 
               color: AppColors.textSecondary,
             ),

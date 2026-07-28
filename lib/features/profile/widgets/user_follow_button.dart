@@ -7,6 +7,7 @@ import '../../add/screens/add_event_screen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimens.dart';
 import '../../../core/extensions/context_l10n.dart';
+import '../../../features/search/providers/search_provider.dart';
 
 class UserFollowButton extends StatefulWidget {
   final String userId;
@@ -39,6 +40,40 @@ class _UserFollowButtonState extends State<UserFollowButton> {
   bool _isBlockingMe = false;
   final bool _isActionLoading = false;
   bool _isLoading = true;
+
+  void _syncWithSearchProvider() {
+    try {
+      final searchProvider = context.read<SearchProvider>();
+      final current = searchProvider.getUserStatus(widget.userId);
+      if (current == null ||
+          current['status'] != _status ||
+          current['isFriend'] != _isFriend ||
+          current['isBeingFollowed'] != _isBeingFollowed ||
+          current['isBlocked'] != _isBlocked ||
+          current['isBlockingMe'] != _isBlockingMe) {
+        Future.microtask(() {
+          if (!mounted) return;
+          try {
+            searchProvider.updateUserStatus(widget.userId, {
+              'status': _status,
+              'isFriend': _isFriend,
+              'isBeingFollowed': _isBeingFollowed,
+              'isBlocked': _isBlocked,
+              'isBlockingMe': _isBlockingMe,
+            });
+          } catch (_) {}
+        });
+      }
+    } catch (_) {}
+  }
+
+  @override
+  void setState(VoidCallback fn) {
+    if (mounted) {
+      super.setState(fn);
+      _syncWithSearchProvider();
+    }
+  }
 
   @override
   void initState() {

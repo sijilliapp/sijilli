@@ -57,14 +57,42 @@ class _FollowsScreenState extends State<FollowsScreen> {
   Future<void> _loadLocalAccredited() async {
     try {
       final cached = await LocalDbService.instance.getFollowedUsers();
-      if (cached.isNotEmpty && mounted) {
-        final lastVisits = await LocalDbService.instance.getUserLastVisits();
+      final cachedRequests = await LocalDbService.instance.getPendingRequests();
+      final cachedSuggestions = await LocalDbService.instance.getSuggestedUsers();
+      final lastVisits = await LocalDbService.instance.getUserLastVisits();
+      
+      final List<UserRequest> cachedIncoming = [];
+      for (var item in cachedRequests['incoming'] ?? []) {
+        if (item['user'] != null) {
+          cachedIncoming.add(UserRequest(
+            UserModel.fromJson(Map<String, dynamic>.from(item['user'] as Map)),
+            item['friendshipId'] as String? ?? '',
+          ));
+        }
+      }
+
+      final List<UserRequest> cachedOutgoing = [];
+      for (var item in cachedRequests['outgoing'] ?? []) {
+        if (item['user'] != null) {
+          cachedOutgoing.add(UserRequest(
+            UserModel.fromJson(Map<String, dynamic>.from(item['user'] as Map)),
+            item['friendshipId'] as String? ?? '',
+          ));
+        }
+      }
+
+      final List<UserModel> cachedSuggested = [];
+      for (var item in cachedSuggestions) {
+        cachedSuggested.add(UserModel.fromJson(item));
+      }
+
+      if (cached.isNotEmpty) {
         cached.sort((a, b) {
           final aTime = lastVisits[a.id] ?? 0;
           final bTime = lastVisits[b.id] ?? 0;
           
           if (aTime != bTime) {
-            return bTime.compareTo(aTime); // تنازلي (الأحدث زيارة أولاً)
+            return bTime.compareTo(aTime);
           }
           
           final aApproved = a.isApproved || a.isAdmin;
@@ -74,14 +102,19 @@ class _FollowsScreenState extends State<FollowsScreen> {
           
           return a.name.compareTo(b.name);
         });
+      }
 
+      if (mounted) {
         setState(() {
           _accredited = cached;
-          _isLoading = false; // Show cached data immediately!
+          _incomingRequests = cachedIncoming;
+          _outgoingRequests = cachedOutgoing;
+          _suggestedUsers = cachedSuggested;
+          _isLoading = false;
         });
       }
     } catch (e) {
-      debugPrint('Error loading local accredited users: $e');
+      debugPrint('Error loading local accredited users and requests: $e');
     }
   }
 
@@ -235,6 +268,24 @@ class _FollowsScreenState extends State<FollowsScreen> {
         // 💾 Save to local DB cache for next launches
         if (_isCurrentUser) {
           LocalDbService.instance.saveFollowedUsers(accreditedList);
+          
+          final incomingJson = incomingList.map((r) => {
+            'friendshipId': r.requestId,
+            'user': r.user.toJson(),
+          }).toList();
+
+          final outgoingJson = outgoingList.map((r) => {
+            'friendshipId': r.requestId,
+            'user': r.user.toJson(),
+          }).toList();
+
+          LocalDbService.instance.savePendingRequests(
+            incoming: incomingJson,
+            outgoing: outgoingJson,
+          );
+
+          final suggestionsJson = suggestions.map((u) => u.toJson()).toList();
+          LocalDbService.instance.saveSuggestedUsers(suggestionsJson);
         }
       }
     } catch (e) {

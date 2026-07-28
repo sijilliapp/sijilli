@@ -41,19 +41,32 @@ class GuestCapsule extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (extraGuests != null && extraGuests! > 0) ...[
-          InteractionCapsule(
-            borderColor: AppColors.primary,
-            borderOpacity: 1.0,
-            backgroundColor: AppColors.primary.withValues(alpha: isDark ? 0.1 : 0.05),
-            padding: const EdgeInsets.symmetric(horizontal: 6), // 🌟 Custom horizontal padding for perfect circular aspect ratio
-            child: Text(
-              context.l10n.localeName == 'ar'
-                  ? AppDateFormatter.toEasternArabicDigits(context.l10n.extraGuestsCount(extraGuests!))
-                  : context.l10n.extraGuestsCount(extraGuests!),
-              style: const TextStyle(
-                fontSize: 12, // 🌟 Increased from 10 to 12 for high readability
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.primary.withValues(alpha: isDark ? 0.1 : 0.05),
+              border: Border.all(color: AppColors.primary, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                context.l10n.localeName == 'ar'
+                    ? AppDateFormatter.toEasternArabicDigits(context.l10n.extraGuestsCount(extraGuests!))
+                    : context.l10n.extraGuestsCount(extraGuests!),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                  height: 1.1,
+                ),
               ),
             ),
           ),

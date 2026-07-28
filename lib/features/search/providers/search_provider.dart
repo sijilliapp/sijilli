@@ -273,4 +273,9 @@ class SearchProvider extends ChangeNotifier {
       debugPrint('Error fetching recent searches statuses: $e');
     }
   }
+
+  void updateUserStatus(String userId, Map<String, dynamic> statusData) {
+    _userStatuses[userId] = statusData;
+    notifyListeners();
+  }
 }

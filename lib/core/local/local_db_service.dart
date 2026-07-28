@@ -610,4 +610,62 @@ class LocalDbService {
       return {};
     }
   }
+
+  // ====================== Pending Requests Operations ======================
+
+  Future<void> savePendingRequests({
+    required List<Map<String, dynamic>> incoming,
+    required List<Map<String, dynamic>> outgoing,
+  }) async {
+    try {
+      final prefBox = await Hive.openBox<dynamic>('app_preferences');
+      await prefBox.put('incoming_requests', incoming);
+      await prefBox.put('outgoing_requests', outgoing);
+    } catch (e) {
+      debugPrint('❌ Error saving pending requests: $e');
+    }
+  }
+
+  Future<Map<String, List<Map<String, dynamic>>>> getPendingRequests() async {
+    try {
+      final prefBox = await Hive.openBox<dynamic>('app_preferences');
+      final incoming = prefBox.get('incoming_requests');
+      final outgoing = prefBox.get('outgoing_requests');
+      return {
+        'incoming': incoming != null ? List<Map<String, dynamic>>.from(
+          (incoming as List).map((item) => Map<String, dynamic>.from(item as Map))
+        ) : [],
+        'outgoing': outgoing != null ? List<Map<String, dynamic>>.from(
+          (outgoing as List).map((item) => Map<String, dynamic>.from(item as Map))
+        ) : [],
+      };
+    } catch (e) {
+      debugPrint('❌ Error getting pending requests: $e');
+      return {'incoming': [], 'outgoing': []};
+    }
+  }
+
+  // ====================== Suggested Users Operations ======================
+
+  Future<void> saveSuggestedUsers(List<Map<String, dynamic>> list) async {
+    try {
+      final prefBox = await Hive.openBox<dynamic>('app_preferences');
+      await prefBox.put('suggested_users', list);
+    } catch (e) {
+      debugPrint('❌ Error saving suggested users: $e');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getSuggestedUsers() async {
+    try {
+      final prefBox = await Hive.openBox<dynamic>('app_preferences');
+      final list = prefBox.get('suggested_users');
+      return list != null ? List<Map<String, dynamic>>.from(
+        (list as List).map((item) => Map<String, dynamic>.from(item as Map))
+      ) : [];
+    } catch (e) {
+      debugPrint('❌ Error getting suggested users: $e');
+      return [];
+    }
+  }
 }

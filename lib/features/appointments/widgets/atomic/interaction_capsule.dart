@@ -27,7 +27,8 @@ class InteractionCapsule extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
       child: Container(
-        padding: padding ?? const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        height: 28,
+        padding: padding ?? const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
