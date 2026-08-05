@@ -1,11 +1,15 @@
 [
   {
-    "relation": ["delegate_permission/common.handle_all_urls"],
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
     "target": {
       "namespace": "android_app",
       "package_name": "com.sijilli.app",
       "sha256_cert_fingerprints": [
-        "5A:05:99:23:0F:5C:7A:FB:33:58:19:C2:73:4D:59:D8:5C:6D:31:2B:8C:88:A1:1D:1F:80:16:06:68:74:A5:E8"
+        "5A:05:99:23:0F:5C:7A:FB:33:58:19:C2:73:4D:59:D8:5C:6D:31:2B:8C:88:A1:1D:1F:80:16:06:68:74:A5:E8",
+        "69:74:58:2C:C8:FC:01:94:7D:F2:14:54:F2:9B:BB:7A:95:8F:72:50:B3:B4:3A:B2:A8:C2:2A:D5:90:D3:5B:64"
       ]
     }
   }
