@@ -23,6 +23,7 @@ import 'package:sijilli/core/extensions/context_l10n.dart';
 import '../../../core/services/autocomplete_service.dart';
 import 'location_picker_screen.dart';
 import '../utils/smart_parser.dart';
+import '../../../core/providers/global_config_provider.dart';
 
 class AddEventScreen extends StatelessWidget {
   final Appointment? initialAppointment;
@@ -769,7 +770,29 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
 
 
   void _openInviteesSelector(AddEventProvider provider) {
-    if (provider.selectedUsers.length >= 5) return;
+    final auth = context.read<AuthProvider>();
+    final globalConfig = context.read<GlobalConfigProvider>();
+    final String userRole = auth.user?.role ?? 'user';
+    
+    int maxGuests = 1;
+    if (auth.user?.isSuperAdmin == true || userRole == 'admin') {
+      maxGuests = 9999;
+    } else if (userRole == 'writer') {
+      maxGuests = globalConfig.limitGuestsWriter;
+    } else {
+      maxGuests = globalConfig.limitGuestsUser;
+    }
+
+    if (provider.selectedUsers.length >= maxGuests) {
+      final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+      final message = isArabic 
+          ? 'لقد وصلت إلى الحد الأقصى المسموح به للمدعوين (الحد الأقصى: $maxGuests ضيف).'
+          : 'You have reached the maximum guest limit (Max: $maxGuests guest(s)).';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: AppColors.error),
+      );
+      return;
+    }
     
     // Create temp appointment strictly for display in sheet if needed
     final tempAppt = Appointment(
@@ -857,6 +880,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
 
     final auth = context.read<AuthProvider>();
     final apptProvider = context.read<AppointmentProvider>();
+    final globalConfig = context.read<GlobalConfigProvider>();
     
     if (auth.user == null) {
        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.pleaseLoginFirst)));
@@ -864,6 +888,29 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
     }
 
     final host = auth.user;
+    
+    // Check Guest Limits
+    final int selectedCount = provider.selectedUsers.length;
+    final String userRole = host?.role ?? 'user';
+    int maxGuests = 1;
+    if (host?.isSuperAdmin == true || userRole == 'admin') {
+      maxGuests = 9999;
+    } else if (userRole == 'writer') {
+      maxGuests = globalConfig.limitGuestsWriter;
+    } else {
+      maxGuests = globalConfig.limitGuestsUser;
+    }
+
+    if (selectedCount > maxGuests) {
+      final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+      final message = isArabic 
+          ? 'لقد تجاوزت الحد الأقصى للمدعوين المسموح به لرتبتك (الحد الأقصى: $maxGuests ضيف).'
+          : 'You have exceeded the maximum guest limit allowed for your role (Max: $maxGuests guest(s)).';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: AppColors.error),
+      );
+      return;
+    }
     
     DateTime startAt;
     if (provider.selectedTime != null) {

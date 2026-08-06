@@ -51,6 +51,16 @@ class GlobalConfigProvider extends ChangeNotifier {
     return _getNumber('audio_total_capacity_mb')?.toInt() ?? 25;
   }
 
+  /// الحد الأقصى لعدد الضيوف للمستخدم العادي
+  int get limitGuestsUser {
+    return _getNumber('limit_guests_user')?.toInt() ?? 1;
+  }
+
+  /// الحد الأقصى لعدد الضيوف للكاتب
+  int get limitGuestsWriter {
+    return _getNumber('limit_guests_writer')?.toInt() ?? 5;
+  }
+
   /// الحصول على بريد التواصل
   String get contactEmail {
     return _getString('contact_email') ?? 'sijilliapp@gmail.com';
