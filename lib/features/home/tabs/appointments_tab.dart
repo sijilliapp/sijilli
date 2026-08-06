@@ -213,7 +213,7 @@ class _AppointmentsTabState extends State<AppointmentsTab> {
                    Text('${context.l10n.errorOccurred}: ${provider.errorMessage}', textAlign: TextAlign.center),
                    const SizedBox(height: 16),
                    ElevatedButton(
-                     onPressed: () => provider.fetchAppointments(),
+                     onPressed: () => provider.fetchAppointments(forceRefresh: true),
                      child: Text(context.l10n.retry),
                    ),
                  ],
@@ -263,7 +263,7 @@ class _AppointmentsTabState extends State<AppointmentsTab> {
         });
 
         return RefreshIndicator(
-          onRefresh: () => provider.fetchAppointments(),
+          onRefresh: () => provider.fetchAppointments(forceRefresh: true),
           color: AppColors.primary,
           child: MediaQuery.removePadding(
             context: context,

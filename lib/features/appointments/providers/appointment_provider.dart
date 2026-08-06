@@ -30,6 +30,7 @@ class AppointmentProvider extends ChangeNotifier {
   UnsubscribeFunc? _unsubscribeInvitations;
   String? _currentUserId;
   int? _currentHijriAdjustment;
+  DateTime? _lastFetchTime;
   ModerationProvider? _moderation;
   bool _isAdmin = false;
 
@@ -365,7 +366,16 @@ class AppointmentProvider extends ChangeNotifier {
     super.dispose();
   }
 
-  Future<void> fetchAppointments() async {
+  Future<void> fetchAppointments({bool forceRefresh = false}) async {
+    // Check cache throttle if not forced
+    if (!forceRefresh && _lastFetchTime != null && _appointments.isNotEmpty) {
+      final difference = DateTime.now().difference(_lastFetchTime!);
+      if (difference < const Duration(minutes: 1)) {
+        print('📦 fetchAppointments: Throttling request. Loaded from cache-first state (last fetch: ${difference.inSeconds}s ago).');
+        return;
+      }
+    }
+
     // Debounce to prevent rapid sequential fetches
     if (_fetchDebounceTimer?.isActive ?? false) {
        _fetchDebounceTimer!.cancel();
@@ -393,6 +403,7 @@ class AppointmentProvider extends ChangeNotifier {
         print('☁️ Fetched ${fresh.length} fresh appointments from server');
         _appointments = fresh;
         _sortAppointments();
+        _lastFetchTime = DateTime.now();
         
         // Save to cache (replaces old cache)
         await _localDb.saveAppointments(_appointments);

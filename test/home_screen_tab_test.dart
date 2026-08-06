@@ -60,7 +60,7 @@ class MockAppointmentProvider extends AppointmentProvider {
   List<Appointment> get appointments => _mockAppts;
 
   @override
-  Future<void> fetchAppointments() async {}
+  Future<void> fetchAppointments({bool forceRefresh = false}) async {}
 }
 
 class MockArticleProvider extends ArticleProvider {
