@@ -33,6 +33,7 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
   final _fullNameFocusNode = FocusNode();
   final _usernameFocusNode = FocusNode();
   final _emailFocusNode = FocusNode();
+  final _phoneFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
   final _confirmPasswordFocusNode = FocusNode();
   
@@ -52,6 +53,7 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
     _fullNameFocusNode.dispose();
     _usernameFocusNode.dispose();
     _emailFocusNode.dispose();
+    _phoneFocusNode.dispose();
     _passwordFocusNode.dispose();
     _confirmPasswordFocusNode.dispose();
     super.dispose();
@@ -59,6 +61,70 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
 
   Future<void> _handleRegister() async {
     FocusScope.of(context).unfocus();
+
+    // 🔍 التحقق التتابعي والتركيز التلقائي مع التمرير للحقل الخاطئ (Auto-Scroll & Focus on Error)
+    if (_fullNameController.text.trim().isEmpty) {
+      _fullNameFocusNode.requestFocus();
+      if (_fullNameFocusNode.context != null) {
+        Scrollable.ensureVisible(_fullNameFocusNode.context!, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      }
+      _formKey.currentState!.validate();
+      return;
+    }
+    
+    final username = _usernameController.text.trim();
+    if (username.isEmpty || !RegExp(r'^[a-zA-Z0-9_.]+$').hasMatch(username)) {
+      _usernameFocusNode.requestFocus();
+      if (_usernameFocusNode.context != null) {
+        Scrollable.ensureVisible(_usernameFocusNode.context!, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      }
+      _formKey.currentState!.validate();
+      return;
+    }
+    
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+      _emailFocusNode.requestFocus();
+      if (_emailFocusNode.context != null) {
+        Scrollable.ensureVisible(_emailFocusNode.context!, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      }
+      _formKey.currentState!.validate();
+      return;
+    }
+    
+    final phone = _phoneController.text.trim();
+    if (phone.isNotEmpty) {
+      final clean = phone.replaceAll(RegExp(r'[^0-9]'), '');
+      if (clean.length < 8 || clean.length > 12) {
+        _phoneFocusNode.requestFocus();
+        if (_phoneFocusNode.context != null) {
+          Scrollable.ensureVisible(_phoneFocusNode.context!, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+        }
+        _formKey.currentState!.validate();
+        return;
+      }
+    }
+    
+    final password = _passwordController.text;
+    if (password.isEmpty || password.length < 8) {
+      _passwordFocusNode.requestFocus();
+      if (_passwordFocusNode.context != null) {
+        Scrollable.ensureVisible(_passwordFocusNode.context!, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      }
+      _formKey.currentState!.validate();
+      return;
+    }
+    
+    final confirmPassword = _confirmPasswordController.text;
+    if (confirmPassword.isEmpty || confirmPassword != password) {
+      _confirmPasswordFocusNode.requestFocus();
+      if (_confirmPasswordFocusNode.context != null) {
+        Scrollable.ensureVisible(_confirmPasswordFocusNode.context!, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      }
+      _formKey.currentState!.validate();
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) return;
     if (!_isCaptchaVerified) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -273,6 +339,7 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
         Expanded(
           child: AuthTextField(
             controller: _phoneController,
+            focusNode: _phoneFocusNode,
             label: 'رقم الهاتف (اختياري)',
             hint: '3xxxxxxx',
             prefixIcon: Icons.phone_android_rounded,
