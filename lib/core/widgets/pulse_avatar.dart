@@ -123,21 +123,29 @@ class _PulseAvatarState extends State<PulseAvatar> with SingleTickerProviderStat
                   child: AnimatedBuilder(
                     animation: _controller,
                     builder: (context, child) {
-                      // Reduced scale to ~25%: 1.15 -> 1.04 (Just slightly larger than the avatar)
-                      final scale = _scaleAnimation.value * 1.04; 
+                      // Scale proportionally, slightly larger than the avatar
+                      final scale = _scaleAnimation.value * 1.02; 
                       return Container(
                         width: widget.size * scale,
                         height: widget.size * scale,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           boxShadow: [
+                            // 🌟 التوهج الداخلي الساطع (Inner sharp glow)
                             BoxShadow(
-                              // Reduced opacity multiplier: 0.6 -> 0.4
-                              color: AppColors.primary.withValues(alpha: _opacityAnimation.value * AppConfig.avatarGlowOpacity),
-                              // Reduced blurRadius: 15 -> 4 (25%)
-                              blurRadius: 4 * _scaleAnimation.value,
-                              // Reduced spreadRadius: 4 -> 1 (25%)
-                              spreadRadius: 1 * _scaleAnimation.value,
+                              color: AppColors.primary.withValues(
+                                alpha: _opacityAnimation.value * AppConfig.avatarGlowOpacity,
+                              ),
+                              blurRadius: (widget.size * 0.08) * _scaleAnimation.value,
+                              spreadRadius: (widget.size * 0.015) * _scaleAnimation.value,
+                            ),
+                            // 🌟 التوهج الخارجي الناعم (Outer soft glow)
+                            BoxShadow(
+                              color: AppColors.primary.withValues(
+                                alpha: (_opacityAnimation.value * 0.45) * AppConfig.avatarGlowOpacity,
+                              ),
+                              blurRadius: (widget.size * 0.2) * _scaleAnimation.value,
+                              spreadRadius: (widget.size * 0.03) * _scaleAnimation.value,
                             ),
                           ],
                         ),

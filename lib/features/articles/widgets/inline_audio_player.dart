@@ -29,11 +29,12 @@ class _InlineAudioPlayerState extends State<InlineAudioPlayer> {
   StreamSubscription? _positionSubscription;
   StreamSubscription? _durationSubscription;
 
+  bool _isInitialized = false;
+
   @override
   void initState() {
     super.initState();
     _audioPlayer = AudioPlayer();
-    _initAudio();
   }
 
   Future<void> _initAudio() async {
@@ -90,6 +91,7 @@ class _InlineAudioPlayerState extends State<InlineAudioPlayer> {
         });
       });
     } catch (e) {
+      _isInitialized = false;
       if (mounted) {
         setState(() {
           _isBuffering = false;
@@ -103,6 +105,12 @@ class _InlineAudioPlayerState extends State<InlineAudioPlayer> {
     if (_errorMessage != null) return;
 
     try {
+      if (!_isInitialized) {
+        _isInitialized = true;
+        await _initAudio();
+        if (_errorMessage != null) return;
+      }
+
       if (_isPlaying) {
         await _audioPlayer.pause();
       } else {
@@ -186,7 +194,10 @@ class _InlineAudioPlayerState extends State<InlineAudioPlayer> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.refresh_rounded, size: 20, color: Colors.grey),
-                  onPressed: _initAudio,
+                  onPressed: () {
+                    _isInitialized = true;
+                    _initAudio();
+                  },
                 ),
               ],
             )

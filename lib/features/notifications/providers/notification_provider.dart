@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -15,6 +16,7 @@ import '../services/notification_service.dart';
 import '../../appointments/services/pb_appointment_service.dart';
 import '../../../core/services/pocketbase_client.dart';
 import '../../../../routes/app_router.dart';
+import '../widgets/in_app_notification_banner.dart';
 
 class NotificationProvider extends ChangeNotifier {
   final NotificationService _service = NotificationService();
@@ -28,6 +30,7 @@ class NotificationProvider extends ChangeNotifier {
   UnsubscribeFunc? _unsubscribeFriendshipFunc;
   String? _currentUserId;
   int _pendingFollowsCount = 0;
+  bool _hasCheckedMissed = false;
 
   List<NotificationModel> get notifications => _notifications;
   bool get isLoading => _isLoading;
@@ -170,6 +173,7 @@ class NotificationProvider extends ChangeNotifier {
 
   /// Initialize and fetch notifications for a specific user
   Future<void> init(String userId) async {
+    _hasCheckedMissed = false;
     await _loadSettings();
     await _initLocalNotifications();
     await fetchNotifications(userId);
@@ -178,10 +182,13 @@ class NotificationProvider extends ChangeNotifier {
     await _subscribeToFriendshipRealtime(userId);
     // Sync APNs token for iOS push notifications
     syncAPNSToken(userId);
+    
+    // Show missed notifications that occurred while app was offline
+    _showMissedNotifications();
   }
 
   Future<void> syncAPNSToken(String userId) async {
-    if (!Platform.isIOS) return;
+    if (kIsWeb || !Platform.isIOS) return;
     try {
       const channel = MethodChannel('com.sijilli.app/apns');
       
@@ -435,6 +442,13 @@ class NotificationProvider extends ChangeNotifier {
                 title: localized['title'] ?? newNotification.title,
                 message: localized['message'] ?? newNotification.message,
                 payload: jsonEncode(newNotification.toJson()),
+              );
+
+              // Show in-app banner overlay
+              InAppNotificationBanner.show(
+                newNotification,
+                localizedTitle: localized['title'],
+                localizedMessage: localized['message'],
               );
             }
           }
@@ -698,6 +712,32 @@ class NotificationProvider extends ChangeNotifier {
       });
     } catch (e) {
       print('Error subscribing to friendship realtime: $e');
+    }
+  }
+
+  void _showMissedNotifications() async {
+    if (_hasCheckedMissed) return;
+    _hasCheckedMissed = true;
+
+    final unread = _notifications.where((n) => !n.isRead).toList();
+    if (unread.isEmpty) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final selectedLocale = prefs.getString('selected_locale') ?? 'ar';
+
+    // Take the 3 most recent unread, reverse so they show in sequential order (oldest to newest)
+    final missed = unread.take(3).toList().reversed;
+    for (final notif in missed) {
+      final localized = NotificationLocalizer.localize(
+        notif.title,
+        notif.message,
+        selectedLocale,
+      );
+      InAppNotificationBanner.show(
+        notif,
+        localizedTitle: localized['title'],
+        localizedMessage: localized['message'],
+      );
     }
   }
 

@@ -199,6 +199,7 @@ class PbAppointmentBrowseService {
       }
 
       final List<Appointment> appointments = [];
+      final Set<String> seenApptIds = {};
 
       for (final record in resultList.items) {
         final invJson = record.toJson();
@@ -210,6 +211,11 @@ class PbAppointmentBrowseService {
             : (expandedAppt is Map<String, dynamic> ? expandedAppt : null);
         
         if (apptJson == null) continue;
+
+        final apptId = apptJson['id'] as String?;
+        if (apptId == null) continue;
+        if (seenApptIds.contains(apptId)) continue;
+        seenApptIds.add(apptId);
 
         Map<String, dynamic>? viewersInvitationJson;
         

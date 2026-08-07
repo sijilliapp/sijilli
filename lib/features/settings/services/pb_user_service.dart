@@ -609,7 +609,8 @@ class PbUserService {
 
       if (accept) {
         await _pb.collection('friendship').update(friendshipId, body: {
-          isUserA ? 'a_status' : 'b_status': 'accepted',
+          'a_status': 'accepted',
+          'b_status': 'accepted',
           'last_action_by': userId,
         });
         

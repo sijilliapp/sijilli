@@ -350,25 +350,9 @@ class _ProfileHeaderState extends State<ProfileHeader> {
           child: Column(
             children: [
               // Avatar
-              Consumer2<AppointmentProvider, ArticleProvider>(
-                  builder: (context, appointmentProvider, articleProvider, _) {
-                    AvatarStatus currentStatus = widget.customStatus ?? appointmentProvider.avatarStatus;
-                    
-                    if (currentStatus == AvatarStatus.none) {
-                      // تطبيق سياسة الطوق الذكي بناءً على نشاط المقالات
-                      final userArticles = articleProvider.getUserArticles(displayUser.id);
-                      final hasRecentArticle = userArticles.any((a) => 
-                        a.isPublished && 
-                        DateTime.now().difference(a.updatedAt).inHours < 24
-                      );
-                      final hasPublishedArticles = userArticles.any((a) => a.isPublished);
-
-                      if (hasRecentArticle) {
-                        currentStatus = AvatarStatus.active; // وهج مشع
-                      } else if (hasPublishedArticles) {
-                        currentStatus = AvatarStatus.upcoming; // طوق ملون
-                      }
-                    }
+              Consumer<AppointmentProvider>(
+                  builder: (context, appointmentProvider, _) {
+                    final currentStatus = widget.customStatus ?? appointmentProvider.avatarStatus;
 
                     final isMe = !widget.isPublicView && displayUser.id == authProvider.user?.id;
 

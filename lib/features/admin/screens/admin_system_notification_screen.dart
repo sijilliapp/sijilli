@@ -76,10 +76,8 @@ class _AdminSystemNotificationScreenState extends State<AdminSystemNotificationS
       setState(() {
         _roles = cached;
         _isLoadingRoles = false;
-        // تفعيل كافة الأدوار افتراضياً
-        for (var role in cached) {
-          _selectedRoles.add(role.key);
-        }
+        // افتراضياً، لا يتم تحديد أي جهة ليكون الإرسال واعياً
+        _selectedRoles.clear();
       });
     }
 
@@ -89,13 +87,7 @@ class _AdminSystemNotificationScreenState extends State<AdminSystemNotificationS
       setState(() {
         _roles = fresh;
         _isLoadingRoles = false;
-        // إذا كان الكاش فارغاً، نحدد الكل افتراضياً
-        if (cached.isEmpty) {
-          _selectedRoles.clear();
-          for (var role in fresh) {
-            _selectedRoles.add(role.key);
-          }
-        }
+        _selectedRoles.clear();
       });
     } else if (mounted && _roles.isEmpty) {
       // احتياطي طوارئ (Fallback) في حال فشل الاتصال ولم يكن هناك كاش
@@ -108,9 +100,7 @@ class _AdminSystemNotificationScreenState extends State<AdminSystemNotificationS
       setState(() {
         _roles = fallbackRoles;
         _isLoadingRoles = false;
-        for (var role in fallbackRoles) {
-          _selectedRoles.add(role.key);
-        }
+        _selectedRoles.clear();
       });
     }
   }
@@ -120,14 +110,7 @@ class _AdminSystemNotificationScreenState extends State<AdminSystemNotificationS
       if (selected) {
         _selectedRoles.add(role);
       } else {
-        if (_selectedRoles.length > 1) {
-          _selectedRoles.remove(role);
-        } else {
-          // منع إلغاء تحديد كافة الفئات
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('الرجاء اختيار جهة مستهدفة واحدة على الأقل')),
-          );
-        }
+        _selectedRoles.remove(role);
       }
     });
   }
@@ -144,6 +127,13 @@ class _AdminSystemNotificationScreenState extends State<AdminSystemNotificationS
       return;
     }
 
+    if (_selectedRoles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('الرجاء اختيار جهة مستهدفة واحدة على الأقل قبل الإرسال')),
+      );
+      return;
+    }
+
     // Show loading
     showDialog(
       context: context,
@@ -153,7 +143,7 @@ class _AdminSystemNotificationScreenState extends State<AdminSystemNotificationS
       ),
     );
 
-    final success = await context.read<AdminProvider>().sendSystemNotificationToAll(
+    final successCount = await context.read<AdminProvider>().sendSystemNotificationToAll(
           title: title,
           message: message,
           relatedId: relatedId,
@@ -163,10 +153,11 @@ class _AdminSystemNotificationScreenState extends State<AdminSystemNotificationS
     if (mounted) {
       Navigator.pop(context); // Close loading dialog
       
+      final success = successCount >= 0;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(success 
-              ? 'تم إرسال الإشعار للفئات المحددة بنجاح' 
+              ? 'تم إرسال الإشعار بنجاح لـ $successCount مستخدم من الفئات المحددة' 
               : 'فشل إرسال الإشعار'),
           backgroundColor: success ? AppColors.success : Colors.red,
         ),
@@ -229,6 +220,13 @@ class _AdminSystemNotificationScreenState extends State<AdminSystemNotificationS
       return;
     }
 
+    if (_selectedRoles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('الرجاء اختيار جهة مستهدفة واحدة على الأقل قبل النشر')),
+      );
+      return;
+    }
+
     // Show loading
     showDialog(
       context: context,
@@ -249,10 +247,15 @@ class _AdminSystemNotificationScreenState extends State<AdminSystemNotificationS
     if (mounted) {
       Navigator.pop(context); // Close loading dialog
       
+      int totalRecipients = 0;
+      if (success) {
+        totalRecipients = await context.read<AdminProvider>().countUsersByRoles(_selectedRoles.toList());
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(success 
-              ? 'تم نشر البث الجماعي بنجاح 📣' 
+              ? 'تم نشر البث الجماعي بنجاح لـ $totalRecipients مستخدم 📣' 
               : 'فشل إرسال البث'),
           backgroundColor: success ? AppColors.success : Colors.red,
         ),

@@ -40,13 +40,22 @@ class PbAppointmentService {
         expand: 'appointment,appointment.host,appointment.invitations_via_appointment.user,appointment.invitations_via_appointment.categories,categories,appointment.invitations_via_appointment.linked_article',
       );
 
-      final appointments = resultList.items.map((record) {
+      final Set<String> seenApptIds = {};
+      final List<Appointment> appointments = [];
+
+      for (var record in resultList.items) {
         final invitationJson = record.toJson();
         var appData = invitationJson['expand']?['appointment'];
         if (appData is List && appData.isNotEmpty) appData = appData.first;
         final appointmentJson = appData is Map<String, dynamic> ? appData : null;
         
-        if (appointmentJson == null) return null;
+        if (appointmentJson == null) continue;
+
+        final apptId = appointmentJson['id'] as String?;
+        if (apptId == null) continue;
+        if (seenApptIds.contains(apptId)) continue;
+        seenApptIds.add(apptId);
+
         appointmentJson['currentUserInvitation'] = invitationJson;
         
         var invExpand = invitationJson['expand'];
@@ -66,8 +75,8 @@ class PbAppointmentService {
            }
         }
 
-        return Appointment.fromJson(appointmentJson, contextAdjustment: contextAdjustment);
-      }).whereType<Appointment>().toList();
+        appointments.add(Appointment.fromJson(appointmentJson, contextAdjustment: contextAdjustment));
+      }
 
       for (var i = 0; i < appointments.length; i++) {
         if (appointments[i].host == null && appointments[i].hostId.isNotEmpty) {

@@ -63,11 +63,12 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
   StreamSubscription? _positionSubscription;
   StreamSubscription? _durationSubscription;
 
+  bool _isInitialized = false;
+
   @override
   void initState() {
     super.initState();
     _audioPlayer = AudioPlayer();
-    _initAudio();
   }
 
   Future<void> _initAudio() async {
@@ -145,6 +146,7 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
         });
       });
     } catch (e) {
+      _isInitialized = false;
       if (mounted) {
         setState(() {
           _isBuffering = false;
@@ -158,6 +160,12 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
     if (_errorMessage != null) return;
 
     try {
+      if (!_isInitialized) {
+        _isInitialized = true;
+        await _initAudio();
+        if (_errorMessage != null) return;
+      }
+
       if (_isPlaying) {
         await _audioPlayer.pause();
       } else {
@@ -1018,14 +1026,16 @@ class _AdvancedAudioPlayerState extends State<AdvancedAudioPlayer> {
                   ),
                   if (_errorMessage != null)
                     const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 20)
-                  else if (!_isAudioReady)
+                  else if (_isBuffering)
                     const SizedBox(
                       width: 14,
                       height: 14,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.blueAccent),
                     )
+                  else if (_isAudioReady)
+                    const Icon(Icons.verified_user_rounded, color: Colors.green, size: 16)
                   else
-                    const Icon(Icons.verified_user_rounded, color: Colors.green, size: 16),
+                    const Icon(Icons.play_circle_outline_rounded, color: Colors.blueAccent, size: 20),
                 ],
               ),
               const SizedBox(height: 12),

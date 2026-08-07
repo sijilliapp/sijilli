@@ -102,7 +102,8 @@ module.exports = async function handler(req, res) {
           body: body
         },
         sound: sound || 'default',
-        badge: badge || 1
+        badge: badge || 1,
+        'content-available': 1
       },
       relatedId: relatedId || '',
       type: type || ''
