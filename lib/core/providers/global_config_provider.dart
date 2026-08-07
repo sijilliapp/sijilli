@@ -61,6 +61,62 @@ class GlobalConfigProvider extends ChangeNotifier {
     return _getNumber('limit_guests_writer')?.toInt() ?? 5;
   }
 
+  /// الحد الأقصى لعدد الضيوف للمؤسسة
+  int get limitGuestsOrg {
+    return _getNumber('limit_guests_org')?.toInt() ?? 15;
+  }
+
+  /// صلاحيات تدوين المواعيد
+  bool get permCreateApptUser => _getBool('perm_create_appt_user') ?? true;
+  bool get permCreateApptWriter => _getBool('perm_create_appt_writer') ?? true;
+  bool get permCreateApptOrg => _getBool('perm_create_appt_org') ?? true;
+
+  /// صلاحيات تدوين المقالات
+  bool get permCreateArticleUser => _getBool('perm_create_article_user') ?? false;
+  bool get permCreateArticleWriter => _getBool('perm_create_article_writer') ?? true;
+  bool get permCreateArticleOrg => _getBool('perm_create_article_org') ?? true;
+
+  /// صلاحيات التعليقات
+  bool get permCommentsUser => _getBool('perm_comments_user') ?? true;
+  bool get permCommentsWriter => _getBool('perm_comments_writer') ?? true;
+  bool get permCommentsOrg => _getBool('perm_comments_org') ?? true;
+
+  // دالة فحص القدرة على تدوين موعد
+  bool canCreateAppointment(dynamic user) {
+    if (user == null) return false;
+    if (user.role == 'admin') return true;
+    if (user.role == 'writer') return permCreateApptWriter;
+    if (user.role == 'organization') return permCreateApptOrg;
+    return permCreateApptUser;
+  }
+
+  // دالة فحص القدرة على تدوين مقال
+  bool canCreateArticle(dynamic user) {
+    if (user == null) return false;
+    if (user.role == 'admin') return true;
+    if (user.role == 'writer') return permCreateArticleWriter;
+    if (user.role == 'organization') return permCreateArticleOrg;
+    return permCreateArticleUser;
+  }
+
+  // دالة فحص الحد الأقصى للضيوف
+  int maxGuestsCount(dynamic user) {
+    if (user == null) return 0;
+    if (user.role == 'admin') return 9999;
+    if (user.role == 'writer') return limitGuestsWriter;
+    if (user.role == 'organization') return limitGuestsOrg;
+    return limitGuestsUser;
+  }
+
+  // دالة فحص الصلاحية للتعليق
+  bool canComment(dynamic user) {
+    if (user == null) return false;
+    if (user.role == 'admin') return true;
+    if (user.role == 'writer') return permCommentsWriter;
+    if (user.role == 'organization') return permCommentsOrg;
+    return permCommentsUser;
+  }
+
   /// الحصول على بريد التواصل
   String get contactEmail {
     return _getString('contact_email') ?? 'sijilliapp@gmail.com';

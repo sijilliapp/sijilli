@@ -447,7 +447,29 @@ class AdminProvider extends ChangeNotifier {
   }
 
   /// إرسال إشعار للنظام لجميع المستخدمين المسجلين
-  Future<bool> sendSystemNotificationToAll({
+  /// الحصول على عدد المستخدمين المطابقين للرتب المحددة
+  Future<int> countUsersByRoles(List<String> targetRoles) async {
+    try {
+      final pb = PocketBaseClient.instance.pb;
+      String? filter;
+      if (targetRoles.isNotEmpty) {
+        filter = targetRoles.map((role) => 'role = "$role"').join(' || ');
+      }
+      final result = await pb.collection('users').getList(
+        page: 1,
+        perPage: 1,
+        filter: filter,
+        fields: 'id',
+      );
+      return result.totalItems;
+    } catch (e) {
+      print('❌ Error counting users by roles: $e');
+      return 0;
+    }
+  }
+
+  /// إرسال إشعار للنظام للمستخدمين المحددين وإرجاع عدد الإرسال الناجح (-1 في حال الفشل التام)
+  Future<int> sendSystemNotificationToAll({
     required String title,
     required String message,
     String? relatedId,
@@ -472,7 +494,7 @@ class AdminProvider extends ChangeNotifier {
 
       if (users.isEmpty) {
         print('⚠️ No matching users found to send system notification');
-        return false;
+        return 0;
       }
 
       int successCount = 0;
@@ -506,13 +528,47 @@ class AdminProvider extends ChangeNotifier {
       }
 
       print('ℹ️ Sent system notifications: $successCount out of ${users.length}');
-      return successCount > 0;
+      return successCount;
     } catch (e) {
       print('❌ Error sending system notification to all users: $e');
-      return false;
+      return -1;
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// تحديث قيمة إعداد منطقي (مثل صلاحية معينة)
+  Future<bool> updateConfigBool(String key, bool value, GlobalConfigProvider configProvider) async {
+    _isLoading = true;
+    notifyListeners();
+    
+    try {
+      final pb = PocketBaseClient.instance.pb;
+      
+      try {
+        final result = await pb.collection('app_config').getFirstListItem('key="$key"');
+        await pb.collection('app_config').update(result.id, body: {
+          'value_bool': value,
+        });
+      } catch (e) {
+        // If not found, create it
+        await pb.collection('app_config').create(body: {
+          'key': key,
+          'value_bool': value,
+        });
+      }
+
+      await configProvider.fetchConfig();
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('❌ Error updating config $key: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 }

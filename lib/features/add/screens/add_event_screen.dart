@@ -19,6 +19,7 @@ import '../widgets/add_event_widgets.dart';
 import '../../appointments/widgets/sheets/appointment_confirmation_sheet.dart';
 import '../../main/screens/main_screen.dart';
 import '../../../core/utils/app_pickers.dart';
+import '../../settings/screens/request_upgrade_screen.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import '../../../core/services/autocomplete_service.dart';
 import 'location_picker_screen.dart';
@@ -32,6 +33,63 @@ class AddEventScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Check create appointment permission (only for new appointments)
+    if (initialAppointment == null) {
+      final authProvider = context.read<AuthProvider>();
+      final config = context.read<GlobalConfigProvider>();
+      final user = authProvider.user;
+      if (user != null && !config.canCreateAppointment(user)) {
+        // Block creation and show message
+        return Scaffold(
+          appBar: AppBar(
+            elevation: 0,
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back, color: Theme.of(context).iconTheme.color),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.lock_outline_rounded, size: 64, color: Colors.orangeAccent),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'ميزة غير متاحة',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'تدوين المواعيد غير متاح لخطة عضويتك الحالية. يرجى طلب الترقية من الإعدادات أو مراجعة الإدارة.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const RequestUpgradeScreen()),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    child: const Text('طلب ترقية العضوية', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+    }
     return _AddEventScreenContent(initialAppointment: initialAppointment, initialGuest: initialGuest);
   }
 }
@@ -772,16 +830,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
   void _openInviteesSelector(AddEventProvider provider) {
     final auth = context.read<AuthProvider>();
     final globalConfig = context.read<GlobalConfigProvider>();
-    final String userRole = auth.user?.role ?? 'user';
-    
-    int maxGuests = 1;
-    if (auth.user?.isSuperAdmin == true || userRole == 'admin') {
-      maxGuests = 9999;
-    } else if (userRole == 'writer') {
-      maxGuests = globalConfig.limitGuestsWriter;
-    } else {
-      maxGuests = globalConfig.limitGuestsUser;
-    }
+    final int maxGuests = globalConfig.maxGuestsCount(auth.user);
 
     if (provider.selectedUsers.length >= maxGuests) {
       final isArabic = Localizations.localeOf(context).languageCode == 'ar';
@@ -891,15 +940,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
     
     // Check Guest Limits
     final int selectedCount = provider.selectedUsers.length;
-    final String userRole = host?.role ?? 'user';
-    int maxGuests = 1;
-    if (host?.isSuperAdmin == true || userRole == 'admin') {
-      maxGuests = 9999;
-    } else if (userRole == 'writer') {
-      maxGuests = globalConfig.limitGuestsWriter;
-    } else {
-      maxGuests = globalConfig.limitGuestsUser;
-    }
+    final int maxGuests = globalConfig.maxGuestsCount(host);
 
     if (selectedCount > maxGuests) {
       final isArabic = Localizations.localeOf(context).languageCode == 'ar';

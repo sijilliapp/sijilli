@@ -12,6 +12,7 @@ import 'admin_system_prefs_screen.dart';
 import 'admin_reports_screen.dart';
 import 'admin_upgrade_requests_screen.dart';
 import 'admin_system_notification_screen.dart';
+import 'admin_permissions_screen.dart';
 
 class SuperAdminScreen extends StatefulWidget {
   const SuperAdminScreen({super.key});
@@ -77,6 +78,23 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const AdminSystemPrefsScreen()),
+                );
+              },
+            ),
+
+            const SizedBox(height: 8),
+
+            _buildClickableCard(
+              context,
+              isDark: isDark,
+              icon: Icons.security_rounded,
+              title: 'إدارة الأدوار والصلاحيات',
+              subtitle: 'تعديل صلاحيات كتابة المقالات، تدوين المواعيد والضيوف والتعليقات حسب الفئة',
+              badgeCount: 0,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AdminPermissionsScreen()),
                 );
               },
             ),

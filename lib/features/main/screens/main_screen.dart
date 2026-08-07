@@ -13,6 +13,9 @@ import 'package:sijilli/features/notifications/screens/notifications_screen.dart
 import 'package:sijilli/features/settings/screens/settings_screen.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import 'package:sijilli/models/notification.dart';
+import 'package:sijilli/core/providers/global_config_provider.dart';
+import 'package:sijilli/core/constants/app_dimens.dart';
+import 'package:sijilli/features/settings/screens/request_upgrade_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -194,7 +197,15 @@ class MainScreenState extends State<MainScreen> {
               // إذا كان المستخدم في تبويب المقالات، نفتح شاشة إضافة مقال
               final articleProvider = context.read<ArticleProvider>();
               final authProvider = context.read<AuthProvider>();
-              final isHelpActive = articleProvider.isHelpFilterActive && (authProvider.user?.isAdmin ?? false);
+              final config = context.read<GlobalConfigProvider>();
+              final user = authProvider.user;
+
+              if (user != null && !config.canCreateArticle(user)) {
+                _showUpgradePromptDialog(context);
+                return;
+              }
+
+              final isHelpActive = articleProvider.isHelpFilterActive && (user?.isAdmin ?? false);
               
               Navigator.push(
                 context,
@@ -411,6 +422,79 @@ class MainScreenState extends State<MainScreen> {
         ],
       ),
       label: label,
+    );
+  }
+  void _showUpgradePromptDialog(BuildContext context, {String? customMessage}) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          backgroundColor: AppColors.getCardBackground(context),
+          title: const Row(
+            textDirection: TextDirection.rtl,
+            children: [
+              Icon(Icons.star_rounded, color: Colors.amber, size: 28),
+              SizedBox(width: 8),
+              Text(
+                'طلب ترقية الحساب',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            customMessage ?? 'لتدوين ونشر مقال جديد في سجلي، يرجى ترقية حسابك من مستخدم عادي إلى كاتب معتمد للحصول على باقة المزايا الإضافية ونشر مقالاتك للجمهور.',
+            style: TextStyle(
+              color: AppColors.getTextSecondary(context),
+              fontSize: 14,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.right,
+            textDirection: TextDirection.rtl,
+          ),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'لاحقاً',
+                style: TextStyle(
+                  color: AppColors.getTextSecondary(context),
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const RequestUpgradeScreen()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              child: const Text(
+                'ترقية الآن',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

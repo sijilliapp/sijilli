@@ -9,6 +9,7 @@ import '../../../models/article.dart';
 import '../../../models/comment.dart';
 import '../providers/article_provider.dart';
 import '../../../core/utils/bidi_utils.dart';
+import '../../../core/providers/global_config_provider.dart';
 
 class CommentSection extends StatefulWidget {
   final Article article;
@@ -134,7 +135,11 @@ class _CommentSectionState extends State<CommentSection> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
-    final currentUserId = context.watch<AuthProvider>().user?.id;
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.user;
+    final currentUserId = user?.id;
+    final globalConfig = context.watch<GlobalConfigProvider>();
+    final bool canComment = user != null && globalConfig.canComment(user);
     final viewInsets = MediaQuery.of(context).viewInsets;
 
     return Directionality(
@@ -447,8 +452,12 @@ class _CommentSectionState extends State<CommentSection> {
                               maxLength: 500,
                               buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null, // سنقوم ببناء عداد خاص
                               decoration: InputDecoration(
-                                hintText: currentUserId != null ? 'اكتب تعليقاً حضارياً ومفيداً...' : 'يجب تسجيل الدخول لتتمكن من التعليق',
-                                enabled: currentUserId != null,
+                                hintText: currentUserId == null 
+                                    ? 'يجب تسجيل الدخول لتتمكن من التعليق'
+                                    : (!canComment 
+                                        ? 'التعليقات معطلة لخطة عضويتك الحالية'
+                                        : 'اكتب تعليقاً حضارياً ومفيداً...'),
+                                enabled: currentUserId != null && canComment,
                                 fillColor: isDark ? AppColors.darkSurface : Colors.grey.shade100,
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                 border: OutlineInputBorder(
@@ -492,7 +501,7 @@ class _CommentSectionState extends State<CommentSection> {
                       const SizedBox(width: 12),
 
                       // زر الإرسال
-                      if (currentUserId != null)
+                      if (currentUserId != null && canComment)
                         _isSubmitting
                             ? const Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
