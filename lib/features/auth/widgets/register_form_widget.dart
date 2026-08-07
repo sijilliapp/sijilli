@@ -60,7 +60,18 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
   Future<void> _handleRegister() async {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
-    if (!_isCaptchaVerified) return;
+    if (!_isCaptchaVerified) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(Localizations.localeOf(context).languageCode == 'ar' 
+              ? 'يرجى حل معادلة التحقق (التحقق البشري) أولاً.' 
+              : 'Please solve the verification equation (CAPTCHA) first.'),
+          backgroundColor: Colors.orangeAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
     if (!_acceptTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -87,7 +98,7 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
       passwordConfirm: _confirmPasswordController.text,
       phone: _phoneController.text.trim().isEmpty 
           ? null 
-          : '$_countryCode${_phoneController.text.trim()}',
+          : '$_countryCode${_phoneController.text.replaceAll(RegExp(r'[^0-9]'), '')}',
     );
 
     if (success) {
@@ -141,7 +152,11 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
             ],
             validator: (value) {
               if (value?.isEmpty ?? true) return context.l10n.fieldRequired;
-              if (!RegExp(r'^[a-zA-Z0-9_.]+$').hasMatch(value!)) return context.l10n.dataError;
+              if (!RegExp(r'^[a-zA-Z0-9_.]+$').hasMatch(value!)) {
+                return Localizations.localeOf(context).languageCode == 'ar'
+                    ? 'يجب استخدام أحرف إنجليزية، أرقام، (.) أو (_) فقط وبدون مسافات'
+                    : 'Use only English letters, numbers, (.) or (_) with no spaces';
+              }
               return null;
             },
           ),
@@ -266,8 +281,8 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
             onFieldSubmitted: (_) => _passwordFocusNode.requestFocus(),
             validator: (value) {
               if (value == null || value.isEmpty) return null;
-              if (!RegExp(r'^[0-9]+$').hasMatch(value)) return context.l10n.invalidPhone;
-              if (value.length < 8 || value.length > 12) return context.l10n.invalidPhone;
+              final clean = value.replaceAll(RegExp(r'[^0-9]'), '');
+              if (clean.length < 8 || clean.length > 12) return context.l10n.invalidPhone;
               return null;
             },
           ),
