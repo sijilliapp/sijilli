@@ -152,6 +152,30 @@ class PbInvitationService {
           print('⚠️ Failed to send acceptance notification: $e');
         }
       }
+
+      // If we are updating privacy on invitation, ALSO update central appointments privacy if host
+      if (privacy != null) {
+        try {
+          final inv = await _pb.collection(collectionInvitations).getOne(
+            invitationId,
+            expand: 'appointment'
+          );
+          final apptList = inv.expand['appointment'];
+          final RecordModel? appt = (apptList != null && apptList.isNotEmpty) ? apptList.first : null;
+          if (appt != null) {
+            final String hostId = appt.getStringValue('host');
+            final String userId = inv.getStringValue('user');
+            if (hostId == userId) {
+              await _pb.collection(collectionAppointments).update(appt.id, body: {
+                'privacy': privacy,
+              });
+              print('✅ [Privacy Sync] Main appointment ${appt.id} privacy updated to $privacy');
+            }
+          }
+        } catch (e) {
+          print('⚠️ [Privacy Sync] Failed to sync main appointment privacy: $e');
+        }
+      }
     } catch (e) {
       rethrow;
     }

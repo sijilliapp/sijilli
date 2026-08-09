@@ -121,7 +121,7 @@ class PbAppointmentService {
       body.remove('id');
       body.remove('created');
       body.remove('updated');
-      body.remove('privacy'); // الخصوصية تُخزَّن في invitations فقط — لا تُكتب في appointments
+      // الخصوصية تُخزَّن في الموعد الرئيسي (appointments) أيضاً لتفعيل قواعد العرض للزوار
       body['host'] = userId;
       body['appointmentGroupId'] = groupId;
       body['recurrence_type'] = appointment.recurrenceType ?? 'none';

@@ -501,9 +501,7 @@ class Appointment {
       region: JsonUtils.parseString(json['region']),
       building: JsonUtils.parseString(json['building']),
       coordinates: JsonUtils.parseString(json['coordinates']),
-      // privacy لا يُقرأ من appointments — مصدره invitations.privacy عبر currentUserInvitation
-      // نضع 'private' كافتراضي آمن، و effectivePrivacy ستقرأ من currentUserInvitation
-      privacy: 'private',
+      privacy: JsonUtils.parseString(json['privacy']) ?? 'private',
       description: JsonUtils.parseString(json['description']),
       participantsCount: JsonUtils.parseInt(json['participants_count']) ?? 0,
       invitedCount: JsonUtils.parseInt(json['invited_count']) ?? 0,
@@ -620,7 +618,7 @@ class Appointment {
       'region': region,
       'building': building,
       'coordinates': coordinates,
-      // 'privacy' محذوف — الخصوصية تُخزَّن في invitations فقط
+      'privacy': privacy,
       'description': description,
       'participants_count': participantsCount,
       'invited_count': invitedCount,
