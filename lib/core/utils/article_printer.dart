@@ -33,12 +33,10 @@ class ArticlePrinter {
     pw.Font arabicFont;
     if (selectedFont == 'Manal High' || selectedFont == 'Manal Bold') {
       arabicFont = await _loadFallbackFont();
-    } else if (selectedFont == 'Tajawal' || selectedFont == 'Tajawal Medium' || selectedFont == 'Tajawal Bold') {
+    } else if (selectedFont == 'Tajawal' || selectedFont == 'Tajawal Bold') {
       try {
         if (selectedFont == 'Tajawal Bold') {
           arabicFont = await PdfGoogleFonts.tajawalBold();
-        } else if (selectedFont == 'Tajawal Medium') {
-          arabicFont = await PdfGoogleFonts.tajawalMedium();
         } else {
           arabicFont = await PdfGoogleFonts.tajawalRegular();
         }
@@ -303,13 +301,13 @@ class ArticlePrinter {
     if (widget is pw.RichText) {
       final text = _getSpanText(widget.text);
       double fontSize = 11.0;
-      double height = 1.70; // Slightly higher height multiplier for safety margin (preventing overflow)
+      double height = 1.50;
       if (widget.text.style != null) {
         fontSize = widget.text.style!.fontSize ?? 11.0;
-        height = (widget.text.style!.height ?? 1.70) * 1.15; // Slightly pessimistic line height to account for font metrics
+        height = (widget.text.style!.height ?? 1.50) * 1.02; // 2% margin instead of 15%
       }
-      final double charWidthFactor = BidiUtils.isRtl(text) ? 0.60 : 0.65; // Pessimistic factor to account for word wrap and whitespace
-      final double charsPerLine = columnWidth > 0 ? (columnWidth / (fontSize * charWidthFactor)) : 35.0;
+      final double charWidthFactor = BidiUtils.isRtl(text) ? 0.48 : 0.52; // realistic factor
+      final double charsPerLine = columnWidth > 0 ? (columnWidth / (fontSize * charWidthFactor)) : 42.0;
 
       final lines = text.split('\n');
       double totalLines = 0.0;

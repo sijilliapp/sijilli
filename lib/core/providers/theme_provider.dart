@@ -7,7 +7,7 @@ import '../services/location_service.dart';
 
 class ThemeProvider extends ChangeNotifier {
   // 'Tajawal' = خط التجوال افتراضي للمشترك الجديد
-  String _fontFamily = 'Default';
+  String _fontFamily = 'Tajawal';
   static const String keyFontFamily = 'font_family';
   
   // Theme Mode
@@ -30,14 +30,13 @@ class ThemeProvider extends ChangeNotifier {
     'Default',
     'Manal High',
     'Tajawal',
-    'Tajawal Medium',
     'Tajawal Bold',
     'Amiri',
   ];
 
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    _fontFamily = prefs.getString(keyFontFamily) ?? 'Default';
+    _fontFamily = prefs.getString(keyFontFamily) ?? 'Tajawal';
     _currentTheme = prefs.getString(keyThemeMode) ?? 'auto';
     
     // Automatically check sunset if auto
@@ -111,19 +110,6 @@ class ThemeProvider extends ChangeNotifier {
           return base.apply(fontFamily: 'Manal_High');
         case 'Tajawal':
           return GoogleFonts.tajawalTextTheme(base);
-        case 'Tajawal Medium':
-          final defaultTheme = GoogleFonts.tajawalTextTheme(base);
-          return defaultTheme.copyWith(
-            bodyLarge: defaultTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
-            bodyMedium: defaultTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-            bodySmall: defaultTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
-            titleLarge: defaultTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            titleMedium: defaultTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            titleSmall: defaultTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-            labelLarge: defaultTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500),
-            labelMedium: defaultTheme.labelMedium?.copyWith(fontWeight: FontWeight.w500),
-            labelSmall: defaultTheme.labelSmall?.copyWith(fontWeight: FontWeight.w500),
-          );
         case 'Tajawal Bold':
           final defaultTheme = GoogleFonts.tajawalTextTheme(base);
           return defaultTheme.copyWith(
@@ -160,18 +146,6 @@ class ThemeProvider extends ChangeNotifier {
     }
     if (fontName == 'Manal High') {
       return baseStyle.copyWith(fontFamily: 'Manal_High');
-    }
-    if (fontName == 'Tajawal Medium') {
-      try {
-        return GoogleFonts.getFont(
-          'Tajawal',
-          textStyle: baseStyle.copyWith(
-            fontWeight: baseStyle.fontWeight == FontWeight.bold ? FontWeight.w700 : FontWeight.w500,
-          ),
-        );
-      } catch (e) {
-        return baseStyle;
-      }
     }
     if (fontName == 'Tajawal Bold') {
       try {

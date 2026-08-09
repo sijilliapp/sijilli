@@ -8,7 +8,7 @@ class SettingsProvider extends ChangeNotifier {
   static const String keyJustifyArticles = 'justify_articles';
   
   bool _isMagneticScrollEnabled = false;
-  String _articleFontFamily = 'Default';
+  String _articleFontFamily = 'Tajawal';
   bool _showLocationInfo = true;
   bool _justifyArticles = false;
 
@@ -20,7 +20,7 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     _isMagneticScrollEnabled = prefs.getBool(keyMagneticScroll) ?? false;
-    _articleFontFamily = prefs.getString(keyArticleFontFamily) ?? 'Default';
+    _articleFontFamily = prefs.getString(keyArticleFontFamily) ?? 'Tajawal';
     _showLocationInfo = prefs.getBool(keyShowLocationInfo) ?? true;
     _justifyArticles = prefs.getBool(keyJustifyArticles) ?? false;
     notifyListeners();
@@ -68,7 +68,7 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> clearSettings() async {
     _isMagneticScrollEnabled = false;
-    _articleFontFamily = 'Default';
+    _articleFontFamily = 'Tajawal';
     _showLocationInfo = true;
     _justifyArticles = false;
     notifyListeners();
