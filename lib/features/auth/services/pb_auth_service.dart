@@ -45,6 +45,7 @@ class PbAuthService {
       'isPublic': AppConfig.defaultUserIsPublic,
       'hijri_adjustment': -1,
       'phone_verified': false,
+      'role': 'user',
     };
 
     final record = await _pb.collection(collectionUsers).create(body: body);
