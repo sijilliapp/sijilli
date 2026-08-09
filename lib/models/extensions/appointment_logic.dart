@@ -61,6 +61,16 @@ extension AppointmentLogic on Appointment {
     final difference = startAt.difference(now.toUtc()); 
     return difference.inHours <= 24 && difference.inSeconds > 0;
   }
+
+  /// التحقق إذا كان الموعد نشطاً وقادماً ومقبولاً
+  bool get isActiveUpcomingAccepted {
+    final inv = currentUserInvitation;
+    if (inv == null) return false;
+    return !isPast && 
+           !isCancelled && 
+           inv.status == InvitationStatus.accepted && 
+           inv.postStatus == PostStatus.published;
+  }
   
   /// التحقق إذا كان الموعد جارياً الآن (من وقت البدء حتى انتهاء المدة)
   bool get isNow {

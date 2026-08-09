@@ -16,6 +16,8 @@ import 'package:sijilli/core/widgets/auth_wrapper.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import 'package:sijilli/core/utils/web_utils.dart';
 import 'package:sijilli/core/widgets/loaders/loading_screen.dart';
+import 'package:sijilli/core/utils/app_date_formatter.dart';
+import 'package:sijilli/models/extensions/appointment_logic.dart';
 
 class PublicProfileScreen extends StatefulWidget {
   final String usernameOrId;
@@ -349,10 +351,23 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> with SingleTi
                           SliverPersistentHeader(
                             pinned: true,
                             delegate: SliverFolderHeaderDelegate(
-                              child: FolderTabBar(
-                                tabController: _tabController,
-                                tabTitles: [context.l10n.appointments, context.l10n.articles],
-                                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                              child: Builder(
+                                builder: (context) {
+                                  final appts = appointments.where((a) => a.isActiveUpcomingAccepted).toList();
+                                  final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+                                  final countStr = isArabic 
+                                      ? AppDateFormatter.toEasternArabicDigits(appts.length.toString()) 
+                                      : appts.length.toString();
+                                  final apptsTitle = appts.isEmpty 
+                                      ? context.l10n.appointments 
+                                      : '${context.l10n.appointments} $countStr';
+
+                                  return FolderTabBar(
+                                    tabController: _tabController,
+                                    tabTitles: [apptsTitle, context.l10n.articles],
+                                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                                  );
+                                }
                               ),
                             ),
                           ),

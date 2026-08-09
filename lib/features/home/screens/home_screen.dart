@@ -24,6 +24,7 @@ import '../../../core/local/local_db_service.dart';
 import '../../search/providers/search_provider.dart';
 import '../../add/providers/add_event_provider.dart';
 import '../../../core/services/calendar_sync_service.dart';
+import '../../../core/utils/app_date_formatter.dart';
 import '../../../main.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -416,15 +417,28 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
             SliverPersistentHeader(
               pinned: true,
               delegate: _FolderHeaderDelegate(
-                FolderTabBar(
-                  tabController: _tabController,
-                  tabTitles: [context.l10n.appointments, context.l10n.articles],
-                  backgroundColor: Theme.of(context).brightness == Brightness.dark 
-                      ? AppColors.darkBackground 
-                      : const Color(0xFFF3F4F6),
-                  activeTabShadowColor: Theme.of(context).brightness == Brightness.dark 
-                      ? Colors.transparent 
-                      : Colors.black.withValues(alpha: 0.05),
+                Builder(
+                  builder: (context) {
+                    final appts = apptProvider.appointments.where((a) => a.isActiveUpcomingAccepted).toList();
+                    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+                    final countStr = isArabic 
+                        ? AppDateFormatter.toEasternArabicDigits(appts.length.toString()) 
+                        : appts.length.toString();
+                    final apptsTitle = appts.isEmpty 
+                        ? context.l10n.appointments 
+                        : '${context.l10n.appointments} $countStr';
+
+                    return FolderTabBar(
+                      tabController: _tabController,
+                      tabTitles: [apptsTitle, context.l10n.articles],
+                      backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                          ? AppColors.darkBackground 
+                          : const Color(0xFFF3F4F6),
+                      activeTabShadowColor: Theme.of(context).brightness == Brightness.dark 
+                          ? Colors.transparent 
+                          : Colors.black.withValues(alpha: 0.05),
+                    );
+                  }
                 ),
               ),
             ),
