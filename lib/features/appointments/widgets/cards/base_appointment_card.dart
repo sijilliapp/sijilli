@@ -59,7 +59,7 @@ class BaseAppointmentCard extends StatelessWidget {
               
               if (!canDelete && !policy.canReport) return;
 
-              final isBookmarked = appointment.currentUserInvitation?.postStatus == PostStatus.bookmarked;
+              final isBookmarked = context.read<AppointmentProvider>().isBookmarked(appointment.id);
               AppActionSheet.show(
                 context,
                 actions: [

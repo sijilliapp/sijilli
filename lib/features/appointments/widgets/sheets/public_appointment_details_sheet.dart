@@ -73,7 +73,7 @@ class PublicAppointmentDetailsSheet extends StatelessWidget {
                   // Save (Sync) Button
                   Builder(
                     builder: (context) {
-                      final isBookmarked = appointment.currentUserInvitation?.postStatus == PostStatus.bookmarked;
+                      final isBookmarked = context.watch<AppointmentProvider>().isBookmarked(appointment.id);
                       return _buildLongActionButton(
                         context: context,
                         icon: isBookmarked ? Icons.bookmark_added_rounded : Icons.bookmark_border_rounded,

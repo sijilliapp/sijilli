@@ -112,7 +112,7 @@ class PublicPolicy extends AppointmentCardPolicy {
     // والوصول لسجله يكون من صفحته الشخصية لا من هنا.
     // المشرف فقط يملك صلاحية طارئة تُدار من لوحة التحكم لا من هذه البطاقة.
     const canDelete = false;
-    final isBookmarked = appointment.currentUserInvitation?.postStatus == PostStatus.bookmarked;
+    final isBookmarked = context.read<AppointmentProvider>().isBookmarked(appointment.id);
 
     AppActionSheet.show(
       context,

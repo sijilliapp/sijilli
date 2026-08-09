@@ -1120,6 +1120,10 @@ class AppointmentProvider extends ChangeNotifier {
     }
   }
 
+  bool isBookmarked(String appointmentId) {
+    return _bookmarkedAppointments.any((a) => a.id == appointmentId);
+  }
+
   /// تحديث حالة نشاط رابط الدعوة (تفعيل أو تعطيل)
   Future<bool> updateInviteLinkStatus(String appointmentId, bool active, {String? inviteToken}) async {
     try {
