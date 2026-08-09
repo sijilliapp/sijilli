@@ -731,7 +731,12 @@ class SettingsScreen extends StatelessWidget {
                 return RadioListTile<String>(
                   title: Text(
                     font == 'Default' ? context.l10n.defaultFontStyle : font,
-                    style: TextStyle(fontFamily: font == 'Default' ? null : font),
+                    style: ThemeProvider.getTextStyleForFont(
+                      font,
+                      TextStyle(
+                        fontWeight: themeProvider.fontFamily == font ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
                   ),
                   value: font,
                   groupValue: themeProvider.fontFamily,

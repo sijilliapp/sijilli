@@ -372,10 +372,12 @@ class _PublicArticleScreenState extends State<PublicArticleScreen> {
                                               return ListTile(
                                                 title: Text(
                                                   font == 'Default' ? context.l10n.defaultFontStyle : font,
-                                                  style: TextStyle(
-                                                    fontFamily: font == 'Default' ? null : font,
-                                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                                    color: isSelected ? AppColors.primary : null,
+                                                  style: ThemeProvider.getTextStyleForFont(
+                                                    font,
+                                                    TextStyle(
+                                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                                      color: isSelected ? AppColors.primary : null,
+                                                    ),
                                                   ),
                                                 ),
                                                 trailing: isSelected 

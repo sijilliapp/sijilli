@@ -30,6 +30,8 @@ class ThemeProvider extends ChangeNotifier {
     'Default',
     'Manal High',
     'Tajawal',
+    'Tajawal Medium',
+    'Tajawal Bold',
     'Amiri',
   ];
 
@@ -109,6 +111,32 @@ class ThemeProvider extends ChangeNotifier {
           return base.apply(fontFamily: 'Manal_High');
         case 'Tajawal':
           return GoogleFonts.tajawalTextTheme(base);
+        case 'Tajawal Medium':
+          final defaultTheme = GoogleFonts.tajawalTextTheme(base);
+          return defaultTheme.copyWith(
+            bodyLarge: defaultTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
+            bodyMedium: defaultTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+            bodySmall: defaultTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
+            titleLarge: defaultTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            titleMedium: defaultTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            titleSmall: defaultTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+            labelLarge: defaultTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500),
+            labelMedium: defaultTheme.labelMedium?.copyWith(fontWeight: FontWeight.w500),
+            labelSmall: defaultTheme.labelSmall?.copyWith(fontWeight: FontWeight.w500),
+          );
+        case 'Tajawal Bold':
+          final defaultTheme = GoogleFonts.tajawalTextTheme(base);
+          return defaultTheme.copyWith(
+            bodyLarge: defaultTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
+            bodyMedium: defaultTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+            bodySmall: defaultTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
+            titleLarge: defaultTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+            titleMedium: defaultTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+            titleSmall: defaultTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+            labelLarge: defaultTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+            labelMedium: defaultTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
+            labelSmall: defaultTheme.labelSmall?.copyWith(fontWeight: FontWeight.w700),
+          );
         case 'Amiri':
           return GoogleFonts.amiriTextTheme(base);
         default:
@@ -132,6 +160,30 @@ class ThemeProvider extends ChangeNotifier {
     }
     if (fontName == 'Manal High') {
       return baseStyle.copyWith(fontFamily: 'Manal_High');
+    }
+    if (fontName == 'Tajawal Medium') {
+      try {
+        return GoogleFonts.getFont(
+          'Tajawal',
+          textStyle: baseStyle.copyWith(
+            fontWeight: baseStyle.fontWeight == FontWeight.bold ? FontWeight.w700 : FontWeight.w500,
+          ),
+        );
+      } catch (e) {
+        return baseStyle;
+      }
+    }
+    if (fontName == 'Tajawal Bold') {
+      try {
+        return GoogleFonts.getFont(
+          'Tajawal',
+          textStyle: baseStyle.copyWith(
+            fontWeight: baseStyle.fontWeight == FontWeight.bold ? FontWeight.w900 : FontWeight.w700,
+          ),
+        );
+      } catch (e) {
+        return baseStyle;
+      }
     }
     try {
       return GoogleFonts.getFont(

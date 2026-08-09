@@ -33,9 +33,15 @@ class ArticlePrinter {
     pw.Font arabicFont;
     if (selectedFont == 'Manal High' || selectedFont == 'Manal Bold') {
       arabicFont = await _loadFallbackFont();
-    } else if (selectedFont == 'Tajawal') {
+    } else if (selectedFont == 'Tajawal' || selectedFont == 'Tajawal Medium' || selectedFont == 'Tajawal Bold') {
       try {
-        arabicFont = await PdfGoogleFonts.tajawalRegular();
+        if (selectedFont == 'Tajawal Bold') {
+          arabicFont = await PdfGoogleFonts.tajawalBold();
+        } else if (selectedFont == 'Tajawal Medium') {
+          arabicFont = await PdfGoogleFonts.tajawalMedium();
+        } else {
+          arabicFont = await PdfGoogleFonts.tajawalRegular();
+        }
       } catch (e) {
         fm.debugPrint('⚠️ Failed to load Tajawal from Google Fonts: $e');
         arabicFont = await _loadFallbackFont();
