@@ -68,11 +68,11 @@ flutter_launcher_icons:
   ios: true
   web:
     generate: true
-    image_path: "assets/logo/app_icon_new.png"
+    image_path: "assets/logo/logo.jpg"
     background_color: "#ffffff"
     theme_color: "#ffffff"
-  image_path_android: "assets/logo/app_icon_new.png"
-  image_path_ios: "assets/logo/app_icon_new.png"
+  image_path_android: "assets/logo/logo.jpg"
+  image_path_ios: "assets/logo/logo.jpg"
   min_sdk_android: 21
   remove_alpha_ios: true
 
