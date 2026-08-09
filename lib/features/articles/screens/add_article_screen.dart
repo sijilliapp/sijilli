@@ -23,6 +23,7 @@ import '../widgets/tag_chip.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import '../../../core/providers/global_config_provider.dart';
 import '../../settings/screens/request_upgrade_screen.dart';
+import '../services/pb_article_service.dart';
 import '../services/quran_service.dart';
 import '../../../core/utils/bidi_utils.dart';
 
@@ -1183,6 +1184,28 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
 
   void _submit() async {
     if (_textController.rawText.trim().isEmpty) return;
+
+    final authProvider = context.read<AuthProvider>();
+    final config = context.read<GlobalConfigProvider>();
+    final user = authProvider.user;
+
+    // ⚠️ Check Daily Limit for NEW articles (not editing)
+    if (widget.article == null && _draftArticleId == null && user != null) {
+      final dailyLimit = config.dailyArticleLimit(user);
+      final todayCount = await PbArticleService().getCreatedTodayCount(user.id);
+      
+      if (todayCount >= dailyLimit) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('لقد تجاوزت الحد اليومي لنشر المقالات المسموح به لرتبتك ($dailyLimit مقالات يومياً).'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+        return;
+      }
+    }
 
     _debounce?.cancel();
     if (_autosaveFuture != null) {

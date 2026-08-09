@@ -302,6 +302,24 @@ class PbAppointmentService {
     }
   }
 
+  Future<int> getCreatedTodayCount(String userId) async {
+    try {
+      final now = DateTime.now().toUtc();
+      final todayStart = DateTime.utc(now.year, now.month, now.day);
+      final filter = 'host = "$userId" && created >= "${todayStart.toIso8601String()}"';
+      
+      final result = await _pb.collection(collectionAppointments).getList(
+        filter: filter,
+        perPage: 1,
+        skipTotal: false,
+      );
+      return result.totalItems;
+    } catch (e) {
+      print('⚠️ Error fetching today appointments count: $e');
+      return 0;
+    }
+  }
+
   Future<Set<String>> getInactiveAppointmentIds(List<String> appointmentIds) async {
     if (appointmentIds.isEmpty) return {};
     try {

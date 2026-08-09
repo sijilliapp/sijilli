@@ -14,6 +14,7 @@ import 'package:sijilli/core/extensions/context_l10n.dart';
 import 'package:sijilli/core/widgets/custom_text_field.dart';
 import 'package:sijilli/features/home/widgets/profile/social_stats_row.dart';
 import 'package:sijilli/features/settings/screens/widgets/delete_account_button.dart';
+import 'package:sijilli/core/providers/global_config_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key}); // Forced reload check
@@ -30,7 +31,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController _usernameController;
   late TextEditingController _bioController;
   late TextEditingController _phoneController;
-  late TextEditingController _socialLinkController;
+  final List<TextEditingController> _socialLinkControllers = [];
   late TextEditingController _emailController;
   int _hijriAdjustment = 0;
   
@@ -45,10 +46,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _usernameController = TextEditingController(text: user?.username ?? '');
     _bioController = TextEditingController(text: user?.bio ?? '');
     _phoneController = TextEditingController(text: user?.phone?.toString() ?? '');
-    _socialLinkController = TextEditingController(text: user?.socialLink ?? '');
     _emailController = TextEditingController(text: user?.email ?? '');
     _hijriAdjustment = (user?.hijriAdjustment ?? 0).toInt();
-    _hijriAdjustment = (user?.hijriAdjustment ?? 0).toInt();
+
+    final initialLinks = user?.socialLinks ?? [];
+    if (initialLinks.isEmpty) {
+      final ctrl = TextEditingController();
+      ctrl.addListener(() => setState(() {}));
+      _socialLinkControllers.add(ctrl);
+    } else {
+      for (final link in initialLinks) {
+        final ctrl = TextEditingController(text: link);
+        ctrl.addListener(() => setState(() {}));
+        _socialLinkControllers.add(ctrl);
+      }
+    }
   }
 
   @override
@@ -57,7 +69,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _usernameController.dispose();
     _bioController.dispose();
     _phoneController.dispose();
-    _socialLinkController.dispose();
+    for (final ctrl in _socialLinkControllers) {
+      ctrl.dispose();
+    }
     _emailController.dispose();
     super.dispose();
   }
@@ -76,11 +90,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // We no longer pre-check availability via public endpoints to prevent data leakage.
     // The `provider.updateUser` call will handle uniqueness constraints and return a localized error if taken.
 
+    final linksList = _socialLinkControllers
+        .map((c) => c.text.trim())
+        .where((text) => text.isNotEmpty)
+        .toList();
+    final socialLinkStr = linksList.join('|');
+
     final Map<String, dynamic> data = {
       'name': _nameController.text.trim(),
       'username': newUsername,
       'bio': _bioController.text.trim(),
-      'social_link': _socialLinkController.text.trim(),
+      'social_link': socialLinkStr,
       'hijri_adjustment': _hijriAdjustment,
     };
 
@@ -296,17 +316,86 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: AppDimens.spaceS),
  
-                  CustomTextField(
-                    controller: _socialLinkController,
-                    label: context.l10n.socialLink,
-                    prefixIcon: Icons.link,
-                    keyboardType: TextInputType.url,
-                    maxLength: 100,
-                    textDirection: TextDirection.ltr,
-                    validator: (v) {
-                       if (v == null || v.isEmpty) return null; 
-                       if (!v.contains('.')) return context.l10n.errorOccurred;
-                       return null;
+                  // 🔗 روابط التواصل الاجتماعي المتعددة
+                  Builder(
+                    builder: (context) {
+                      final config = context.read<GlobalConfigProvider>();
+                      final maxLinks = config.maxSocialLinksCount(provider.user);
+                      
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                context.l10n.socialLink,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                              Text(
+                                '${_socialLinkControllers.where((c) => c.text.isNotEmpty).length} / $maxLinks',
+                                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppDimens.spaceXS),
+                          
+                          ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: _socialLinkControllers.length,
+                            separatorBuilder: (_, __) => const SizedBox(height: 8),
+                            itemBuilder: (context, index) {
+                              final ctrl = _socialLinkControllers[index];
+                              return Row(
+                                children: [
+                                  Expanded(
+                                    child: CustomTextField(
+                                      controller: ctrl,
+                                      label: 'رابط التواصل الاجتماعي #${index + 1}',
+                                      prefixIcon: Icons.link,
+                                      keyboardType: TextInputType.url,
+                                      textDirection: TextDirection.ltr,
+                                      validator: (v) {
+                                        if (v == null || v.isEmpty) return null;
+                                        if (!v.contains('.')) return context.l10n.errorOccurred;
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                  if (_socialLinkControllers.length > 1) ...[
+                                    const SizedBox(width: 8),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_rounded, color: Colors.redAccent),
+                                      onPressed: () {
+                                        setState(() {
+                                          ctrl.dispose();
+                                          _socialLinkControllers.removeAt(index);
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ],
+                              );
+                            },
+                          ),
+                          
+                          if (_socialLinkControllers.length < maxLinks) ...[
+                            const SizedBox(height: AppDimens.spaceXS),
+                            TextButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  final ctrl = TextEditingController();
+                                  ctrl.addListener(() => setState(() {}));
+                                  _socialLinkControllers.add(ctrl);
+                                });
+                              },
+                              icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.primary),
+                              label: const Text('إضافة رابط تواصل آخر', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ],
+                      );
                     },
                   ),
                   const SizedBox(height: AppDimens.spaceM),

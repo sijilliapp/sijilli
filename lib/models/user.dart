@@ -294,8 +294,18 @@ class UserModel {
   /// التحقق إذا كان لديه نبذة شخصية
   bool get hasBio => bio != null && bio!.isNotEmpty;
   
-  /// التحقق إذا كان لديه رابط اجتماعي
-  bool get hasSocialLink => socialLink != null && socialLink!.isNotEmpty;
+  /// الحصول على قائمة الروابط الاجتماعية المتعددة
+  List<String> get socialLinks {
+    if (socialLink == null || socialLink!.trim().isEmpty) return [];
+    return socialLink!
+        .split('|')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+  }
+
+  /// التحقق إذا كان لديه رابط اجتماعي واحد على الأقل
+  bool get hasSocialLink => socialLinks.isNotEmpty;
   
   /// الحصول على اسم الدور بالعربية
   String get roleDisplayName {

@@ -1008,6 +1008,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
       currentUser: auth.user!,
       appointmentProvider: apptProvider,
       locale: context.l10n.localeName,
+      dailyLimit: globalConfig.dailyAppointmentLimit(auth.user),
       inviteTitle: context.l10n.newInvitation,
       inviteMessage: context.l10n.invitedYouTo(
         auth.user?.name ?? auth.user?.username ?? context.l10n.user,

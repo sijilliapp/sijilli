@@ -66,37 +66,65 @@ class GlobalConfigProvider extends ChangeNotifier {
     return _getNumber('limit_guests_org')?.toInt() ?? 15;
   }
 
-  /// صلاحيات تدوين المواعيد
-  bool get permCreateApptUser => _getBool('perm_create_appt_user') ?? true;
-  bool get permCreateApptWriter => _getBool('perm_create_appt_writer') ?? true;
-  bool get permCreateApptOrg => _getBool('perm_create_appt_org') ?? true;
+  /// الحدود اليومية لتدوين المواعيد (0 يعني منع)
+  int get limitCreateApptDailyUser => _getNumber('limit_create_appt_daily_user')?.toInt() ?? 5;
+  int get limitCreateApptDailyWriter => _getNumber('limit_create_appt_daily_writer')?.toInt() ?? 10;
+  int get limitCreateApptDailyOrg => _getNumber('limit_create_appt_daily_org')?.toInt() ?? 30;
 
-  /// صلاحيات تدوين المقالات
-  bool get permCreateArticleUser => _getBool('perm_create_article_user') ?? false;
-  bool get permCreateArticleWriter => _getBool('perm_create_article_writer') ?? true;
-  bool get permCreateArticleOrg => _getBool('perm_create_article_org') ?? true;
+  /// الحدود اليومية لتدوين المقالات (0 يعني منع)
+  int get limitCreateArticleDailyUser => _getNumber('limit_create_article_daily_user')?.toInt() ?? 0;
+  int get limitCreateArticleDailyWriter => _getNumber('limit_create_article_daily_writer')?.toInt() ?? 5;
+  int get limitCreateArticleDailyOrg => _getNumber('limit_create_article_daily_org')?.toInt() ?? 15;
+
+  /// الحدود القصوى للروابط الاجتماعية المسموحة
+  int get limitSocialLinksUser => _getNumber('limit_social_links_user')?.toInt() ?? 1;
+  int get limitSocialLinksWriter => _getNumber('limit_social_links_writer')?.toInt() ?? 3;
+  int get limitSocialLinksOrg => _getNumber('limit_social_links_org')?.toInt() ?? 5;
 
   /// صلاحيات التعليقات
   bool get permCommentsUser => _getBool('perm_comments_user') ?? true;
   bool get permCommentsWriter => _getBool('perm_comments_writer') ?? true;
   bool get permCommentsOrg => _getBool('perm_comments_org') ?? true;
 
-  // دالة فحص القدرة على تدوين موعد
+  // الحصول على الحد اليومي للمواعيد حسب الرتبة
+  int dailyAppointmentLimit(dynamic user) {
+    if (user == null) return 0;
+    if (user.role == 'admin') return 99999;
+    if (user.role == 'writer') return limitCreateApptDailyWriter;
+    if (user.role == 'organization') return limitCreateApptDailyOrg;
+    return limitCreateApptDailyUser;
+  }
+
+  // الحصول على الحد اليومي للمقالات حسب الرتبة
+  int dailyArticleLimit(dynamic user) {
+    if (user == null) return 0;
+    if (user.role == 'admin') return 99999;
+    if (user.role == 'writer') return limitCreateArticleDailyWriter;
+    if (user.role == 'organization') return limitCreateArticleDailyOrg;
+    return limitCreateArticleDailyUser;
+  }
+
+  // الحصول على الحد الأقصى للروابط الاجتماعية المسموح بها حسب الرتبة
+  int maxSocialLinksCount(dynamic user) {
+    if (user == null) return 0;
+    if (user.role == 'admin') return 99999;
+    if (user.role == 'writer') return limitSocialLinksWriter;
+    if (user.role == 'organization') return limitSocialLinksOrg;
+    return limitSocialLinksUser;
+  }
+
+  // دالة فحص القدرة المبدئية على تدوين موعد (الحد اليومي > 0)
   bool canCreateAppointment(dynamic user) {
     if (user == null) return false;
     if (user.role == 'admin') return true;
-    if (user.role == 'writer') return permCreateApptWriter;
-    if (user.role == 'organization') return permCreateApptOrg;
-    return permCreateApptUser;
+    return dailyAppointmentLimit(user) > 0;
   }
 
-  // دالة فحص القدرة على تدوين مقال
+  // دالة فحص القدرة المبدئية على تدوين مقال (الحد اليومي > 0)
   bool canCreateArticle(dynamic user) {
     if (user == null) return false;
     if (user.role == 'admin') return true;
-    if (user.role == 'writer') return permCreateArticleWriter;
-    if (user.role == 'organization') return permCreateArticleOrg;
-    return permCreateArticleUser;
+    return dailyArticleLimit(user) > 0;
   }
 
   // دالة فحص الحد الأقصى للضيوف

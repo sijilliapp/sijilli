@@ -18,22 +18,25 @@ class AdminPermissionsScreen extends StatefulWidget {
 
 class _AdminPermissionsScreenState extends State<AdminPermissionsScreen> {
   // عادي
-  bool _createApptUser = true;
-  bool _createArticleUser = false;
+  final _createApptUserCtrl = TextEditingController();
+  final _createArticleUserCtrl = TextEditingController();
   bool _commentsUser = true;
   final _guestsUserCtrl = TextEditingController();
+  final _socialLinksUserCtrl = TextEditingController();
 
   // كاتب
-  bool _createApptWriter = true;
-  bool _createArticleWriter = true;
+  final _createApptWriterCtrl = TextEditingController();
+  final _createArticleWriterCtrl = TextEditingController();
   bool _commentsWriter = true;
   final _guestsWriterCtrl = TextEditingController();
+  final _socialLinksWriterCtrl = TextEditingController();
 
   // مؤسسة
-  bool _createApptOrg = true;
-  bool _createArticleOrg = true;
+  final _createApptOrgCtrl = TextEditingController();
+  final _createArticleOrgCtrl = TextEditingController();
   bool _commentsOrg = true;
   final _guestsOrgCtrl = TextEditingController();
+  final _socialLinksOrgCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -41,29 +44,43 @@ class _AdminPermissionsScreenState extends State<AdminPermissionsScreen> {
     final config = context.read<GlobalConfigProvider>();
     
     // عادي
-    _createApptUser = config.permCreateApptUser;
-    _createArticleUser = config.permCreateArticleUser;
+    _createApptUserCtrl.text = config.limitCreateApptDailyUser.toString();
+    _createArticleUserCtrl.text = config.limitCreateArticleDailyUser.toString();
     _commentsUser = config.permCommentsUser;
     _guestsUserCtrl.text = config.limitGuestsUser.toString();
+    _socialLinksUserCtrl.text = config.limitSocialLinksUser.toString();
 
     // كاتب
-    _createApptWriter = config.permCreateApptWriter;
-    _createArticleWriter = config.permCreateArticleWriter;
+    _createApptWriterCtrl.text = config.limitCreateApptDailyWriter.toString();
+    _createArticleWriterCtrl.text = config.limitCreateArticleDailyWriter.toString();
     _commentsWriter = config.permCommentsWriter;
     _guestsWriterCtrl.text = config.limitGuestsWriter.toString();
+    _socialLinksWriterCtrl.text = config.limitSocialLinksWriter.toString();
 
     // مؤسسة
-    _createApptOrg = config.permCreateApptOrg;
-    _createArticleOrg = config.permCreateArticleOrg;
+    _createApptOrgCtrl.text = config.limitCreateApptDailyOrg.toString();
+    _createArticleOrgCtrl.text = config.limitCreateArticleDailyOrg.toString();
     _commentsOrg = config.permCommentsOrg;
     _guestsOrgCtrl.text = config.limitGuestsOrg.toString();
+    _socialLinksOrgCtrl.text = config.limitSocialLinksOrg.toString();
   }
 
   @override
   void dispose() {
+    _createApptUserCtrl.dispose();
+    _createArticleUserCtrl.dispose();
     _guestsUserCtrl.dispose();
+    _socialLinksUserCtrl.dispose();
+
+    _createApptWriterCtrl.dispose();
+    _createArticleWriterCtrl.dispose();
     _guestsWriterCtrl.dispose();
+    _socialLinksWriterCtrl.dispose();
+
+    _createApptOrgCtrl.dispose();
+    _createArticleOrgCtrl.dispose();
     _guestsOrgCtrl.dispose();
+    _socialLinksOrgCtrl.dispose();
     super.dispose();
   }
 
@@ -74,23 +91,38 @@ class _AdminPermissionsScreenState extends State<AdminPermissionsScreen> {
     bool success = true;
 
     if (role == 'user') {
+      final apptVal = double.tryParse(_createApptUserCtrl.text) ?? 5.0;
+      final articleVal = double.tryParse(_createArticleUserCtrl.text) ?? 0.0;
       final guestsVal = double.tryParse(_guestsUserCtrl.text) ?? 1.0;
-      success &= await admin.updateConfigBool('perm_create_appt_user', _createApptUser, config);
-      success &= await admin.updateConfigBool('perm_create_article_user', _createArticleUser, config);
+      final socialVal = double.tryParse(_socialLinksUserCtrl.text) ?? 1.0;
+      
+      success &= await admin.updateConfigNumber('limit_create_appt_daily_user', apptVal, config);
+      success &= await admin.updateConfigNumber('limit_create_article_daily_user', articleVal, config);
       success &= await admin.updateConfigBool('perm_comments_user', _commentsUser, config);
       success &= await admin.updateConfigNumber('limit_guests_user', guestsVal, config);
+      success &= await admin.updateConfigNumber('limit_social_links_user', socialVal, config);
     } else if (role == 'writer') {
+      final apptVal = double.tryParse(_createApptWriterCtrl.text) ?? 10.0;
+      final articleVal = double.tryParse(_createArticleWriterCtrl.text) ?? 5.0;
       final guestsVal = double.tryParse(_guestsWriterCtrl.text) ?? 5.0;
-      success &= await admin.updateConfigBool('perm_create_appt_writer', _createApptWriter, config);
-      success &= await admin.updateConfigBool('perm_create_article_writer', _createArticleWriter, config);
+      final socialVal = double.tryParse(_socialLinksWriterCtrl.text) ?? 3.0;
+      
+      success &= await admin.updateConfigNumber('limit_create_appt_daily_writer', apptVal, config);
+      success &= await admin.updateConfigNumber('limit_create_article_daily_writer', articleVal, config);
       success &= await admin.updateConfigBool('perm_comments_writer', _commentsWriter, config);
       success &= await admin.updateConfigNumber('limit_guests_writer', guestsVal, config);
+      success &= await admin.updateConfigNumber('limit_social_links_writer', socialVal, config);
     } else if (role == 'organization') {
+      final apptVal = double.tryParse(_createApptOrgCtrl.text) ?? 30.0;
+      final articleVal = double.tryParse(_createArticleOrgCtrl.text) ?? 15.0;
       final guestsVal = double.tryParse(_guestsOrgCtrl.text) ?? 15.0;
-      success &= await admin.updateConfigBool('perm_create_appt_org', _createApptOrg, config);
-      success &= await admin.updateConfigBool('perm_create_article_org', _createArticleOrg, config);
+      final socialVal = double.tryParse(_socialLinksOrgCtrl.text) ?? 5.0;
+      
+      success &= await admin.updateConfigNumber('limit_create_appt_daily_org', apptVal, config);
+      success &= await admin.updateConfigNumber('limit_create_article_daily_org', articleVal, config);
       success &= await admin.updateConfigBool('perm_comments_org', _commentsOrg, config);
       success &= await admin.updateConfigNumber('limit_guests_org', guestsVal, config);
+      success &= await admin.updateConfigNumber('limit_social_links_org', socialVal, config);
     }
 
     if (mounted) {
@@ -150,29 +182,33 @@ class _AdminPermissionsScreenState extends State<AdminPermissionsScreen> {
   }
 
   Widget _buildRoleTab(String role, bool isDark, bool isLoading) {
-    bool createAppt;
-    bool createArticle;
+    TextEditingController createApptCtrl;
+    TextEditingController createArticleCtrl;
     bool comments;
     TextEditingController guestsCtrl;
+    TextEditingController socialLinksCtrl;
     String roleLabel;
 
     if (role == 'user') {
-      createAppt = _createApptUser;
-      createArticle = _createArticleUser;
+      createApptCtrl = _createApptUserCtrl;
+      createArticleCtrl = _createArticleUserCtrl;
       comments = _commentsUser;
       guestsCtrl = _guestsUserCtrl;
+      socialLinksCtrl = _socialLinksUserCtrl;
       roleLabel = 'مستخدم عادي';
     } else if (role == 'writer') {
-      createAppt = _createApptWriter;
-      createArticle = _createArticleWriter;
+      createApptCtrl = _createApptWriterCtrl;
+      createArticleCtrl = _createArticleWriterCtrl;
       comments = _commentsWriter;
       guestsCtrl = _guestsWriterCtrl;
+      socialLinksCtrl = _socialLinksWriterCtrl;
       roleLabel = 'كاتب معتمد';
     } else {
-      createAppt = _createApptOrg;
-      createArticle = _createArticleOrg;
+      createApptCtrl = _createApptOrgCtrl;
+      createArticleCtrl = _createArticleOrgCtrl;
       comments = _commentsOrg;
       guestsCtrl = _guestsOrgCtrl;
+      socialLinksCtrl = _socialLinksOrgCtrl;
       roleLabel = 'مؤسسة / جهة معتمدة';
     }
 
@@ -195,38 +231,24 @@ class _AdminPermissionsScreenState extends State<AdminPermissionsScreen> {
                 ),
               ),
 
-              // 📅 تدوين موعد
-              _buildSwitchCard(
+              // 📅 الحد اليومي للمواعيد
+              _buildInputCard(
                 icon: Icons.calendar_today_rounded,
-                title: 'تدوين موعد',
-                subtitle: 'السماح لهذه الفئة بإنشاء مواعيد جديدة للعامة والمتابعين',
-                value: createAppt,
+                title: 'الحد اليومي للمواعيد',
+                subtitle: 'أقصى عدد للمواعيد التي يمكن إنشاؤها يومياً (0 للمنع)',
+                controller: createApptCtrl,
                 isDark: isDark,
-                onChanged: (val) {
-                  setState(() {
-                    if (role == 'user') _createApptUser = val;
-                    else if (role == 'writer') _createApptWriter = val;
-                    else _createApptOrg = val;
-                  });
-                },
               ),
 
               const SizedBox(height: 12),
 
-              // 📝 تدوين مقال
-              _buildSwitchCard(
+              // 📝 الحد اليومي للمقالات
+              _buildInputCard(
                 icon: Icons.article_rounded,
-                title: 'تدوين مقال',
-                subtitle: 'السماح لهذه الفئة بكتابة ونشر مقالات جديدة للجمهور',
-                value: createArticle,
+                title: 'الحد اليومي للمقالات',
+                subtitle: 'أقصى عدد للمقالات التي يمكن نشرها يومياً (0 للمنع)',
+                controller: createArticleCtrl,
                 isDark: isDark,
-                onChanged: (val) {
-                  setState(() {
-                    if (role == 'user') _createArticleUser = val;
-                    else if (role == 'writer') _createArticleWriter = val;
-                    else _createArticleOrg = val;
-                  });
-                },
               ),
 
               const SizedBox(height: 12),
@@ -255,6 +277,17 @@ class _AdminPermissionsScreenState extends State<AdminPermissionsScreen> {
                 title: 'عدد الضيوف الأقصى',
                 subtitle: 'الحد الأقصى للأشخاص المستضافين في الموعد الواحد',
                 controller: guestsCtrl,
+                isDark: isDark,
+              ),
+
+              const SizedBox(height: 12),
+
+              // 🔗 عدد الروابط الاجتماعية الأقصى
+              _buildInputCard(
+                icon: Icons.link_rounded,
+                title: 'الحد الأقصى لروابط التواصل',
+                subtitle: 'أقصى عدد من الروابط الاجتماعية المسموح بإضافتها في الملف الشخصي',
+                controller: socialLinksCtrl,
                 isDark: isDark,
               ),
             ],

@@ -8,6 +8,24 @@ class PbArticleService {
   
   static const String collectionArticles = 'articles';
 
+  Future<int> getCreatedTodayCount(String userId) async {
+    try {
+      final now = DateTime.now().toUtc();
+      final todayStart = DateTime.utc(now.year, now.month, now.day);
+      final filter = 'author = "$userId" && created >= "${todayStart.toIso8601String()}"';
+      
+      final result = await _pb.collection(collectionArticles).getList(
+        filter: filter,
+        perPage: 1,
+        skipTotal: false,
+      );
+      return result.totalItems;
+    } catch (e) {
+      print('⚠️ Error fetching today articles count: $e');
+      return 0;
+    }
+  }
+
   /// جلب المقالات مع التصفية والفرز
   Future<List<Article>> getArticles({
     int page = 1, 

@@ -11,6 +11,7 @@ import '../../appointments/providers/appointment_provider.dart';
 import '../../../core/utils/app_date_formatter.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/article.dart';
+import '../../appointments/services/pb_appointment_service.dart';
 
 import '../../../core/services/appointment_draft_service.dart';
 import '../../../core/utils/arabic_search.dart';
@@ -1006,9 +1007,18 @@ class AddEventProvider extends ChangeNotifier {
     required UserModel currentUser,
     required AppointmentProvider appointmentProvider,
     required String locale,
+    required int dailyLimit,
     String? inviteTitle,
     String? inviteMessage,
   }) async {
+    // ⚠️ Check Daily Limit
+    if (_editingId == null) {
+      final todayCount = await PbAppointmentService().getCreatedTodayCount(currentUser.id);
+      if (todayCount >= dailyLimit) {
+        return 'لقد تجاوزت الحد اليومي لإنشاء المواعيد المسموح به لرتبتك ($dailyLimit مواعيد يومياً).';
+      }
+    }
+
     // Validation
     if (_selectedDate == null || (_duration != 0 && _selectedTime == null)) {
       return 'Please select date and time';

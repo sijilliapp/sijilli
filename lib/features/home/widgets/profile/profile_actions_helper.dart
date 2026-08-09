@@ -151,11 +151,67 @@ class ProfileActionsHelper {
   }
 
   static void showContactOptions(BuildContext context, UserModel user) {
-    if ((user.phone == null || user.phone!.isEmpty) && (user.socialLink == null || user.socialLink!.isEmpty)) {
+    if ((user.phone == null || user.phone!.isEmpty) && !user.hasSocialLink) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.noContactMethods)),
       );
       return;
+    }
+
+    String _cleanLink(String url) {
+      var clean = url.trim();
+      clean = clean.replaceFirst(RegExp(r'^https?://'), '');
+      clean = clean.replaceFirst(RegExp(r'^www\.'), '');
+      if (clean.endsWith('/')) {
+        clean = clean.substring(0, clean.length - 1);
+      }
+      return clean;
+    }
+
+    IconData _getIconForLink(String url) {
+      final clean = url.toLowerCase();
+      if (clean.contains('youtube.com') || clean.contains('youtu.be')) {
+        return Icons.play_circle_fill_rounded;
+      }
+      if (clean.contains('instagram.com')) {
+        return Icons.camera_alt_rounded;
+      }
+      if (clean.contains('facebook.com')) {
+        return Icons.facebook_rounded;
+      }
+      if (clean.contains('twitter.com') || clean.contains('x.com')) {
+        return Icons.alternate_email_rounded;
+      }
+      if (clean.contains('telegram.org') || clean.contains('t.me')) {
+        return Icons.send_rounded;
+      }
+      if (clean.contains('wa.me') || clean.contains('whatsapp.com')) {
+        return Icons.chat_rounded;
+      }
+      return Icons.language_rounded;
+    }
+
+    Color _getColorForLink(String url) {
+      final clean = url.toLowerCase();
+      if (clean.contains('youtube.com') || clean.contains('youtu.be')) {
+        return Colors.red;
+      }
+      if (clean.contains('instagram.com')) {
+        return Colors.purple;
+      }
+      if (clean.contains('facebook.com')) {
+        return Colors.blue.shade800;
+      }
+      if (clean.contains('twitter.com') || clean.contains('x.com')) {
+        return Colors.black87;
+      }
+      if (clean.contains('telegram.org') || clean.contains('t.me')) {
+        return Colors.lightBlue;
+      }
+      if (clean.contains('wa.me') || clean.contains('whatsapp.com')) {
+        return Colors.green;
+      }
+      return Colors.blue;
     }
 
     showModalBottomSheet(
@@ -180,11 +236,10 @@ class ProfileActionsHelper {
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey),
                 ),
               ),
-              if (user.phone != null && user.phone!.isNotEmpty)
+              if (user.phone != null && user.phone!.isNotEmpty) ...[
                 ListTile(
                   leading: const Icon(Icons.phone, color: Colors.green),
                   title: Text(user.phone!),
-                  subtitle: Text(context.l10n.directCall),
                   onTap: () async {
                     Navigator.pop(context);
                     final uri = Uri.parse('tel:${user.phone}');
@@ -193,14 +248,26 @@ class ProfileActionsHelper {
                     }
                   },
                 ),
-              if (user.socialLink != null && user.socialLink!.isNotEmpty)
                 ListTile(
-                  leading: const Icon(Icons.link, color: Colors.blue),
-                  title: Text(user.socialLink!),
-                  subtitle: Text(context.l10n.visitLink),
+                  leading: const Icon(Icons.chat_bubble_rounded, color: Colors.teal),
+                  title: Text('${user.phone!} (واتساب)'),
                   onTap: () async {
                     Navigator.pop(context);
-                    var urlStr = user.socialLink!.trim();
+                    final cleanPhone = user.phone!.replaceAll(RegExp(r'\D'), '');
+                    final uri = Uri.parse('https://wa.me/$cleanPhone');
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  },
+                ),
+              ],
+              for (final link in user.socialLinks)
+                ListTile(
+                  leading: Icon(_getIconForLink(link), color: _getColorForLink(link)),
+                  title: Text(_cleanLink(link)),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    var urlStr = link.trim();
                     if (!urlStr.startsWith('http://') && !urlStr.startsWith('https://')) {
                       urlStr = 'https://$urlStr';
                     }
