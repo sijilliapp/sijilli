@@ -60,7 +60,7 @@ class AppointmentCardHelper {
   }
 
   static AvatarStatus getAvatarStatus(Appointment appointment) {
-    if (appointment.isDeleted || appointment.isCancelled) {
+    if (appointment.isCancelled) {
       return AvatarStatus.deleted;
     }
     
@@ -145,8 +145,7 @@ class AppointmentCardHelper {
   }
 
   static String getStatusText(Appointment appointment, BuildContext context) {
-    if (appointment.isCancelled) return context.l10n.statusPast;
-    if (appointment.isDeleted) return context.l10n.statusDeleted;
+    if (appointment.isCancelled) return context.l10n.statusDeleted;
     if (appointment.isArchived) return context.l10n.statusArchived;
     if (appointment.isNow) return context.l10n.statusActiveNow;
     if (appointment.isPast) return context.l10n.statusPast;

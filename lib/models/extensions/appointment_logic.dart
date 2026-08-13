@@ -182,7 +182,7 @@ extension AppointmentLogic on Appointment {
   /// 2: مستقبلي
   /// 3: منتهي/ملغى/مؤرشف
   int get sortWeight {
-    if (isCancelled || isDeleted || isArchived) return 3;
+    if (isCancelled || isArchived) return 3;
     if (isNow) return 0;
     if (isUpcoming) return 1;
     if (isPast) return 3;
@@ -191,8 +191,7 @@ extension AppointmentLogic on Appointment {
   
   /// نص حالة الموعد (للعرض)
   String get statusText {
-    if (isCancelled) return 'فائت';
-    if (isDeleted) return 'محذوف';
+    if (isCancelled) return 'محذوف';
     if (isArchived) return 'مؤرشف';
     if (isNow) return 'جاري الآن';
     if (isPast) return 'فائت';

@@ -277,7 +277,7 @@ class AppointmentProvider extends ChangeNotifier {
   List<Appointment> get bookmarkedAppointments {
     return _bookmarkedAppointments.where((a) {
       final isBlocked = _moderation?.isUserBlocked(a.hostId) ?? false;
-      final isSourceDead = a.isCancelled || a.isDeleted;
+      final isSourceDead = a.isCancelled;
       return !isBlocked && !isSourceDead;
     }).toList();
   }
@@ -298,8 +298,7 @@ class AppointmentProvider extends ChangeNotifier {
       // Global safety filters
       return a.viewerRecord?.postStatus == PostStatus.published &&
              !a.isPast &&
-             !a.isCancelled &&
-             !a.isDeleted;
+             !a.isCancelled;
     }).length;
   }
 
@@ -1066,7 +1065,7 @@ class AppointmentProvider extends ChangeNotifier {
     return _appointments.where((appt) {
       if (appt.id == excludeId) return false;
       
-      if (appt.isCancelled || appt.isDeleted || appt.isUserDeleted) return false;
+      if (appt.isCancelled || appt.isUserDeleted) return false;
       if (appt.viewerRecord?.postStatus == PostStatus.trash) return false;
       if (appt.viewerRecord?.status == InvitationStatus.declined || 
           appt.viewerRecord?.status == InvitationStatus.deletedAfterAccept) {

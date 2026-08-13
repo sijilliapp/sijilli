@@ -508,7 +508,7 @@ class AddEventProvider extends ChangeNotifier {
       if (a.id == _editingId) return false;
       
       // Ignore cancelled or deleted (global or personal trash)
-      if (a.isCancelled || a.isDeleted || a.isUserDeleted) return false;
+      if (a.isCancelled || a.isUserDeleted) return false;
       
       // Ignore declined (rejected) and deletedAfterAccept
       if (a.viewerRecord?.status == InvitationStatus.declined || 

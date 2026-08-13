@@ -22,8 +22,7 @@ class PbAppointmentBrowseService {
           ' && appointment.is_confirmed = true'
           ' && appointment.host.isPublic = true'
           ' && appointment.start_at > "$ongoingThreshold"'
-          ' && appointment.is_cancelled = false'
-          ' && appointment.is_deleted = false';
+          ' && appointment.is_cancelled = false';
 
       if (userRegion != null && userRegion.isNotEmpty) {
         filter += ' && (appointment.host.role = "approved" || appointment.host.role = "writer"'

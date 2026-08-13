@@ -155,7 +155,6 @@ class StandardPolicy extends AppointmentCardPolicy {
   @override
   AvatarStatus get hostAvatarStatus {
     if (appointment.isUserDeleted || 
-        appointment.isDeleted || 
         appointment.isCancelled) {
       return AvatarStatus.deleted;
     }

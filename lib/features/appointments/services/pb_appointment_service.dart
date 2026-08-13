@@ -216,8 +216,7 @@ class PbAppointmentService {
       // - لا أحد قبل → is_cancelled (طوق رمادي عند الضيوف)
       // - أحدهم قبل  → is_deleted  (طوق أحمر عند الضيوف)
       await _pb.collection(collectionAppointments).update(id, body: {
-        'is_cancelled': !hasAcceptedGuest,
-        'is_deleted': hasAcceptedGuest,
+        'is_cancelled': true,
       });
 
       // حذف نسخة المستضيف الشخصية فقط
@@ -326,17 +325,16 @@ class PbAppointmentService {
       final filter = appointmentIds.map((id) => 'id="$id"').join('||');
       final result = await _pb.collection(collectionAppointments).getList(
         filter: '($filter)',
-        fields: 'id,is_cancelled,is_deleted,start_at,duration',
+        fields: 'id,is_cancelled,start_at,duration',
       );
       final now = DateTime.now().toUtc();
       final inactiveIds = <String>{};
       for (var record in result.items) {
         final isCancelled = record.getBoolValue('is_cancelled');
-        final isDeleted = record.getBoolValue('is_deleted');
         final startAt = DateTime.parse(record.getStringValue('start_at'));
         final duration = record.getIntValue('duration');
         final endAt = startAt.add(Duration(minutes: duration));
-        if (isCancelled || isDeleted || now.isAfter(endAt)) {
+        if (isCancelled || now.isAfter(endAt)) {
           inactiveIds.add(record.id);
         }
       }
