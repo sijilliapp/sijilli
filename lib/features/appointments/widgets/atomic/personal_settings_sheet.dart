@@ -330,7 +330,6 @@ class _PersonalSettingsSheetState extends State<PersonalSettingsSheet> {
 
   void _showCloneOptions() {
     bool deleteOriginal = false;
-    bool isLoading = false;
 
     showDialog(
       context: context,
@@ -375,7 +374,7 @@ class _PersonalSettingsSheetState extends State<PersonalSettingsSheet> {
                     value: deleteOriginal,
                     activeColor: Colors.pinkAccent,
                     activeTrackColor: Colors.pinkAccent.withOpacity(0.3),
-                    onChanged: isLoading ? null : (val) {
+                    onChanged: (val) {
                       setState(() {
                         deleteOriginal = val;
                       });
@@ -386,7 +385,7 @@ class _PersonalSettingsSheetState extends State<PersonalSettingsSheet> {
             ),
             actions: [
               TextButton(
-                onPressed: isLoading ? null : () => Navigator.pop(dialogCtx),
+                onPressed: () => Navigator.pop(dialogCtx),
                 child: Text(context.l10n.cancel),
               ),
               ElevatedButton(
@@ -395,43 +394,26 @@ class _PersonalSettingsSheetState extends State<PersonalSettingsSheet> {
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                onPressed: isLoading ? null : () async {
-                  setState(() => isLoading = true);
-                  try {
-                    if (deleteOriginal) {
-                      await context.read<AppointmentProvider>().deleteInvitation(widget.appointment.id);
-                    }
-                    
-                    if (dialogCtx.mounted) {
-                      Navigator.pop(dialogCtx); // Close dialog
-                    }
-                    if (mounted) {
-                      Navigator.pop(context); // Close sheet
-                      
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => AddEventScreen(initialAppointment: widget.appointment),
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (dialogCtx.mounted) {
-                      setState(() => isLoading = false);
-                    }
+                onPressed: () {
+                  if (deleteOriginal) {
+                    context.read<AppointmentProvider>().deleteInvitation(widget.appointment.id);
                   }
+                  
+                  Navigator.pop(dialogCtx); // Close dialog
+                  Navigator.pop(context); // Close sheet
+                  
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AddEventScreen(initialAppointment: widget.appointment),
+                    ),
+                  );
                 },
-                child: isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                      )
-                    : Text(
-                        deleteOriginal 
-                            ? (isAr ? 'حذف واستنساخ' : 'Delete & Clone')
-                            : (isAr ? 'استنساخ فقط' : 'Clone Only'),
-                      ),
+                child: Text(
+                  deleteOriginal 
+                      ? (isAr ? 'حذف واستنساخ' : 'Delete & Clone')
+                      : (isAr ? 'استنساخ فقط' : 'Clone Only'),
+                ),
               ),
             ],
           );
