@@ -75,10 +75,11 @@ class PocketBaseHttpClient extends http.BaseClient {
     final needsWakeup = now.difference(_lastSuccessTime) > const Duration(minutes: 5);
 
     if (needsWakeup && !_isWakingUp) {
-      // Run proactive wake up ping in the background without blocking the original request
-      _wakeUpServer(request.url.origin).catchError((e) {
+      try {
+        await _wakeUpServer(request.url.origin);
+      } catch (e) {
         print('⚠️ [PocketBaseHttpClient] Proactive wake up ping failed: $e');
-      });
+      }
     }
 
     int attempts = 3;
