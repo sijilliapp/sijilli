@@ -582,8 +582,11 @@ class NotificationProvider extends ChangeNotifier {
 
     // 1. Process regular active appointments
     for (final appt in appointments) {
-       // Skip cancelled or past
+       // Skip cancelled or past (and cancel any scheduled notifications for them)
        if (appt.isCancelled || appt.isPast) {
+         await cancelid(appt.id.hashCode);
+         await cancelid('${appt.id}_1day'.hashCode);
+         await cancelid('${appt.id}_offset'.hashCode);
          continue;
        }
        
@@ -627,9 +630,21 @@ class NotificationProvider extends ChangeNotifier {
     }
 
     // 2. Process bookmarked/saved appointments
+    final activeIds = appointments.map((a) => a.id).toSet();
     for (final appt in bookmarkedAppointments) {
-       // Skip cancelled or past
+       // Cancel bookmark reminder if it is already in active appointments (to prevent duplicates)
+       if (activeIds.contains(appt.id)) {
+         await cancelid('saved_${appt.id}'.hashCode);
+         await cancelid('saved_${appt.id}_1day'.hashCode);
+         await cancelid('saved_${appt.id}_offset'.hashCode);
+         continue;
+       }
+
+       // Skip cancelled or past (and cancel any scheduled notifications for them)
        if (appt.isCancelled || appt.isPast) {
+         await cancelid('saved_${appt.id}'.hashCode);
+         await cancelid('saved_${appt.id}_1day'.hashCode);
+         await cancelid('saved_${appt.id}_offset'.hashCode);
          continue;
        }
 
