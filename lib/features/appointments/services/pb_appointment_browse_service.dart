@@ -186,7 +186,7 @@ class PbAppointmentBrowseService {
       final resultList = await _pb.collection(collectionInvitations).getFullList(
         filter: filter,
         sort: '+appointment.start_at',
-        expand: 'appointment,appointment.host,appointment.invitations_via_appointment.user,appointment.invitations_via_appointment.linked_article,categories',
+        expand: 'appointment,appointment.host,appointment.invitations_via_appointment,categories',
       );
 
       if (kDebugMode) {
