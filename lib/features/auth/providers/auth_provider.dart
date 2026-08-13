@@ -112,6 +112,9 @@ class AuthProvider extends ChangeNotifier {
     _updateState(loading: true, status: AuthStatus.loading);
     
     try {
+      // إيقاظ الخادم على الفور عند بدء التشغيل
+      await PocketBaseClient.instance.wakeUpServer();
+      
       // تحميل الأدوار المخزنة كاش إلى الذاكرة المؤقتة للـ UserModel فوراً
       try {
         await _roleService.getCachedUserRoles();
