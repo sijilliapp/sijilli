@@ -183,15 +183,15 @@ class PbAppointmentBrowseService {
         print('🔍 [PbAppointmentBrowseService] Fetching with filter: $filter');
       }
 
-      final resultList = await _pb.collection(collectionInvitations).getList(
+      final resultList = await _pb.collection(collectionInvitations).getFullList(
         filter: filter,
         sort: '+appointment.start_at',
         expand: 'appointment,appointment.host,appointment.invitations_via_appointment.user,appointment.invitations_via_appointment.linked_article,categories',
       );
 
       if (kDebugMode) {
-        print('🌐 [PbAppointmentBrowseService] Found ${resultList.items.length} invitations for $targetUserId');
-        for (var item in resultList.items) {
+        print('🌐 [PbAppointmentBrowseService] Found ${resultList.length} invitations for $targetUserId');
+        for (var item in resultList) {
            final appt = item.expand['appointment']?[0];
            print('   - Inv ID: ${item.id}, Privacy: ${item.getStringValue('privacy')}, Appt Title: ${appt?.getStringValue('title')}');
         }
@@ -200,7 +200,7 @@ class PbAppointmentBrowseService {
       final List<Appointment> appointments = [];
       final Set<String> seenApptIds = {};
 
-      for (final record in resultList.items) {
+      for (final record in resultList) {
         final invJson = record.toJson();
         
         // PB 0.22+ expand is always a list
