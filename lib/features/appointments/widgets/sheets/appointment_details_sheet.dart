@@ -262,11 +262,7 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
                         isArchived: _appointment.isArchived,
                         isReadOnly: _appointment.isReadOnly,
                         onClone: () {
-                           Navigator.pop(context);
-                           Navigator.push(
-                             context, 
-                             MaterialPageRoute(builder: (_) => AddEventScreen(initialAppointment: _appointment))
-                           );
+                           _showCloneOptions();
                         },
                         onArchive: () {
                            final provider = context.read<AppointmentProvider>();
@@ -609,6 +605,118 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
           ],
         );
       }
+    );
+  }
+
+  void _showCloneOptions() {
+    bool deleteOriginal = false;
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (context, setState) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          final isAr = Localizations.localeOf(context).languageCode == 'ar';
+          
+          return AlertDialog(
+            title: Text(
+              isAr ? 'استنساخ الموعد' : 'Clone Appointment',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  isAr 
+                      ? 'سيتم فتح شاشة إضافة موعد جديد مع ملء البيانات تلقائياً بالاعتماد على هذا الموعد.'
+                      : 'A new appointment creation screen will open, prefilled with this appointment\'s details.',
+                  style: const TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.grey.shade900 : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: SwitchListTile(
+                    title: Text(
+                      isAr ? 'هل تريد حذف الموعد الأصلي؟' : 'Delete original appointment?',
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      isAr 
+                          ? 'عند التفعيل، سيتم حذف هذا الموعد الحالي واستبداله بالنسخة المستنسخة الجديدة.'
+                          : 'If enabled, the current appointment will be deleted and replaced by the new cloned one.',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                    value: deleteOriginal,
+                    activeColor: Colors.pinkAccent,
+                    activeTrackColor: Colors.pinkAccent.withOpacity(0.3),
+                    onChanged: isLoading ? null : (val) {
+                      setState(() {
+                        deleteOriginal = val;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: isLoading ? null : () => Navigator.pop(dialogCtx),
+                child: Text(context.l10n.cancel),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: deleteOriginal ? Colors.pinkAccent : AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: isLoading ? null : () async {
+                  setState(() => isLoading = true);
+                  try {
+                    if (deleteOriginal) {
+                      await context.read<AppointmentProvider>().deleteInvitation(_appointment.id);
+                    }
+                    
+                    if (dialogCtx.mounted) {
+                      Navigator.pop(dialogCtx); // Close dialog
+                    }
+                    if (mounted) {
+                      Navigator.pop(context); // Close sheet
+                      
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AddEventScreen(initialAppointment: _appointment),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (dialogCtx.mounted) {
+                      setState(() => isLoading = false);
+                    }
+                  }
+                },
+                child: isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : Text(
+                        deleteOriginal 
+                            ? (isAr ? 'حذف واستنساخ' : 'Delete & Clone')
+                            : (isAr ? 'استنساخ فقط' : 'Clone Only'),
+                      ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
