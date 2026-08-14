@@ -32,9 +32,7 @@ class PbAppointmentService {
       // ملاحظة: نعرض المواعيد حتى لو كانت is_cancelled أو is_deleted على السجل المركزي
       // لأن الضيوف يجب أن يروا الطوق الأحمر/الرمادي — نسخهم الشخصية لم تُحذف
 
-      final resultList = await _pb.collection(collectionInvitations).getList(
-        page: page,
-        perPage: perPage,
+      final resultList = await _pb.collection(collectionInvitations).getFullList(
         filter: filter,
         sort: '+appointment.start_at', 
         expand: 'appointment,appointment.host,appointment.invitations_via_appointment.user,appointment.invitations_via_appointment.categories,categories,appointment.invitations_via_appointment.linked_article',
