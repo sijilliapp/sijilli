@@ -864,6 +864,21 @@ class NotificationLocalizer {
     } else if (originalTitle == 'تأكيد موعد' || originalTitle == 'تم تأكيد الموعد' || titleLower.contains('confirm')) {
       title = 'Appointment Confirmed';
       message = 'The appointment has been confirmed';
+    } else if (originalTitle == 'تذكير موعد' || titleLower.contains('reminder') || msgLower.contains('تذكير')) {
+      title = 'Appointment Reminder';
+      message = 'Upcoming appointment reminder';
+    } else if (originalTitle == 'تحديث موعد' || originalTitle == 'تعديل موعد' || titleLower.contains('update')) {
+      title = 'Appointment Updated';
+      message = 'Appointment details have been updated';
+    } else if (originalTitle == 'قبول دعوة' || titleLower.contains('accepted invitation')) {
+      title = 'Invitation Accepted';
+      message = '$namePart accepted your invitation';
+    } else if (originalTitle == 'رفض دعوة' || titleLower.contains('declined invitation')) {
+      title = 'Invitation Declined';
+      message = '$namePart declined your invitation';
+    } else if (originalTitle == 'إشعار نظام' || originalTitle == 'إشعار عام' || titleLower.contains('system notification')) {
+      title = 'System Notification';
+      message = originalMessage;
     }
 
     return {
