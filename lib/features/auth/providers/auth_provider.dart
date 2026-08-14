@@ -16,6 +16,7 @@ import '../../../models/user.dart';
 import 'package:pocketbase/pocketbase.dart';
 import '../services/pb_claim_service.dart';
 import '../services/pb_role_service.dart';
+import '../../../core/services/onesignal_service.dart';
 
 enum AuthStatus {
   initial,      
@@ -131,6 +132,7 @@ class AuthProvider extends ChangeNotifier {
         _status = AuthStatus.authenticated;
         // Also ensure local DB is synced
         await _localDb.saveUser(pbUser);
+        OneSignalService.instance.loginUser(pbUser.id);
       } else {
         // 2. Second priority: Fallback to local DB (might have user but expired token)
         final localUser = await _localDb.getUser().timeout(

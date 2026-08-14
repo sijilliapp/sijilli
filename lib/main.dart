@@ -36,6 +36,8 @@ import 'package:sijilli/features/add/providers/add_event_provider.dart';
 import 'package:sijilli/core/providers/broadcast_provider.dart';
 
 
+import 'package:sijilli/core/services/onesignal_service.dart';
+
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
 void main() async { // Changed to async
@@ -76,6 +78,9 @@ void main() async { // Changed to async
 
   // تهيئة PocketBase أولاً لأن الخدمات الأخرى تعتمد عليه
   await PocketBaseClient.instance.initialize();
+  
+  // تهيئة OneSignal لإشعارات الآيفون والاندرويد الحية
+  await OneSignalService.instance.initialize();
 
   // تهيئة المزودات الأساسية مسبقاً
   final themeProvider = ThemeProvider();
