@@ -41,7 +41,7 @@ class PbAppointmentService {
       final Set<String> seenApptIds = {};
       final List<Appointment> appointments = [];
 
-      for (var record in resultList.items) {
+      for (var record in resultList) {
         final invitationJson = record.toJson();
         var appData = invitationJson['expand']?['appointment'];
         if (appData is List && appData.isNotEmpty) appData = appData.first;
