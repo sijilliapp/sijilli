@@ -618,7 +618,7 @@ class Appointment {
       'region': region,
       'building': building,
       'coordinates': coordinates,
-      'privacy': privacy,
+      'privacy': privacy == 'public' ? 'public' : null,
       'description': description,
       'participants_count': participantsCount,
       'invited_count': invitedCount,
