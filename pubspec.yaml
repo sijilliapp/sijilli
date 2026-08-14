@@ -74,7 +74,7 @@ flutter_launcher_icons:
     background_color: "#ffffff"
     theme_color: "#ffffff"
   image_path_android: "assets/logo/logo.jpg"
-  image_path_ios: "assets/logo/logo.jpg"
+  image_path_ios: "assets/logo/logo_apple.jpg"
   min_sdk_android: 21
   remove_alpha_ios: true
 
