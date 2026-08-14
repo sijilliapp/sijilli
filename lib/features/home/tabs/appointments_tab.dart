@@ -230,24 +230,7 @@ class _AppointmentsTabState extends State<AppointmentsTab> {
                  status == InvitationStatus.accepted;
         }).toList();
 
-        final List<Appointment> appointments = [];
-        final Set<String> processedGroups = {};
-        rawAppointments.sort((a, b) => a.startAt.compareTo(b.startAt));
-
-        for (var a in rawAppointments) {
-          if (a.appointmentGroupId == null || a.appointmentGroupId!.isEmpty) {
-            appointments.add(a);
-            continue;
-          }
-          if (a.isPast) {
-            appointments.add(a);
-            continue;
-          }
-          if (!processedGroups.contains(a.appointmentGroupId)) {
-            appointments.add(a);
-            processedGroups.add(a.appointmentGroupId!);
-          }
-        }
+        final List<Appointment> appointments = List<Appointment>.from(rawAppointments);
 
         appointments.sort((a, b) {
           int score(Appointment app) {
