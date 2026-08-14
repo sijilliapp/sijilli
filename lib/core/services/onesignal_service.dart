@@ -38,6 +38,16 @@ class OneSignalService {
       // 2. طلب صلاحية الإشعارات من المستخدم (خاصة لنظام iOS / APNs)
       await OneSignal.Notifications.requestPermission(true);
 
+      // 3. مستمع الإشعارات في الواجهة الأمامية وعند النقر
+      OneSignal.Notifications.addClickListener((event) {
+        debugPrint('🔔 [OneSignalService] Notification clicked: ${event.notification.title}');
+      });
+
+      OneSignal.Notifications.addForegroundWillDisplayListener((event) {
+        debugPrint('🔔 [OneSignalService] Foreground notification received: ${event.notification.title}');
+        event.notification.display();
+      });
+
       _isInitialized = true;
       debugPrint('✅ [OneSignalService] Initialized successfully with App ID: $_currentAppId');
     } catch (e) {
