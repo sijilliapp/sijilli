@@ -39,7 +39,7 @@ class AppointmentCard extends StatelessWidget {
       policy = PublicPolicy(appointment, context, customOnTap: onTap);
     } else if (appointment.isArchived) {
       policy = ArchivedPolicy(appointment, context, customOnTap: onTap);
-    } else if (appointment.isDeleted || appointment.isUserDeleted) {
+    } else if (appointment.isDeleted) {
       policy = DeletedPolicy(appointment, context, customOnTap: onTap);
     } else {
       policy = StandardPolicy(appointment, context, customOnTap: onTap);

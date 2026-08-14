@@ -18,8 +18,7 @@ class PublicPolicy extends AppointmentCardPolicy {
 
   @override
   Color get mainStatusColor {
-    final invStatus = appointment.currentUserInvitation?.status ?? InvitationStatus.accepted;
-    if (invStatus == InvitationStatus.deletedAfterAccept || appointment.isUserDeleted) return Colors.red;
+    if (appointment.isDeleted) return AppColors.warning;
     if (appointment.isCancelled) return Colors.grey.shade400;
     return AppColors.primary;
   }
@@ -242,7 +241,7 @@ class PublicPolicy extends AppointmentCardPolicy {
 
   @override
   AvatarStatus get hostAvatarStatus {
-    if (appointment.isUserDeleted || 
+    if (appointment.isDeleted || 
         appointment.isCancelled) {
       return AvatarStatus.deleted;
     }
