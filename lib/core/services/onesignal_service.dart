@@ -11,7 +11,7 @@ class OneSignalService {
   OneSignalService._internal();
 
   /// معرف تطبيق OneSignal الخاص بك (يمكنك استبداله بالـ App ID الخاص بحسابك في OneSignal)
-  static const String defaultAppId = 'YOUR_ONESIGNAL_APP_ID';
+  static const String defaultAppId = 'c6b787e8-372e-413a-b64a-31704ff17821';
   static String _currentAppId = defaultAppId;
 
   bool _isInitialized = false;
