@@ -108,6 +108,9 @@ class OneSignalService {
         'target_channel': 'push',
         'headings': {'en': title, 'ar': title},
         'contents': {'en': message, 'ar': message},
+        'content_available': true,
+        'mutable_content': true,
+        'priority': 10,
         if (data != null) 'data': data,
       };
 
