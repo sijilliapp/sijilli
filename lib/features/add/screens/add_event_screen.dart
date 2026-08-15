@@ -591,7 +591,6 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
                 onWordSelected: _onWordSelected,
                 pivotSuggestions: provider.pivotSuggestions,
                 onPivotSelected: _onPivotSelected,
-                onSmartParse: _onSmartParse,
                 
                 // Location Props
                 locationFocusNode: _locationFocusNode,

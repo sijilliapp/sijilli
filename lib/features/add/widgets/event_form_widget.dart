@@ -35,7 +35,6 @@ class EventFormWidget extends StatelessWidget {
   final bool pinAddress;
   final ValueChanged<bool>? onPinAddressChanged;
   final VoidCallback? onOpenLocationPicker;
-  final VoidCallback? onSmartParse;
 
   const EventFormWidget({
     super.key,
@@ -63,7 +62,6 @@ class EventFormWidget extends StatelessWidget {
     this.pinAddress = false,
     this.onPinAddressChanged,
     this.onOpenLocationPicker,
-    this.onSmartParse,
   });
 
   @override
@@ -113,19 +111,12 @@ class EventFormWidget extends StatelessWidget {
 
         CustomTextField(
           controller: descriptionController,
-          label: context.l10n.localeName == 'ar' ? 'الملاحظات العامة (مرجع الموعد) 📝' : 'General Notes (Reference) 📝',
+          label: context.l10n.localeName == 'ar' ? 'الملاحظات العامة 📝' : 'General Notes 📝',
           hint: context.l10n.localeName == 'ar'
-              ? 'اكتب أو الصق نص الدعوة هنا ثم اضغط العصا السحرية لاستخلاص البيانات...'
-              : 'Write or paste the invitation text here and tap the magic wand to extract details...',
+              ? 'أضف ملاحظات تفصيلية للموعد (اختياري)...'
+              : 'Add detailed notes for the appointment (optional)...',
           maxLength: 1000,
           showCountdown: true,
-          suffixIcon: onSmartParse != null
-              ? IconButton(
-                  icon: const Icon(Icons.auto_awesome, color: AppColors.primary, size: 22),
-                  tooltip: context.l10n.localeName == 'ar' ? 'تفكيك وتحليل النص بالذكاء' : 'AI Parse Text',
-                  onPressed: onSmartParse,
-                )
-              : null,
         ),
         const SizedBox(height: 12),
         
