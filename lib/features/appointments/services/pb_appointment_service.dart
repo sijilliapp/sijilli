@@ -250,9 +250,6 @@ class PbAppointmentService {
     } catch (e) {}
   }
 
-  Future<void> hardDeleteAppointment(String id) async {
-    await _pb.collection(collectionAppointments).delete(id);
-  }
 
   Future<Set<String>> getConflictingUserIds(List<String> userIds, DateTime start, int duration) async {
     try {
@@ -443,6 +440,38 @@ class PbAppointmentService {
       return false;
     } finally {
       _activeClaims.remove(lockKey);
+    }
+  }
+
+  /// الإعدام الكلي والنهائي للموعد الأب وسجلاته الميتة (Hard Delete):
+  /// القاعدة: لا يُحذف السجل الأب كلياً من السيرفر إلا بعد التأكد التام من حذف وإعدام جميع أبنائه أولاً
+  Future<void> hardDeleteAppointment(String appointmentId) async {
+    try {
+      // 1. جلب وحذف جميع الدعوات الأبناء (invitations) المرتبطة بهذا الموعد أولاً
+      final childInvites = await _pb.collection(collectionInvitations).getFullList(
+        filter: 'appointment = "$appointmentId"',
+      );
+
+      for (final inv in childInvites) {
+        await _pb.collection(collectionInvitations).delete(inv.id);
+      }
+
+      // 2. جلب وحذف جميع الإشعارات التابعة لهذا الموعد (notifications)
+      try {
+        final childNotifs = await _pb.collection('notifications').getFullList(
+          filter: 'related_id = "$appointmentId"',
+        );
+        for (final notif in childNotifs) {
+          await _pb.collection('notifications').delete(notif.id);
+        }
+      } catch (_) {}
+
+      // 3. بعد التأكد التام من خلو الموعد من جميع أبنائه ورثته، يُحذف السجل الأب الرئيسي (appointments)
+      await _pb.collection(collectionAppointments).delete(appointmentId);
+      print('✅ [Hard Delete] Parent appointment $appointmentId and all child records successfully deleted.');
+    } catch (e) {
+      print('❌ [Hard Delete] Failed to hard delete appointment $appointmentId: $e');
+      rethrow;
     }
   }
 

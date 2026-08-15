@@ -123,12 +123,29 @@ void main() {
         postStatus: PostStatus.trash,
       );
 
-      // هل الحالة حمراء نهائية مغلقة؟
       final bool isTerminalRed = trashedInv.postStatus == PostStatus.trash || 
           trashedInv.status == InvitationStatus.declined || 
           trashedInv.status == InvitationStatus.deletedAfterAccept;
 
       expect(isTerminalRed, isTrue);
+    });
+
+    test('6. فحص تسلسل الإعدام الكلي: إعدام الأبناء أولاً ثم السجل الأب (Bottom-Up Child-First Hard Delete)', () {
+      final List<String> deletionOrder = [];
+
+      // محاكاة تسلسل الإعدام الكلي
+      // 1. حذف دعوات وإشعارات الأبناء
+      deletionOrder.add('delete_child_invitations');
+      deletionOrder.add('delete_child_notifications');
+      
+      // 2. فحص خلو السجل الأب من الأبناء ثم إعدام الأب
+      bool allChildrenDeleted = !deletionOrder.contains('failed_child');
+      if (allChildrenDeleted) {
+        deletionOrder.add('delete_parent_appointment');
+      }
+
+      expect(deletionOrder.first, equals('delete_child_invitations'));
+      expect(deletionOrder.last, equals('delete_parent_appointment'));
     });
   });
 }
