@@ -856,7 +856,7 @@ class AppointmentProvider extends ChangeNotifier {
         ? (listType == 'active' ? _appointments[indexBefore] : _archivedAppointments[indexBefore])
         : null;
 
-    final bool isHost = appointment?.hostId == _currentUserId;
+    final bool isHost = (_currentUserId ?? '').isNotEmpty && appointment?.hostId == _currentUserId;
 
     // 1. Optimistic Update: Remove from current list and add to trashed list
     if (appointment != null) {

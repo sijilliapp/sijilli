@@ -44,17 +44,13 @@ class AppointmentParticipantsList extends StatelessWidget {
 
     // Determine Host Status
     AvatarStatus hostStatus = AvatarStatus.upcoming; // Default Blue
-    if (participants != null && hostId != null) {
+    if (participants != null && hostId != null && hostId!.isNotEmpty) {
        final hostP = participants!.firstWhere(
           (p) => p.userId == hostId, 
           orElse: () => Invitation(id: '', appointmentId: '', userId: '', status: InvitationStatus.accepted)
        );
-       if (hostP.status == InvitationStatus.deletedAfterAccept) {
-          if (viewerStatus == InvitationStatus.accepted) {
-             hostStatus = AvatarStatus.deleted; // Red
-          } else {
-             hostStatus = AvatarStatus.none; // Grey
-          }
+       if (hostP.userId == hostId && hostP.postStatus == PostStatus.trash) {
+          hostStatus = AvatarStatus.deleted; // Red only if host trashed their own invitation
        }
     }
 
@@ -74,8 +70,8 @@ class AppointmentParticipantsList extends StatelessWidget {
             );
             
             AvatarStatus hostAvatarStatus = AvatarStatus.upcoming;
-            if (hostP?.status == InvitationStatus.deletedAfterAccept) {
-              hostAvatarStatus = viewerStatus == InvitationStatus.accepted ? AvatarStatus.deleted : AvatarStatus.none;
+            if (hostP?.userId == hostId && hostP?.postStatus == PostStatus.trash) {
+              hostAvatarStatus = AvatarStatus.deleted;
             }
 
             return ListTile(
@@ -150,8 +146,13 @@ class AppointmentParticipantsList extends StatelessWidget {
         if (guests.isNotEmpty) ...[
           ...guests.map((p) {
              AvatarStatus status = AvatarStatus.none;
-             if (p.status == InvitationStatus.accepted) status = AvatarStatus.upcoming;
-             else if (p.status == InvitationStatus.declined || p.status == InvitationStatus.deletedAfterAccept) status = AvatarStatus.deleted;
+             if (p.postStatus == PostStatus.trash || 
+                 p.status == InvitationStatus.declined || 
+                 p.status == InvitationStatus.deletedAfterAccept) {
+               status = AvatarStatus.deleted; // Red ring for deleted/declined guest
+             } else if (p.status == InvitationStatus.accepted && p.postStatus == PostStatus.published) {
+               status = AvatarStatus.upcoming; // Blue ring only for active published guest
+             }
              
              return ListTile(
               contentPadding: EdgeInsets.zero,

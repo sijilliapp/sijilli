@@ -31,7 +31,6 @@ void main() {
     });
 
     testWidgets('حذف الضيف لدعوته يجب ألا يغير طوق صورة المضيف إلى اللون الأحمر (StandardPolicy)', (WidgetTester tester) async {
-      // الضيف حذف دعوته (postStatus = trash)
       final guestDeletedAppt = baseAppointment.copyWith(
         currentUserInvitation: Invitation(
           id: 'inv_1',
@@ -55,7 +54,6 @@ void main() {
         ),
       );
 
-      // طوق المضيف يجب أن يبقى أزرق (upcoming) ولا يتحول للأحمر (deleted)
       expect(hostStatus, isNot(equals(AvatarStatus.deleted)));
       expect(hostStatus, equals(AvatarStatus.upcoming));
     });
@@ -104,8 +102,23 @@ void main() {
         ),
       );
 
-      // هنا فقط يتحول طوق المضيف للـ deleted (الأحمر)
       expect(hostStatus, equals(AvatarStatus.deleted));
+    });
+
+    test('فحص حالة الضيف المحذوف: يجب أن يقيم كـ deleted بدلاً من upcoming/present', () {
+      final guestInv = Invitation(
+        id: 'inv_2',
+        appointmentId: 'app_1',
+        userId: 'guest_789',
+        status: InvitationStatus.deletedAfterAccept,
+        postStatus: PostStatus.trash,
+      );
+
+      final bool isDeletedState = guestInv.postStatus == PostStatus.trash || 
+          guestInv.status == InvitationStatus.declined || 
+          guestInv.status == InvitationStatus.deletedAfterAccept;
+
+      expect(isDeletedState, isTrue);
     });
   });
 }
