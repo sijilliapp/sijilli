@@ -108,17 +108,6 @@ class EventFormWidget extends StatelessWidget {
         ),
 
         const SizedBox(height: 12),
-
-        CustomTextField(
-          controller: descriptionController,
-          label: context.l10n.localeName == 'ar' ? 'الملاحظات العامة 📝' : 'General Notes 📝',
-          hint: context.l10n.localeName == 'ar'
-              ? 'أضف ملاحظات تفصيلية للموعد (اختياري)...'
-              : 'Add detailed notes for the appointment (optional)...',
-          maxLength: 1000,
-          showCountdown: true,
-        ),
-        const SizedBox(height: 12),
         
         Row(
           children: [
@@ -216,6 +205,18 @@ class EventFormWidget extends StatelessWidget {
                   ),
                 )
               : const SizedBox.shrink(key: ValueKey('no_location_suggestions')),
+        ),
+
+        const SizedBox(height: 12),
+
+        CustomTextField(
+          controller: descriptionController,
+          label: context.l10n.localeName == 'ar' ? 'الملاحظات العامة 📝' : 'General Notes 📝',
+          hint: context.l10n.localeName == 'ar'
+              ? 'أضف ملاحظات تفصيلية للموعد (اختياري)...'
+              : 'Add detailed notes for the appointment (optional)...',
+          maxLength: 1000,
+          showCountdown: true,
         ),
 
         // streamLink removed from creation form as it can be added later in details screen
