@@ -606,7 +606,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
                 onOpenLocationPicker: () => _openLocationPicker(provider),
               ), 
             
-            const SizedBox(height: AppDimens.spaceXXS),
+            const SizedBox(height: 12.0),
             
             Consumer<AuthProvider>(
               builder: (context, auth, _) {
@@ -629,7 +629,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
               },
             ),
             
-            const SizedBox(height: AppDimens.spaceXXS),
+            const SizedBox(height: 12.0),
 
             DateTimeSection(
               isHijri: provider.isHijri,
@@ -643,11 +643,11 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
             ),
             
             if (provider.hasConflict) ...[
-              const SizedBox(height: AppDimens.spaceXXS),
+              const SizedBox(height: 12.0),
               _buildConflictAlert(),
             ],
             
-            const SizedBox(height: AppDimens.spaceXS),
+            const SizedBox(height: 12.0),
             
             InviteesWidget(
               invitees: provider.selectedUsers,
@@ -658,7 +658,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
             ),
 
             if (provider.selectedUsers.isEmpty) ...[
-              const SizedBox(height: AppDimens.spaceXS),
+              const SizedBox(height: 12.0),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
@@ -712,7 +712,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
               ),
             ],
 
-            const SizedBox(height: AppDimens.spaceXS),
+            const SizedBox(height: 12.0),
 
             // Recurrence
             if (provider.duration < 1440) 
@@ -725,8 +725,8 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
               onTypeChanged: provider.setRecurrenceType,
               onCountChanged: provider.setRecurrenceCount,
             ),
-            
-            const SizedBox(height: AppDimens.spaceXS),
+
+            const SizedBox(height: 12.0),
             
             // Link Field (Moved to Bottom)
             // Import CustomTextField if not available in this file scope (It might come from imports or EventFormWidget exports)

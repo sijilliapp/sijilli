@@ -164,28 +164,27 @@ class EventFormWidget extends StatelessWidget {
         ),
 
         // Pin Address Switch
-        if (onPinAddressChanged != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  context.l10n.localeName == 'ar' ? 'ثبِّت واستخدم هذا العنوان تلقائياً' : 'Pin and use this address automatically',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade300 : Colors.grey.shade800,
-                  ),
+        if (onPinAddressChanged != null) ...[
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                context.l10n.localeName == 'ar' ? 'ثبِّت واستخدم هذا العنوان تلقائياً' : 'Pin and use this address automatically',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade300 : Colors.grey.shade800,
                 ),
-                Switch(
-                  value: pinAddress,
-                  onChanged: onPinAddressChanged,
-                  activeColor: AppColors.primary,
-                ),
-              ],
-            ),
+              ),
+              Switch(
+                value: pinAddress,
+                onChanged: onPinAddressChanged,
+                activeColor: AppColors.primary,
+              ),
+            ],
           ),
+        ],
         
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
