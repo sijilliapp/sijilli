@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_dimens.dart';
 import '../private_profile_wall.dart';
 import '../../../articles/providers/article_provider.dart';
@@ -35,7 +37,7 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   bool _showSystemFilters = false;
-  String? _activeSystemStatus; // null, 'published', 'draft'
+  String? _activeSystemStatus; // 'published', 'draft', 'duplicates'
   List<Tag> _allPublishedTags = [];
   bool _isLoadingTags = true;
 
@@ -54,9 +56,22 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
 
   Future<void> _fetchPublishedTags() async {
     if (!mounted) return;
-    setState(() {
-      _isLoadingTags = true;
-    });
+
+    // Load local cached tags first for instant offline/speed display
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedJson = prefs.getString('cached_published_tags_${widget.userId}');
+      if (cachedJson != null && cachedJson.isNotEmpty) {
+        final List<dynamic> list = jsonDecode(cachedJson);
+        final cachedTags = list.map((e) => Tag.fromJson(Map<String, dynamic>.from(e))).toList();
+        if (mounted && _allPublishedTags.isEmpty) {
+          setState(() {
+            _allPublishedTags = cachedTags;
+            _isLoadingTags = false;
+          });
+        }
+      }
+    } catch (_) {}
 
     try {
       final pb = PocketBaseClient.instance.pb;
@@ -105,6 +120,13 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
           _allPublishedTags = tags;
           _isLoadingTags = false;
         });
+
+        // Save to local cache
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final jsonStr = jsonEncode(tags.map((t) => t.toJson()).toList());
+          await prefs.setString('cached_published_tags_${widget.userId}', jsonStr);
+        } catch (_) {}
       }
     } catch (e) {
       print('Error fetching published tags: $e');
@@ -139,18 +161,17 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
       builder: (context, provider, child) {
         final userArticles = provider.getUserArticles(widget.userId);
 
-        // Extract unique tags present in these articles as a fallback during loading
+        // Merge tags from server/cache AND embedded tags in local articles for 100% robust offline display
         final List<Tag> availableTags;
-        if (_isLoadingTags) {
-          final articlesTags = userArticles.expand((a) => a.tags).toList();
-          final uniqueTagsMap = <String, Tag>{};
-          for (var tag in articlesTags) {
-            uniqueTagsMap[tag.id] = tag;
-          }
-          availableTags = uniqueTagsMap.values.toList();
-        } else {
-          availableTags = _allPublishedTags;
+        final articlesTags = userArticles.expand((a) => a.tags).toList();
+        final uniqueTagsMap = <String, Tag>{};
+        for (var tag in _allPublishedTags) {
+          uniqueTagsMap[tag.id] = tag;
         }
+        for (var tag in articlesTags) {
+          uniqueTagsMap[tag.id] = tag;
+        }
+        availableTags = uniqueTagsMap.values.toList();
 
         final activeTagIds = provider.activeFilterTagIds;
 

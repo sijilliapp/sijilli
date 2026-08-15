@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/pb_tag_service.dart';
 import '../../../models/tag.dart';
 
@@ -21,6 +23,7 @@ class TagProvider extends ChangeNotifier {
       _tags = [];
       _errorMessage = null;
       if (userId != null) {
+        _loadCachedTags(userId);
         fetchTags();
       } else {
         notifyListeners();
@@ -28,14 +31,42 @@ class TagProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> _loadCachedTags(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = prefs.getString('cached_user_tags_$userId');
+      if (jsonStr != null && jsonStr.isNotEmpty) {
+        final List<dynamic> list = jsonDecode(jsonStr);
+        _tags = list.map((e) => Tag.fromJson(Map<String, dynamic>.from(e))).toList();
+        notifyListeners();
+      }
+    } catch (e) {
+      print('⚠️ Failed to load cached tags: $e');
+    }
+  }
+
+  Future<void> _saveCachedTags() async {
+    if (_currentUserId == null || _currentUserId!.isEmpty) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = jsonEncode(_tags.map((t) => t.toJson()).toList());
+      await prefs.setString('cached_user_tags_$_currentUserId', jsonStr);
+    } catch (e) {
+      print('⚠️ Failed to save cached tags: $e');
+    }
+  }
+
   /// Get tags for the user
   Future<void> fetchTags() async {
-    _isLoading = true;
+    if (_tags.isEmpty) {
+      _isLoading = true;
+      notifyListeners();
+    }
     _errorMessage = null;
-    notifyListeners();
 
     try {
       _tags = await _tagService.getUserTags();
+      await _saveCachedTags();
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
@@ -50,6 +81,7 @@ class TagProvider extends ChangeNotifier {
       final newTag = await _tagService.createTag(name: name, colorHex: colorHex);
       _tags.add(newTag);
       _tags.sort((a, b) => a.name.compareTo(b.name));
+      await _saveCachedTags();
       notifyListeners();
       return newTag;
     } catch (e) {
@@ -68,6 +100,7 @@ class TagProvider extends ChangeNotifier {
         _tags[index] = updatedTag;
       }
       _tags.sort((a, b) => a.name.compareTo(b.name));
+      await _saveCachedTags();
       notifyListeners();
       return updatedTag;
     } catch (e) {
@@ -82,6 +115,7 @@ class TagProvider extends ChangeNotifier {
     try {
       await _tagService.deleteTag(id);
       _tags.removeWhere((t) => t.id == id);
+      await _saveCachedTags();
       notifyListeners();
     } catch (e) {
       _errorMessage = e.toString();
