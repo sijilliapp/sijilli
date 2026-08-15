@@ -38,6 +38,20 @@ extension AppointmentLogic on Appointment {
   /// هل الموعد محذوف من قبل المالك (Global)
   // تم نقل isDeleted كحقل أساسي في كلاس Appointment
 
+  /// الحصول على دعوة المضيف (مصدر الحقيقة لكون الموعد قائماً أم ملغى)
+  Invitation? get hostInvitation {
+    if (participants != null && participants!.isNotEmpty) {
+      try {
+        return participants!.firstWhere((p) => p.userId == hostId);
+      } catch (_) {}
+    }
+    if (currentUserInvitation?.userId == hostId) return currentUserInvitation;
+    return null;
+  }
+
+  /// هل الموعد ملغى كلياً من المضيف (مصدر الحقيقة: دعوة المضيف كـ trash أو isCancelled الأصلي)
+  bool get isHostCancelled => hostInvitation?.postStatus == PostStatus.trash || isCancelled;
+
   /// التحقق إذا كان المستخدم الحالي قد حذف نسخته (Personal Soft Delete)
   bool get isUserDeleted => currentUserInvitation?.postStatus == PostStatus.trash;
   

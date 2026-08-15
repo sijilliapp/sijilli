@@ -210,17 +210,10 @@ class PbAppointmentService {
         inv.data['user'] != hostId,
       );
 
-      // تحديث السجل المركزي فقط:
-      // - لا أحد قبل → is_cancelled (طوق رمادي عند الضيوف)
-      // - أحدهم قبل  → is_deleted  (طوق أحمر عند الضيوف)
-      await _pb.collection(collectionAppointments).update(id, body: {
-        'is_cancelled': true,
-      });
-
-      // حذف نسخة المستضيف الشخصية فقط
+      // المصدر الوحيد للحقيقة: وضع دعوة المضيف كـ trash وتسجيل تاريخ الإعدام deleted_at
       final hostInvite = invites.firstWhere(
         (inv) => inv.data['user'] == hostId,
-        orElse: () => invites.first, // fallback آمن
+        orElse: () => invites.first,
       );
 
       try {
