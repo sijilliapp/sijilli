@@ -23,27 +23,31 @@ void main() {
       for (var item in testCases) {
         final result = NotificationLocalizer.localize(item['title']!, item['msg']!, 'en');
         final title = result['title']!;
-        final message = result['message']!;
 
-        // إذا عادت العبارة تحتوي على أحرف عربية في اللغة الإنجليزية يعتبر العنوان غير مغطى بالترجمة
         final hasArabicTitle = RegExp(r'[\u0600-\u06FF]').hasMatch(title);
         if (hasArabicTitle) {
           unhandledTitles.add('${item['title']} -> $title');
         }
       }
 
-      if (unhandledTitles.isNotEmpty) {
-        print('❌ الإشعارات التي لم تُترجم للإنجليزية وتظهر بالعربية (${unhandledTitles.length}):');
-        for (var t in unhandledTitles) {
-          print('   - $t');
-        }
-      }
+      expect(unhandledTitles, isEmpty);
+    });
 
-      expect(
-        unhandledTitles, 
-        isEmpty, 
-        reason: 'يوجد إشعارات لم يتم تغطية ترجمتها للإنجليزية وتظهر بالعربية!'
-      );
+    test('يجب أن تترجم الإشعارات الواردة باللغة الإنجليزية إلى العربية عند تنشيط العربية', () {
+      final englishCases = [
+        {'title': 'Appointment Cancelled', 'msg': 'The appointment was cancelled by the organizer'},
+        {'title': 'New Appointment Invitation', 'msg': 'You have received a new appointment invitation'},
+        {'title': 'Appointment Reminder', 'msg': 'Upcoming appointment reminder'},
+        {'title': 'Appointment Confirmed', 'msg': 'The appointment has been confirmed'},
+      ];
+
+      for (var item in englishCases) {
+        final result = NotificationLocalizer.localize(item['title']!, item['msg']!, 'ar');
+        final title = result['title']!;
+        
+        final hasEnglishTitle = RegExp(r'[a-zA-Z]').hasMatch(title);
+        expect(hasEnglishTitle, isFalse, reason: 'الإشعار $title لا يزال باللغة الإنجليزية في التنسيق العربي!');
+      }
     });
   });
 }

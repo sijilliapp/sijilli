@@ -242,8 +242,8 @@ class PbAppointmentService {
     try {
       await _notificationService.createNotification(
         targetUserId: userId,
-        title: title ?? 'Appointment Cancelled',
-        message: message ?? 'The appointment was cancelled by the organizer',
+        title: title ?? 'إلغاء موعد',
+        message: message ?? 'تم إلغاء الموعد من قِبل المنظم',
         type: NotificationType.cancel,
         relatedId: apptId,
       );
@@ -336,7 +336,8 @@ class PbAppointmentService {
     if (appointmentIds.isEmpty) return {};
     try {
       final idsFilter = appointmentIds.map((id) => 'appointment = "$id"').join(' || ');
-      final filter = 'user = "$userId" && ($idsFilter) && post_status != "published"';
+      // إشعارات المواعيد فقط (المنشور والمؤرشف والمحفوظ) تُعرض، وتُستبعد المحذوفة (post_status == "trash") فقط
+      final filter = 'user = "$userId" && ($idsFilter) && post_status = "trash"';
       final records = await _pb.collection(collectionInvitations).getFullList(
         filter: filter,
         fields: 'appointment',

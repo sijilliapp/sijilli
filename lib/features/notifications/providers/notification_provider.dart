@@ -770,18 +770,53 @@ class NotificationProvider extends ChangeNotifier {
 
 class NotificationLocalizer {
   static Map<String, String> localize(String originalTitle, String originalMessage, String locale) {
-    if (locale == 'ar') {
-      return {
-        'title': originalTitle,
-        'message': originalMessage,
-      };
-    }
-
     final titleLower = originalTitle.toLowerCase();
     final msgLower = originalMessage.toLowerCase();
     
     final words = originalMessage.trim().split(RegExp(r'\s+'));
     final namePart = words.isNotEmpty ? words.first : '';
+
+    if (locale == 'ar') {
+      String title = originalTitle;
+      String message = originalMessage;
+
+      if (titleLower.contains('appointment cancelled') || titleLower.contains('cancel')) {
+        title = 'إلغاء موعد';
+        message = msgLower.contains('organizer') ? 'تم إلغاء الموعد من قِبل المنظم' : 'تم إلغاء الموعد';
+      } else if (titleLower.contains('new appointment invitation') || titleLower.contains('invite')) {
+        title = 'دعوة موعد جديدة';
+        message = 'وصلتك دعوة جديدة لحضور موعد';
+      } else if (titleLower.contains('ping') || originalTitle.startsWith('PING')) {
+        title = 'نكزة عاجلة ⚡';
+        message = originalMessage;
+      } else if (titleLower.contains('reminder') || titleLower.contains('appointment reminder')) {
+        title = 'تذكير بالموعد';
+        message = 'تذكير بموعدك القادم';
+      } else if (titleLower.contains('confirmed') || titleLower.contains('appointment confirmed')) {
+        title = 'تأكيد الموعد';
+        message = 'تم تأكيد الموعد بنجاح';
+      } else if (titleLower.contains('updated') || titleLower.contains('appointment updated')) {
+        title = 'تحديث الموعد';
+        message = 'تم تحديث تفاصيل الموعد';
+      } else if (titleLower.contains('new accreditation') || titleLower.contains('new follow')) {
+        title = 'اعتماد جديد';
+        message = '$namePart قام باعتمادك';
+      } else if (titleLower.contains('accreditation request') || titleLower.contains('follow request')) {
+        title = 'طلب اعتماد';
+        message = '$namePart يطلب اعتمادك';
+      } else if (titleLower.contains('profile visit')) {
+        title = 'زيارة جديدة للملف الشخصي';
+        message = '$namePart قام بزيارة ملفك الشخصي';
+      } else if (titleLower.contains('article visit')) {
+        title = 'زيارة جديدة لمقالك';
+        message = 'قام قارئ بتصفح مقالك';
+      }
+
+      return {
+        'title': title,
+        'message': message,
+      };
+    }
 
     String title = originalTitle;
     String message = originalMessage;
