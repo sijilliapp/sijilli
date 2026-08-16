@@ -102,39 +102,39 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
     }
     
     final host = auth.user!;
-    
+    final messenger = ScaffoldMessenger.of(context);
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final title = _titleController.text.trim();
+    final locale = context.l10n.localeName;
+
+    // Dismiss the bottom sheet instantly for ultra-fast responsive feel!
+    Navigator.of(context).pop(true);
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          isArabic ? 'تم حفظ الموعد بنجاح ⚡' : 'Appointment saved successfully ⚡',
+        ),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+
     final result = await provider.saveEvent(
-      title: _titleController.text.trim(),
+      title: title,
       location: '',
       building: '',
       description: '',
       currentUser: host,
       appointmentProvider: apptProvider,
-      locale: context.l10n.localeName,
+      locale: locale,
       dailyLimit: globalConfig.dailyAppointmentLimit(host),
     );
 
     if (result != null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result), backgroundColor: AppColors.error),
-        );
-      }
-      return;
-    }
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            Localizations.localeOf(context).languageCode == 'ar' 
-                ? 'تم حفظ الموعد بنجاح ⚡' 
-                : 'Appointment saved successfully ⚡',
-          ),
-          backgroundColor: Colors.green,
-        ),
+      messenger.showSnackBar(
+        SnackBar(content: Text(result), backgroundColor: AppColors.error),
       );
-      Navigator.of(context).pop(true);
     }
   }
 
