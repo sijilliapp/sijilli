@@ -25,22 +25,22 @@ class SuggestedTimeCapsulesBar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: 6.0),
+          padding: const EdgeInsets.only(bottom: 4.0),
           child: Text(
-            localeCode == 'ar' ? 'تحديد الوقت أو اختيار الوقت المقترح:' : 'Select time or pick suggested:',
+            localeCode == 'ar' ? 'الوقت المحدد والمقترحات الأكثر استخداماً:' : 'Selected time & frequent picks:',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
               color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
             ),
           ),
         ),
         SizedBox(
-          height: 42,
+          height: 34,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: frequentTimes.length + 1,
-            separatorBuilder: (context, index) => const SizedBox(width: 8),
+            separatorBuilder: (context, index) => const SizedBox(width: 6),
             itemBuilder: (context, index) {
               if (index == 0) {
                 // الكبسولة الأولى: كبسولة الساعة الدوارة التفاعلية (--:--)
@@ -51,10 +51,11 @@ class SuggestedTimeCapsulesBar extends StatelessWidget {
 
                 return InkWell(
                   onTap: onSelectTime,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(16),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: hasTime 
                           ? AppColors.primary.withValues(alpha: 0.15) 
@@ -63,21 +64,21 @@ class SuggestedTimeCapsulesBar extends StatelessWidget {
                         color: hasTime ? AppColors.primary : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
                         width: hasTime ? 1.5 : 1.0,
                       ),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           Icons.access_time_filled,
-                          size: 16,
+                          size: 14,
                           color: hasTime ? AppColors.primary : Colors.grey,
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 4),
                         Text(
                           displayStr,
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: hasTime ? AppColors.primary : (isDark ? Colors.grey.shade300 : Colors.grey.shade800),
                           ),
@@ -88,7 +89,7 @@ class SuggestedTimeCapsulesBar extends StatelessWidget {
                 );
               }
 
-              // الكبسولات المقترحة مرتبة بحسب الأكثر استخداماً
+              // الكبسولات المقترحة مضغوطة ومصغرة بحسب الأكثر استخداماً للمستخدم
               final tod = frequentTimes[index - 1];
               final isSelected = selectedTime != null && 
                   selectedTime!.hour == tod.hour && 
@@ -98,10 +99,11 @@ class SuggestedTimeCapsulesBar extends StatelessWidget {
 
               return InkWell(
                 onTap: () => onTimePicked(tod),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(16),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppColors.primary
@@ -110,12 +112,12 @@ class SuggestedTimeCapsulesBar extends StatelessWidget {
                       color: isSelected ? AppColors.primary : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
                       width: 1.0,
                     ),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
                     formattedStr,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12,
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                       color: isSelected
                           ? Colors.white

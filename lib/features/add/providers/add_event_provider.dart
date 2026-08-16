@@ -110,7 +110,7 @@ class AddEventProvider extends ChangeNotifier {
     _highlightedAppointmentId = null;
   }
 
-  /// الحصول على قائمة الأوقات الأكثر استخداماً مرتبة حسب تكرار الاستخدام وليس الترتيب الزمني
+  /// الحصول على قائمة الأوقات الأكثر استخداماً من سجلات accepted المقبولة للمستخدم الحالي مرتبة حسب التكرار
   List<TimeOfDay> get frequentTimes {
     final defaultTimes = const [
       TimeOfDay(hour: 15, minute: 30), // 3:30 عصراً
@@ -121,14 +121,24 @@ class AddEventProvider extends ChangeNotifier {
       TimeOfDay(hour: 13, minute: 30), // 1:30 ظهراً
     ];
 
-    if (_history.isEmpty) {
+    // تصفية السجلات ليؤخذ فقط من المواعيد المقبولة accepted للمستخدم
+    final acceptedHistory = _history.where((appt) {
+      if (appt.isCancelled || appt.isDeleted) return false;
+      if (appt.hostInvitation?.status == 'trash' || appt.hostInvitation?.status == 'cancelled') return false;
+      if (appt.currentUserInvitation != null) {
+        return appt.currentUserInvitation!.status == 'accepted';
+      }
+      return true;
+    }).toList();
+
+    if (acceptedHistory.isEmpty) {
       return defaultTimes;
     }
 
     final Map<String, int> counts = {};
     final Map<String, TimeOfDay> timesMap = {};
 
-    for (final appt in _history) {
+    for (final appt in acceptedHistory) {
       final tod = TimeOfDay(hour: appt.startAt.hour, minute: appt.startAt.minute);
       final key = '${tod.hour}:${tod.minute}';
       counts[key] = (counts[key] ?? 0) + 1;

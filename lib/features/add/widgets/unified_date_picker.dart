@@ -88,144 +88,116 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isDark ? Theme.of(context).cardColor : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: isDark ? Colors.transparent : Colors.grey.shade200),
-            boxShadow: [
-              if (!isDark)
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              _buildDateRow(
-                isHijri: false,
-                isActive: !_isHijriMode,
-                onTap: () {
-                  if (_isHijriMode) {
-                    setState(() => _isHijriMode = false);
-                    widget.onModeChanged(false);
-                  } else {
-                    _showGregorianPicker();
-                  }
-                },
-              ),
-              
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Divider(height: 1, color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
-              ),
-
-              _buildDateRow(
-                isHijri: true,
-                isActive: _isHijriMode,
-                onTap: () {
-                   if (!_isHijriMode) {
-                    setState(() => _isHijriMode = true);
-                    widget.onModeChanged(true);
-                  } else {
-                    _showHijriPicker();
-                  }
-                },
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        _buildWeekDaysStrip(),
-      ],
-    );
-  }
-
-  Widget _buildDateRow({
-    required bool isHijri,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-        decoration: BoxDecoration(
-          color: isActive 
-              ? AppColors.primary.withValues(alpha: isDark ? 0.15 : 0.04) 
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: isActive ? Border.all(color: AppColors.primary.withValues(alpha: isDark ? 0.3 : 0.1)) : null,
-        ),
-        child: Row(
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isActive ? AppColors.primary : (isDark ? Colors.grey.shade600 : Colors.grey.shade300),
-                  width: isActive ? 6 : 2,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            
-            Text(
-              isHijri ? context.l10n.hijri : context.l10n.gregorian,
-              style: TextStyle(
-                fontSize: 14,
-                color: isActive ? AppColors.primary : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
-                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-              ),
-            ),
-            
-            const Spacer(),
-            
-            Text(
-              isHijri 
-                  ? _hijriDate.toFormat("dd MMMM yyyy") 
-                  : DateFormat('dd MMMM yyyy', context.l10n.localeName).format(_selectedDate),
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: isActive ? (isDark ? Colors.white : Colors.black87) : (isDark ? Colors.grey.shade600 : Colors.grey.shade400),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return _buildWeekDaysStrip();
   }
 
   Widget _buildWeekDaysStrip() {
     final today = DateTime.now();
     final weekDays = List.generate(30, (index) => today.add(Duration(days: index)));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SizedBox(
-      height: 80, 
+      height: 75,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 4),
-        itemCount: 30,
-        separatorBuilder: (context, index) => const SizedBox(width: 4),
+        itemCount: 31, // 1 toggle brick + 30 date bricks
+        separatorBuilder: (context, index) => const SizedBox(width: 6),
         itemBuilder: (context, index) {
-          final date = weekDays[index];
+          if (index == 0) {
+            // أول طوبة من طوب التواريخ: اختيار عمودي بين ميلادي وهجري
+            return Container(
+              width: 58,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.grey.shade900 : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () {
+                        if (_isHijriMode) {
+                          setState(() => _isHijriMode = false);
+                          widget.onModeChanged(false);
+                        } else {
+                          _showGregorianPicker();
+                        }
+                      },
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(11),
+                        topRight: Radius.circular(11),
+                      ),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: !_isHijriMode ? AppColors.primary : Colors.transparent,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(11),
+                            topRight: Radius.circular(11),
+                          ),
+                        ),
+                        child: Text(
+                          context.l10n.localeName == 'ar' ? 'ميلادي' : 'Greg',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: !_isHijriMode
+                                ? Colors.white
+                                : (isDark ? Colors.grey.shade400 : Colors.grey.shade700),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Divider(height: 1, color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () {
+                        if (!_isHijriMode) {
+                          setState(() => _isHijriMode = true);
+                          widget.onModeChanged(true);
+                        } else {
+                          _showHijriPicker();
+                        }
+                      },
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(11),
+                        bottomRight: Radius.circular(11),
+                      ),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: _isHijriMode ? AppColors.primary : Colors.transparent,
+                          borderRadius: const BorderRadius.only(
+                            bottomLeft: Radius.circular(11),
+                            bottomRight: Radius.circular(11),
+                          ),
+                        ),
+                        child: Text(
+                          context.l10n.localeName == 'ar' ? 'هجري' : 'Hijri',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: _isHijriMode
+                                ? Colors.white
+                                : (isDark ? Colors.grey.shade400 : Colors.grey.shade700),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final date = weekDays[index - 1];
           final isSelected = DateUtils.isSameDay(date, _selectedDate);
           
           HijriCalendar.setLocal(context.l10n.localeName);
@@ -235,10 +207,7 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
               : date;
           final hDate = HijriCalendar.fromDate(adjustedDate);
           
-          final displayedHijriDay = hDate.hDay;
-
-          final isInteractable = true; 
-          final isDark = Theme.of(context).brightness == Brightness.dark;
+          final displayedDayNumber = _isHijriMode ? hDate.hDay : date.day;
 
           return GestureDetector(
             onTap: () => _onGregorianChanged(date),
@@ -248,12 +217,12 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
               decoration: BoxDecoration(
                 color: isSelected 
                     ? AppColors.primary 
-                    : (isDark ? Colors.grey.shade800 : Colors.white),
+                    : (isDark ? Colors.grey.shade900 : Colors.white),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isSelected 
                       ? AppColors.primary 
-                      : (isDark ? Colors.grey.shade700 : Colors.grey.shade200),
+                      : (isDark ? Colors.grey.shade800 : Colors.grey.shade200),
                 ),
                 boxShadow: isSelected ? [
                   BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 4, offset: const Offset(0, 2))
@@ -266,36 +235,17 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
                     DateFormat('E', context.l10n.localeName).format(date),
                     style: TextStyle(
                       fontSize: 10,
-                      color: isSelected ? Colors.white70 : (isInteractable ? (isDark ? Colors.grey.shade400 : Colors.grey.shade600) : Colors.grey.shade400),
+                      color: isSelected ? Colors.white70 : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
                     ),
                   ),
                   const SizedBox(height: 2),
                   
                   Text(
-                    '${date.day}',
+                    '$displayedDayNumber',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                       color: isSelected ? Colors.white : (isInteractable ? (isDark ? Colors.white : Colors.black87) : Colors.grey.shade300),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 2),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                    decoration: BoxDecoration(
-                      color: isSelected 
-                          ? Colors.white.withValues(alpha: 0.2) 
-                          : (isDark ? Colors.grey.shade700 : Colors.grey.shade100),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      '$displayedHijriDay',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: isSelected ? Colors.white : (isDark ? Colors.grey.shade400 : Colors.grey.shade500),
-                      ),
+                      color: isSelected ? Colors.white : (isDark ? Colors.white : Colors.black87),
                     ),
                   ),
                 ],

@@ -503,6 +503,45 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
       ),
       automaticallyImplyLeading: true, 
       actions: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0),
+          child: InkWell(
+            onTap: () {
+              final newMode = provider.mode == AddEventMode.simple ? AddEventMode.advanced : AddEventMode.simple;
+              provider.setMode(newMode);
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                border: Border.all(color: AppColors.primary, width: 1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    provider.mode == AddEventMode.simple ? Icons.bolt : Icons.tune,
+                    size: 13,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    provider.mode == AddEventMode.simple
+                        ? (Localizations.localeOf(context).languageCode == 'ar' ? 'سريع ⚡' : 'Quick ⚡')
+                        : (Localizations.localeOf(context).languageCode == 'ar' ? 'متقدم ⚙️' : 'Advanced ⚙️'),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
         TextButton(
           onPressed: provider.isSaving ? null : _clearForm, 
           child: Text(
@@ -581,99 +620,128 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
                 );
               },
             ),
-
-            // Mode Selector Toggle (سريع ⚡ | متقدم ⚙️) - يتذكر خيار المستخدم دائماً
-            AddEventModeToggle(
-              currentMode: provider.mode,
-              onModeChanged: (newMode) => provider.setMode(newMode),
-            ),
-            const SizedBox(height: 12.0),
+            const SizedBox(height: 8.0),
 
             if (provider.mode == AddEventMode.simple) ...[
-              // --- SIMPLE MODE (النمط السريع) ---
-              CustomTextField(
-                controller: _titleController,
-                focusNode: _titleFocusNode,
-                label: context.l10n.subject,
-                hint: context.l10n.subjectHint,
-                maxLength: 50,
-                showCountdown: true,
-                validator: (val) => val == null || val.trim().isEmpty ? context.l10n.fieldRequired : null,
-              ),
-              const SizedBox(height: 6),
-              
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final showTitleSuggestions = _isTitleFocused && (provider.suggestions.isNotEmpty || provider.pivotSuggestions.isNotEmpty);
-                  return AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: showTitleSuggestions
-                        ? Container(
-                            key: const ValueKey('simple_title_suggestions'),
-                            width: MediaQuery.of(context).size.width,
-                            child: WordRiverWidget(
-                              suggestions: provider.suggestions,
-                              onWordSelected: _onWordSelected,
-                              pivotSuggestions: provider.pivotSuggestions,
-                              onPivotSelected: _onPivotSelected,
-                            ),
-                          )
-                        : const SizedBox.shrink(key: ValueKey('no_simple_title_suggestions')),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 12.0),
-
-              // Unified Date Picker (التقويم الهجري والميلادي الأفقي المعتاد نفسه)
-              Consumer<AuthProvider>(
-                builder: (context, auth, _) {
-                  return Column(
-                    children: [
-                      UnifiedDatePicker(
-                        initialDate: provider.selectedDate ?? DateTime.now(),
-                        initialMode: provider.isHijri,
-                        hijriAdjustment: (auth.user?.hijriAdjustment ?? 0).toInt(),
-                        onDateChanged: provider.setDate,
-                        onModeChanged: provider.setIsHijri,
-                      ),
-                      PrayerTimesRow(
-                        sunriseTime: provider.sunriseTime,
-                        dhuhrTime: provider.dhuhrTime,
-                        sunsetTime: provider.sunsetTime,
-                      ),
-                    ],
-                  );
-                },
-              ),
-
-              const SizedBox(height: 12.0),
-
-              // Suggested Time Capsules Bar (كبسولات الوقت المقترح مرتبة بحسب الأكثر استخداماً أولاً)
-              SuggestedTimeCapsulesBar(
-                selectedTime: provider.selectedTime,
-                onSelectTime: _selectTime,
-                frequentTimes: provider.frequentTimes,
-                onTimePicked: (tod) => provider.setTime(tod),
-              ),
-
-              const SizedBox(height: 24.0),
-
-              // Quick Save Button
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              // --- SIMPLE MODE (النمط السريع المنبثق المضغوط) ---
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isDark ? Theme.of(context).cardColor : Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                  ),
                 ),
-                onPressed: provider.isSaving ? null : _saveEvent,
-                child: provider.isSaving
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : Text(
-                        context.l10n.localeName == 'ar' ? 'حفظ الموعد المباشر' : 'Save Appointment Directly',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Drag handle bar for bottom sheet feel
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    CustomTextField(
+                      controller: _titleController,
+                      focusNode: _titleFocusNode,
+                      label: context.l10n.subject,
+                      hint: context.l10n.subjectHint,
+                      maxLength: 50,
+                      showCountdown: true,
+                      validator: (val) => val == null || val.trim().isEmpty ? context.l10n.fieldRequired : null,
+                    ),
+                    const SizedBox(height: 4),
+                    
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final showTitleSuggestions = _isTitleFocused && (provider.suggestions.isNotEmpty || provider.pivotSuggestions.isNotEmpty);
+                        return AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          child: showTitleSuggestions
+                              ? Container(
+                                  key: const ValueKey('simple_title_suggestions'),
+                                  width: MediaQuery.of(context).size.width,
+                                  child: WordRiverWidget(
+                                    suggestions: provider.suggestions,
+                                    onWordSelected: _onWordSelected,
+                                    pivotSuggestions: provider.pivotSuggestions,
+                                    onPivotSelected: _onPivotSelected,
+                                  ),
+                                )
+                              : const SizedBox.shrink(key: ValueKey('no_simple_title_suggestions')),
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    // Unified Date Picker (أول طوبة اختيار هجري/ميلادي عمودي)
+                    Consumer<AuthProvider>(
+                      builder: (context, auth, _) {
+                        return Column(
+                          children: [
+                            UnifiedDatePicker(
+                              initialDate: provider.selectedDate ?? DateTime.now(),
+                              initialMode: provider.isHijri,
+                              hijriAdjustment: (auth.user?.hijriAdjustment ?? 0).toInt(),
+                              onDateChanged: provider.setDate,
+                              onModeChanged: provider.setIsHijri,
+                            ),
+                            const SizedBox(height: 4),
+                            PrayerTimesRow(
+                              sunriseTime: provider.sunriseTime,
+                              dhuhrTime: provider.dhuhrTime,
+                              sunsetTime: provider.sunsetTime,
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    // Suggested Time Capsules Bar (مصغرة وبأوقات accepted فقط)
+                    SuggestedTimeCapsulesBar(
+                      selectedTime: provider.selectedTime,
+                      onSelectTime: _selectTime,
+                      frequentTimes: provider.frequentTimes,
+                      onTimePicked: (tod) => provider.setTime(tod),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 46),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: provider.isSaving ? null : _saveEvent,
+                      child: provider.isSaving
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : Text(
+                              context.l10n.localeName == 'ar' ? 'حفظ الموعد المباشر ⚡' : 'Save Appointment Directly ⚡',
+                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                            ),
+                    ),
+                  ],
+                ),
               ),
             ] else ...[
               // --- ADVANCED MODE (النمط المتقدم) ---
