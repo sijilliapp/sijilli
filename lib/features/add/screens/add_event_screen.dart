@@ -1061,12 +1061,10 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
     if (token != null) {
       _showInviteLinkDialog(token);
     } else {
-      if (widget.initialAppointment != null && Navigator.canPop(context)) {
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted) Navigator.pop(context);
-        });
+      _performClearSilent();
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
       } else {
-        _performClearSilent();
         context.findAncestorStateOfType<MainScreenState>()?.setIndex(0);
       }
     }
@@ -1149,7 +1147,11 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
               onPressed: () {
                 Navigator.pop(context); // Close dialog
                 _performClearSilent();
-                context.findAncestorStateOfType<MainScreenState>()?.setIndex(0);
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context); // Close AddEventScreen
+                } else {
+                  context.findAncestorStateOfType<MainScreenState>()?.setIndex(0);
+                }
               },
               child: Text(
                 context.l10n.localeName == 'ar' ? 'إغلاق ومتابعة' : 'Close & Continue',
