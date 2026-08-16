@@ -507,22 +507,25 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0),
           child: InkWell(
-            onTap: () {
+            onTap: () async {
+              provider.setMode(AddEventMode.simple);
               final nav = Navigator.of(context);
               final parentCtx = nav.context;
-              provider.setMode(AddEventMode.simple);
               if (nav.canPop()) {
                 nav.pop();
               }
-              QuickAddEventSheet.show(
-                parentCtx,
-                onSwitchToAdvanced: () {
-                  Navigator.push(
-                    parentCtx,
-                    MaterialPageRoute(builder: (context) => const AddEventScreen()),
-                  );
-                },
-              );
+              await Future.delayed(const Duration(milliseconds: 150));
+              if (parentCtx.mounted) {
+                QuickAddEventSheet.show(
+                  parentCtx,
+                  onSwitchToAdvanced: () {
+                    Navigator.push(
+                      parentCtx,
+                      MaterialPageRoute(builder: (context) => const AddEventScreen()),
+                    );
+                  },
+                );
+              }
             },
             borderRadius: BorderRadius.circular(16),
             child: Container(
