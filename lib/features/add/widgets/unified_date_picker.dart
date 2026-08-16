@@ -88,7 +88,103 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
 
   @override
   Widget build(BuildContext context) {
-    return _buildWeekDaysStrip();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    final dateStr = _isHijriMode 
+        ? '${_hijriDate.hDay} ${_hijriDate.longMonthName} ${_hijriDate.hYear} هـ'
+        : DateFormat('EEEE، d MMMM yyyy', Localizations.localeOf(context).languageCode).format(_selectedDate);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 📅 منتقي التاريخ التفاعلي الرئيسي
+        InkWell(
+          onTap: () {
+            if (_isHijriMode) {
+              _showHijriPicker();
+            } else {
+              _showGregorianPicker();
+            }
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: isDark ? Theme.of(context).cardColor : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+              ),
+              boxShadow: [
+                if (!isDark)
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                      child: const Icon(Icons.edit_calendar_rounded, size: 18, color: AppColors.primary),
+                    ),
+                    const SizedBox(width: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          context.l10n.localeName == 'ar' ? 'منتقي التاريخ' : 'Date Picker',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade500,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          dateStr,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Text(
+                      context.l10n.localeName == 'ar' ? 'تغيير' : 'Change',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppColors.primary),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // قطار سكرول التواريخ الأفقية
+        _buildWeekDaysStrip(),
+      ],
+    );
   }
 
   Widget _buildWeekDaysStrip() {
