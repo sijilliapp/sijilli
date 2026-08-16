@@ -206,14 +206,12 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
               ? date.add(Duration(days: widget.hijriAdjustment))
               : date;
           final hDate = HijriCalendar.fromDate(adjustedDate);
-          
-          final displayedDayNumber = _isHijriMode ? hDate.hDay : date.day;
 
           return GestureDetector(
             onTap: () => _onGregorianChanged(date),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 50,
+              width: 52,
               decoration: BoxDecoration(
                 color: isSelected 
                     ? AppColors.primary 
@@ -240,12 +238,33 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
                   ),
                   const SizedBox(height: 2),
                   
+                  // اليوم الميلادي الرئيسي
                   Text(
-                    '$displayedDayNumber',
+                    '${date.day}',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: isSelected ? Colors.white : (isDark ? Colors.white : Colors.black87),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 2),
+                  // اليوم الهجري الثانوي المعروض دائماً مع الميلادي في كل طوبة
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: isSelected 
+                          ? Colors.white.withValues(alpha: 0.2) 
+                          : (isDark ? Colors.grey.shade800 : Colors.grey.shade100),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '${hDate.hDay}',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: isSelected ? Colors.white : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                      ),
                     ),
                   ),
                 ],

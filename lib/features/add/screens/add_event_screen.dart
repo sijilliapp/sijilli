@@ -623,16 +623,17 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
             const SizedBox(height: 8.0),
 
             if (provider.mode == AddEventMode.simple) ...[
-              // --- SIMPLE MODE (النمط السريع المنبثق المضغوط) ---
+              // --- SIMPLE MODE (النمط السريع المنبثق السفلي) ---
               Container(
-                padding: const EdgeInsets.all(14),
+                margin: const EdgeInsets.only(top: 8.0),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: isDark ? Theme.of(context).cardColor : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24), bottom: Radius.circular(24)),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
-                      blurRadius: 16,
+                      color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.1),
+                      blurRadius: 18,
                       offset: const Offset(0, 4),
                     ),
                   ],
@@ -643,18 +644,41 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Drag handle bar for bottom sheet feel
-                    Center(
-                      child: Container(
-                        width: 36,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
-                          borderRadius: BorderRadius.circular(2),
+                    // Modal Bottom Sheet Drag Handle & Title
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              Localizations.localeOf(context).languageCode == 'ar' ? 'إضافة موعد سريع ⚡' : 'Quick Add Appointment ⚡',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
+                        Container(
+                          width: 36,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
 
                     CustomTextField(
                       controller: _titleController,
