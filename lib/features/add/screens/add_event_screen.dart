@@ -766,27 +766,6 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
               ),
 
               const SizedBox(height: 12.0),
-
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 48),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: provider.isSaving ? null : _saveEvent,
-                    child: provider.isSaving
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : Text(
-                            context.l10n.save,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                  ),
-                ],
-              ),
             
             // Link Field (Moved to Bottom)
             // Import CustomTextField if not available in this file scope (It might come from imports or EventFormWidget exports)
