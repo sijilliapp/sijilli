@@ -508,15 +508,17 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
           padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0),
           child: InkWell(
             onTap: () {
+              final nav = Navigator.of(context);
+              final parentCtx = nav.context;
               provider.setMode(AddEventMode.simple);
-              if (Navigator.canPop(context)) {
-                Navigator.pop(context);
+              if (nav.canPop()) {
+                nav.pop();
               }
               QuickAddEventSheet.show(
-                context,
+                parentCtx,
                 onSwitchToAdvanced: () {
                   Navigator.push(
-                    context,
+                    parentCtx,
                     MaterialPageRoute(builder: (context) => const AddEventScreen()),
                   );
                 },
@@ -559,25 +561,6 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
             style: TextStyle(color: provider.isSaving ? Colors.grey : AppColors.primary.withValues(alpha: 0.7)),
           ),
         ),
-        provider.isSaving 
-            ? const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: SizedBox(
-                   width: 20, 
-                   height: 20, 
-                   child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)
-                ),
-              )
-            : TextButton(
-                onPressed: _saveEvent,
-                child: Text(
-                  context.l10n.save,
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
       ],
     );
   }
