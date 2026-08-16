@@ -20,6 +20,35 @@ class UnifiedDatePicker extends StatefulWidget {
     this.hijriAdjustment = 0,
   });
 
+  static Future<DateTime?> showGregorianPicker(BuildContext context, {required DateTime initialDate}) {
+    return showModalBottomSheet<DateTime>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _GregorianPickerSheet(initialDate: initialDate),
+    );
+  }
+
+  static Future<DateTime?> showHijriPicker(BuildContext context, {required DateTime initialDate, int hijriAdjustment = 0}) async {
+    HijriCalendar.setLocal(Localizations.localeOf(context).languageCode);
+    final adjusted = hijriAdjustment != 0 ? initialDate.add(Duration(days: hijriAdjustment)) : initialDate;
+    final hDate = HijriCalendar.fromDate(adjusted);
+    final pickedHijri = await showModalBottomSheet<HijriCalendar>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _HijriPickerSheet(initialDate: hDate),
+    );
+    if (pickedHijri != null) {
+      DateTime g = pickedHijri.hijriToGregorian(pickedHijri.hYear, pickedHijri.hMonth, pickedHijri.hDay);
+      if (hijriAdjustment != 0) {
+        g = g.subtract(Duration(days: hijriAdjustment));
+      }
+      return g;
+    }
+    return null;
+  }
+
   @override
   State<UnifiedDatePicker> createState() => _UnifiedDatePickerState();
 }
@@ -372,23 +401,46 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
     );
   }
 
-  void _showGregorianPicker() async {
-    final picked = await showModalBottomSheet<DateTime>(
+  static Future<DateTime?> showGregorianPicker(BuildContext context, {required DateTime initialDate}) {
+    return showModalBottomSheet<DateTime>(
       context: context,
-      builder: (context) => _GregorianPickerSheet(initialDate: _selectedDate),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _GregorianPickerSheet(initialDate: initialDate),
     );
+  }
+
+  static Future<DateTime?> showHijriPicker(BuildContext context, {required DateTime initialDate, int hijriAdjustment = 0}) async {
+    HijriCalendar.setLocal(Localizations.localeOf(context).languageCode);
+    final adjusted = hijriAdjustment != 0 ? initialDate.add(Duration(days: hijriAdjustment)) : initialDate;
+    final hDate = HijriCalendar.fromDate(adjusted);
+    final pickedHijri = await showModalBottomSheet<HijriCalendar>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _HijriPickerSheet(initialDate: hDate),
+    );
+    if (pickedHijri != null) {
+      DateTime g = pickedHijri.hijriToGregorian(pickedHijri.hYear, pickedHijri.hMonth, pickedHijri.hDay);
+      if (hijriAdjustment != 0) {
+        g = g.subtract(Duration(days: hijriAdjustment));
+      }
+      return g;
+    }
+    return null;
+  }
+
+  void _showGregorianPicker() async {
+    final picked = await showGregorianPicker(context, initialDate: _selectedDate);
     if (picked != null) {
       _onGregorianChanged(picked);
     }
   }
 
   void _showHijriPicker() async {
-     final picked = await showModalBottomSheet<HijriCalendar>(
-      context: context,
-      builder: (context) => _HijriPickerSheet(initialDate: _hijriDate),
-    );
+    final picked = await showHijriPicker(context, initialDate: _selectedDate, hijriAdjustment: widget.hijriAdjustment);
     if (picked != null) {
-      _onHijriChanged(picked);
+      _onGregorianChanged(picked);
     }
   }
 }

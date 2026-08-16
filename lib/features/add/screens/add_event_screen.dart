@@ -870,14 +870,22 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
   }
 
   Future<void> _selectEndDate(AddEventProvider provider) async {
-    if (provider.isHijri) return; 
+    final auth = context.read<AuthProvider>();
+    final initialDate = provider.selectedEndDate ?? provider.selectedDate ?? DateTime.now();
     
-    final picked = await AppPickers.showStyledDatePicker(
-      context: context,
-      initialDate: provider.selectedEndDate ?? provider.selectedDate ?? DateTime.now(),
-      firstDate: provider.selectedDate ?? DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 3650)),
-    );
+    DateTime? picked;
+    if (provider.isHijri) {
+      picked = await UnifiedDatePicker.showHijriPicker(
+        context,
+        initialDate: initialDate,
+        hijriAdjustment: (auth.user?.hijriAdjustment ?? 0).toInt(),
+      );
+    } else {
+      picked = await UnifiedDatePicker.showGregorianPicker(
+        context,
+        initialDate: initialDate,
+      );
+    }
     
     if (picked != null) {
       provider.setEndDate(picked);
