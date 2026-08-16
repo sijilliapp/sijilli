@@ -508,15 +508,19 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
           padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0),
           child: InkWell(
             onTap: () {
-              if (provider.mode == AddEventMode.simple) {
-                provider.setMode(AddEventMode.advanced);
-              } else {
-                provider.setMode(AddEventMode.simple);
-                if (Navigator.canPop(context)) {
-                  Navigator.pop(context);
-                }
-                QuickAddEventSheet.show(context);
+              provider.setMode(AddEventMode.simple);
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
               }
+              QuickAddEventSheet.show(
+                context,
+                onSwitchToAdvanced: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AddEventScreen()),
+                  );
+                },
+              );
             },
             borderRadius: BorderRadius.circular(16),
             child: Container(
@@ -526,20 +530,18 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
                 border: Border.all(color: AppColors.primary, width: 1),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    provider.mode == AddEventMode.simple ? Icons.bolt : Icons.tune,
+                    Icons.bolt,
                     size: 13,
                     color: AppColors.primary,
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(width: 4),
                   Text(
-                    provider.mode == AddEventMode.simple
-                        ? (Localizations.localeOf(context).languageCode == 'ar' ? 'سريع ⚡' : 'Quick ⚡')
-                        : (Localizations.localeOf(context).languageCode == 'ar' ? 'متقدم ⚙️' : 'Advanced ⚙️'),
-                    style: const TextStyle(
+                    'سريع ⚡',
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       color: AppColors.primary,
@@ -557,27 +559,25 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
             style: TextStyle(color: provider.isSaving ? Colors.grey : AppColors.primary.withValues(alpha: 0.7)),
           ),
         ),
-        if (provider.mode == AddEventMode.advanced) ...[
-          provider.isSaving 
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: SizedBox(
-                     width: 20, 
-                     height: 20, 
-                     child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)
-                  ),
-                )
-              : TextButton(
-                  onPressed: _saveEvent,
-                  child: Text(
-                    context.l10n.save,
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
+        provider.isSaving 
+            ? const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: SizedBox(
+                   width: 20, 
+                   height: 20, 
+                   child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)
+                ),
+              )
+            : TextButton(
+                onPressed: _saveEvent,
+                child: Text(
+                  context.l10n.save,
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-        ],
+              ),
       ],
     );
   }
@@ -611,166 +611,27 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // User Header (يظهر فقط في النمط المتقدم لتخفيف تفاصيل النمط السريع)
-            if (provider.mode == AddEventMode.advanced)
-              Consumer<AuthProvider>(
-                builder: (context, auth, _) {
-                  final name = auth.user?.name ?? auth.user?.username ?? '';
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(
-                      '${context.l10n.you}: $name',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+            // User Header
+            Consumer<AuthProvider>(
+              builder: (context, auth, _) {
+                final name = auth.user?.name ?? auth.user?.username ?? '';
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    '${context.l10n.you}: $name',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
                     ),
-                  );
-                },
-              ),
-            if (provider.mode == AddEventMode.advanced)
-              const SizedBox(height: 8.0),
-
-            if (provider.mode == AddEventMode.simple) ...[
-              // --- SIMPLE MODE (النمط السريع المنبثق السفلي) ---
-              Container(
-                margin: const EdgeInsets.only(top: 4.0),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isDark ? Theme.of(context).cardColor : Colors.white,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24), bottom: Radius.circular(24)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.1),
-                      blurRadius: 18,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                  border: Border.all(
-                    color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Modal Bottom Sheet Drag Handle & Title
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: AppColors.primary,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              Localizations.localeOf(context).languageCode == 'ar' ? 'إضافة موعد سريع ⚡' : 'Quick Add Appointment ⚡',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          width: 36,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    CustomTextField(
-                      controller: _titleController,
-                      focusNode: _titleFocusNode,
-                      label: context.l10n.subject,
-                      hint: context.l10n.subjectHint,
-                      maxLength: 50,
-                      showCountdown: true,
-                      validator: (val) => val == null || val.trim().isEmpty ? context.l10n.fieldRequired : null,
-                    ),
-                    const SizedBox(height: 4),
-                    
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final showTitleSuggestions = _isTitleFocused && (provider.suggestions.isNotEmpty || provider.pivotSuggestions.isNotEmpty);
-                        return AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 200),
-                          child: showTitleSuggestions
-                              ? Container(
-                                  key: const ValueKey('simple_title_suggestions'),
-                                  width: MediaQuery.of(context).size.width,
-                                  child: WordRiverWidget(
-                                    suggestions: provider.suggestions,
-                                    onWordSelected: _onWordSelected,
-                                    pivotSuggestions: provider.pivotSuggestions,
-                                    onPivotSelected: _onPivotSelected,
-                                  ),
-                                )
-                              : const SizedBox.shrink(key: ValueKey('no_simple_title_suggestions')),
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    // Unified Date Picker (بدون بار أوقات الشمس)
-                    Consumer<AuthProvider>(
-                      builder: (context, auth, _) {
-                        return UnifiedDatePicker(
-                          initialDate: provider.selectedDate ?? DateTime.now(),
-                          initialMode: provider.isHijri,
-                          hijriAdjustment: (auth.user?.hijriAdjustment ?? 0).toInt(),
-                          onDateChanged: provider.setDate,
-                          onModeChanged: provider.setIsHijri,
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    // Suggested Time Capsules Bar (مصغرة وبأوقات accepted فقط)
-                    SuggestedTimeCapsulesBar(
-                      selectedTime: provider.selectedTime,
-                      onSelectTime: _selectTime,
-                      frequentTimes: provider.frequentTimes,
-                      onTimePicked: (tod) => provider.setTime(tod),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, 48),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      onPressed: provider.isSaving ? null : _saveEvent,
-                      child: provider.isSaving
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : Text(
-                              context.l10n.localeName == 'ar' ? 'حفظ الموعد ⚡' : 'Save Appointment ⚡',
-                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                            ),
-                    ),
-                  ],
-                ),
-              ),
-            ] else ...[
-              // --- ADVANCED MODE (النمط المتقدم) ---
+                );
+              },
+            ),
+            const SizedBox(height: 8.0),
+            // --- ADVANCED MODE ---
               EventFormWidget(
                 titleController: _titleController,
                 titleFocusNode: _titleFocusNode,
@@ -943,7 +804,6 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
                   ),
                 ],
               ),
-            ],
             
             // Link Field (Moved to Bottom)
             // Import CustomTextField if not available in this file scope (It might come from imports or EventFormWidget exports)
@@ -960,59 +820,57 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
 
             const SizedBox(height: AppDimens.spaceXS),
 
-            if (provider.mode == AddEventMode.advanced) ...[
-              // Save and Clear Buttons stacked vertically at the bottom of the page
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ElevatedButton(
-                    onPressed: provider.isSaving ? null : _saveEvent,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
+            // Save and Clear Buttons stacked vertically at the bottom of the page
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ElevatedButton(
+                  onPressed: provider.isSaving ? null : _saveEvent,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: provider.isSaving
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                          )
-                        : Text(
-                            context.l10n.save,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                    elevation: 0,
+                  ),
+                  child: provider.isSaving
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                      : Text(
+                          context.l10n.save,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton(
-                    onPressed: provider.isSaving ? null : _clearForm,
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.02),
-                      side: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300, width: 1.5),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      context.l10n.clear,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: isDark ? Colors.white : Colors.black87,
-                        fontWeight: FontWeight.bold,
-                      ),
+                        ),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: provider.isSaving ? null : _clearForm,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.02),
+                    side: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                ],
-              ),
-            ],
+                  child: Text(
+                    context.l10n.clear,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: isDark ? Colors.white : Colors.black87,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
 
             const SizedBox(height: 32), // Bottom padding
           ],
