@@ -223,12 +223,12 @@ class AddEventProvider extends ChangeNotifier {
   }
 
   String getEndDisplay(AppLocalizations l10n) {
-    if (_selectedDate == null) return '---';
-    
-    // 1. All Day / Multi Day
+    final startDate = _selectedDate ?? DateTime.now();
+    final endDate = _selectedEndDate ?? startDate;
+
+    // 1. All Day / Multi Day (duration == 0)
     if (_duration == 0) {
-      final endDate = _selectedEndDate ?? _selectedDate!;
-      final diffDays = endDate.difference(_selectedDate!).inDays;
+      final diffDays = endDate.difference(startDate).inDays;
       
       if (_isHijri) {
         HijriCalendar.setLocal(l10n.localeName);
@@ -249,8 +249,15 @@ class AddEventProvider extends ChangeNotifier {
       return dateStr;
     }
 
-    // 2. Specific Time
-    if (_selectedTime == null) return '---';
+    // 2. Specific Time duration
+    if (_selectedTime == null) {
+      if (_isHijri) {
+        HijriCalendar.setLocal(l10n.localeName);
+        final hEnd = HijriCalendar.fromDate(endDate);
+        return '${hEnd.hDay} ${hEnd.longMonthName} ${hEnd.hYear} هـ';
+      }
+      return DateFormat('dd MMMM yyyy', l10n.localeName).format(endDate);
+    }
     
     final startAt = DateTime(
       _selectedDate!.year,
@@ -768,6 +775,9 @@ class AddEventProvider extends ChangeNotifier {
 
   void setDuration(int value) {
     _duration = value;
+    if (value == 0 && _selectedEndDate == null) {
+      _selectedEndDate = _selectedDate ?? DateTime.now();
+    }
     if (!_canRecur()) _isRecurring = false;
     _updateConflictStatus();
     _saveDraft();
