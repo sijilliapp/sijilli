@@ -131,7 +131,7 @@ class MainScreenState extends State<MainScreen> {
   void setIndex(int index) {
     if (mounted) {
       setState(() {
-        _currentIndex = index;
+        _currentIndex = index == 2 ? 0 : index;
       });
     }
   }
@@ -141,7 +141,7 @@ class MainScreenState extends State<MainScreen> {
   late final List<Widget> _screens = [
     HomeScreen(key: _homeKey),
     const SearchScreen(),
-    const AddEventScreen(), // هذا العنصر لا يستخدم فعلياً لأن زر الإضافة يفتح شاشات مختلفة
+    const SizedBox(), // Add tab placeholder (Add Event is launched via modal sheet or pushed route, not as an IndexedStack tab)
     const NotificationsScreen(),
     const SettingsScreen(),
   ];
@@ -195,7 +195,7 @@ class MainScreenState extends State<MainScreen> {
             final homeState = _homeKey.currentState;
             final isInArticlesTab = homeState?.isInArticlesTab ?? false;
             
-             if (_currentIndex == 0 && isInArticlesTab) {
+            if (_currentIndex == 0 && isInArticlesTab) {
               // إذا كان المستخدم في تبويب المقالات، نفتح شاشة إضافة مقال
               final articleProvider = context.read<ArticleProvider>();
               final authProvider = context.read<AuthProvider>();
@@ -218,6 +218,9 @@ class MainScreenState extends State<MainScreen> {
                   ),
                 ),
               );
+              return;
+            } else {
+              _openAddEventFlow();
               return;
             }
           }
@@ -317,24 +320,33 @@ class MainScreenState extends State<MainScreen> {
         ),
       );
     } else {
-      // إذا كان في تبويب المواعيد، افتح بطاقة إضافة موعد السريعة أو الشاشة المتقدمة بحسب الوضع الخيار الأخير
-      final addEventProvider = context.read<AddEventProvider>();
-      if (addEventProvider.mode == AddEventMode.simple) {
-        QuickAddEventSheet.show(
-          context,
-          onSwitchToAdvanced: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const AddEventScreen()),
-            );
-          },
-        );
-      } else {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const AddEventScreen()),
-        );
-      }
+      _openAddEventFlow();
+    }
+  }
+
+  void _openAddEventFlow() async {
+    final addEventProvider = context.read<AddEventProvider>();
+    if (addEventProvider.mode == AddEventMode.simple) {
+      _showQuickSheet();
+    } else {
+      _showAdvancedScreen();
+    }
+  }
+
+  void _showQuickSheet() async {
+    await QuickAddEventSheet.show(
+      context,
+      onSwitchToAdvanced: () => _showAdvancedScreen(),
+    );
+  }
+
+  void _showAdvancedScreen() async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (context) => const AddEventScreen()),
+    );
+    if (result == 'switch_to_quick' && mounted) {
+      _showQuickSheet();
     }
   }
 
