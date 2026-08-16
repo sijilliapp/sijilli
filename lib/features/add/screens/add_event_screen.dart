@@ -564,6 +564,16 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
             ),
           ),
         ),
+        TextButton(
+          onPressed: provider.isSaving ? null : _saveEvent, 
+          child: Text(
+            context.l10n.save,
+            style: TextStyle(
+              color: provider.isSaving ? Colors.grey : AppColors.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
       ],
     );
   }
