@@ -232,7 +232,10 @@ class AddEventProvider extends ChangeNotifier {
       
       if (_isHijri) {
         HijriCalendar.setLocal(l10n.localeName);
-        final hEnd = HijriCalendar.fromDate(endDate);
+        final adjustedEnd = _hijriAdjustment != 0 
+            ? endDate.add(Duration(days: _hijriAdjustment.toInt()))
+            : endDate;
+        final hEnd = HijriCalendar.fromDate(adjustedEnd);
         final hStr = '${hEnd.hDay} ${hEnd.longMonthName} ${hEnd.hYear} هـ';
         if (diffDays > 0) {
           return '$hStr (${l10n.daysLeft(diffDays + 1)})';
@@ -253,7 +256,10 @@ class AddEventProvider extends ChangeNotifier {
     if (_selectedTime == null) {
       if (_isHijri) {
         HijriCalendar.setLocal(l10n.localeName);
-        final hEnd = HijriCalendar.fromDate(endDate);
+        final adjustedEnd = _hijriAdjustment != 0 
+            ? endDate.add(Duration(days: _hijriAdjustment.toInt()))
+            : endDate;
+        final hEnd = HijriCalendar.fromDate(adjustedEnd);
         return '${hEnd.hDay} ${hEnd.longMonthName} ${hEnd.hYear} هـ';
       }
       return DateFormat('dd MMMM yyyy', l10n.localeName).format(endDate);
