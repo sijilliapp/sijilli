@@ -508,8 +508,15 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
           padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0),
           child: InkWell(
             onTap: () {
-              final newMode = provider.mode == AddEventMode.simple ? AddEventMode.advanced : AddEventMode.simple;
-              provider.setMode(newMode);
+              if (provider.mode == AddEventMode.simple) {
+                provider.setMode(AddEventMode.advanced);
+              } else {
+                provider.setMode(AddEventMode.simple);
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                }
+                QuickAddEventSheet.show(context);
+              }
             },
             borderRadius: BorderRadius.circular(16),
             child: Container(
@@ -953,57 +960,59 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
 
             const SizedBox(height: AppDimens.spaceXS),
 
-            // Save and Clear Buttons stacked vertically at the bottom of the page
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ElevatedButton(
-                  onPressed: provider.isSaving ? null : _saveEvent,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+            if (provider.mode == AddEventMode.advanced) ...[
+              // Save and Clear Buttons stacked vertically at the bottom of the page
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ElevatedButton(
+                    onPressed: provider.isSaving ? null : _saveEvent,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
                     ),
-                    elevation: 0,
-                  ),
-                  child: provider.isSaving
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                        )
-                      : Text(
-                          context.l10n.save,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                    child: provider.isSaving
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                        : Text(
+                            context.l10n.save,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton(
-                  onPressed: provider.isSaving ? null : _clearForm,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.02),
-                    side: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300, width: 1.5),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: provider.isSaving ? null : _clearForm,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.02),
+                      side: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300, width: 1.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      context.l10n.clear,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: isDark ? Colors.white : Colors.black87,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                  child: Text(
-                    context.l10n.clear,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: isDark ? Colors.white : Colors.black87,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
 
             const SizedBox(height: 32), // Bottom padding
           ],

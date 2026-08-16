@@ -7,6 +7,8 @@ import 'package:sijilli/core/constants/app_colors.dart';
 import 'package:sijilli/features/home/screens/home_screen.dart';
 import 'package:sijilli/features/search/screens/search_screen.dart';
 import 'package:sijilli/features/add/screens/add_event_screen.dart';
+import 'package:sijilli/features/add/providers/add_event_provider.dart';
+import 'package:sijilli/features/add/widgets/quick_add_event_sheet.dart';
 import 'package:sijilli/features/articles/screens/add_article_screen.dart';
 import 'package:sijilli/features/articles/providers/article_provider.dart';
 import 'package:sijilli/features/notifications/screens/notifications_screen.dart';
@@ -315,13 +317,24 @@ class MainScreenState extends State<MainScreen> {
         ),
       );
     } else {
-      // إذا كان في تبويب المواعيد، افتح شاشة إضافة موعد
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const AddEventScreen(),
-        ),
-      );
+      // إذا كان في تبويب المواعيد، افتح بطاقة إضافة موعد السريعة أو الشاشة المتقدمة بحسب الوضع الخيار الأخير
+      final addEventProvider = context.read<AddEventProvider>();
+      if (addEventProvider.mode == AddEventMode.simple) {
+        QuickAddEventSheet.show(
+          context,
+          onSwitchToAdvanced: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AddEventScreen()),
+            );
+          },
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AddEventScreen()),
+        );
+      }
     }
   }
 
