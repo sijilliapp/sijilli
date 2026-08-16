@@ -555,10 +555,13 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
           ),
         ),
         TextButton(
-          onPressed: provider.isSaving ? null : _saveEvent, 
+          onPressed: provider.isSaving ? null : _clearForm, 
           child: Text(
-            context.l10n.save,
-            style: TextStyle(color: provider.isSaving ? Colors.grey : AppColors.primary, fontWeight: FontWeight.bold),
+            context.l10n.clear,
+            style: TextStyle(
+              color: provider.isSaving ? Colors.grey : AppColors.primary.withValues(alpha: 0.8),
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ],
