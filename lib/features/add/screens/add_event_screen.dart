@@ -29,6 +29,7 @@ import '../widgets/add_event_mode_toggle.dart';
 import '../widgets/suggested_time_capsules_bar.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../widgets/word_river_widget.dart';
+import '../widgets/quick_add_event_sheet.dart';
 
 class AddEventScreen extends StatelessWidget {
   final Appointment? initialAppointment;
@@ -549,25 +550,27 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
             style: TextStyle(color: provider.isSaving ? Colors.grey : AppColors.primary.withValues(alpha: 0.7)),
           ),
         ),
-        provider.isSaving 
-            ? const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: SizedBox(
-                   width: 20, 
-                   height: 20, 
-                   child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)
-                ),
-              )
-            : TextButton(
-                onPressed: _saveEvent,
-                child: Text(
-                  context.l10n.save,
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
+        if (provider.mode == AddEventMode.advanced) ...[
+          provider.isSaving 
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: SizedBox(
+                     width: 20, 
+                     height: 20, 
+                     child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)
+                  ),
+                )
+              : TextButton(
+                  onPressed: _saveEvent,
+                  child: Text(
+                    context.l10n.save,
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
+        ],
       ],
     );
   }
@@ -601,31 +604,33 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // User Header
-            Consumer<AuthProvider>(
-              builder: (context, auth, _) {
-                final name = auth.user?.name ?? auth.user?.username ?? '';
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    '${context.l10n.you}: $name',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+            // User Header (يظهر فقط في النمط المتقدم لتخفيف تفاصيل النمط السريع)
+            if (provider.mode == AddEventMode.advanced)
+              Consumer<AuthProvider>(
+                builder: (context, auth, _) {
+                  final name = auth.user?.name ?? auth.user?.username ?? '';
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '${context.l10n.you}: $name',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 8.0),
+                  );
+                },
+              ),
+            if (provider.mode == AddEventMode.advanced)
+              const SizedBox(height: 8.0),
 
             if (provider.mode == AddEventMode.simple) ...[
               // --- SIMPLE MODE (النمط السريع المنبثق السفلي) ---
               Container(
-                margin: const EdgeInsets.only(top: 8.0),
+                margin: const EdgeInsets.only(top: 4.0),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: isDark ? Theme.of(context).cardColor : Colors.white,
@@ -714,25 +719,15 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
 
                     const SizedBox(height: 10),
 
-                    // Unified Date Picker (أول طوبة اختيار هجري/ميلادي عمودي)
+                    // Unified Date Picker (بدون بار أوقات الشمس)
                     Consumer<AuthProvider>(
                       builder: (context, auth, _) {
-                        return Column(
-                          children: [
-                            UnifiedDatePicker(
-                              initialDate: provider.selectedDate ?? DateTime.now(),
-                              initialMode: provider.isHijri,
-                              hijriAdjustment: (auth.user?.hijriAdjustment ?? 0).toInt(),
-                              onDateChanged: provider.setDate,
-                              onModeChanged: provider.setIsHijri,
-                            ),
-                            const SizedBox(height: 4),
-                            PrayerTimesRow(
-                              sunriseTime: provider.sunriseTime,
-                              dhuhrTime: provider.dhuhrTime,
-                              sunsetTime: provider.sunsetTime,
-                            ),
-                          ],
+                        return UnifiedDatePicker(
+                          initialDate: provider.selectedDate ?? DateTime.now(),
+                          initialMode: provider.isHijri,
+                          hijriAdjustment: (auth.user?.hijriAdjustment ?? 0).toInt(),
+                          onDateChanged: provider.setDate,
+                          onModeChanged: provider.setIsHijri,
                         );
                       },
                     ),
@@ -753,14 +748,14 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, 46),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        minimumSize: const Size(double.infinity, 48),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
                       onPressed: provider.isSaving ? null : _saveEvent,
                       child: provider.isSaving
                           ? const CircularProgressIndicator(color: Colors.white)
                           : Text(
-                              context.l10n.localeName == 'ar' ? 'حفظ الموعد المباشر ⚡' : 'Save Appointment Directly ⚡',
+                              context.l10n.localeName == 'ar' ? 'حفظ الموعد ⚡' : 'Save Appointment ⚡',
                               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                             ),
                     ),
