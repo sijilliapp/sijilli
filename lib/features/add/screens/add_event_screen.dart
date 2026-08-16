@@ -767,22 +767,9 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
 
               const SizedBox(height: 12.0),
             
-            // Link Field (Moved to Bottom)
-            // Import CustomTextField if not available in this file scope (It might come from imports or EventFormWidget exports)
-            // AddEventScreen imports EventFormWidget but CustomTextField is in core/widgets.
-            // Wait, AddEventScreen does NOT import CustomTextField directly in the snippet I saw.
-            // It imports `../widgets/event_form_widget.dart`.
-            // I need to import CustomTextField in AddEventScreen or use fully qualified.
-            // Actually it is `../../../core/widgets/custom_text_field.dart`.
-            // I will check imports at the top.
-            // Assuming I need to add import. But first let's place the code.
-            
-             // رابط البث
-            // Link Field Moved to EventFormWidget
-
             const SizedBox(height: AppDimens.spaceXS),
 
-            // Save and Clear Buttons stacked vertically at the bottom of the page
+            // Save Button stacked at the bottom of the page
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -810,26 +797,6 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton(
-                  onPressed: provider.isSaving ? null : _clearForm,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.02),
-                    side: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300, width: 1.5),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    context.l10n.clear,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: isDark ? Colors.white : Colors.black87,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
                 ),
               ],
             ),
