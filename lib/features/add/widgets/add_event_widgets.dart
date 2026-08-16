@@ -163,7 +163,6 @@ class DateTimeSection extends StatelessWidget {
             child: Divider(height: 1),
           ),
 
-          if (!(isHijri && duration == 0)) 
           InkWell(
             onTap: onSelectEndDate,
             borderRadius: BorderRadius.circular(8),

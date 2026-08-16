@@ -227,13 +227,14 @@ class AddEventProvider extends ChangeNotifier {
     
     // 1. All Day / Multi Day
     if (_duration == 0) {
+      final endDate = _selectedEndDate ?? _selectedDate!;
       if (_isHijri) {
-        return l10n.durationAllDay; 
+        HijriCalendar.setLocal(l10n.localeName);
+        final hEnd = HijriCalendar.fromDate(endDate);
+        return '${hEnd.hDay} ${hEnd.longMonthName} ${hEnd.hYear} هـ';
       }
       
-      final endDate = _selectedEndDate ?? _selectedDate!;
       final diffDays = endDate.difference(_selectedDate!).inDays;
-      
       final locale = l10n.localeName;
       final dateStr = DateFormat('dd MMMM yyyy', locale).format(endDate);
 
