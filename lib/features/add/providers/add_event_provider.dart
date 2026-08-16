@@ -126,7 +126,7 @@ class AddEventProvider extends ChangeNotifier {
       if (appt.isCancelled || appt.isDeleted) return false;
       if (appt.hostInvitation?.status == 'trash' || appt.hostInvitation?.status == 'cancelled') return false;
       if (appt.currentUserInvitation != null) {
-        return appt.currentUserInvitation!.status == 'accepted';
+        return appt.currentUserInvitation?.status == 'accepted';
       }
       return true;
     }).toList();
@@ -146,9 +146,19 @@ class AddEventProvider extends ChangeNotifier {
     }
 
     final sortedKeys = counts.keys.toList()
-      ..sort((a, b) => counts[b]!.compareTo(counts[a]!));
+      ..sort((a, b) {
+        final countA = counts[a] ?? 0;
+        final countB = counts[b] ?? 0;
+        return countB.compareTo(countA);
+      });
 
-    final List<TimeOfDay> sortedTimes = sortedKeys.map((key) => timesMap[key]!).toList();
+    final List<TimeOfDay> sortedTimes = [];
+    for (final key in sortedKeys) {
+      final tod = timesMap[key];
+      if (tod != null) {
+        sortedTimes.add(tod);
+      }
+    }
 
     for (final def in defaultTimes) {
       final key = '${def.hour}:${def.minute}';
