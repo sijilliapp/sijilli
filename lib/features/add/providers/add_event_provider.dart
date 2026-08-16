@@ -276,11 +276,11 @@ class AddEventProvider extends ChangeNotifier {
     }
     
     final startAt = DateTime(
-      _selectedDate!.year,
-      _selectedDate!.month,
-      _selectedDate!.day,
-      _selectedTime!.hour,
-      _selectedTime!.minute,
+      startDate.year,
+      startDate.month,
+      startDate.day,
+      _selectedTime?.hour ?? 0,
+      _selectedTime?.minute ?? 0,
     );
 
     final endAt = startAt.add(Duration(minutes: _duration));
