@@ -25,6 +25,10 @@ import '../../../core/services/autocomplete_service.dart';
 import 'location_picker_screen.dart';
 import '../utils/smart_parser.dart';
 import '../../../core/providers/global_config_provider.dart';
+import '../widgets/add_event_mode_toggle.dart';
+import '../widgets/suggested_time_capsules_bar.dart';
+import '../../../core/widgets/custom_text_field.dart';
+import '../widgets/word_river_widget.dart';
 
 class AddEventScreen extends StatelessWidget {
   final Appointment? initialAppointment;
@@ -156,6 +160,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
        
        await addEventProvider.init(widget.initialAppointment, history, currentUser: auth.user);
        addEventProvider.initLocations(history);
+       await addEventProvider.loadSavedMode();
        
        if (widget.initialGuest != null) {
           addEventProvider.addInvitee(widget.initialGuest!);
@@ -577,7 +582,102 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
               },
             ),
 
-            EventFormWidget(
+            // Mode Selector Toggle (سريع ⚡ | متقدم ⚙️) - يتذكر خيار المستخدم دائماً
+            AddEventModeToggle(
+              currentMode: provider.mode,
+              onModeChanged: (newMode) => provider.setMode(newMode),
+            ),
+            const SizedBox(height: 12.0),
+
+            if (provider.mode == AddEventMode.simple) ...[
+              // --- SIMPLE MODE (النمط السريع) ---
+              CustomTextField(
+                controller: _titleController,
+                focusNode: _titleFocusNode,
+                label: context.l10n.subject,
+                hint: context.l10n.subjectHint,
+                maxLength: 50,
+                showCountdown: true,
+                validator: (val) => val == null || val.trim().isEmpty ? context.l10n.fieldRequired : null,
+              ),
+              const SizedBox(height: 6),
+              
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final showTitleSuggestions = _isTitleFocused && (provider.suggestions.isNotEmpty || provider.pivotSuggestions.isNotEmpty);
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: showTitleSuggestions
+                        ? Container(
+                            key: const ValueKey('simple_title_suggestions'),
+                            width: MediaQuery.of(context).size.width,
+                            child: WordRiverWidget(
+                              suggestions: provider.suggestions,
+                              onWordSelected: _onWordSelected,
+                              pivotSuggestions: provider.pivotSuggestions,
+                              onPivotSelected: _onPivotSelected,
+                            ),
+                          )
+                        : const SizedBox.shrink(key: ValueKey('no_simple_title_suggestions')),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 12.0),
+
+              // Unified Date Picker (التقويم الهجري والميلادي الأفقي المعتاد نفسه)
+              Consumer<AuthProvider>(
+                builder: (context, auth, _) {
+                  return Column(
+                    children: [
+                      UnifiedDatePicker(
+                        initialDate: provider.selectedDate ?? DateTime.now(),
+                        initialMode: provider.isHijri,
+                        hijriAdjustment: (auth.user?.hijriAdjustment ?? 0).toInt(),
+                        onDateChanged: provider.setDate,
+                        onModeChanged: provider.setIsHijri,
+                      ),
+                      PrayerTimesRow(
+                        sunriseTime: provider.sunriseTime,
+                        dhuhrTime: provider.dhuhrTime,
+                        sunsetTime: provider.sunsetTime,
+                      ),
+                    ],
+                  );
+                },
+              ),
+
+              const SizedBox(height: 12.0),
+
+              // Suggested Time Capsules Bar (كبسولات الوقت المقترح مرتبة بحسب الأكثر استخداماً أولاً)
+              SuggestedTimeCapsulesBar(
+                selectedTime: provider.selectedTime,
+                onSelectTime: _selectTime,
+                frequentTimes: provider.frequentTimes,
+                onTimePicked: (tod) => provider.setTime(tod),
+              ),
+
+              const SizedBox(height: 24.0),
+
+              // Quick Save Button
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: provider.isSaving ? null : _saveEvent,
+                child: provider.isSaving
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : Text(
+                        context.l10n.localeName == 'ar' ? 'حفظ الموعد المباشر' : 'Save Appointment Directly',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+              ),
+            ] else ...[
+              // --- ADVANCED MODE (النمط المتقدم) ---
+              EventFormWidget(
                 titleController: _titleController,
                 titleFocusNode: _titleFocusNode,
                 isTitleFocused: _isTitleFocused,
@@ -592,7 +692,6 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
                 pivotSuggestions: provider.pivotSuggestions,
                 onPivotSelected: _onPivotSelected,
                 
-                // Location Props
                 locationFocusNode: _locationFocusNode,
                 isLocationFocused: _isLocationFocused,
                 buildingFocusNode: _buildingFocusNode,
@@ -605,128 +704,152 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
                 onPinAddressChanged: (val) => provider.setPinAddress(val),
                 onOpenLocationPicker: () => _openLocationPicker(provider),
               ), 
-            
-            const SizedBox(height: 12.0),
-            
-            Consumer<AuthProvider>(
-              builder: (context, auth, _) {
-                return Column(
-                  children: [
-                    UnifiedDatePicker(
-                      initialDate: provider.selectedDate ?? DateTime.now(),
-                      initialMode: provider.isHijri,
-                      hijriAdjustment: (auth.user?.hijriAdjustment ?? 0).toInt(),
-                      onDateChanged: provider.setDate,
-                      onModeChanged: provider.setIsHijri,
-                    ),
-                    PrayerTimesRow(
-                      sunriseTime: provider.sunriseTime,
-                      dhuhrTime: provider.dhuhrTime,
-                      sunsetTime: provider.sunsetTime,
-                    ),
-                  ],
-                );
-              },
-            ),
-            
-            const SizedBox(height: 12.0),
-
-            DateTimeSection(
-              isHijri: provider.isHijri,
-              duration: provider.duration,
-              selectedTime: provider.selectedTime,
-              onSelectTime: _selectTime,
-              durationOptions: durationOptions,
-              onDurationChanged: provider.setDuration,
-              endDisplay: provider.getEndDisplay(context.l10n),
-              onSelectEndDate: () => _selectEndDate(provider),
-            ),
-            
-            if (provider.hasConflict) ...[
+              
               const SizedBox(height: 12.0),
-              _buildConflictAlert(),
-            ],
-            
-            const SizedBox(height: 12.0),
-            
-            InviteesWidget(
-              invitees: provider.selectedUsers,
-              onAddInvitees: () => _openInviteesSelector(provider),
-              isFirstComeFirstServed: provider.isFirstComeFirstServed,
-              onFirstComeChanged: provider.toggleFirstComeFirstServed,
-              onRemoveInvitee: provider.removeInvitee,
-            ),
-
-            if (provider.selectedUsers.isEmpty) ...[
+              
+              Consumer<AuthProvider>(
+                builder: (context, auth, _) {
+                  return Column(
+                    children: [
+                      UnifiedDatePicker(
+                        initialDate: provider.selectedDate ?? DateTime.now(),
+                        initialMode: provider.isHijri,
+                        hijriAdjustment: (auth.user?.hijriAdjustment ?? 0).toInt(),
+                        onDateChanged: provider.setDate,
+                        onModeChanged: provider.setIsHijri,
+                      ),
+                      PrayerTimesRow(
+                        sunriseTime: provider.sunriseTime,
+                        dhuhrTime: provider.dhuhrTime,
+                        sunsetTime: provider.sunsetTime,
+                      ),
+                    ],
+                  );
+                },
+              ),
+              
               const SizedBox(height: 12.0),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Theme.of(context).brightness == Brightness.dark 
-                      ? Colors.grey.shade800 
-                      : Colors.grey.shade200,
+
+              DateTimeSection(
+                isHijri: provider.isHijri,
+                duration: provider.duration,
+                selectedTime: provider.selectedTime,
+                onSelectTime: _selectTime,
+                durationOptions: durationOptions,
+                onDurationChanged: provider.setDuration,
+                endDisplay: provider.getEndDisplay(context.l10n),
+                onSelectEndDate: () => _selectEndDate(provider),
+                frequentTimes: provider.frequentTimes,
+                onTimePicked: (tod) => provider.setTime(tod),
+              ),
+              
+              if (provider.hasConflict) ...[
+                const SizedBox(height: 12.0),
+                _buildConflictAlert(),
+              ],
+              
+              const SizedBox(height: 12.0),
+              
+              InviteesWidget(
+                invitees: provider.selectedUsers,
+                onAddInvitees: () => _openInviteesSelector(provider),
+                isFirstComeFirstServed: provider.isFirstComeFirstServed,
+                onFirstComeChanged: provider.toggleFirstComeFirstServed,
+                onRemoveInvitee: provider.removeInvitee,
+              ),
+
+              if (provider.selectedUsers.isEmpty) ...[
+                const SizedBox(height: 12.0),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Theme.of(context).brightness == Brightness.dark 
+                        ? Colors.grey.shade800 
+                        : Colors.grey.shade200,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.link, color: AppColors.primary),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              context.l10n.localeName == 'ar' 
+                                ? 'رابط دعوة لضيف غير مسجل' 
+                                : 'Invite link for unregistered guest',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              context.l10n.localeName == 'ar' 
+                                ? 'سيتم توليد رابط مؤقت لمشاركته مع ضيفك' 
+                                : 'A temporary link will be generated to share with your guest',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Theme.of(context).brightness == Brightness.dark 
+                                  ? Colors.grey.shade400 
+                                  : Colors.grey.shade500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch.adaptive(
+                        value: provider.generateInviteLink,
+                        onChanged: provider.setGenerateInviteLink,
+                        activeColor: AppColors.primary,
+                      ),
+                    ],
                   ),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.link, color: AppColors.primary),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            context.l10n.localeName == 'ar' 
-                              ? 'رابط دعوة لضيف غير مسجل' 
-                              : 'Invite link for unregistered guest',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            context.l10n.localeName == 'ar' 
-                              ? 'سيتم توليد رابط مؤقت لمشاركته مع ضيفك' 
-                              : 'A temporary link will be generated to share with your guest',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Theme.of(context).brightness == Brightness.dark 
-                                ? Colors.grey.shade400 
-                                : Colors.grey.shade500,
-                            ),
-                          ),
-                        ],
-                      ),
+              ],
+
+              const SizedBox(height: 12.0),
+
+              // Recurrence
+              if (provider.duration < 1440) 
+              RecurrenceSection(
+                isRecurring: provider.isRecurring,
+                onToggle: provider.toggleRecurrence,
+                recurrenceType: provider.recurrenceType,
+                recurrenceCount: provider.recurrenceCount,
+                recurrenceOptions: recurrenceOptions,
+                onTypeChanged: provider.setRecurrenceType,
+                onCountChanged: provider.setRecurrenceCount,
+              ),
+
+              const SizedBox(height: 12.0),
+
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 48),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    Switch.adaptive(
-                      value: provider.generateInviteLink,
-                      onChanged: provider.setGenerateInviteLink,
-                      activeColor: AppColors.primary,
-                    ),
-                  ],
-                ),
+                    onPressed: provider.isSaving ? null : _saveEvent,
+                    child: provider.isSaving
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : Text(
+                            context.l10n.save,
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                  ),
+                ],
               ),
             ],
-
-            const SizedBox(height: 12.0),
-
-            // Recurrence
-            if (provider.duration < 1440) 
-            RecurrenceSection(
-              isRecurring: provider.isRecurring,
-              onToggle: provider.toggleRecurrence,
-              recurrenceType: provider.recurrenceType,
-              recurrenceCount: provider.recurrenceCount,
-              recurrenceOptions: recurrenceOptions,
-              onTypeChanged: provider.setRecurrenceType,
-              onCountChanged: provider.setRecurrenceCount,
-            ),
-
-            const SizedBox(height: 12.0),
             
             // Link Field (Moved to Bottom)
             // Import CustomTextField if not available in this file scope (It might come from imports or EventFormWidget exports)

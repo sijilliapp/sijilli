@@ -15,12 +15,42 @@ import '../../appointments/services/pb_appointment_service.dart';
 
 import '../../../core/services/appointment_draft_service.dart';
 import '../../../core/utils/arabic_search.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+
+enum AddEventMode { simple, advanced }
 
 class AddEventProvider extends ChangeNotifier {
   final AutocompleteService _autocompleteService = AutocompleteService();
   final LocationService _locationService = LocationService();
   final AppointmentDraftService _draftService = AppointmentDraftService();
+
+  // Add Event Mode (Simple vs Advanced)
+  AddEventMode _mode = AddEventMode.simple;
+  AddEventMode get mode => _mode;
+
+  Future<void> loadSavedMode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final modeStr = prefs.getString('preferred_add_event_mode');
+      if (modeStr == 'advanced') {
+        _mode = AddEventMode.advanced;
+      } else {
+        _mode = AddEventMode.simple;
+      }
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> setMode(AddEventMode newMode) async {
+    if (_mode == newMode) return;
+    _mode = newMode;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('preferred_add_event_mode', newMode == AddEventMode.advanced ? 'advanced' : 'simple');
+    } catch (_) {}
+  }
 
   // Location Learning
   // Region -> Map<Building, Frequency>
@@ -78,6 +108,46 @@ class AddEventProvider extends ChangeNotifier {
 
   void clearHighlight() {
     _highlightedAppointmentId = null;
+  }
+
+  /// الحصول على قائمة الأوقات الأكثر استخداماً مرتبة حسب تكرار الاستخدام وليس الترتيب الزمني
+  List<TimeOfDay> get frequentTimes {
+    final defaultTimes = const [
+      TimeOfDay(hour: 15, minute: 30), // 3:30 عصراً
+      TimeOfDay(hour: 17, minute: 0),  // 5:00 عصراً
+      TimeOfDay(hour: 20, minute: 0),  // 8:00 مساءً
+      TimeOfDay(hour: 21, minute: 0),  // 9:00 مساءً
+      TimeOfDay(hour: 10, minute: 0),  // 10:00 صباحاً
+      TimeOfDay(hour: 13, minute: 30), // 1:30 ظهراً
+    ];
+
+    if (_history.isEmpty) {
+      return defaultTimes;
+    }
+
+    final Map<String, int> counts = {};
+    final Map<String, TimeOfDay> timesMap = {};
+
+    for (final appt in _history) {
+      final tod = TimeOfDay(hour: appt.startAt.hour, minute: appt.startAt.minute);
+      final key = '${tod.hour}:${tod.minute}';
+      counts[key] = (counts[key] ?? 0) + 1;
+      timesMap[key] = tod;
+    }
+
+    final sortedKeys = counts.keys.toList()
+      ..sort((a, b) => counts[b]!.compareTo(counts[a]!));
+
+    final List<TimeOfDay> sortedTimes = sortedKeys.map((key) => timesMap[key]!).toList();
+
+    for (final def in defaultTimes) {
+      final key = '${def.hour}:${def.minute}';
+      if (!counts.containsKey(key)) {
+        sortedTimes.add(def);
+      }
+    }
+
+    return sortedTimes;
   }
 
   // Conflict Detection

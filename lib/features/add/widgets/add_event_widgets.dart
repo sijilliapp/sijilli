@@ -3,6 +3,7 @@ import 'package:hijri/hijri_calendar.dart';
 import '../../../../core/constants/app_colors.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import '../../../../core/utils/app_date_formatter.dart';
+import 'suggested_time_capsules_bar.dart';
 
 class DateTimeSection extends StatelessWidget {
   final bool isHijri;
@@ -14,6 +15,8 @@ class DateTimeSection extends StatelessWidget {
   final String endDisplay;
   final VoidCallback onSelectEndDate;
   final TimeOfDay? sunsetTime; 
+  final List<TimeOfDay>? frequentTimes;
+  final Function(TimeOfDay)? onTimePicked;
 
   const DateTimeSection({
     super.key,
@@ -26,6 +29,8 @@ class DateTimeSection extends StatelessWidget {
     required this.endDisplay,
     required this.onSelectEndDate,
     this.sunsetTime,
+    this.frequentTimes,
+    this.onTimePicked,
   });
 
   @override
@@ -91,6 +96,16 @@ class DateTimeSection extends StatelessWidget {
               ),
             ),
           ),
+
+          if (frequentTimes != null && frequentTimes!.isNotEmpty && onTimePicked != null && duration != 0) ...[
+            const SizedBox(height: 12),
+            SuggestedTimeCapsulesBar(
+              selectedTime: selectedTime,
+              onSelectTime: onSelectTime,
+              frequentTimes: frequentTimes!,
+              onTimePicked: onTimePicked!,
+            ),
+          ],
           
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
