@@ -185,7 +185,6 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.85,
-        minHeight: _isTitleFocused ? 440.0 : 0.0,
       ),
       decoration: BoxDecoration(
         color: isDark ? Theme.of(context).cardColor : Colors.white,
@@ -281,53 +280,68 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
               ),
               const SizedBox(height: 14),
 
-              // Subject Input
-              CustomTextField(
-                controller: _titleController,
-                focusNode: _titleFocusNode,
-                label: context.l10n.subject,
-                hint: context.l10n.subjectHint,
-                maxLength: 50,
-                showCountdown: true,
-                validator: (val) => val == null || val.trim().isEmpty ? context.l10n.fieldRequired : null,
-              ),
-              const SizedBox(height: 4),
+              // Subject Input + Floating WordRiverWidget Overlay
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 1. Subject Input
+                      CustomTextField(
+                        controller: _titleController,
+                        focusNode: _titleFocusNode,
+                        label: context.l10n.subject,
+                        hint: context.l10n.subjectHint,
+                        maxLength: 50,
+                        showCountdown: true,
+                        validator: (val) => val == null || val.trim().isEmpty ? context.l10n.fieldRequired : null,
+                      ),
+                      const SizedBox(height: 12),
 
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.fastOutSlowIn,
-                height: _isTitleFocused ? 52.0 : 0.0,
-                clipBehavior: Clip.hardEdge,
-                decoration: const BoxDecoration(),
-                child: OverflowBox(
-                  minHeight: 0,
-                  maxHeight: 52,
-                  alignment: Alignment.topCenter,
-                  child: SizedBox(
-                    height: 52,
-                    child: WordRiverWidget(
-                      suggestions: provider.suggestions,
-                      onWordSelected: _onWordSelected,
-                      pivotSuggestions: provider.pivotSuggestions,
-                      onPivotSelected: _onPivotSelected,
-                    ),
+                      // 2. Unified Date Picker (تحديد التاريخ)
+                      Consumer<AuthProvider>(
+                        builder: (context, auth, _) {
+                          return UnifiedDatePicker(
+                            initialDate: provider.selectedDate ?? DateTime.now(),
+                            initialMode: provider.isHijri,
+                            hijriAdjustment: (auth.user?.hijriAdjustment ?? 0).toInt(),
+                            onDateChanged: provider.setDate,
+                            onModeChanged: provider.setIsHijri,
+                          );
+                        },
+                      ),
+                    ],
                   ),
-                ),
-              ),
 
-              const SizedBox(height: 12),
-
-              // Unified Date Picker (بدون بار أوقات الشمس وبدون سطر الهوية)
-              Consumer<AuthProvider>(
-                builder: (context, auth, _) {
-                  return UnifiedDatePicker(
-                    initialDate: provider.selectedDate ?? DateTime.now(),
-                    initialMode: provider.isHijri,
-                    hijriAdjustment: (auth.user?.hijriAdjustment ?? 0).toInt(),
-                    onDateChanged: provider.setDate,
-                    onModeChanged: provider.setIsHijri,
-                  );
-                },
+                  // 3. Floating WordRiverWidget Overlay (ينسدل على بار منتقي التاريخ لضمان ثبات حقل الموضوع 100%)
+                  if (_isTitleFocused && (provider.suggestions.isNotEmpty || provider.pivotSuggestions.isNotEmpty))
+                    Positioned(
+                      top: 72,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: isDark ? Theme.of(context).cardColor : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.12),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: WordRiverWidget(
+                          suggestions: provider.suggestions,
+                          onWordSelected: _onWordSelected,
+                          pivotSuggestions: provider.pivotSuggestions,
+                          onPivotSelected: _onPivotSelected,
+                        ),
+                      ),
+                    ),
+                ],
               ),
 
               const SizedBox(height: 12),
