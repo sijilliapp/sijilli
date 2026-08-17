@@ -35,7 +35,7 @@ class InvitationActionButtons extends StatelessWidget {
 
     // 1. إذا تم الرد مسبقاً (الأولوية لتاريخ المستخدم)
     if (status == InvitationStatus.accepted) {
-      return _buildFullWidthButton(context, context.l10n.accepted, AppColors.primary);
+      return _buildFullWidthButton(context, context.l10n.accepted, Colors.green.shade600);
     }
     if (status == InvitationStatus.declined) {
       return _buildFullWidthButton(context, context.l10n.declined, Colors.red.shade400);
@@ -117,11 +117,7 @@ class InvitationActionButtons extends StatelessWidget {
     
     final bgColor = isFrozen 
         ? (isDark ? Colors.grey.shade800 : Colors.grey.shade100) 
-        : color.withValues(alpha: 0.1);
-        
-    final borderColor = isFrozen 
-        ? (isDark ? Colors.grey.shade600 : Colors.grey.shade300) 
-        : color.withValues(alpha: 0.3);
+        : color.withValues(alpha: 0.12);
         
     final textColor = isFrozen 
         ? (isDark ? Colors.grey.shade400 : Colors.grey.shade700) 
@@ -133,7 +129,6 @@ class InvitationActionButtons extends StatelessWidget {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: borderColor),
       ),
       child: Center(
         child: Text(
