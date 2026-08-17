@@ -183,6 +183,10 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
     final provider = context.watch<AddEventProvider>();
 
     return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
+        minHeight: _isTitleFocused ? 440.0 : 0.0,
+      ),
       decoration: BoxDecoration(
         color: isDark ? Theme.of(context).cardColor : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -198,6 +202,7 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
       child: Form(
         key: _formKey,
         child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
