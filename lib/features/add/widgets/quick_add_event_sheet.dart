@@ -45,18 +45,43 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
   final FocusNode _titleFocusNode = FocusNode();
   bool _isTitleFocused = false;
 
+  bool _isInitialized = false;
+
   @override
   void initState() {
     super.initState();
     _titleFocusNode.addListener(_onTitleFocusChange);
+    _titleController.addListener(_onTitleChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized) {
+      _isInitialized = true;
+      final provider = context.read<AddEventProvider>();
+      if (provider.draftTitle.isNotEmpty && _titleController.text.isEmpty) {
+        _titleController.value = TextEditingValue(
+          text: provider.draftTitle,
+          selection: TextSelection.collapsed(offset: provider.draftTitle.length),
+        );
+      }
+      provider.onTitleChanged(_titleController.text);
+    }
   }
 
   @override
   void dispose() {
     _titleFocusNode.removeListener(_onTitleFocusChange);
+    _titleController.removeListener(_onTitleChanged);
     _titleController.dispose();
     _titleFocusNode.dispose();
     super.dispose();
+  }
+
+  void _onTitleChanged() {
+    final text = _titleController.text;
+    context.read<AddEventProvider>().onTitleChanged(text);
   }
 
   void _onTitleFocusChange() {
@@ -251,6 +276,7 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
                   ),
                   InkWell(
                     onTap: () {
+                      provider.onTitleChanged(_titleController.text);
                       provider.setMode(AddEventMode.advanced);
                       Navigator.of(context).pop(false);
                       widget.onSwitchToAdvanced?.call();

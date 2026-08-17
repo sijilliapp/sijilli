@@ -545,6 +545,10 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () {
+              provider.onTitleChanged(_titleController.text);
+              provider.setLocation(_locationController.text);
+              provider.setBuilding(_buildingController.text);
+              provider.onDescriptionChanged(_descriptionController.text);
               provider.setMode(AddEventMode.simple);
               if (Navigator.canPop(context)) {
                 Navigator.pop(context, 'switch_to_quick');
