@@ -82,11 +82,11 @@ class AutocompleteService {
        }
     });
 
-    // Filter Bigram Matches by Prefix
+    // Filter Bigram Matches by Prefix (and exclude repeating the context word when prefix is empty)
     if (normPrefix.isNotEmpty) {
-      candidates.addAll(bigramMatches.where((w) => ArabicSearch.smartMatch(w, prefix)));
+      candidates.addAll(bigramMatches.where((w) => ArabicSearch.smartMatch(w, prefix) && _normalize(w) != normPrefix));
     } else {
-      candidates.addAll(bigramMatches);
+      candidates.addAll(bigramMatches.where((w) => _normalize(w) != normContext));
     }
     
     // B. Global Vocabulary Fallback
@@ -170,6 +170,7 @@ class AutocompleteService {
   }
 
   List<PivotMatch> getPivotSuggestions(String currentText) {
+    if (currentText.endsWith(' ')) return [];
     final trimmed = currentText.trim();
     if (trimmed.isEmpty) return [];
     
