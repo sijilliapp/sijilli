@@ -175,12 +175,25 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
     final title = _titleController.text.trim();
     final locale = context.l10n.localeName;
 
-    // Auto-fill smart default time if user didn't pick one in Quick Mode
-    if (provider.selectedTime == null && provider.duration != 0) {
-      final defaultTime = provider.frequentTimes.isNotEmpty 
-          ? provider.frequentTimes.first 
-          : TimeOfDay.now();
-      provider.setTime(defaultTime);
+    // Strict validation for Date & Time (No silent auto-defaults, user must consciously select or deduce them)
+    if (provider.selectedDate == null) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(isArabic ? 'يرجى تحديد تاريخ الموعد أولاً' : 'Please select a date first'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    if (provider.duration != 0 && provider.selectedTime == null) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(isArabic ? 'يرجى تحديد وقت الموعد من الأوقات المقترحة' : 'Please select a time first'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
     }
 
     final result = await provider.saveEvent(
@@ -199,7 +212,7 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
         SnackBar(
           content: Text(
             isArabic && result == 'Please select date and time' 
-                ? 'يرجى اختيار وقت الموعد' 
+                ? 'يرجى تحديد تاريخ ووقت الموعد أولاً' 
                 : result,
           ),
           backgroundColor: AppColors.error,
