@@ -175,18 +175,13 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
     final title = _titleController.text.trim();
     final locale = context.l10n.localeName;
 
-    // Dismiss the bottom sheet instantly for ultra-fast responsive feel!
-    Navigator.of(context).pop(true);
-
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          isArabic ? 'تم حفظ الموعد بنجاح ⚡' : 'Appointment saved successfully ⚡',
-        ),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    // Auto-fill smart default time if user didn't pick one in Quick Mode
+    if (provider.selectedTime == null && provider.duration != 0) {
+      final defaultTime = provider.frequentTimes.isNotEmpty 
+          ? provider.frequentTimes.first 
+          : TimeOfDay.now();
+      provider.setTime(defaultTime);
+    }
 
     final result = await provider.saveEvent(
       title: title,
@@ -201,9 +196,29 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
 
     if (result != null) {
       messenger.showSnackBar(
-        SnackBar(content: Text(result), backgroundColor: AppColors.error),
+        SnackBar(
+          content: Text(
+            isArabic && result == 'Please select date and time' 
+                ? 'يرجى اختيار وقت الموعد' 
+                : result,
+          ),
+          backgroundColor: AppColors.error,
+        ),
       );
+      return;
     }
+
+    // Dismiss sheet and show success toast ONLY after verified successful save!
+    Navigator.of(context).pop(true);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          isArabic ? 'تم حفظ الموعد بنجاح ⚡' : 'Appointment saved successfully ⚡',
+        ),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
