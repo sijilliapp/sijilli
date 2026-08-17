@@ -60,9 +60,13 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
   }
 
   void _onTitleFocusChange() {
-    if (mounted) {
-      setState(() {
-        _isTitleFocused = _titleFocusNode.hasFocus;
+    if (_titleFocusNode.hasFocus) {
+      if (mounted) setState(() => _isTitleFocused = true);
+    } else {
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted && !_titleFocusNode.hasFocus) {
+          setState(() => _isTitleFocused = false);
+        }
       });
     }
   }

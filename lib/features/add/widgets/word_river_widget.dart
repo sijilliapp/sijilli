@@ -179,9 +179,8 @@ class _SuggestionChip extends StatelessWidget {
           ),
         ),
         clipBehavior: Clip.antiAlias,
-        child: GestureDetector(
+        child: InkWell(
           onTap: onTap,
-          behavior: HitTestBehavior.opaque,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
