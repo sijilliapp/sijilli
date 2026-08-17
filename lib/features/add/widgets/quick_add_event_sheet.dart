@@ -69,22 +69,40 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
 
   void _onWordSelected(String word) {
     final current = _titleController.text;
-    final updated = current.isEmpty ? word : '$current $word';
-    _titleController.text = updated;
-    _titleController.selection = TextSelection.fromPosition(
-      TextPosition(offset: updated.length),
+    String updated;
+    
+    if (current.isNotEmpty && !current.endsWith(' ')) {
+      final lastSpaceIndex = current.lastIndexOf(' ');
+      if (lastSpaceIndex == -1) {
+        updated = '$word ';
+      } else {
+        updated = '${current.substring(0, lastSpaceIndex + 1)}$word ';
+      }
+    } else {
+      updated = current.isEmpty ? '$word ' : '$current$word ';
+    }
+    
+    _titleController.value = TextEditingValue(
+      text: updated,
+      selection: TextSelection.collapsed(offset: updated.length),
     );
+    
+    _titleFocusNode.requestFocus();
     final provider = context.read<AddEventProvider>();
-    provider.onTitleChanged(updated);
+    provider.onTitleChanged(updated.trim());
+    provider.checkDateMatch(updated.trim());
   }
 
   void _onPivotSelected(PivotMatch match) {
-    _titleController.text = match.fullTitle;
-    _titleController.selection = TextSelection.fromPosition(
-      TextPosition(offset: match.fullTitle.length),
+    final updated = '${match.fullTitle} ';
+    _titleController.value = TextEditingValue(
+      text: updated,
+      selection: TextSelection.collapsed(offset: updated.length),
     );
+    _titleFocusNode.requestFocus();
     final provider = context.read<AddEventProvider>();
     provider.onTitleChanged(match.fullTitle);
+    provider.checkDateMatch(match.fullTitle);
   }
 
   Future<void> _saveQuickEvent(AddEventProvider provider) async {
@@ -249,25 +267,26 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
               ),
               const SizedBox(height: 4),
 
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final showTitleSuggestions = _isTitleFocused && (provider.suggestions.isNotEmpty || provider.pivotSuggestions.isNotEmpty);
-                  return AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: showTitleSuggestions
-                        ? Container(
-                            key: const ValueKey('quick_title_suggestions'),
-                            width: MediaQuery.of(context).size.width,
-                            child: WordRiverWidget(
-                              suggestions: provider.suggestions,
-                              onWordSelected: _onWordSelected,
-                              pivotSuggestions: provider.pivotSuggestions,
-                              onPivotSelected: _onPivotSelected,
-                            ),
-                          )
-                        : const SizedBox.shrink(key: ValueKey('no_quick_title_suggestions')),
-                  );
-                },
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.fastOutSlowIn,
+                height: _isTitleFocused ? 52.0 : 0.0,
+                clipBehavior: Clip.hardEdge,
+                decoration: const BoxDecoration(),
+                child: OverflowBox(
+                  minHeight: 0,
+                  maxHeight: 52,
+                  alignment: Alignment.topCenter,
+                  child: SizedBox(
+                    height: 52,
+                    child: WordRiverWidget(
+                      suggestions: provider.suggestions,
+                      onWordSelected: _onWordSelected,
+                      pivotSuggestions: provider.pivotSuggestions,
+                      onPivotSelected: _onPivotSelected,
+                    ),
+                  ),
+                ),
               ),
 
               const SizedBox(height: 12),

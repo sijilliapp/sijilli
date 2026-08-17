@@ -82,29 +82,26 @@ class EventFormWidget extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final showTitleSuggestions = isTitleFocused && (suggestions.isNotEmpty || pivotSuggestions.isNotEmpty);
-            
-            return AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: showTitleSuggestions
-                  ? Container(
-                      key: const ValueKey('title_suggestions'),
-                      decoration: const BoxDecoration(
-                        color: Colors.transparent, // Making it "free"
-                      ),
-                      width: MediaQuery.of(context).size.width,
-                      child: WordRiverWidget(
-                        suggestions: suggestions,
-                        onWordSelected: onWordSelected!,
-                        pivotSuggestions: pivotSuggestions,
-                        onPivotSelected: onPivotSelected,
-                      ),
-                    )
-                  : const SizedBox.shrink(key: ValueKey('no_title_suggestions')),
-            );
-          },
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.fastOutSlowIn,
+          height: isTitleFocused ? 52.0 : 0.0,
+          clipBehavior: Clip.hardEdge,
+          decoration: const BoxDecoration(),
+          child: OverflowBox(
+            minHeight: 0,
+            maxHeight: 52,
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              height: 52,
+              child: WordRiverWidget(
+                suggestions: suggestions,
+                onWordSelected: onWordSelected ?? (_) {},
+                pivotSuggestions: pivotSuggestions,
+                onPivotSelected: onPivotSelected,
+              ),
+            ),
+          ),
         ),
 
         const SizedBox(height: 12),
