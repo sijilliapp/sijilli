@@ -413,21 +413,34 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
   }
 
   void _onRegionSelected(String region) {
+    _locationFocusNode.requestFocus();
     _locationController.value = TextEditingValue(
       text: region,
       selection: TextSelection.collapsed(offset: region.length),
     );
+    Future.microtask(() {
+      _locationController.selection = TextSelection.collapsed(offset: region.length);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _locationController.selection = TextSelection.collapsed(offset: region.length);
+    });
     context.read<AddEventProvider>().setLocation(region);
     _buildingFocusNode.requestFocus();
   }
 
   void _onBuildingSelected(String building) {
+    _buildingFocusNode.requestFocus();
     _buildingController.value = TextEditingValue(
       text: building,
       selection: TextSelection.collapsed(offset: building.length),
     );
+    Future.microtask(() {
+      _buildingController.selection = TextSelection.collapsed(offset: building.length);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _buildingController.selection = TextSelection.collapsed(offset: building.length);
+    });
     context.read<AddEventProvider>().setBuilding(building);
-    _buildingFocusNode.requestFocus();
   }
 
   Future<void> _openLocationPicker(AddEventProvider provider) async {

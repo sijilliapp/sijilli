@@ -184,9 +184,9 @@ class EventFormWidget extends StatelessWidget {
         ],
         
         AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 250),
           curve: Curves.fastOutSlowIn,
-          height: (isLocationFocused || isBuildingFocused) ? 52.0 : 0.0,
+          height: ((isLocationFocused && regionSuggestions.isNotEmpty) || (isBuildingFocused && buildingSuggestions.isNotEmpty)) ? 52.0 : 0.0,
           clipBehavior: Clip.hardEdge,
           decoration: const BoxDecoration(),
           child: OverflowBox(
