@@ -712,6 +712,9 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
                         hijriAdjustment: (auth.user?.hijriAdjustment ?? 0).toInt(),
                         onDateChanged: provider.setDate,
                         onModeChanged: provider.setIsHijri,
+                        showEndDate: provider.duration == 0,
+                        endDate: provider.selectedEndDate ?? provider.selectedDate ?? DateTime.now(),
+                        onEndDateChanged: provider.setEndDate,
                       ),
                       PrayerTimesRow(
                         sunriseTime: provider.sunriseTime,

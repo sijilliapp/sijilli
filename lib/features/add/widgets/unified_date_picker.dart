@@ -11,6 +11,10 @@ class UnifiedDatePicker extends StatefulWidget {
   final bool initialMode;
   final int hijriAdjustment;
 
+  final DateTime? endDate;
+  final ValueChanged<DateTime>? onEndDateChanged;
+  final bool showEndDate;
+
   const UnifiedDatePicker({
     super.key,
     required this.initialDate,
@@ -18,6 +22,9 @@ class UnifiedDatePicker extends StatefulWidget {
     required this.onModeChanged,
     this.initialMode = false,
     this.hijriAdjustment = 0,
+    this.endDate,
+    this.onEndDateChanged,
+    this.showEndDate = false,
   });
 
   static Future<DateTime?> showGregorianPicker(BuildContext context, {required DateTime initialDate}) {
@@ -55,13 +62,16 @@ class UnifiedDatePicker extends StatefulWidget {
 
 class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
   late DateTime _selectedDate;
+  late DateTime _selectedEndDate;
   late HijriCalendar _hijriDate;
+  late HijriCalendar _endHijriDate;
   bool _isHijriMode = false;
 
   @override
   void initState() {
     super.initState();
     _selectedDate = widget.initialDate;
+    _selectedEndDate = widget.endDate ?? widget.initialDate;
     _isHijriMode = widget.initialMode;
   }
 
@@ -78,6 +88,10 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
        _selectedDate = widget.initialDate;
        _updateHijriDate();
     }
+    if (widget.endDate != oldWidget.endDate) {
+       _selectedEndDate = widget.endDate ?? widget.initialDate;
+       _updateHijriDate();
+    }
     if (widget.initialMode != oldWidget.initialMode) {
       _isHijriMode = widget.initialMode;
     }
@@ -86,10 +100,13 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
   void _updateHijriDate() {
     HijriCalendar.setLocal(Localizations.localeOf(context).languageCode);
     _hijriDate = HijriCalendar.fromDate(_selectedDate);
+    _endHijriDate = HijriCalendar.fromDate(_selectedEndDate);
     
     if (widget.hijriAdjustment != 0) {
       final adjustedGregorian = _selectedDate.add(Duration(days: widget.hijriAdjustment));
       _hijriDate = HijriCalendar.fromDate(adjustedGregorian);
+      final adjustedEnd = _selectedEndDate.add(Duration(days: widget.hijriAdjustment));
+      _endHijriDate = HijriCalendar.fromDate(adjustedEnd);
     }
   }
 
@@ -115,19 +132,136 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
     });
   }
 
+  Future<void> _showEndGregorianPicker() async {
+    final picked = await showGregorianPicker(context, initialDate: _selectedEndDate);
+    if (picked != null) {
+      setState(() {
+        _selectedEndDate = picked;
+        _updateHijriDate();
+        widget.onEndDateChanged?.call(_selectedEndDate);
+      });
+    }
+  }
+
+  Future<void> _showEndHijriPicker() async {
+    final picked = await showHijriPicker(
+      context,
+      initialDate: _selectedEndDate,
+      hijriAdjustment: widget.hijriAdjustment,
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedEndDate = picked;
+        _updateHijriDate();
+        widget.onEndDateChanged?.call(_selectedEndDate);
+      });
+    }
+  }
+
+  Widget _buildDateBox({
+    required BuildContext context,
+    required String label,
+    required String dateStr,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isDark ? Theme.of(context).cardColor : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+          ),
+          boxShadow: [
+            if (!isDark)
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Icon(icon, size: 18, color: AppColors.primary),
+                ),
+                const SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade500,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      dateStr,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                Text(
+                  context.l10n.localeName == 'ar' ? 'تغيير' : 'Change',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppColors.primary),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    final dateStr = _isHijriMode 
+    final startDateStr = _isHijriMode 
         ? '${_hijriDate.hDay} ${_hijriDate.longMonthName} ${_hijriDate.hYear} هـ'
         : DateFormat('EEEE، d MMMM yyyy', Localizations.localeOf(context).languageCode).format(_selectedDate);
+
+    final endDateStr = _isHijriMode 
+        ? '${_endHijriDate.hDay} ${_endHijriDate.longMonthName} ${_endHijriDate.hYear} هـ'
+        : DateFormat('EEEE، d MMMM yyyy', Localizations.localeOf(context).languageCode).format(_selectedEndDate);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 📅 منتقي التاريخ التفاعلي الرئيسي
-        InkWell(
+        // 📅 حاوية تاريخ البدء
+        _buildDateBox(
+          context: context,
+          label: context.l10n.localeName == 'ar' ? 'تاريخ البدء' : 'Start Date',
+          dateStr: startDateStr,
+          icon: Icons.edit_calendar_rounded,
           onTap: () {
             if (_isHijriMode) {
               _showHijriPicker();
@@ -135,79 +269,34 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
               _showGregorianPicker();
             }
           },
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: isDark ? Theme.of(context).cardColor : Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-              ),
-              boxShadow: [
-                if (!isDark)
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(7),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(9),
-                      ),
-                      child: const Icon(Icons.edit_calendar_rounded, size: 18, color: AppColors.primary),
-                    ),
-                    const SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          context.l10n.localeName == 'ar' ? 'منتقي التاريخ' : 'Date Picker',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade500,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Text(
-                          dateStr,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : Colors.black87,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Text(
-                      context.l10n.localeName == 'ar' ? 'تغيير' : 'Change',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppColors.primary),
-                  ],
-                ),
-              ],
-            ),
-          ),
         ),
+
+        // 📅 حاوية تاريخ الانتهاء (تنسدل فقط عند اختيار اليوم كله لتكون توأم حاوية تاريخ البدء)
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          child: widget.showEndDate
+              ? Column(
+                  key: const ValueKey('end_date_container'),
+                  children: [
+                    const SizedBox(height: 8),
+                    _buildDateBox(
+                      context: context,
+                      label: context.l10n.localeName == 'ar' ? 'تاريخ الانتهاء' : 'End Date',
+                      dateStr: endDateStr,
+                      icon: Icons.event_available_rounded,
+                      onTap: () {
+                        if (_isHijriMode) {
+                          _showEndHijriPicker();
+                        } else {
+                          _showEndGregorianPicker();
+                        }
+                      },
+                    ),
+                  ],
+                )
+              : const SizedBox.shrink(key: ValueKey('no_end_date_container')),
+        ),
+
         const SizedBox(height: 10),
 
         // قطار سكرول التواريخ الأفقية
