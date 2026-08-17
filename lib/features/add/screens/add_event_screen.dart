@@ -231,6 +231,13 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
       selection: TextSelection.collapsed(offset: newText.length),
     );
     
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_titleController.selection.baseOffset != newText.length || 
+          _titleController.selection.extentOffset != newText.length) {
+        _titleController.selection = TextSelection.collapsed(offset: newText.length);
+      }
+    });
+
     final provider = context.read<AddEventProvider>();
     provider.onTitleChanged(newText.trim());
     provider.checkDateMatch(newText.trim());
@@ -243,6 +250,14 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
       text: updated,
       selection: TextSelection.collapsed(offset: updated.length),
     );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_titleController.selection.baseOffset != updated.length || 
+          _titleController.selection.extentOffset != updated.length) {
+        _titleController.selection = TextSelection.collapsed(offset: updated.length);
+      }
+    });
+
     final provider = context.read<AddEventProvider>();
     provider.onTitleChanged(match.fullTitle);
     provider.checkDateMatch(match.fullTitle);

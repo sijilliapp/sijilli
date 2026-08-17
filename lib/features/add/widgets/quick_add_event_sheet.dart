@@ -88,6 +88,13 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
       selection: TextSelection.collapsed(offset: updated.length),
     );
     
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_titleController.selection.baseOffset != updated.length || 
+          _titleController.selection.extentOffset != updated.length) {
+        _titleController.selection = TextSelection.collapsed(offset: updated.length);
+      }
+    });
+
     final provider = context.read<AddEventProvider>();
     provider.onTitleChanged(updated.trim());
     provider.checkDateMatch(updated.trim());
@@ -100,6 +107,14 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
       text: updated,
       selection: TextSelection.collapsed(offset: updated.length),
     );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_titleController.selection.baseOffset != updated.length || 
+          _titleController.selection.extentOffset != updated.length) {
+        _titleController.selection = TextSelection.collapsed(offset: updated.length);
+      }
+    });
+
     final provider = context.read<AddEventProvider>();
     provider.onTitleChanged(match.fullTitle);
     provider.checkDateMatch(match.fullTitle);
