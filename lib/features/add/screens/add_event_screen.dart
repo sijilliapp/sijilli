@@ -222,28 +222,30 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
         newText = '${text.substring(0, lastSpaceIndex + 1)}$word ';
       }
     } else {
-      newText = '$text$word ';
+      newText = text.isEmpty ? '$word ' : '$text$word ';
     }
     
+    _titleFocusNode.requestFocus();
     _titleController.value = TextEditingValue(
       text: newText,
       selection: TextSelection.collapsed(offset: newText.length),
     );
     
-    _titleFocusNode.requestFocus();
     final provider = context.read<AddEventProvider>();
     provider.onTitleChanged(newText.trim());
     provider.checkDateMatch(newText.trim());
   }
 
   void _onPivotSelected(PivotMatch match) {
-    _titleController.value = TextEditingValue(
-      text: match.fullTitle,
-      selection: TextSelection.collapsed(offset: match.fullTitle.length),
-    );
+    final updated = '${match.fullTitle} ';
     _titleFocusNode.requestFocus();
-    context.read<AddEventProvider>().onTitleChanged(match.fullTitle);
-    context.read<AddEventProvider>().checkDateMatch(match.fullTitle);
+    _titleController.value = TextEditingValue(
+      text: updated,
+      selection: TextSelection.collapsed(offset: updated.length),
+    );
+    final provider = context.read<AddEventProvider>();
+    provider.onTitleChanged(match.fullTitle);
+    provider.checkDateMatch(match.fullTitle);
   }
 
   void _onLocationFocusChanged() {
@@ -326,16 +328,25 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
     if (parsedTitle.length > 50) {
       parsedTitle = parsedTitle.substring(0, 50).trim();
     }
-    _titleController.text = parsedTitle;
+    _titleController.value = TextEditingValue(
+      text: parsedTitle,
+      selection: TextSelection.collapsed(offset: parsedTitle.length),
+    );
     provider.onTitleChanged(parsedTitle);
 
     if (parsed.region != null && parsed.region!.isNotEmpty) {
-      _locationController.text = parsed.region!;
+      _locationController.value = TextEditingValue(
+        text: parsed.region!,
+        selection: TextSelection.collapsed(offset: parsed.region!.length),
+      );
       provider.setLocation(parsed.region!);
     }
 
     if (parsed.building != null && parsed.building!.isNotEmpty) {
-      _buildingController.text = parsed.building!;
+      _buildingController.value = TextEditingValue(
+        text: parsed.building!,
+        selection: TextSelection.collapsed(offset: parsed.building!.length),
+      );
       provider.setBuilding(parsed.building!);
     }
 

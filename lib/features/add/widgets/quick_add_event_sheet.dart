@@ -82,12 +82,12 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
       updated = current.isEmpty ? '$word ' : '$current$word ';
     }
     
+    _titleFocusNode.requestFocus();
     _titleController.value = TextEditingValue(
       text: updated,
       selection: TextSelection.collapsed(offset: updated.length),
     );
     
-    _titleFocusNode.requestFocus();
     final provider = context.read<AddEventProvider>();
     provider.onTitleChanged(updated.trim());
     provider.checkDateMatch(updated.trim());
@@ -95,11 +95,11 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
 
   void _onPivotSelected(PivotMatch match) {
     final updated = '${match.fullTitle} ';
+    _titleFocusNode.requestFocus();
     _titleController.value = TextEditingValue(
       text: updated,
       selection: TextSelection.collapsed(offset: updated.length),
     );
-    _titleFocusNode.requestFocus();
     final provider = context.read<AddEventProvider>();
     provider.onTitleChanged(match.fullTitle);
     provider.checkDateMatch(match.fullTitle);
