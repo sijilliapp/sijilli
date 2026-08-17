@@ -37,9 +37,31 @@ class ArticleProvider extends ChangeNotifier {
   bool _isLoadingHelpArticles = false;
   bool get isLoadingHelpArticles => _isLoadingHelpArticles;
 
-  void setActiveFilterTagIds(List<String> tagIds) {
+  void setActiveFilterTagIds(List<String> tagIds, {String? authorId, bool isCurrentUser = false}) {
     _activeFilterTagIds = tagIds;
     notifyListeners();
+    if (tagIds.isNotEmpty && _hasMore) {
+      fetchUntilFilterHasArticles(authorId: authorId, isCurrentUser: isCurrentUser);
+    }
+  }
+
+  Future<void> fetchUntilFilterHasArticles({String? authorId, bool isCurrentUser = false}) async {
+    int attempts = 0;
+    while (_hasMore && !_isLoading && attempts < 5) {
+      final currentList = authorId != null ? getUserArticles(authorId) : articles;
+      final matching = _activeFilterTagIds.isEmpty 
+          ? currentList 
+          : currentList.where((a) => _activeFilterTagIds.every((id) => a.tagIds.contains(id))).toList();
+          
+      if (matching.isNotEmpty) break;
+      
+      attempts++;
+      if (authorId != null) {
+        await fetchUserArticles(authorId, isCurrentUser: isCurrentUser);
+      } else {
+        await fetchPublicArticles();
+      }
+    }
   }
 
   // هل المستخدم الآن في فلتر "المساعدة"؟ (يُستخدم من main_screen لتمرير isHelpArticle عند إنشاء مقال جديد)

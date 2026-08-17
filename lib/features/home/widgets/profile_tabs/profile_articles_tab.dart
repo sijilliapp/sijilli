@@ -415,9 +415,9 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
                             _activeSystemStatus = null;
                           });
                           if (activeTagIds.length == 1 && isSelected) {
-                            provider.setActiveFilterTagIds([]);
+                            provider.setActiveFilterTagIds([], authorId: widget.userId, isCurrentUser: widget.isCurrentUser);
                           } else {
-                            provider.setActiveFilterTagIds([tag.id]);
+                            provider.setActiveFilterTagIds([tag.id], authorId: widget.userId, isCurrentUser: widget.isCurrentUser);
                           }
                         },
                         onLongPress: () {
@@ -431,7 +431,7 @@ class _ProfileArticlesTabState extends State<ProfileArticlesTab> {
                           } else {
                             newIds.add(tag.id);
                           }
-                          provider.setActiveFilterTagIds(newIds);
+                          provider.setActiveFilterTagIds(newIds, authorId: widget.userId, isCurrentUser: widget.isCurrentUser);
                         },
                       ),
                     );

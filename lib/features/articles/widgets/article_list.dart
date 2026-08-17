@@ -29,11 +29,17 @@ class ArticleList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (articles.isEmpty && isInitialLoading) {
+    if (articles.isEmpty && (isInitialLoading || isFetchingMore)) {
       return const Center(child: CircularProgressIndicator(color: AppColors.primary));
     }
 
     if (articles.isEmpty) {
+      if (hasMore && errorMessage == null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          onLoadMore();
+        });
+        return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      }
       return _buildEmptyState(context);
     }
 
