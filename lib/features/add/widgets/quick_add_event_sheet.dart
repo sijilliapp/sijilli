@@ -289,9 +289,9 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
               const SizedBox(height: 4),
 
               AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
+                duration: const Duration(milliseconds: 200),
                 curve: Curves.fastOutSlowIn,
-                height: (_isTitleFocused && (provider.suggestions.isNotEmpty || provider.pivotSuggestions.isNotEmpty)) ? 52.0 : 0.0,
+                height: _isTitleFocused ? 52.0 : 0.0,
                 clipBehavior: Clip.hardEdge,
                 decoration: const BoxDecoration(),
                 child: OverflowBox(
