@@ -231,6 +231,9 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
       selection: TextSelection.collapsed(offset: newText.length),
     );
     
+    Future.microtask(() {
+      _titleController.selection = TextSelection.collapsed(offset: newText.length);
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_titleController.selection.baseOffset != newText.length || 
           _titleController.selection.extentOffset != newText.length) {
@@ -251,6 +254,9 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
       selection: TextSelection.collapsed(offset: updated.length),
     );
 
+    Future.microtask(() {
+      _titleController.selection = TextSelection.collapsed(offset: updated.length);
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_titleController.selection.baseOffset != updated.length || 
           _titleController.selection.extentOffset != updated.length) {

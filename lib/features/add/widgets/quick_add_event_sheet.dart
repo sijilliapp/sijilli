@@ -88,6 +88,9 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
       selection: TextSelection.collapsed(offset: updated.length),
     );
     
+    Future.microtask(() {
+      _titleController.selection = TextSelection.collapsed(offset: updated.length);
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_titleController.selection.baseOffset != updated.length || 
           _titleController.selection.extentOffset != updated.length) {
@@ -108,6 +111,9 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
       selection: TextSelection.collapsed(offset: updated.length),
     );
 
+    Future.microtask(() {
+      _titleController.selection = TextSelection.collapsed(offset: updated.length);
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_titleController.selection.baseOffset != updated.length || 
           _titleController.selection.extentOffset != updated.length) {
