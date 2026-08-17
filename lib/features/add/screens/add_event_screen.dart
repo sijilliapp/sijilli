@@ -231,7 +231,9 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
     );
     
     _titleFocusNode.requestFocus();
-    context.read<AddEventProvider>().checkDateMatch(newText.trim());
+    final provider = context.read<AddEventProvider>();
+    provider.onTitleChanged(newText.trim());
+    provider.checkDateMatch(newText.trim());
   }
 
   void _onPivotSelected(PivotMatch match) {
@@ -379,19 +381,21 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
   }
 
   void _onRegionSelected(String region) {
-    _locationController.text = region;
+    _locationController.value = TextEditingValue(
+      text: region,
+      selection: TextSelection.collapsed(offset: region.length),
+    );
     context.read<AddEventProvider>().setLocation(region);
-    // Move focus to building? Or just fill?
-    // User often wants flow. Let's move to building.
     _buildingFocusNode.requestFocus();
-    _locationController.selection = TextSelection.collapsed(offset: region.length);
   }
 
   void _onBuildingSelected(String building) {
-    _buildingController.text = building;
+    _buildingController.value = TextEditingValue(
+      text: building,
+      selection: TextSelection.collapsed(offset: building.length),
+    );
     context.read<AddEventProvider>().setBuilding(building);
-    _buildingController.selection = TextSelection.collapsed(offset: building.length);
-    // Maybe hide keyboard or just stay? Default stay.
+    _buildingFocusNode.requestFocus();
   }
 
   Future<void> _openLocationPicker(AddEventProvider provider) async {

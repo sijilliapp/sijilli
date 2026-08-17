@@ -183,24 +183,27 @@ class EventFormWidget extends StatelessWidget {
           ),
         ],
         
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: _shouldShowLocationSuggestions()
-              ? Container(
-                  key: const ValueKey('location_suggestions'),
-                  decoration: const BoxDecoration(
-                    color: Colors.transparent,
-                  ),
-                  width: MediaQuery.of(context).size.width,
-                  child: WordRiverWidget(
-                    suggestions: isLocationFocused ? regionSuggestions : buildingSuggestions,
-                    onWordSelected: isLocationFocused
-                        ? (word) => onRegionSelected?.call(word)
-                        : (word) => onBuildingSelected?.call(word),
-                    pivotSuggestions: const [],
-                  ),
-                )
-              : const SizedBox.shrink(key: ValueKey('no_location_suggestions')),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.fastOutSlowIn,
+          height: (isLocationFocused || isBuildingFocused) ? 52.0 : 0.0,
+          clipBehavior: Clip.hardEdge,
+          decoration: const BoxDecoration(),
+          child: OverflowBox(
+            minHeight: 0,
+            maxHeight: 52,
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              height: 52,
+              child: WordRiverWidget(
+                suggestions: isLocationFocused ? regionSuggestions : buildingSuggestions,
+                onWordSelected: isLocationFocused
+                    ? (word) => onRegionSelected?.call(word)
+                    : (word) => onBuildingSelected?.call(word),
+                pivotSuggestions: const [],
+              ),
+            ),
+          ),
         ),
 
         const SizedBox(height: 12),
