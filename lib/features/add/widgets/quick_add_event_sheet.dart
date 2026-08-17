@@ -44,6 +44,7 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
   final TextEditingController _titleController = TextEditingController();
   final FocusNode _titleFocusNode = FocusNode();
   bool _isTitleFocused = false;
+  bool _hasTimeError = false;
 
   bool _isInitialized = false;
 
@@ -187,6 +188,9 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
     }
 
     if (provider.duration != 0 && provider.selectedTime == null) {
+      setState(() {
+        _hasTimeError = true;
+      });
       messenger.showSnackBar(
         SnackBar(
           content: Text(isArabic ? 'يرجى تحديد وقت الموعد من الأوقات المقترحة' : 'Please select a time first'),
@@ -410,17 +414,22 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
               // Suggested Time Capsules Bar
               SuggestedTimeCapsulesBar(
                 selectedTime: provider.selectedTime,
+                hasError: _hasTimeError,
                 onSelectTime: () async {
                   final time = await showTimePicker(
                     context: context,
                     initialTime: provider.selectedTime ?? TimeOfDay.now(),
                   );
                   if (time != null) {
+                    if (_hasTimeError) setState(() => _hasTimeError = false);
                     provider.setTime(time);
                   }
                 },
                 frequentTimes: provider.frequentTimes,
-                onTimePicked: (tod) => provider.setTime(tod),
+                onTimePicked: (tod) {
+                  if (_hasTimeError) setState(() => _hasTimeError = false);
+                  provider.setTime(tod);
+                },
               ),
 
               const SizedBox(height: 18),

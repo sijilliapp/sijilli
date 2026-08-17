@@ -7,6 +7,7 @@ class SuggestedTimeCapsulesBar extends StatelessWidget {
   final VoidCallback onSelectTime;
   final List<TimeOfDay> frequentTimes;
   final Function(TimeOfDay) onTimePicked;
+  final bool hasError;
 
   const SuggestedTimeCapsulesBar({
     super.key,
@@ -14,6 +15,7 @@ class SuggestedTimeCapsulesBar extends StatelessWidget {
     required this.onSelectTime,
     required this.frequentTimes,
     required this.onTimePicked,
+    this.hasError = false,
   });
 
   @override
@@ -31,12 +33,14 @@ class SuggestedTimeCapsulesBar extends StatelessWidget {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+              color: hasError 
+                  ? Colors.red.shade600 
+                  : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
             ),
           ),
         ),
         SizedBox(
-          height: 34,
+          height: 36,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: frequentTimes.length + 1,
@@ -49,41 +53,64 @@ class SuggestedTimeCapsulesBar extends StatelessWidget {
                     ? AppDateFormatter.formatTime12hFromValues(selectedTime!.hour, selectedTime!.minute, localeCode)
                     : '--:--';
 
-                return InkWell(
-                  onTap: onSelectTime,
-                  borderRadius: BorderRadius.circular(16),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: hasTime 
-                          ? AppColors.primary.withValues(alpha: 0.15) 
-                          : (isDark ? Colors.grey.shade900 : Colors.grey.shade100),
-                      border: Border.all(
-                        color: hasTime ? AppColors.primary : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
-                        width: hasTime ? 1.5 : 1.0,
+                Color bgColor;
+                Color borderColor;
+                Color textColor;
+                Color iconColor;
+
+                if (hasTime) {
+                  bgColor = AppColors.primary.withValues(alpha: 0.15);
+                  borderColor = AppColors.primary;
+                  textColor = AppColors.primary;
+                  iconColor = AppColors.primary;
+                } else if (hasError) {
+                  bgColor = Colors.red.withValues(alpha: 0.15);
+                  borderColor = Colors.red.shade600;
+                  textColor = Colors.red.shade600;
+                  iconColor = Colors.red.shade600;
+                } else {
+                  bgColor = isDark ? Colors.grey.shade900 : Colors.grey.shade100;
+                  borderColor = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
+                  textColor = isDark ? Colors.grey.shade300 : Colors.grey.shade800;
+                  iconColor = Colors.grey;
+                }
+
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: onSelectTime,
+                    borderRadius: BorderRadius.circular(16),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: bgColor,
+                        border: Border.all(
+                          color: borderColor,
+                          width: (hasTime || hasError) ? 1.5 : 1.0,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.access_time_filled,
-                          size: 14,
-                          color: hasTime ? AppColors.primary : Colors.grey,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          displayStr,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: hasTime ? AppColors.primary : (isDark ? Colors.grey.shade300 : Colors.grey.shade800),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.access_time_filled,
+                            size: 14,
+                            color: iconColor,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 4),
+                          Text(
+                            displayStr,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: textColor,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -97,31 +124,34 @@ class SuggestedTimeCapsulesBar extends StatelessWidget {
 
               final formattedStr = AppDateFormatter.formatTime12hFromValues(tod.hour, tod.minute, localeCode);
 
-              return InkWell(
-                onTap: () => onTimePicked(tod),
-                borderRadius: BorderRadius.circular(16),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.primary
-                        : (isDark ? Colors.grey.shade900 : Colors.grey.shade100),
-                    border: Border.all(
-                      color: isSelected ? AppColors.primary : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
-                      width: 1.0,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    formattedStr,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => onTimePicked(tod),
+                  borderRadius: BorderRadius.circular(16),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
                       color: isSelected
-                          ? Colors.white
-                          : (isDark ? Colors.grey.shade300 : Colors.grey.shade800),
+                          ? AppColors.primary
+                          : (isDark ? Colors.grey.shade900 : Colors.grey.shade100),
+                      border: Border.all(
+                        color: isSelected ? AppColors.primary : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+                        width: 1.0,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      formattedStr,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                        color: isSelected
+                            ? Colors.white
+                            : (isDark ? Colors.grey.shade300 : Colors.grey.shade800),
+                      ),
                     ),
                   ),
                 ),
