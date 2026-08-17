@@ -120,15 +120,7 @@ class FormattingTextEditingController extends TextEditingController {
       editEnd = oldLen;
     }
 
-    // Select the inserted text on paste/autofill
-    if (!_internalUpdate && delta > 1) {
-      newValue = newValue.copyWith(
-        selection: TextSelection(
-          baseOffset: editStart,
-          extentOffset: editStart + delta,
-        ),
-      );
-    }
+    // Selection auto-highlighting on paste/autofill disabled to keep cursor collapsed cleanly.
 
     // Smart Paste Poetry Detection on paste is disabled to prevent automatic formatting.
     // Poetry formatting is now done explicitly via the formatting button.

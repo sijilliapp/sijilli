@@ -784,10 +784,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
       setState(() {
         _textController.updateValueProgrammatically(TextEditingValue(
           text: newText,
-          selection: TextSelection(
-            baseOffset: pasteStart,
-            extentOffset: pasteEnd,
-          ),
+          selection: TextSelection.collapsed(offset: pasteEnd),
         ));
       });
       _textFocusNode.requestFocus();
