@@ -26,17 +26,17 @@ class AddEventProvider extends ChangeNotifier {
   final AppointmentDraftService _draftService = AppointmentDraftService();
 
   // Add Event Mode (Simple vs Advanced)
-  AddEventMode _mode = AddEventMode.simple;
+  AddEventMode _mode = AddEventMode.advanced;
   AddEventMode get mode => _mode;
 
   Future<void> loadSavedMode() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final modeStr = prefs.getString('preferred_add_event_mode');
-      if (modeStr == 'advanced') {
-        _mode = AddEventMode.advanced;
-      } else {
+      if (modeStr == 'simple') {
         _mode = AddEventMode.simple;
+      } else {
+        _mode = AddEventMode.advanced;
       }
       notifyListeners();
     } catch (_) {}

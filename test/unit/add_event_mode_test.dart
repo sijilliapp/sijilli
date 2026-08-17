@@ -16,9 +16,9 @@ void main() {
       Hive.init(tempDir.path);
     });
 
-    test('يجب أن يكون النمط الافتراضي هو النمط السريع (simple)', () {
+    test('يجب أن يكون النمط الافتراضي هو النمط المتقدم (advanced)', () {
       final provider = AddEventProvider();
-      expect(provider.mode, AddEventMode.simple);
+      expect(provider.mode, AddEventMode.advanced);
     });
 
     test('يجب حفظ النمط الأخير والاحتفاظ به عبر SharedPreferences', () async {

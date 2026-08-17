@@ -83,9 +83,9 @@ class EventFormWidget extends StatelessWidget {
         const SizedBox(height: 6),
         
         AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 250),
           curve: Curves.fastOutSlowIn,
-          height: isTitleFocused ? 52.0 : 0.0,
+          height: (isTitleFocused && (suggestions.isNotEmpty || (pivotSuggestions != null && pivotSuggestions!.isNotEmpty))) ? 52.0 : 0.0,
           clipBehavior: Clip.hardEdge,
           decoration: const BoxDecoration(),
           child: OverflowBox(
@@ -97,7 +97,7 @@ class EventFormWidget extends StatelessWidget {
               child: WordRiverWidget(
                 suggestions: suggestions,
                 onWordSelected: onWordSelected ?? (_) {},
-                pivotSuggestions: pivotSuggestions,
+                pivotSuggestions: pivotSuggestions ?? const [],
                 onPivotSelected: onPivotSelected,
               ),
             ),
