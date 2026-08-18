@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hijri/hijri_calendar.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/app_date_formatter.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class UnifiedDatePicker extends StatefulWidget {
@@ -286,16 +287,30 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
   @override
   Widget build(BuildContext context) {
     final hasDate = widget.selectedDate != null;
+    final localeCode = Localizations.localeOf(context).languageCode;
+    final isArabic = localeCode == 'ar';
 
-    final startDateStr = hasDate
-        ? (_isHijriMode 
-            ? '${_hijriDate.hDay} ${_hijriDate.longMonthName} ${_hijriDate.hYear} هـ'
-            : DateFormat('EEEE، d MMMM yyyy', Localizations.localeOf(context).languageCode).format(_selectedDate))
-        : (Localizations.localeOf(context).languageCode == 'ar' ? 'انقر لاختيار التاريخ...' : 'Tap to select date...');
+    String startDateStr;
+    if (hasDate) {
+      if (_isHijriMode) {
+        final rawHijri = '${_hijriDate.hDay} ${_hijriDate.longMonthName} ${_hijriDate.hYear} هـ';
+        startDateStr = isArabic ? AppDateFormatter.toEasternArabicDigits(rawHijri) : rawHijri;
+      } else {
+        final rawGreg = DateFormat('d MMMM yyyy', localeCode).format(_selectedDate);
+        startDateStr = isArabic ? AppDateFormatter.toEasternArabicDigits(rawGreg) : rawGreg;
+      }
+    } else {
+      startDateStr = isArabic ? 'انقر لاختيار التاريخ...' : 'Tap to select date...';
+    }
 
-    final endDateStr = _isHijriMode 
-        ? '${_endHijriDate.hDay} ${_endHijriDate.longMonthName} ${_endHijriDate.hYear} هـ'
-        : DateFormat('EEEE، d MMMM yyyy', Localizations.localeOf(context).languageCode).format(_selectedEndDate);
+    String endDateStr;
+    if (_isHijriMode) {
+      final rawEndHijri = '${_endHijriDate.hDay} ${_endHijriDate.longMonthName} ${_endHijriDate.hYear} هـ';
+      endDateStr = isArabic ? AppDateFormatter.toEasternArabicDigits(rawEndHijri) : rawEndHijri;
+    } else {
+      final rawEndGreg = DateFormat('d MMMM yyyy', localeCode).format(_selectedEndDate);
+      endDateStr = isArabic ? AppDateFormatter.toEasternArabicDigits(rawEndGreg) : rawEndGreg;
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
