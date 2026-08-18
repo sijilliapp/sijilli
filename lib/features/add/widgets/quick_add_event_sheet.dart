@@ -144,48 +144,48 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
   }
 
   Future<void> _saveQuickEvent(AddEventProvider provider) async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    final title = _titleController.text.trim();
+    final isTitleMissing = title.isEmpty;
+    final isDateMissing = provider.selectedDate == null;
+    final isTimeMissing = provider.duration != 0 && provider.selectedTime == null;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+
+    if (isTitleMissing || isDateMissing || isTimeMissing) {
+      setState(() {
+        _hasDateError = isDateMissing;
+        _hasTimeError = isTimeMissing;
+      });
+
+      _formKey.currentState?.validate();
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            isArabic 
+                ? 'يرجى استكمال الحقول المطلوبة (المعلمة باللون الأحمر)' 
+                : 'Please complete all required fields (marked in red)',
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
     
     final auth = context.read<AuthProvider>();
     final apptProvider = context.read<AppointmentProvider>();
     final globalConfig = context.read<GlobalConfigProvider>();
     
     if (auth.user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text(context.l10n.pleaseLoginFirst)),
       );
       return;
     }
     
     final host = auth.user!;
-    final messenger = ScaffoldMessenger.of(context);
-    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
-    final title = _titleController.text.trim();
     final locale = context.l10n.localeName;
-
-    // Strict validation for Date & Time (No silent auto-defaults, user must consciously select or deduce them)
-    if (provider.selectedDate == null) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(isArabic ? 'يرجى تحديد تاريخ الموعد أولاً' : 'Please select a date first'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-
-    if (provider.duration != 0 && provider.selectedTime == null) {
-      setState(() {
-        _hasTimeError = true;
-      });
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(isArabic ? 'يرجى تحديد وقت الموعد من الأوقات المقترحة' : 'Please select a time first'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
 
     final result = await provider.saveEvent(
       title: title,
@@ -216,6 +216,7 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
     _titleController.clear();
     if (mounted) {
       setState(() {
+        _hasDateError = false;
         _hasTimeError = false;
       });
     }
@@ -358,10 +359,15 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
                       Consumer<AuthProvider>(
                         builder: (context, auth, _) {
                           return UnifiedDatePicker(
+                            selectedDate: provider.selectedDate,
                             initialDate: provider.selectedDate ?? DateTime.now(),
                             initialMode: provider.isHijri,
                             hijriAdjustment: (auth.user?.hijriAdjustment ?? 0).toInt(),
-                            onDateChanged: provider.setDate,
+                            hasError: _hasDateError,
+                            onDateChanged: (date) {
+                              if (_hasDateError) setState(() => _hasDateError = false);
+                              provider.setDate(date);
+                            },
                             onModeChanged: provider.setIsHijri,
                             showEndDate: provider.duration == 0,
                             endDate: provider.selectedEndDate ?? provider.selectedDate ?? DateTime.now(),
