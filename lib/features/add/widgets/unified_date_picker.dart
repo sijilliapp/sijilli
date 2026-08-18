@@ -184,9 +184,9 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
 
     if (hasError && !isSelected) {
       borderColor = Colors.red.shade600;
-      bgColor = Colors.red.withValues(alpha: 0.08);
-      iconColor = Colors.red.shade600;
-      textColor = Colors.red.shade600;
+      bgColor = isDark ? Theme.of(context).cardColor : Colors.white;
+      iconColor = Colors.grey;
+      textColor = Colors.grey.shade500;
     } else {
       borderColor = isDark ? Colors.grey.shade800 : Colors.grey.shade300;
       bgColor = isDark ? Theme.of(context).cardColor : Colors.white;
@@ -228,9 +228,7 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
                   Container(
                     padding: const EdgeInsets.all(7),
                     decoration: BoxDecoration(
-                      color: (hasError && !isSelected) 
-                          ? Colors.red.shade50 
-                          : AppColors.primary.withValues(alpha: 0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(9),
                     ),
                     child: Icon(icon, size: 18, color: iconColor),
@@ -243,7 +241,7 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
                         label,
                         style: TextStyle(
                           fontSize: 11,
-                          color: (hasError && !isSelected) ? Colors.red.shade700 : Colors.grey.shade500,
+                          color: (hasError && !isSelected) ? Colors.red.shade600 : Colors.grey.shade500,
                           fontWeight: FontWeight.w500,
                         ),
                       ),

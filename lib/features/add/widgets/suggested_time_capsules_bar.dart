@@ -64,10 +64,10 @@ class SuggestedTimeCapsulesBar extends StatelessWidget {
                   textColor = AppColors.primary;
                   iconColor = AppColors.primary;
                 } else if (hasError) {
-                  bgColor = Colors.red.withValues(alpha: 0.15);
+                  bgColor = isDark ? Colors.grey.shade900 : Colors.grey.shade100;
                   borderColor = Colors.red.shade600;
-                  textColor = Colors.red.shade600;
-                  iconColor = Colors.red.shade600;
+                  textColor = isDark ? Colors.grey.shade300 : Colors.grey.shade800;
+                  iconColor = Colors.grey;
                 } else {
                   bgColor = isDark ? Colors.grey.shade900 : Colors.grey.shade100;
                   borderColor = isDark ? Colors.grey.shade700 : Colors.grey.shade300;

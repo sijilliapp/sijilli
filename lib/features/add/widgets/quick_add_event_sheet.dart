@@ -11,6 +11,7 @@ import '../providers/add_event_provider.dart';
 import 'suggested_time_capsules_bar.dart';
 import 'unified_date_picker.dart';
 import 'word_river_widget.dart';
+import '../../../../core/utils/app_pickers.dart';
 
 class QuickAddEventSheet extends StatefulWidget {
   final VoidCallback? onSwitchToAdvanced;
@@ -122,6 +123,16 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
       selection: TextSelection.collapsed(offset: updated.length),
     );
 
+    Future.microtask(() {
+      _titleController.selection = TextSelection.collapsed(offset: updated.length);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_titleController.selection.baseOffset != updated.length || 
+          _titleController.selection.extentOffset != updated.length) {
+        _titleController.selection = TextSelection.collapsed(offset: updated.length);
+      }
+    });
+
     final provider = context.read<AddEventProvider>();
     provider.onTitleChanged(updated.trim());
     provider.checkDateMatch(updated.trim());
@@ -137,6 +148,16 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
       text: updated,
       selection: TextSelection.collapsed(offset: updated.length),
     );
+
+    Future.microtask(() {
+      _titleController.selection = TextSelection.collapsed(offset: updated.length);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_titleController.selection.baseOffset != updated.length || 
+          _titleController.selection.extentOffset != updated.length) {
+        _titleController.selection = TextSelection.collapsed(offset: updated.length);
+      }
+    });
 
     final provider = context.read<AddEventProvider>();
     provider.onTitleChanged(match.fullTitle);
@@ -415,8 +436,8 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
                 selectedTime: provider.selectedTime,
                 hasError: _hasTimeError,
                 onSelectTime: () async {
-                  final time = await showTimePicker(
-                    context: context,
+                  final time = await AppPickers.showStyledTimePicker(
+                    context,
                     initialTime: provider.selectedTime ?? TimeOfDay.now(),
                   );
                   if (time != null) {
