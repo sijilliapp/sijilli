@@ -44,6 +44,7 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
   final TextEditingController _titleController = TextEditingController();
   final FocusNode _titleFocusNode = FocusNode();
   bool _isTitleFocused = false;
+  bool _hasDateError = false;
   bool _hasTimeError = false;
 
   bool _isInitialized = false;
@@ -112,21 +113,14 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
       updated = current.isEmpty ? '$word ' : '$current$word ';
     }
     
-    _titleFocusNode.requestFocus();
+    if (!_titleFocusNode.hasFocus) {
+      _titleFocusNode.requestFocus();
+    }
+
     _titleController.value = TextEditingValue(
       text: updated,
       selection: TextSelection.collapsed(offset: updated.length),
     );
-    
-    Future.microtask(() {
-      _titleController.selection = TextSelection.collapsed(offset: updated.length);
-    });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_titleController.selection.baseOffset != updated.length || 
-          _titleController.selection.extentOffset != updated.length) {
-        _titleController.selection = TextSelection.collapsed(offset: updated.length);
-      }
-    });
 
     final provider = context.read<AddEventProvider>();
     provider.onTitleChanged(updated.trim());
@@ -135,21 +129,14 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
 
   void _onPivotSelected(PivotMatch match) {
     final updated = '${match.fullTitle} ';
-    _titleFocusNode.requestFocus();
+    if (!_titleFocusNode.hasFocus) {
+      _titleFocusNode.requestFocus();
+    }
+
     _titleController.value = TextEditingValue(
       text: updated,
       selection: TextSelection.collapsed(offset: updated.length),
     );
-
-    Future.microtask(() {
-      _titleController.selection = TextSelection.collapsed(offset: updated.length);
-    });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_titleController.selection.baseOffset != updated.length || 
-          _titleController.selection.extentOffset != updated.length) {
-        _titleController.selection = TextSelection.collapsed(offset: updated.length);
-      }
-    });
 
     final provider = context.read<AddEventProvider>();
     provider.onTitleChanged(match.fullTitle);

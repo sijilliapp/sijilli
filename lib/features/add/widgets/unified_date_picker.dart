@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 
 class UnifiedDatePicker extends StatefulWidget {
+  final DateTime? selectedDate;
   final DateTime initialDate;
   final ValueChanged<DateTime> onDateChanged;
   final ValueChanged<bool> onModeChanged; // true = Hijri, false = Gregorian
@@ -14,9 +15,11 @@ class UnifiedDatePicker extends StatefulWidget {
   final DateTime? endDate;
   final ValueChanged<DateTime>? onEndDateChanged;
   final bool showEndDate;
+  final bool hasError;
 
   const UnifiedDatePicker({
     super.key,
+    this.selectedDate,
     required this.initialDate,
     required this.onDateChanged,
     required this.onModeChanged,
@@ -25,6 +28,7 @@ class UnifiedDatePicker extends StatefulWidget {
     this.endDate,
     this.onEndDateChanged,
     this.showEndDate = false,
+    this.hasError = false,
   });
 
   static Future<DateTime?> showGregorianPicker(BuildContext context, {required DateTime initialDate}) {
@@ -84,13 +88,16 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
   @override
   void didUpdateWidget(UnifiedDatePicker oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.initialDate != oldWidget.initialDate || widget.hijriAdjustment != oldWidget.hijriAdjustment) {
-       _selectedDate = widget.initialDate;
-       _updateHijriDate();
+    if (widget.selectedDate != null && widget.selectedDate != oldWidget.selectedDate) {
+      _selectedDate = widget.selectedDate!;
+      _updateHijriDate();
+    } else if (widget.initialDate != oldWidget.initialDate || widget.hijriAdjustment != oldWidget.hijriAdjustment) {
+      _selectedDate = widget.initialDate;
+      _updateHijriDate();
     }
     if (widget.endDate != oldWidget.endDate) {
-       _selectedEndDate = widget.endDate ?? widget.initialDate;
-       _updateHijriDate();
+      _selectedEndDate = widget.endDate ?? widget.initialDate;
+      _updateHijriDate();
     }
     if (widget.initialMode != oldWidget.initialMode) {
       _isHijriMode = widget.initialMode;
@@ -164,80 +171,113 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
     required String dateStr,
     required IconData icon,
     required VoidCallback onTap,
+    bool isSelected = true,
+    bool hasError = false,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: isDark ? Theme.of(context).cardColor : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+
+    Color borderColor;
+    Color bgColor;
+    Color iconColor;
+    Color textColor;
+
+    if (hasError && !isSelected) {
+      borderColor = Colors.red.shade600;
+      bgColor = Colors.red.withValues(alpha: 0.08);
+      iconColor = Colors.red.shade600;
+      textColor = Colors.red.shade600;
+    } else {
+      borderColor = isDark ? Colors.grey.shade800 : Colors.grey.shade300;
+      bgColor = isDark ? Theme.of(context).cardColor : Colors.white;
+      iconColor = isSelected ? AppColors.primary : Colors.grey;
+      textColor = isSelected 
+          ? (isDark ? Colors.white : Colors.black87) 
+          : Colors.grey.shade500;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: borderColor,
+              width: (hasError && !isSelected) ? 1.5 : 1.0,
+            ),
+            boxShadow: [
+              if (!isDark)
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+            ],
           ),
-          boxShadow: [
-            if (!isDark)
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      color: (hasError && !isSelected) 
+                          ? Colors.red.shade50 
+                          : AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Icon(icon, size: 18, color: iconColor),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: (hasError && !isSelected) ? Colors.red.shade700 : Colors.grey.shade500,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        dateStr,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                          color: textColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(7),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(9),
-                  ),
-                  child: Icon(icon, size: 18, color: AppColors.primary),
-                ),
-                const SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey.shade500,
-                        fontWeight: FontWeight.w500,
-                      ),
+              Row(
+                children: [
+                  Text(
+                    context.l10n.localeName == 'ar' ? 'تغيير' : 'Change',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: (hasError && !isSelected) ? Colors.red.shade600 : AppColors.primary,
+                      fontWeight: FontWeight.bold,
                     ),
-                    Text(
-                      dateStr,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            Row(
-              children: [
-                Text(
-                  context.l10n.localeName == 'ar' ? 'تغيير' : 'Change',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
                   ),
-                ),
-                const SizedBox(width: 4),
-                const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppColors.primary),
-              ],
-            ),
-          ],
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded, 
+                    size: 12, 
+                    color: (hasError && !isSelected) ? Colors.red.shade600 : AppColors.primary,
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -245,9 +285,13 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
 
   @override
   Widget build(BuildContext context) {
-    final startDateStr = _isHijriMode 
-        ? '${_hijriDate.hDay} ${_hijriDate.longMonthName} ${_hijriDate.hYear} هـ'
-        : DateFormat('EEEE، d MMMM yyyy', Localizations.localeOf(context).languageCode).format(_selectedDate);
+    final hasDate = widget.selectedDate != null;
+
+    final startDateStr = hasDate
+        ? (_isHijriMode 
+            ? '${_hijriDate.hDay} ${_hijriDate.longMonthName} ${_hijriDate.hYear} هـ'
+            : DateFormat('EEEE، d MMMM yyyy', Localizations.localeOf(context).languageCode).format(_selectedDate))
+        : (Localizations.localeOf(context).languageCode == 'ar' ? 'انقر لاختيار التاريخ...' : 'Tap to select date...');
 
     final endDateStr = _isHijriMode 
         ? '${_endHijriDate.hDay} ${_endHijriDate.longMonthName} ${_endHijriDate.hYear} هـ'
@@ -259,9 +303,11 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
         // 📅 حاوية تاريخ البدء
         _buildDateBox(
           context: context,
-          label: context.l10n.localeName == 'ar' ? 'تاريخ البدء' : 'Start Date',
+          label: context.l10n.localeName == 'ar' ? 'تاريخ الموعد' : 'Event Date',
           dateStr: startDateStr,
           icon: Icons.edit_calendar_rounded,
+          isSelected: hasDate,
+          hasError: widget.hasError,
           onTap: () {
             if (_isHijriMode) {
               _showHijriPicker();
