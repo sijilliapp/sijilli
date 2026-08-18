@@ -1069,36 +1069,7 @@ class AddEventProvider extends ChangeNotifier {
 
   // Form Actions
   void clearForm() {
-    _selectedDate = DateTime.now();
-    _selectedTime = null;
-    _duration = 45;
-    _selectedEndDate = DateTime.now();
-    _selectedUsers.clear();
-    _isRecurring = false;
-    _isSaving = false;
-    _privacy = _lastSelectedPrivacy;
-    _title = '';
-    
-    // Reload pinned location if active
-    if (_pinAddress) {
-      // Synchronously access because box is already open
-      final box = Hive.box('appointment_drafts');
-      _location = box.get('pinned_location', defaultValue: '');
-      _building = box.get('pinned_building', defaultValue: '');
-      _coordinates = box.get('pinned_coordinates', defaultValue: '');
-    } else {
-      _location = '';
-      _building = '';
-      _coordinates = '';
-    }
-
-    _description = '';
-    _suggestions = [];
-    _pivotSuggestions = [];
-    _draftService.clearDraft();
-    _ignoreConflictCheck = false; 
-    _hasConflict = false;
-    notifyListeners();
+    resetForm();
   }
 
   bool hasFormData(String title, String location, String building) {
@@ -1245,9 +1216,7 @@ class AddEventProvider extends ChangeNotifier {
         await box.put('pinned_coordinates', _coordinates);
       }
 
-      _draftService.clearDraft();
-      _ignoreConflictCheck = true;
-      _hasConflict = false;
+      resetForm();
       return null;
     } catch (e) {
       _ignoreConflictCheck = false;
@@ -1258,5 +1227,37 @@ class AddEventProvider extends ChangeNotifier {
         notifyListeners();
       }
     }
+  }
+
+  /// Resets all form fields and drafts to a clean empty state
+  void resetForm() {
+    _title = '';
+    _location = '';
+    _building = '';
+    _coordinates = '';
+    _description = '';
+    _selectedDate = null;
+    _selectedTime = null;
+    _selectedEndDate = null;
+    _duration = 45;
+    _selectedUsers.clear();
+    _isHijri = false;
+    _generateInviteLink = false;
+    _generatedInviteToken = null;
+    _isRecurring = false;
+    _recurrenceType = 'daily';
+    _recurrenceCount = 3;
+    _isFirstComeFirstServed = false;
+    _pinAddress = false;
+    _hasConflict = false;
+    _ignoreConflictCheck = false;
+    _editingId = null;
+
+    _suggestions = [];
+    _pivotSuggestions = [];
+    _regionSuggestions = [];
+    _buildingSuggestions = [];
+
+    _draftService.clearDraft();
   }
 }

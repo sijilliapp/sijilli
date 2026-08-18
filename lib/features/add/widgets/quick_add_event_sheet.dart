@@ -225,7 +225,13 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
       return;
     }
 
-    // Dismiss sheet and show success toast ONLY after verified successful save!
+    // Clear form inputs and dismiss sheet after verified successful save!
+    _titleController.clear();
+    if (mounted) {
+      setState(() {
+        _hasTimeError = false;
+      });
+    }
     Navigator.of(context).pop(true);
     messenger.showSnackBar(
       SnackBar(

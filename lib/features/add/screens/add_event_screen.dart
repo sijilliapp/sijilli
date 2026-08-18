@@ -1249,21 +1249,12 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
 
   void _performClearSilent() {
     _titleController.clear();
+    _locationController.clear();
+    _buildingController.clear();
     _descriptionController.clear();
     
-    // Temporarily remove listeners to prevent updating provider with empty values on clear
-    _locationController.removeListener(_onLocationChanged);
-    _buildingController.removeListener(_onBuildingChanged);
-    
     final provider = context.read<AddEventProvider>();
-    provider.clearForm();
-    
-    _locationController.text = provider.draftLocation;
-    _buildingController.text = provider.draftBuilding;
-    
-    // Re-attach listeners
-    _locationController.addListener(_onLocationChanged);
-    _buildingController.addListener(_onBuildingChanged);
+    provider.resetForm();
   }
 
   Widget _buildConflictAlert() {
