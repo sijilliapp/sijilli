@@ -19,6 +19,8 @@ import 'package:sijilli/features/profile/screens/follows_screen.dart';
 import 'package:sijilli/features/notifications/providers/notification_provider.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
 import 'package:sijilli/core/widgets/auth_wrapper.dart';
+import 'package:sijilli/features/notifications/services/notification_service.dart';
+import 'package:sijilli/models/notification.dart';
 
 class ProfileHeader extends StatefulWidget {
   final UserModel? user;
@@ -534,144 +536,160 @@ class _ProfileHeaderState extends State<ProfileHeader> {
                 
                 const SizedBox(height: AppDimens.spaceL),
  
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (widget.isPublicView && displayUser.id != authProvider.user?.id) ...[
-                      UserFollowButton(
-                        userId: displayUser.id,
-                        isHeaderStyle: true,
-                        isPublic: displayUser.isPublic,
-                        onFollowChanged: () {
-                          try {
-                            context.read<PublicProfileProvider>().fetchData(
-                              displayUser.id,
-                              currentUserId: authProvider.user?.id,
-                            );
-                          } catch (e) {
-                            debugPrint('Error reloading PublicProfileProvider: $e');
-                          }
-                        },
-                      ),
-                    ] else ...[
-                      Consumer<NotificationProvider>(
-                        builder: (context, notifProvider, _) {
-                          final hasPending = notifProvider.pendingFollowsCount > 0;
-                          
-                          return Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: AppDimens.space),
-                                height: AppDimens.buttonHeightXS,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).cardColor,
-                                  borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
-                                  border: Border.all(color: Theme.of(context).dividerColor),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.grey.withValues(alpha: 0.05),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => FollowsScreen(userId: displayUser.id),
-                                        ),
-                                      );
-                                    },
-                                    borderRadius: BorderRadius.circular(22),
-                                    child: Directionality(
-                                      textDirection: context.l10n.localeName == 'ar' ? TextDirection.rtl : TextDirection.ltr,
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(Icons.people_outline, color: AppColors.primary, size: AppDimens.iconSizeXS),
-                                          const SizedBox(width: AppDimens.spaceTiny),
-                                          Text(
-                                            context.l10n.accreditations, 
-                                            style: TextStyle(
-                                              color: Theme.of(context).textTheme.bodyMedium?.color,
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: AppDimens.textSizeXS,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              if (hasPending)
-                                Positioned(
-                                  right: -2,
-                                  top: -2,
-                                  child: Container(
-                                    width: 12,
-                                    height: 12,
+                Consumer<PublicProfileProvider>(
+                  builder: (context, profileProvider, _) {
+                    final relationStatus = profileProvider.relationStatus;
+                    final showGreetButton = widget.isPublicView &&
+                        displayUser.id != authProvider.user?.id &&
+                        (relationStatus == 'pending' || relationStatus == 'accepted');
+
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (showGreetButton) ...[
+                          _GreetButton(
+                            targetUserId: displayUser.id,
+                            targetUserName: displayUser.name ?? '',
+                          ),
+                          const SizedBox(width: AppDimens.spaceS),
+                        ],
+                        if (widget.isPublicView && displayUser.id != authProvider.user?.id) ...[
+                          UserFollowButton(
+                            userId: displayUser.id,
+                            isHeaderStyle: true,
+                            isPublic: displayUser.isPublic,
+                            onFollowChanged: () {
+                              try {
+                                context.read<PublicProfileProvider>().fetchData(
+                                  displayUser.id,
+                                  currentUserId: authProvider.user?.id,
+                                );
+                              } catch (e) {
+                                debugPrint('Error reloading PublicProfileProvider: $e');
+                              }
+                            },
+                          ),
+                        ] else ...[
+                          Consumer<NotificationProvider>(
+                            builder: (context, notifProvider, _) {
+                              final hasPending = notifProvider.pendingFollowsCount > 0;
+                              
+                              return Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: AppDimens.space),
+                                    height: AppDimens.buttonHeightXS,
                                     decoration: BoxDecoration(
-                                      color: Colors.red,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(color: Colors.white, width: 2),
+                                      color: Theme.of(context).cardColor,
+                                      borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
+                                      border: Border.all(color: Theme.of(context).dividerColor),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.1),
-                                          blurRadius: 2,
+                                          color: Colors.grey.withValues(alpha: 0.05),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
                                         ),
                                       ],
                                     ),
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => FollowsScreen(userId: displayUser.id),
+                                            ),
+                                          );
+                                        },
+                                        borderRadius: BorderRadius.circular(22),
+                                        child: Directionality(
+                                          textDirection: context.l10n.localeName == 'ar' ? TextDirection.rtl : TextDirection.ltr,
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(Icons.people_outline, color: AppColors.primary, size: AppDimens.iconSizeXS),
+                                              const SizedBox(width: AppDimens.spaceTiny),
+                                              Text(
+                                                context.l10n.accreditations, 
+                                                style: TextStyle(
+                                                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: AppDimens.textSizeXS,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
- 
-                    const SizedBox(width: AppDimens.spaceS),
- 
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Theme.of(context).dividerColor),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withValues(alpha: 0.05),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
+                                  if (hasPending)
+                                    Positioned(
+                                      right: -2,
+                                      top: -2,
+                                      child: Container(
+                                        width: 12,
+                                        height: 12,
+                                        decoration: BoxDecoration(
+                                          color: Colors.red,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: Colors.white, width: 2),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(alpha: 0.1),
+                                              blurRadius: 2,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
                           ),
                         ],
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
-                          onTap: () {
-                            if (authProvider.user == null) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const AuthWrapper()),
-                              );
-                              return;
-                            }
-                            ProfileActionsHelper.showContactOptions(context, displayUser);
-                          },
-                          child: const Icon(Icons.link, color: AppColors.primary, size: AppDimens.iconSizeXS),
+ 
+                        const SizedBox(width: AppDimens.spaceS),
+ 
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).cardColor,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Theme.of(context).dividerColor),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withValues(alpha: 0.05),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
+                              onTap: () {
+                                if (authProvider.user == null) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const AuthWrapper()),
+                                  );
+                                  return;
+                                }
+                                ProfileActionsHelper.showContactOptions(context, displayUser);
+                              },
+                              child: const Icon(Icons.link, color: AppColors.primary, size: AppDimens.iconSizeXS),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  ],
+                      ],
+                    );
+                  },
                 ),
             ],
           ),
@@ -680,3 +698,113 @@ class _ProfileHeaderState extends State<ProfileHeader> {
     );
   }
 }
+
+class _GreetButton extends StatefulWidget {
+  final String targetUserId;
+  final String targetUserName;
+
+  const _GreetButton({
+    required this.targetUserId,
+    required this.targetUserName,
+  });
+
+  @override
+  State<_GreetButton> createState() => _GreetButtonState();
+}
+
+class _GreetButtonState extends State<_GreetButton> {
+  bool _isSending = false;
+
+  Future<void> _sendGreeting() async {
+    final authProvider = context.read<AuthProvider>();
+    if (authProvider.user == null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const AuthWrapper()),
+      );
+      return;
+    }
+
+    setState(() => _isSending = true);
+
+    try {
+      final senderName = authProvider.user?.name ?? 'شخص ما';
+      final notificationService = NotificationService();
+      
+      await notificationService.createNotification(
+        targetUserId: widget.targetUserId,
+        title: 'ألقى $senderName التحية عليك',
+        message: '👋 أرسل لك $senderName تحية من صفحتك العامة.',
+        type: NotificationType.system,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('👋 تم إرسال التحية بنجاح!'),
+            duration: Duration(seconds: 2),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('⚠️ فشل إرسال التحية: $e'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSending = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        shape: BoxShape.circle,
+        border: Border.all(color: Theme.of(context).dividerColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
+          onTap: _isSending ? null : _sendGreeting,
+          child: Center(
+            child: _isSending
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    ),
+                  )
+                : const Icon(
+                    Icons.front_hand,
+                    color: AppColors.primary,
+                    size: AppDimens.iconSizeXS,
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+

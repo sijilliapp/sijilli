@@ -24,10 +24,12 @@ class PublicProfileProvider extends ChangeNotifier {
   bool _isLoading = true;
   bool _isFollowing = false;
   bool _isFriend = false;
+  String _relationStatus = 'none';
   String? _error;
   String _searchQuery = '';
 
   UserModel? get user => _user;
+  String get relationStatus => _relationStatus;
   
   List<Appointment> get appointments {
     if (_searchQuery.isEmpty) return _appointments;
@@ -153,6 +155,7 @@ class PublicProfileProvider extends ChangeNotifier {
 
       _isFollowing = statusData['status'] == 'accepted';
       _isFriend = isSelf ? true : (statusData['isFriend'] as bool);
+      _relationStatus = statusData['status'] ?? 'none';
       
       // هل صاحب الحساب اعتمد الزائر فعلاً؟
       // من منظور getAccreditationStatus:
