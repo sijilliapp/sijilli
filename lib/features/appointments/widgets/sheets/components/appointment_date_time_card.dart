@@ -121,57 +121,105 @@ class AppointmentDateTimeCard extends StatelessWidget {
   }
 
   Widget _buildStandardLayout(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+    // Parse Time
+    final timeParts = timeLine.split(' ');
+    final timeDigits = timeParts.isNotEmpty ? timeParts[0].trim() : timeLine;
+    final timePeriod = timeParts.length > 1 ? timeParts.sublist(1).join(' ').trim() : '';
+
+    // Parse Dates
+    final dateParts = datesLine.split(' - ');
+    final date1 = dateParts.isNotEmpty ? dateParts[0].trim() : '';
+    final date2 = dateParts.length > 1 ? dateParts[1].trim() : '';
+
+    final timeWidget = SizedBox(
+      width: 75,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.center,
+            child: Text(
+              timeDigits,
+              style: TextStyle(
+                fontSize: 34,
+                fontWeight: FontWeight.w900,
+                color: AppColors.getTextPrimary(context),
+                height: 1.0,
+              ),
+              textDirection: TextDirection.ltr,
+            ),
+          ),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.center,
+            child: Text(
+              timePeriod,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: AppColors.getTextSecondary(context),
+                height: 1.0,
+                letterSpacing: timePeriod.length <= 2 ? 3.0 : 0.0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final dateWidget = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // Right: Date Stack (Expanded)
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Line 1: Day Name (Standalone)
-              Text(
-                dayName,
-                style: TextStyle(
-                  fontSize: 18, 
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.getTextPrimary(context),
-                  height: 1.2,
-                ),
-              ),
-              const SizedBox(height: 6),
-              // Line 2: Dates (Primary - Secondary) - Matched Style
-              Text(
-                datesLine,
-                style: TextStyle(
-                  fontSize: 18, // Matched DayName
-                  fontWeight: FontWeight.bold, // Matched DayName
-                  color: AppColors.getTextPrimary(context), // Matched DayName
-                  height: 1.2,
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1, 
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(width: 16),
-
-        // Left: Time (Big, Black, Hindi)
         Text(
-          timeLine,
+          dayName,
           style: TextStyle(
-            fontSize: 40, 
-            fontWeight: FontWeight.w900,
-            // Force Black in Light Mode, White in Dark Mode (TextPrimary usually handles this, 
-            // but user asked for "Black". I'll use TextPrimary which is standard for "Black" in light theme)
-            color: AppColors.getTextPrimary(context), 
-            height: 1.0,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppColors.getTextPrimary(context),
+            height: 1.1,
           ),
-          textDirection: TextDirection.ltr, 
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
+        if (date1.isNotEmpty)
+          Text(
+            date1,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.getTextSecondary(context),
+              height: 1.1,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        if (date2.isNotEmpty)
+          Text(
+            date2,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.getTextSecondary(context),
+              height: 1.1,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
       ],
+    );
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: dateWidget),
+          const SizedBox(width: 16),
+          timeWidget,
+        ],
+      ),
     );
   }
 }
