@@ -648,6 +648,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
 
     return Form(
       key: _formKey,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       child: SingleChildScrollView(
         controller: _scrollController,
         padding: const EdgeInsets.symmetric(horizontal: AppDimens.space, vertical: AppDimens.spaceXS),

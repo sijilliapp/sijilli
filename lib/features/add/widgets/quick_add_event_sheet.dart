@@ -276,6 +276,7 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Form(
         key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: SingleChildScrollView(
           physics: const ClampingScrollPhysics(),
           child: Column(
