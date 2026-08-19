@@ -339,10 +339,10 @@ class _UserFollowButtonState extends State<UserFollowButton> {
         if (_isFriend) {
           if (widget.isHeaderStyle) {
             label = context.l10n.newAppointmentAction;
-            color = isDark ? Colors.grey.shade800 : Colors.grey.shade100;
-            textColor = AppColors.primary;
+            color = AppColors.primary;
+            textColor = Colors.white;
             icon = Icons.add;
-            hasBorder = true;
+            hasBorder = false;
           } else {
             label = context.l10n.accreditedBadge;
             color = isDark ? Colors.grey.shade800 : Colors.grey.shade100;
