@@ -711,13 +711,16 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
                   return Column(
                     children: [
                       UnifiedDatePicker(
+                        key: ValueKey(provider.selectedDate),
                         selectedDate: provider.selectedDate,
                         initialDate: provider.selectedDate ?? DateTime.now(),
                         initialMode: provider.isHijri,
                         hijriAdjustment: (auth.user?.hijriAdjustment ?? 0).toInt(),
                         hasError: _hasDateError,
                         onDateChanged: (date) {
-                          if (_hasDateError) setState(() => _hasDateError = false);
+                          setState(() {
+                            _hasDateError = false;
+                          });
                           provider.setDate(date);
                         },
                         onModeChanged: provider.setIsHijri,
@@ -738,6 +741,7 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
               const SizedBox(height: 12.0),
 
               DateTimeSection(
+                key: ValueKey(provider.selectedTime),
                 isHijri: provider.isHijri,
                 duration: provider.duration,
                 selectedTime: provider.selectedTime,
@@ -748,7 +752,9 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
                 onSelectEndDate: () => _selectEndDate(provider),
                 frequentTimes: provider.frequentTimes,
                 onTimePicked: (tod) {
-                  if (_hasTimeError) setState(() => _hasTimeError = false);
+                  setState(() {
+                    _hasTimeError = false;
+                  });
                   provider.setTime(tod);
                 },
                 hasTimeError: _hasTimeError,

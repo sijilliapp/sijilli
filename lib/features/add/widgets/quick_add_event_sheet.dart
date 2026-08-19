@@ -381,13 +381,16 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
                       Consumer<AuthProvider>(
                         builder: (context, auth, _) {
                           return UnifiedDatePicker(
+                            key: ValueKey(provider.selectedDate),
                             selectedDate: provider.selectedDate,
                             initialDate: provider.selectedDate ?? DateTime.now(),
                             initialMode: provider.isHijri,
                             hijriAdjustment: (auth.user?.hijriAdjustment ?? 0).toInt(),
                             hasError: _hasDateError,
                             onDateChanged: (date) {
-                              if (_hasDateError) setState(() => _hasDateError = false);
+                              setState(() {
+                                _hasDateError = false;
+                              });
                               provider.setDate(date);
                             },
                             onModeChanged: provider.setIsHijri,
@@ -434,6 +437,7 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
 
               // Suggested Time Capsules Bar
               SuggestedTimeCapsulesBar(
+                key: ValueKey(provider.selectedTime),
                 selectedTime: provider.selectedTime,
                 hasError: _hasTimeError,
                 onSelectTime: () async {
@@ -442,13 +446,17 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
                     initialTime: provider.selectedTime ?? TimeOfDay.now(),
                   );
                   if (time != null) {
-                    if (_hasTimeError) setState(() => _hasTimeError = false);
+                    setState(() {
+                      _hasTimeError = false;
+                    });
                     provider.setTime(time);
                   }
                 },
                 frequentTimes: provider.frequentTimes,
                 onTimePicked: (tod) {
-                  if (_hasTimeError) setState(() => _hasTimeError = false);
+                  setState(() {
+                    _hasTimeError = false;
+                  });
                   provider.setTime(tod);
                 },
               ),
