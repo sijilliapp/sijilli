@@ -75,42 +75,38 @@ class SuggestedTimeCapsulesBar extends StatelessWidget {
                   iconColor = Colors.grey;
                 }
 
-                return Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: onSelectTime,
-                    borderRadius: BorderRadius.circular(16),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: bgColor,
-                        border: Border.all(
-                          color: borderColor,
-                          width: (hasTime || hasError) ? 1.5 : 1.0,
+                return GestureDetector(
+                  onTap: onSelectTime,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      border: Border.all(
+                        color: borderColor,
+                        width: (hasTime || hasError) ? 1.5 : 1.0,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.access_time_filled,
+                          size: 14,
+                          color: iconColor,
                         ),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.access_time_filled,
-                            size: 14,
-                            color: iconColor,
+                        const SizedBox(width: 4),
+                        Text(
+                          displayStr,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: textColor,
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            displayStr,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: textColor,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 );
@@ -124,34 +120,30 @@ class SuggestedTimeCapsulesBar extends StatelessWidget {
 
               final formattedStr = AppDateFormatter.formatTime12hFromValues(tod.hour, tod.minute, localeCode);
 
-              return Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => onTimePicked(tod),
-                  borderRadius: BorderRadius.circular(16),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.primary
-                          : (isDark ? Colors.grey.shade900 : Colors.grey.shade100),
-                      border: Border.all(
-                        color: isSelected ? AppColors.primary : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
-                        width: 1.0,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
+              return GestureDetector(
+                onTap: () => onTimePicked(tod),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppColors.primary
+                        : (isDark ? Colors.grey.shade900 : Colors.grey.shade100),
+                    border: Border.all(
+                      color: isSelected ? AppColors.primary : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+                      width: 1.0,
                     ),
-                    child: Text(
-                      formattedStr,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                        color: isSelected
-                            ? Colors.white
-                            : (isDark ? Colors.grey.shade300 : Colors.grey.shade800),
-                      ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    formattedStr,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      color: isSelected
+                          ? Colors.white
+                          : (isDark ? Colors.grey.shade300 : Colors.grey.shade800),
                     ),
                   ),
                 ),
