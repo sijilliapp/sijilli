@@ -131,95 +131,86 @@ class AppointmentDateTimeCard extends StatelessWidget {
     final date1 = dateParts.isNotEmpty ? dateParts[0].trim() : '';
     final date2 = dateParts.length > 1 ? dateParts[1].trim() : '';
 
-    final timeWidget = SizedBox(
-      width: 75,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.center,
-            child: Text(
-              timeDigits,
-              style: TextStyle(
-                fontSize: 34,
-                fontWeight: FontWeight.w900,
-                color: AppColors.getTextPrimary(context),
-                height: 1.0,
-              ),
-              textDirection: TextDirection.ltr,
-            ),
+    final timeWidget = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          timeDigits,
+          style: TextStyle(
+            fontSize: 40,
+            fontWeight: FontWeight.w900,
+            color: AppColors.getTextPrimary(context),
+            height: 1.0,
           ),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.center,
-            child: Text(
-              timePeriod,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: AppColors.getTextSecondary(context),
-                height: 1.0,
-                letterSpacing: timePeriod.length <= 2 ? 3.0 : 0.0,
-              ),
-            ),
+          textDirection: TextDirection.ltr,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          timePeriod,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppColors.getTextSecondary(context),
+            height: 1.0,
           ),
-        ],
-      ),
+        ),
+      ],
     );
 
     final dateWidget = Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           dayName,
           style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
+            fontSize: 17,
+            fontWeight: FontWeight.w900,
             color: AppColors.getTextPrimary(context),
-            height: 1.1,
+            height: 1.2,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        if (date1.isNotEmpty)
+        if (date1.isNotEmpty) ...[
+          const SizedBox(height: 4),
           Text(
             date1,
             style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.getTextSecondary(context),
-              height: 1.1,
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+              color: AppColors.getTextPrimary(context),
+              height: 1.2,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-        if (date2.isNotEmpty)
+        ],
+        if (date2.isNotEmpty) ...[
+          const SizedBox(height: 4),
           Text(
             date2,
             style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.getTextSecondary(context),
-              height: 1.1,
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+              color: AppColors.getTextPrimary(context),
+              height: 1.2,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
+        ],
       ],
     );
 
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(child: dateWidget),
-          const SizedBox(width: 16),
-          timeWidget,
-        ],
-      ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(child: dateWidget),
+        const SizedBox(width: 24),
+        timeWidget,
+      ],
     );
   }
 }
