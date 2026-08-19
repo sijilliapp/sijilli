@@ -3,6 +3,9 @@ import 'package:sijilli/core/constants/app_colors.dart';
 import '../../../../models/notification.dart';
 import 'package:sijilli/core/utils/app_date_formatter.dart';
 import 'package:sijilli/core/extensions/context_l10n.dart';
+import 'package:sijilli/features/settings/services/pb_user_service.dart';
+import 'package:sijilli/features/home/screens/public_profile_screen.dart';
+import 'package:sijilli/models/user.dart';
 
 class NotificationItem extends StatelessWidget {
   final NotificationModel notification;
@@ -29,96 +32,62 @@ class NotificationItem extends StatelessWidget {
           color: isDark ? Colors.white10 : Colors.grey.shade200,
         ),
       ),
-      child: ListTile(
+      child: InkWell(
         onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: _buildIcon(context),
-        title: Text(
-          _getLocalizedTitle(notification.title, context),
-          style: TextStyle(
-            fontWeight: notification.isRead ? FontWeight.normal : FontWeight.bold,
-            color: isDark ? Colors.white : Colors.black,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SenderAvatar(
+                userId: notification.relatedId,
+                notificationType: notification.type,
+                notificationTitle: notification.title,
+                notificationMessage: notification.message,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _getLocalizedTitle(notification.title, context),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: notification.isRead ? FontWeight.w600 : FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _getLocalizedMessage(notification.title, notification.message, context),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                AppDateFormatter.timeAgo(notification.created, context.l10n.localeName, context.l10n),
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
+                ),
+              ),
+            ],
           ),
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-              _getLocalizedMessage(notification.title, notification.message, context),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 13,
-                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              AppDateFormatter.timeAgo(notification.created, context.l10n.localeName, context.l10n),
-              style: TextStyle(
-                fontSize: 11,
-                color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
-              ),
-            ),
-          ],
-        ),
-        trailing: null, // Red dot is strictly for actionable invitations that require a response
       ),
-    );
-  }
-
-  Widget _buildIcon(BuildContext context) {
-    IconData icon;
-    Color color;
-
-    switch (notification.type) {
-      case NotificationType.reminder:
-        icon = Icons.alarm;
-        color = Colors.orange;
-        break;
-      case NotificationType.cancel:
-        icon = Icons.event_busy;
-        color = Colors.red;
-        break;
-      case NotificationType.system:
-        final isLike = notification.title == 'إعجابات' || notification.message.contains('إعجاب');
-        final isComment = notification.title == 'تعليقات' || notification.message.contains('تعليق') || notification.message.contains('علق');
-        if (isLike) {
-          icon = Icons.favorite;
-          color = Colors.red;
-        } else if (isComment) {
-          icon = Icons.comment;
-          color = Colors.blue;
-        } else {
-          icon = Icons.info_outline;
-          color = AppColors.primary;
-        }
-        break;
-      case NotificationType.follow:
-        icon = Icons.person_add_alt_1;
-        color = Colors.blue;
-        break;
-      case NotificationType.approvalRequest:
-        icon = Icons.rule;
-        color = Colors.purple;
-        break;
-      case NotificationType.visit:
-        icon = Icons.visibility_outlined;
-        color = Colors.teal;
-        break;
-      default:
-        icon = Icons.notifications;
-        color = Colors.grey;
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        shape: BoxShape.circle,
-      ),
-      child: Icon(icon, color: color, size: 24),
     );
   }
 
@@ -225,5 +194,159 @@ class NotificationItem extends StatelessWidget {
     }
 
     return originalMessage;
+  }
+}
+
+class SenderAvatar extends StatefulWidget {
+  final String userId;
+  final NotificationType notificationType;
+  final String notificationTitle;
+  final String notificationMessage;
+
+  const SenderAvatar({
+    super.key,
+    required this.userId,
+    required this.notificationType,
+    required this.notificationTitle,
+    required this.notificationMessage,
+  });
+
+  @override
+  State<SenderAvatar> createState() => _SenderAvatarState();
+}
+
+class _SenderAvatarState extends State<SenderAvatar> {
+  UserModel? _user;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  @override
+  void didUpdateWidget(SenderAvatar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.userId != oldWidget.userId) {
+      _loadUser();
+    }
+  }
+
+  Future<void> _loadUser() async {
+    if (widget.userId.isEmpty) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
+    try {
+      final user = await PbUserService().getPublicProfile(widget.userId);
+      if (mounted) {
+        setState(() {
+          _user = user;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  Widget _buildDefaultAvatar() {
+    IconData icon;
+    Color color;
+
+    switch (widget.notificationType) {
+      case NotificationType.reminder:
+        icon = Icons.alarm;
+        color = Colors.orange;
+        break;
+      case NotificationType.cancel:
+        icon = Icons.event_busy;
+        color = Colors.red;
+        break;
+      case NotificationType.system:
+        final isLike = widget.notificationTitle == 'إعجابات' || widget.notificationMessage.contains('إعجاب');
+        final isComment = widget.notificationTitle == 'تعليقات' || widget.notificationMessage.contains('تعليق') || widget.notificationMessage.contains('علق');
+        if (isLike) {
+          icon = Icons.favorite;
+          color = Colors.red;
+        } else if (isComment) {
+          icon = Icons.comment;
+          color = Colors.blue;
+        } else {
+          icon = Icons.info_outline;
+          color = AppColors.primary;
+        }
+        break;
+      case NotificationType.follow:
+        icon = Icons.person_add_alt_1;
+        color = Colors.blue;
+        break;
+      case NotificationType.approvalRequest:
+        icon = Icons.rule;
+        color = Colors.purple;
+        break;
+      case NotificationType.visit:
+        icon = Icons.visibility_outlined;
+        color = Colors.teal;
+        break;
+      default:
+        icon = Icons.notifications;
+        color = Colors.grey;
+    }
+
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, color: color, size: 20),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return _buildDefaultAvatar();
+    }
+
+    final user = _user;
+    final avatarUrl = user?.getAvatarUrl('https://sijilli.pockethost.io');
+    if (user == null || user.avatar == null || user.avatar!.isEmpty || avatarUrl == null || avatarUrl.isEmpty) {
+      return GestureDetector(
+        onTap: () {
+          if (widget.userId.isNotEmpty) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => PublicProfileScreen(usernameOrId: widget.userId)),
+            );
+          }
+        },
+        child: _buildDefaultAvatar(),
+      );
+    }
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => PublicProfileScreen(usernameOrId: widget.userId)),
+        );
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(19),
+        child: Image.network(
+          avatarUrl,
+          width: 38,
+          height: 38,
+          fit: BoxFit.cover,
+          errorBuilder: (context, _, __) => _buildDefaultAvatar(),
+        ),
+      ),
+    );
   }
 }
