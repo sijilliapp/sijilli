@@ -736,6 +736,7 @@ class _GreetButtonState extends State<_GreetButton> {
         title: 'ألقى $senderName التحية عليك',
         message: '👋 أرسل لك $senderName تحية من صفحتك العامة.',
         type: NotificationType.system,
+        relatedId: authProvider.user!.id,
       );
 
       if (mounted) {
