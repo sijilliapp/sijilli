@@ -17,6 +17,7 @@ class AppointmentPrivacyToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        const SizedBox(height: AppDimens.space),
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppDimens.radiusM),
