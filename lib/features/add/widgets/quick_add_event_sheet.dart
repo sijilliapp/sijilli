@@ -47,6 +47,7 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
   bool _isTitleFocused = false;
   bool _hasDateError = false;
   bool _hasTimeError = false;
+  bool _isSavingLocally = false;
 
   bool _isInitialized = false;
 
@@ -193,12 +194,19 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
       );
       return;
     }
+
+    setState(() {
+      _isSavingLocally = true;
+    });
     
     final auth = context.read<AuthProvider>();
     final apptProvider = context.read<AppointmentProvider>();
     final globalConfig = context.read<GlobalConfigProvider>();
     
     if (auth.user == null) {
+      setState(() {
+        _isSavingLocally = false;
+      });
       messenger.showSnackBar(
         SnackBar(content: Text(context.l10n.pleaseLoginFirst)),
       );
@@ -219,7 +227,12 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
       dailyLimit: globalConfig.dailyAppointmentLimit(host),
     );
 
+    if (!mounted) return;
+
     if (result != null) {
+      setState(() {
+        _isSavingLocally = false;
+      });
       messenger.showSnackBar(
         SnackBar(
           content: Text(
@@ -235,12 +248,11 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
 
     // Clear form inputs and dismiss sheet after verified successful save!
     _titleController.clear();
-    if (mounted) {
-      setState(() {
-        _hasDateError = false;
-        _hasTimeError = false;
-      });
-    }
+    setState(() {
+      _hasDateError = false;
+      _hasTimeError = false;
+      _isSavingLocally = false;
+    });
     Navigator.of(context).pop(true);
     messenger.showSnackBar(
       SnackBar(
@@ -464,25 +476,29 @@ class _QuickAddEventSheetState extends State<QuickAddEventSheet> {
               const SizedBox(height: 18),
 
               // Single Unique Save Button (حفظ الموعد ⚡)
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 48),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  elevation: 0,
+              AnimatedScale(
+                scale: _isSavingLocally ? 0.96 : 1.0,
+                duration: const Duration(milliseconds: 100),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 48),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 0,
+                  ),
+                  onPressed: _isSavingLocally ? null : () => _saveQuickEvent(provider),
+                  child: _isSavingLocally
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                      : Text(
+                          Localizations.localeOf(context).languageCode == 'ar' ? 'حفظ الموعد ⚡' : 'Save Appointment ⚡',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
                 ),
-                onPressed: provider.isSaving ? null : () => _saveQuickEvent(provider),
-                child: provider.isSaving
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                      )
-                    : Text(
-                        Localizations.localeOf(context).languageCode == 'ar' ? 'حفظ الموعد ⚡' : 'Save Appointment ⚡',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
               ),
               const SizedBox(height: 10),
             ],
