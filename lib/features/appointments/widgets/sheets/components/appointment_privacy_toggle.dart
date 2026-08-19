@@ -17,18 +17,6 @@ class AppointmentPrivacyToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Align(
-          alignment: context.l10n.localeName == 'ar' ? Alignment.centerRight : Alignment.centerLeft,
-          child: Text(
-            context.l10n.privacyProfileTitle,
-            style: TextStyle(
-              fontSize: AppDimens.textSizeS,
-              fontWeight: FontWeight.bold,
-              color: AppColors.getTextSecondary(context),
-            ),
-          ),
-        ),
-        const SizedBox(height: AppDimens.space),
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppDimens.radiusM),
