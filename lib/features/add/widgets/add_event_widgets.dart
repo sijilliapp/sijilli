@@ -17,6 +17,7 @@ class DateTimeSection extends StatelessWidget {
   final TimeOfDay? sunsetTime; 
   final List<TimeOfDay>? frequentTimes;
   final Function(TimeOfDay)? onTimePicked;
+  final bool hasTimeError;
 
   const DateTimeSection({
     super.key,
@@ -31,6 +32,7 @@ class DateTimeSection extends StatelessWidget {
     this.sunsetTime,
     this.frequentTimes,
     this.onTimePicked,
+    this.hasTimeError = false,
   });
 
   @override
@@ -104,6 +106,7 @@ class DateTimeSection extends StatelessWidget {
               onSelectTime: onSelectTime,
               frequentTimes: frequentTimes!,
               onTimePicked: onTimePicked!,
+              hasError: hasTimeError,
             ),
           ],
           

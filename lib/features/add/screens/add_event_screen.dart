@@ -126,6 +126,9 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
   final FocusNode _buildingFocusNode = FocusNode();
   bool _isBuildingFocused = false;
 
+  bool _hasDateError = false;
+  bool _hasTimeError = false;
+
   @override
   void initState() {
     super.initState();
@@ -707,10 +710,15 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
                   return Column(
                     children: [
                       UnifiedDatePicker(
+                        selectedDate: provider.selectedDate,
                         initialDate: provider.selectedDate ?? DateTime.now(),
                         initialMode: provider.isHijri,
                         hijriAdjustment: (auth.user?.hijriAdjustment ?? 0).toInt(),
-                        onDateChanged: provider.setDate,
+                        hasError: _hasDateError,
+                        onDateChanged: (date) {
+                          if (_hasDateError) setState(() => _hasDateError = false);
+                          provider.setDate(date);
+                        },
                         onModeChanged: provider.setIsHijri,
                         showEndDate: provider.duration == 0,
                         endDate: provider.selectedEndDate ?? provider.selectedDate ?? DateTime.now(),
@@ -738,7 +746,11 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
                 endDisplay: provider.getEndDisplay(context.l10n),
                 onSelectEndDate: () => _selectEndDate(provider),
                 frequentTimes: provider.frequentTimes,
-                onTimePicked: (tod) => provider.setTime(tod),
+                onTimePicked: (tod) {
+                  if (_hasTimeError) setState(() => _hasTimeError = false);
+                  provider.setTime(tod);
+                },
+                hasTimeError: _hasTimeError,
               ),
               
               if (provider.hasConflict) ...[
@@ -869,9 +881,14 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
   }
 
   Future<void> _selectTime() async {
-    final time = await AppPickers.showStyledTimePicker(context);
+    final provider = context.read<AddEventProvider>();
+    final time = await AppPickers.showStyledTimePicker(
+      context,
+      initialTime: provider.selectedTime,
+    );
     if (time != null && mounted) {
-      context.read<AddEventProvider>().setTime(time);
+      setState(() => _hasTimeError = false);
+      provider.setTime(time);
     }
   }
 
@@ -960,31 +977,31 @@ class _AddEventScreenContentState extends State<_AddEventScreenContent> {
   }
 
   Future<void> _saveEvent() async {
-    // 1. Explicit Check for Required Attributes (beyond Form fields)
     final provider = context.read<AddEventProvider>();
-    
-    // Check Date
-    if (provider.selectedDate == null) {
-       ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(content: Text(context.l10n.pleaseSelectDate), backgroundColor: AppColors.error));
-       _scrollController.animateTo(
-         180.0,
-         duration: const Duration(milliseconds: 300),
-         curve: Curves.easeOut,
-       );
-       return;
-    }
-    
-    // Check Time
-    if (provider.selectedTime == null && provider.duration != 0) {
-       ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(content: Text(context.l10n.pleaseSelectTime), backgroundColor: AppColors.error));
-       _scrollController.animateTo(
-         240.0,
-         duration: const Duration(milliseconds: 300),
-         curve: Curves.easeOut,
-       );
-       return;
+    final isDateMissing = provider.selectedDate == null;
+    final isTimeMissing = provider.selectedTime == null && provider.duration != 0;
+
+    if (isDateMissing || isTimeMissing) {
+      setState(() {
+        _hasDateError = isDateMissing;
+        _hasTimeError = isTimeMissing;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.localeName == 'ar'
+              ? 'يرجى تحديد الحقول المطلوبة (المعلمة باللون الأحمر)'
+              : 'Please select required fields (marked in red)'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+
+      _scrollController.animateTo(
+        isDateMissing ? 180.0 : 240.0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+      return;
     }
 
     // Validate form fields, and scroll to title if empty
