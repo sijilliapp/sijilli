@@ -161,70 +161,71 @@ class DateTimeSection extends StatelessWidget {
             ),
           ),
 
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Divider(height: 1),
-          ),
-
-          InkWell(
-            onTap: onSelectEndDate,
-            borderRadius: BorderRadius.circular(8),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
-              ),
-              child: Row(
-                children: [
-                  if (!isHijri) 
-                  Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.primary,
-                        width: 6,
-                      ),
-                    ),
-                  ),
-                  if (!isHijri) const SizedBox(width: 12),
-                  
-                  Text(
-                    isHijri ? context.l10n.hijri : context.l10n.gregorian,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  
-                  const Spacer(),
-                  
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        duration == 0 ? context.l10n.endsAt : context.l10n.endTime,
-                        style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
-                      ),
-                      Text(
-                        endDisplay,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : Colors.black87,
+          if (duration > 0 && selectedTime != null) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Divider(height: 1),
+            ),
+            InkWell(
+              onTap: onSelectEndDate,
+              borderRadius: BorderRadius.circular(8),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
+                ),
+                child: Row(
+                  children: [
+                    if (!isHijri) 
+                    Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.primary,
+                          width: 6,
                         ),
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                    if (!isHijri) const SizedBox(width: 12),
+                    
+                    Text(
+                      isHijri ? context.l10n.hijri : context.l10n.gregorian,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    
+                    const Spacer(),
+                    
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          duration == 0 ? context.l10n.endsAt : context.l10n.endTime,
+                          style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                        ),
+                        Text(
+                          endDisplay,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
