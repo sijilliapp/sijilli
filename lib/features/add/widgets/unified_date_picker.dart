@@ -333,7 +333,7 @@ class _UnifiedDatePickerState extends State<UnifiedDatePicker> {
         // 📅 حاوية تاريخ الانتهاء (تنسدل فقط عند اختيار اليوم كله لتكون توأم حاوية تاريخ البدء)
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 250),
-          child: widget.showEndDate
+          child: (widget.showEndDate && hasDate)
               ? Column(
                   key: const ValueKey('end_date_container'),
                   children: [
