@@ -128,9 +128,9 @@ class NotificationProvider extends ChangeNotifier {
   Future<void> _initLocalNotifications() async {
     tz.initializeTimeZones();
 
-    // Use launcher_icon to match manifest
+    // Use the monochrome notification icon
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/launcher_icon');
+        AndroidInitializationSettings('ic_stat_onesignal_default');
 
     final DarwinInitializationSettings initializationSettingsDarwin =
         const DarwinInitializationSettings(
