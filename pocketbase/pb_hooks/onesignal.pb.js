@@ -19,9 +19,18 @@ onRecordAfterCreate((e) => {
   // 🔑 OneSignal Credentials
   const ONESIGNAL_APP_ID = "c6b787e8-372e-413a-b64a-31704ff17821";
   
-  // ⚠️ IMPORTANT: Replace this placeholder with your actual OneSignal REST API Key
-  // You can find this in OneSignal Dashboard -> Settings -> Keys & IDs -> REST API Key
-  const ONESIGNAL_REST_API_KEY = "YOUR_ONESIGNAL_REST_API_KEY";
+  // ⚠️ SECURITY NOTE: Do NOT commit your REST API Key to GitHub (GitHub Push Protection will block it).
+  // The hook will attempt to load the key from the server environment variable: 'ONESIGNAL_REST_API_KEY'
+  // Or you can configure it locally on your running server directly in this file without pushing it to GitHub.
+  let ONESIGNAL_REST_API_KEY = "YOUR_ONESIGNAL_REST_API_KEY";
+  try {
+    const envKey = $os.getenv("ONESIGNAL_REST_API_KEY");
+    if (envKey) {
+      ONESIGNAL_REST_API_KEY = envKey;
+    }
+  } catch (err) {
+    // Fallback if $os is not available
+  }
 
   if (ONESIGNAL_REST_API_KEY === "YOUR_ONESIGNAL_REST_API_KEY") {
     $app.logger().warn("⚠️ [OneSignal Hook] Please configure your actual OneSignal REST API Key in pb_hooks/onesignal.pb.js");
