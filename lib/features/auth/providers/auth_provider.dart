@@ -579,23 +579,88 @@ class AuthProvider extends ChangeNotifier {
     
     if (statusCode == 400) {
       final errorData = responseData['data'] as Map<String, dynamic>?;
-      if (errorData != null) {
-        if (errorData.containsKey('username')) return 'اسم المستخدم مأخوذ بالفعل، يرجى اختيار اسم آخر.';
-        if (errorData.containsKey('email')) {
-           final code = errorData['email']['code'];
-           if (code == 'validation_invalid_email' || code == 'validation_is_unique') {
-             return 'البريد الإلكتروني مسجل مسبقاً، يرجى استخدام بريد آخر.';
-           }
+      if (errorData != null && errorData.isNotEmpty) {
+        final List<String> errors = [];
+        errorData.forEach((field, fieldError) {
+          String? message;
+          String? code;
+          if (fieldError is Map<String, dynamic>) {
+            message = fieldError['message']?.toString();
+            code = fieldError['code']?.toString();
+          } else if (fieldError is String) {
+            message = fieldError;
+          }
+          
+          String arabicField = field;
+          if (field == 'username') {
+            arabicField = 'اسم المستخدم';
+            if (code == 'validation_is_unique') {
+              message = 'مأخوذ بالفعل، يرجى اختيار اسم مستخدم آخر.';
+            } else if (code == 'validation_invalid_username') {
+              message = 'يجب أن يحتوي فقط على أحرف وأرقام ونقاط أو شرطات سفلية.';
+            }
+          } else if (field == 'email') {
+            arabicField = 'البريد الإلكتروني';
+            if (code == 'validation_is_unique') {
+              message = 'مسجل مسبقاً، يرجى استخدام بريد آخر أو تسجيل الدخول.';
+            } else if (code == 'validation_invalid_email') {
+              message = 'صيغة البريد الإلكتروني غير صالحة.';
+            }
+          } else if (field == 'password') {
+            arabicField = 'كلمة المرور';
+            if (code == 'validation_min_length') {
+              message = 'يجب أن تكون 8 أحرف على الأقل.';
+            }
+          } else if (field == 'passwordConfirm') {
+            arabicField = 'تأكيد كلمة المرور';
+            if (code == 'validation_values_mismatch') {
+              message = 'غير متطابقة مع كلمة المرور.';
+            }
+          } else if (field == 'phone') {
+            arabicField = 'رقم الهاتف';
+            if (code == 'validation_is_unique') {
+              message = 'مسجل مسبقاً لدى مستخدم آخر.';
+            } else {
+              message = 'تأكد من إدخال رقم هاتف صحيح.';
+            }
+          } else if (field == 'name') {
+            arabicField = 'الاسم';
+          }
+          
+          if (message != null && message.isNotEmpty) {
+            if (message.contains('Must be a valid email')) {
+              message = 'صيغة البريد الإلكتروني غير صالحة.';
+            } else if (message.contains('is already in use') || message.contains('Must be unique')) {
+              message = 'مستعمل بالفعل، يرجى استخدام قيمة أخرى.';
+            } else if (message.contains('cannot be blank') || message.contains('required')) {
+              message = 'هذا الحقل مطلوب ولا يمكن تركه فارغاً.';
+            }
+            errors.add('• $arabicField: $message');
+          } else {
+            errors.add('• خطأ في حقل $arabicField');
+          }
+        });
+        return 'يرجى تصحيح الأخطاء التالية:\n${errors.join('\n')}';
+      }
+      
+      if (responseData is Map<String, dynamic> && responseData.containsKey('message')) {
+        final topMsg = responseData['message']?.toString() ?? '';
+        if (topMsg.isNotEmpty) {
+          if (topMsg.toLowerCase().contains('failed to authenticate')) {
+            return 'تأكد من صحة البريد الإلكتروني أو كلمة المرور.';
+          }
+          return topMsg;
         }
-        if (errorData.containsKey('password')) return 'كلمة المرور غير صالحة أو ضعيفة جداً.';
       }
       return 'بيانات غير صالحة، يرجى مراجعة الحقول.';
     }
     
     if (statusCode == 401) {
-      final errorData = responseData['data'] as Map<String, dynamic>?;
-      if (errorData != null && errorData.containsKey('email') && errorData['email']['code'] == 'validation_is_not_verified') {
-         return 'يرجى تأكيد بريدك الإلكتروني أولاً لتتمكن من الدخول.';
+      if (responseData is Map<String, dynamic>) {
+        final errorData = responseData['data'] as Map<String, dynamic>?;
+        if (errorData != null && errorData.containsKey('email') && errorData['email']['code'] == 'validation_is_not_verified') {
+           return 'يرجى تأكيد بريدك الإلكتروني أولاً لتتمكن من الدخول.';
+        }
       }
       return 'تأكد من صحة البريد الإلكتروني أو كلمة المرور.';
     }
