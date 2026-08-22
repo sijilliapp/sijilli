@@ -425,6 +425,13 @@ class AuthProvider extends ChangeNotifier {
     // 💾 حفظ في قاعدة البيانات المحلية (Hive)
     await _localDb.saveUser(userWithToken);
 
+    // 🔔 ربط معرف المستخدم في OneSignal لضمان استلام الإشعارات
+    try {
+      await OneSignalService.instance.loginUser(userWithToken.id);
+    } catch (err) {
+      debugPrint('⚠️ Error logging in user to OneSignal: $err');
+    }
+
     // 🔒 حفظ التوكن ومعرف المستخدم بشكل آمن (Secure Storage)
     if (userWithToken.token != null) {
       await _secureStorage.saveAuthToken(userWithToken.token!);
