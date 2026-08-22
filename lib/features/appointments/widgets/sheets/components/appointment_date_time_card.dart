@@ -34,7 +34,10 @@ class AppointmentDateTimeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isAllDay && startDay != null && endDay != null) {
-      return _buildAllDayLayout(context);
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: _buildAllDayLayout(context),
+      );
     }
     return _buildStandardLayout(context);
   }
@@ -207,9 +210,19 @@ class AppointmentDateTimeCard extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Expanded(child: dateWidget),
-        const SizedBox(width: 24),
-        timeWidget,
+        Expanded(
+          flex: 2,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: dateWidget,
+          ),
+        ),
+        Expanded(
+          flex: 1,
+          child: Center(
+            child: timeWidget,
+          ),
+        ),
       ],
     );
   }

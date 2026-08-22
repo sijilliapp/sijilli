@@ -317,7 +317,7 @@ class _InAppNotificationWidgetState extends State<_InAppNotificationWidget>
                                   fontFamily: 'NotoSansArabic',
                                   height: 1.3,
                                 ),
-                                maxLines: 2,
+                                maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ],

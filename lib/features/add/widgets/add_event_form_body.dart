@@ -1,0 +1,980 @@
+// 📍 lib/features/add/widgets/add_event_form_body.dart
+// 📝 محتوى شاشة إضافة موعد - منطق الإدخال والتحكم
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_dimens.dart';
+import '../../../core/utils/app_pickers.dart';
+import '../../../core/services/autocomplete_service.dart';
+import '../../../models/appointment.dart';
+import '../../../models/user.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../appointments/providers/appointment_provider.dart';
+import '../providers/add_event_provider.dart';
+import 'event_form_widget.dart';
+import 'unified_date_picker.dart';
+import 'invitees_widget.dart';
+import 'add_event_widgets.dart';
+import 'conflict_alert_banner.dart';
+import 'unregistered_guest_link_toggle.dart';
+import 'add_event_save_button.dart';
+import '../../appointments/widgets/atomic/user_invitee_sheet.dart';
+import '../../appointments/widgets/sheets/appointment_confirmation_sheet.dart';
+import '../../main/screens/main_screen.dart';
+import 'quick_add_event_sheet.dart';
+import '../../../core/providers/global_config_provider.dart';
+import 'package:sijilli/core/extensions/context_l10n.dart';
+import '../screens/location_picker_screen.dart';
+
+class AddEventFormBody extends StatefulWidget {
+  final Appointment? initialAppointment;
+  final UserModel? initialGuest;
+  const AddEventFormBody({super.key, this.initialAppointment, this.initialGuest});
+
+  @override
+  State<AddEventFormBody> createState() => _AddEventFormBodyState();
+}
+
+class _AddEventFormBodyState extends State<AddEventFormBody> {
+  final _formKey = GlobalKey<FormState>();
+  late final ScrollController _scrollController;
+  late final TextEditingController _titleController;
+  late final TextEditingController _locationController;
+  late final TextEditingController _buildingController;
+  late final TextEditingController _descriptionController;
+  
+  // Focus Nodes
+  final FocusNode _titleFocusNode = FocusNode();
+  bool _isTitleFocused = false;
+  
+  final FocusNode _locationFocusNode = FocusNode();
+  bool _isLocationFocused = false;
+  
+  final FocusNode _buildingFocusNode = FocusNode();
+  bool _isBuildingFocused = false;
+
+  bool _hasDateError = false;
+  bool _hasTimeError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _titleFocusNode.addListener(_onTitleFocusChanged);
+    _locationFocusNode.addListener(_onLocationFocusChanged);
+    _buildingFocusNode.addListener(_onBuildingFocusChanged);
+    
+    final appt = widget.initialAppointment;
+    
+    _titleController = TextEditingController(text: appt?.title);
+    _titleController.addListener(_onTitleChanged);
+    
+    _locationController = TextEditingController(text: appt?.region);
+    _locationController.addListener(_onLocationChanged);
+    
+    _buildingController = TextEditingController(text: appt?.cleanBuilding);
+    _buildingController.addListener(_onBuildingChanged);
+    
+    _descriptionController = TextEditingController(text: appt?.description);
+    _descriptionController.addListener(_onDescriptionChanged);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+       final addEventProvider = context.read<AddEventProvider>();
+       final appointmentProvider = context.read<AppointmentProvider>();
+       // Collect history for Location Learning
+       final history = [
+         ...appointmentProvider.appointments,
+         ...appointmentProvider.archivedAppointments,
+       ];
+       
+       final auth = context.read<AuthProvider>();
+       
+       await addEventProvider.init(widget.initialAppointment, history, currentUser: auth.user);
+       addEventProvider.initLocations(history);
+       await addEventProvider.loadSavedMode();
+       
+       if (widget.initialGuest != null) {
+          addEventProvider.addInvitee(widget.initialGuest!);
+       }
+       
+       // --- Restoring Draft to Controllers ---
+       if (widget.initialAppointment == null) {
+          if (addEventProvider.draftTitle.isNotEmpty) {
+            _titleController.text = addEventProvider.draftTitle;
+          }
+          if (addEventProvider.draftLocation.isNotEmpty) {
+            _locationController.text = addEventProvider.draftLocation;
+          }
+          if (addEventProvider.draftBuilding.isNotEmpty) {
+            _buildingController.text = addEventProvider.draftBuilding;
+          }
+          if (addEventProvider.draftDescription.isNotEmpty) {
+            _descriptionController.text = addEventProvider.draftDescription;
+          }
+       }
+
+       // Trigger suggestion calculation
+       addEventProvider.onTitleChanged(_titleController.text);
+    });
+  }
+
+  void _onTitleFocusChanged() {
+    if (_titleFocusNode.hasFocus) {
+       setState(() => _isTitleFocused = true);
+    } else {
+       Future.delayed(const Duration(milliseconds: 200), () {
+          if (mounted && !_titleFocusNode.hasFocus) {
+             setState(() => _isTitleFocused = false);
+          }
+       });
+    }
+  }
+
+  void _onTitleChanged() {
+    final text = _titleController.text;
+    context.read<AddEventProvider>().onTitleChanged(text);
+  }
+
+  void _onDescriptionChanged() {
+    final text = _descriptionController.text;
+    context.read<AddEventProvider>().onDescriptionChanged(text);
+  }
+
+  void _onWordSelected(String word) {
+    final text = _titleController.text;
+    String newText;
+    
+    if (text.isNotEmpty && !text.endsWith(' ')) {
+      final lastSpaceIndex = text.lastIndexOf(' ');
+      if (lastSpaceIndex == -1) {
+        newText = '$word ';
+      } else {
+        newText = '${text.substring(0, lastSpaceIndex + 1)}$word ';
+      }
+    } else {
+      newText = text.isEmpty ? '$word ' : '$text$word ';
+    }
+    
+    _titleFocusNode.requestFocus();
+    _titleController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
+    );
+    
+    Future.microtask(() {
+      _titleController.selection = TextSelection.collapsed(offset: newText.length);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_titleController.selection.baseOffset != newText.length || 
+          _titleController.selection.extentOffset != newText.length) {
+        _titleController.selection = TextSelection.collapsed(offset: newText.length);
+      }
+    });
+
+    final provider = context.read<AddEventProvider>();
+    provider.onTitleChanged(newText.trim());
+    provider.checkDateMatch(newText.trim());
+  }
+
+  void _onPivotSelected(PivotMatch match) {
+    final updated = '${match.fullTitle} ';
+    _titleFocusNode.requestFocus();
+    _titleController.value = TextEditingValue(
+      text: updated,
+      selection: TextSelection.collapsed(offset: updated.length),
+    );
+
+    Future.microtask(() {
+      _titleController.selection = TextSelection.collapsed(offset: updated.length);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_titleController.selection.baseOffset != updated.length || 
+          _titleController.selection.extentOffset != updated.length) {
+        _titleController.selection = TextSelection.collapsed(offset: updated.length);
+      }
+    });
+
+    final provider = context.read<AddEventProvider>();
+    provider.onTitleChanged(match.fullTitle);
+    provider.checkDateMatch(match.fullTitle);
+  }
+
+  void _onLocationFocusChanged() {
+    if (_locationFocusNode.hasFocus) {
+      setState(() => _isLocationFocused = true);
+      context.read<AddEventProvider>().updateRegionSuggestions(_locationController.text);
+    } else {
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted && !_locationFocusNode.hasFocus) {
+          setState(() => _isLocationFocused = false);
+        }
+      });
+    }
+  }
+
+  void _onBuildingFocusChanged() {
+    if (_buildingFocusNode.hasFocus) {
+      setState(() => _isBuildingFocused = true);
+      context.read<AddEventProvider>().updateBuildingSuggestions(_locationController.text, _buildingController.text);
+    } else {
+       Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted && !_buildingFocusNode.hasFocus) {
+          setState(() => _isBuildingFocused = false);
+        }
+      });
+    }
+  }
+
+  void _onLocationChanged() {
+    final text = _locationController.text;
+    context.read<AddEventProvider>().setLocation(text);
+    context.read<AddEventProvider>().updateRegionSuggestions(text);
+    if (_isBuildingFocused) {
+       context.read<AddEventProvider>().updateBuildingSuggestions(text, _buildingController.text);
+    }
+  }
+
+  void _onBuildingChanged() {
+    final text = _buildingController.text;
+    context.read<AddEventProvider>().setBuilding(text);
+    context.read<AddEventProvider>().updateBuildingSuggestions(_locationController.text, text);
+  }
+
+  void _onRegionSelected(String region) {
+    _locationFocusNode.requestFocus();
+    _locationController.value = TextEditingValue(
+      text: region,
+      selection: TextSelection.collapsed(offset: region.length),
+    );
+    Future.microtask(() {
+      _locationController.selection = TextSelection.collapsed(offset: region.length);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _locationController.selection = TextSelection.collapsed(offset: region.length);
+    });
+    context.read<AddEventProvider>().setLocation(region);
+    _buildingFocusNode.requestFocus();
+  }
+
+  void _onBuildingSelected(String building) {
+    _buildingFocusNode.requestFocus();
+    _buildingController.value = TextEditingValue(
+      text: building,
+      selection: TextSelection.collapsed(offset: building.length),
+    );
+    Future.microtask(() {
+      _buildingController.selection = TextSelection.collapsed(offset: building.length);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _buildingController.selection = TextSelection.collapsed(offset: building.length);
+    });
+    context.read<AddEventProvider>().setBuilding(building);
+  }
+
+  Future<void> _openLocationPicker(AddEventProvider provider) async {
+    double? initialLat;
+    double? initialLon;
+    final coordsText = provider.draftCoordinates;
+    if (coordsText.isNotEmpty) {
+      final coords = coordsText.split(',');
+      if (coords.length == 2) {
+        initialLat = double.tryParse(coords[0]);
+        initialLon = double.tryParse(coords[1]);
+      }
+    } else {
+      final buildingText = _buildingController.text;
+      final parts = buildingText.split('|');
+      if (parts.length > 1) {
+        final coords = parts.last.trim().split(',');
+        if (coords.length == 2) {
+          initialLat = double.tryParse(coords[0]);
+          initialLon = double.tryParse(coords[1]);
+        }
+      }
+    }
+
+    final LocationPickerResult? result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LocationPickerScreen(
+          initialLatitude: initialLat,
+          initialLongitude: initialLon,
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      _locationController.removeListener(_onLocationChanged);
+      _buildingController.removeListener(_onBuildingChanged);
+
+      if (_locationController.text.trim().isEmpty && result.region.isNotEmpty) {
+        _locationController.text = result.region;
+        provider.setLocation(result.region);
+      }
+      
+      if (_buildingController.text.trim().isEmpty && result.building.isNotEmpty) {
+        _buildingController.text = result.building;
+        provider.setBuilding(result.building);
+      }
+      
+      provider.setCoordinates('${result.latitude},${result.longitude}');
+
+      _locationController.addListener(_onLocationChanged);
+      _buildingController.addListener(_onBuildingChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    _titleFocusNode.removeListener(_onTitleFocusChanged);
+    _locationFocusNode.removeListener(_onLocationFocusChanged);
+    _buildingFocusNode.removeListener(_onBuildingFocusChanged);
+    
+    _titleFocusNode.dispose();
+    _locationFocusNode.dispose();
+    _buildingFocusNode.dispose();
+    
+    _titleController.dispose();
+    _locationController.dispose();
+    _buildingController.dispose();
+    _descriptionController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  int _lastHistoryCount = -1;
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<AddEventProvider>();
+    final apptProvider = context.watch<AppointmentProvider>();
+    final history = [...apptProvider.appointments, ...apptProvider.archivedAppointments];
+    
+    if (history.length != _lastHistoryCount) {
+      _lastHistoryCount = history.length;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          provider.refreshHistory(history);
+        }
+      });
+    }
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: _buildAppBar(provider),
+      body: _buildBody(provider),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(AddEventProvider provider) {
+    return AppBar(
+      title: Text(widget.initialAppointment != null ? context.l10n.editAppointment : context.l10n.createAppointment),
+      systemOverlayStyle: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Theme.of(context).brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: Theme.of(context).brightness == Brightness.dark ? Brightness.dark : Brightness.light,
+      ),
+      automaticallyImplyLeading: true, 
+      actions: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              provider.onTitleChanged(_titleController.text);
+              provider.setLocation(_locationController.text);
+              provider.setBuilding(_buildingController.text);
+              provider.onDescriptionChanged(_descriptionController.text);
+              provider.setMode(AddEventMode.simple);
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context, 'switch_to_quick');
+              } else {
+                QuickAddEventSheet.show(context);
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                border: Border.all(color: AppColors.primary, width: 1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.bolt, size: 13, color: AppColors.primary),
+                  SizedBox(width: 4),
+                  Text(
+                    'سريع ⚡',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: provider.isSaving ? null : _clearForm, 
+          child: Text(
+            context.l10n.clear,
+            style: TextStyle(
+              color: provider.isSaving ? Colors.grey : AppColors.primary.withValues(alpha: 0.8),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: provider.isSaving ? null : _saveEvent, 
+          child: Text(
+            context.l10n.save,
+            style: TextStyle(
+              color: provider.isSaving ? Colors.grey : AppColors.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBody(AddEventProvider provider) {
+    final durationOptions = [
+      {'label': context.l10n.duration15m, 'value': 15},
+      {'label': context.l10n.duration30m, 'value': 30},
+      {'label': context.l10n.duration45m, 'value': 45},
+      {'label': context.l10n.duration1h, 'value': 60},
+      {'label': context.l10n.duration2h, 'value': 120},
+      {'label': context.l10n.duration3h, 'value': 180},
+      {'label': context.l10n.duration6h, 'value': 360},
+      {'label': context.l10n.duration12h, 'value': 720},
+      {'label': context.l10n.durationAllDay, 'value': 0},
+    ];
+
+    final recurrenceOptions = [
+      {'label': context.l10n.recurrenceDaily, 'value': 'daily'},
+      {'label': context.l10n.recurrenceWeekly, 'value': 'weekly'},
+      {'label': context.l10n.recurrenceMonthly, 'value': 'monthly'},
+      {'label': context.l10n.recurrenceAnnual, 'value': 'annual'},
+    ];
+
+    return Form(
+      key: _formKey,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        padding: const EdgeInsets.symmetric(horizontal: AppDimens.space, vertical: AppDimens.spaceXS),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Consumer<AuthProvider>(
+              builder: (context, auth, _) {
+                final name = auth.user?.name ?? auth.user?.username ?? '';
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    '${context.l10n.you}: $name',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8.0),
+            EventFormWidget(
+              titleController: _titleController,
+              titleFocusNode: _titleFocusNode,
+              isTitleFocused: _isTitleFocused,
+              locationController: _locationController,
+              buildingController: _buildingController,
+              descriptionController: _descriptionController,
+              privacy: provider.privacy,
+              onPrivacyChanged: provider.setPrivacy,
+              titleValidator: (val) => val == null || val.trim().isEmpty ? context.l10n.fieldRequired : null,
+              suggestions: provider.suggestions,
+              onWordSelected: _onWordSelected,
+              pivotSuggestions: provider.pivotSuggestions,
+              onPivotSelected: _onPivotSelected,
+              
+              locationFocusNode: _locationFocusNode,
+              isLocationFocused: _isLocationFocused,
+              buildingFocusNode: _buildingFocusNode,
+              isBuildingFocused: _isBuildingFocused,
+              regionSuggestions: provider.regionSuggestions,
+              buildingSuggestions: provider.buildingSuggestions,
+              onRegionSelected: _onRegionSelected,
+              onBuildingSelected: _onBuildingSelected,
+              pinAddress: provider.pinAddress,
+              onPinAddressChanged: (val) => provider.setPinAddress(val),
+              onOpenLocationPicker: () => _openLocationPicker(provider),
+            ), 
+            const SizedBox(height: 12.0),
+            Consumer<AuthProvider>(
+              builder: (context, auth, _) {
+                return Column(
+                  children: [
+                    UnifiedDatePicker(
+                      key: ValueKey(provider.selectedDate),
+                      selectedDate: provider.selectedDate,
+                      initialDate: provider.selectedDate ?? DateTime.now(),
+                      initialMode: provider.isHijri,
+                      hijriAdjustment: (auth.user?.hijriAdjustment ?? 0).toInt(),
+                      hasError: _hasDateError,
+                      onDateChanged: (date) {
+                        setState(() {
+                          _hasDateError = false;
+                        });
+                        provider.setDate(date);
+                      },
+                      onModeChanged: provider.setIsHijri,
+                      showEndDate: provider.duration == 0,
+                      endDate: provider.selectedEndDate ?? provider.selectedDate ?? DateTime.now(),
+                      onEndDateChanged: provider.setEndDate,
+                    ),
+                    PrayerTimesRow(
+                      sunriseTime: provider.sunriseTime,
+                      dhuhrTime: provider.dhuhrTime,
+                      sunsetTime: provider.sunsetTime,
+                    ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 12.0),
+            DateTimeSection(
+              key: ValueKey(provider.selectedTime),
+              isHijri: provider.isHijri,
+              duration: provider.duration,
+              selectedTime: provider.selectedTime,
+              onSelectTime: _selectTime,
+              durationOptions: durationOptions,
+              onDurationChanged: provider.setDuration,
+              endDisplay: provider.getEndDisplay(context.l10n),
+              onSelectEndDate: () => _selectEndDate(provider),
+              frequentTimes: provider.frequentTimes,
+              onTimePicked: (tod) {
+                setState(() {
+                  _hasTimeError = false;
+                });
+                provider.setTime(tod);
+              },
+              hasTimeError: _hasTimeError,
+            ),
+            if (provider.hasConflict) ...[
+              const SizedBox(height: 12.0),
+              const ConflictAlertBanner(),
+            ],
+            const SizedBox(height: 12.0),
+            InviteesWidget(
+              invitees: provider.selectedUsers,
+              onAddInvitees: () => _openInviteesSelector(provider),
+              isFirstComeFirstServed: provider.isFirstComeFirstServed,
+              onFirstComeChanged: provider.toggleFirstComeFirstServed,
+              onRemoveInvitee: provider.removeInvitee,
+            ),
+            if (provider.selectedUsers.isEmpty) ...[
+              const SizedBox(height: 12.0),
+              UnregisteredGuestLinkToggle(
+                value: provider.generateInviteLink,
+                onChanged: provider.setGenerateInviteLink,
+              ),
+            ],
+            const SizedBox(height: 12.0),
+            if (provider.duration < 1440) 
+              RecurrenceSection(
+                isRecurring: provider.isRecurring,
+                onToggle: provider.toggleRecurrence,
+                recurrenceType: provider.recurrenceType,
+                recurrenceCount: provider.recurrenceCount,
+                recurrenceOptions: recurrenceOptions,
+                onTypeChanged: provider.setRecurrenceType,
+                onCountChanged: provider.setRecurrenceCount,
+              ),
+            const SizedBox(height: 12.0),
+            AddEventSaveButton(
+              isSaving: provider.isSaving,
+              onPressed: _saveEvent,
+            ),
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectTime() async {
+    final provider = context.read<AddEventProvider>();
+    final time = await AppPickers.showStyledTimePicker(
+      context,
+      initialTime: provider.selectedTime,
+    );
+    if (time != null && mounted) {
+      setState(() => _hasTimeError = false);
+      provider.setTime(time);
+    }
+  }
+
+  Future<void> _selectEndDate(AddEventProvider provider) async {
+    final auth = context.read<AuthProvider>();
+    final initialDate = provider.selectedEndDate ?? provider.selectedDate ?? DateTime.now();
+    
+    DateTime? picked;
+    if (provider.isHijri) {
+      picked = await UnifiedDatePicker.showHijriPicker(
+        context,
+        initialDate: initialDate,
+        hijriAdjustment: (auth.user?.hijriAdjustment ?? 0).toInt(),
+      );
+    } else {
+      picked = await UnifiedDatePicker.showGregorianPicker(
+        context,
+        initialDate: initialDate,
+      );
+    }
+    
+    if (picked != null) {
+      provider.setEndDate(picked);
+    }
+  }
+
+  void _openInviteesSelector(AddEventProvider provider) {
+    final auth = context.read<AuthProvider>();
+    final globalConfig = context.read<GlobalConfigProvider>();
+    final int maxGuests = globalConfig.maxGuestsCount(auth.user);
+
+    if (provider.selectedUsers.length >= maxGuests) {
+      final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+      final message = isArabic 
+          ? 'لقد وصلت إلى الحد الأقصى المسموح به للمدعوين (الحد الأقصى: $maxGuests ضيف).'
+          : 'You have reached the maximum guest limit (Max: $maxGuests guest(s)).';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: AppColors.error),
+      );
+      return;
+    }
+    
+    final tempAppt = Appointment(
+      id: '',
+      title: _titleController.text,
+      hostId: context.read<AuthProvider>().user?.id ?? '',
+      startAt: provider.selectedDate?.toUtc() ?? DateTime.now().toUtc(),
+      duration: provider.duration,
+      date: provider.selectedDate ?? DateTime.now(),
+      time: '${provider.selectedTime?.hour}:${provider.selectedTime?.minute}',
+      participants: provider.selectedUsers.map((u) => Invitation(
+        id: '', 
+        appointmentId: '', 
+        userId: u.id, 
+        status: InvitationStatus.pending,
+        user: u
+      )).toList(),
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => UserInviteeSheet(
+        appointment: tempAppt,
+        onUserSelected: (user) {
+           if (provider.selectedUsers.any((u) => u.id == user.id)) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(context.l10n.userAlreadyAdded)),
+              );
+           } else {
+              provider.addInvitee(user);
+              Navigator.pop(context);
+           }
+        },
+      ),
+    );
+  }
+
+  Future<void> _saveEvent() async {
+    final provider = context.read<AddEventProvider>();
+    final isDateMissing = provider.selectedDate == null;
+    final isTimeMissing = provider.selectedTime == null && provider.duration != 0;
+
+    if (isDateMissing || isTimeMissing) {
+      setState(() {
+        _hasDateError = isDateMissing;
+        _hasTimeError = isTimeMissing;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.localeName == 'ar'
+              ? 'يرجى تحديد الحقول المطلوبة (المعلمة باللون الأحمر)'
+              : 'Please select required fields (marked in red)'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+
+      _scrollController.animateTo(
+        isDateMissing ? 180.0 : 240.0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+      return;
+    }
+
+    if (!(_formKey.currentState?.validate() ?? false)) {
+       if (_titleController.text.trim().isEmpty) {
+         _titleFocusNode.requestFocus();
+         _scrollController.animateTo(
+           0,
+           duration: const Duration(milliseconds: 300),
+           curve: Curves.easeOut,
+         );
+       }
+       return;
+    }
+
+    final auth = context.read<AuthProvider>();
+    final apptProvider = context.read<AppointmentProvider>();
+    final globalConfig = context.read<GlobalConfigProvider>();
+    
+    if (auth.user == null) {
+       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.pleaseLoginFirst)));
+       return;
+    }
+
+    final host = auth.user;
+    final int selectedCount = provider.selectedUsers.length;
+    final int maxGuests = globalConfig.maxGuestsCount(host);
+
+    if (selectedCount > maxGuests) {
+      final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+      final message = isArabic 
+          ? 'لقد تجاوزت الحد الأقصى للمدعوين المسموح به لرتبتك (الحد الأقصى: $maxGuests ضيف).'
+          : 'You have exceeded the maximum guest limit allowed for your role (Max: $maxGuests guest(s)).';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: AppColors.error),
+      );
+      return;
+    }
+    
+    DateTime startAt;
+    if (provider.selectedTime != null) {
+      startAt = DateTime(
+         provider.selectedDate!.year,
+         provider.selectedDate!.month,
+         provider.selectedDate!.day,
+         provider.selectedTime!.hour,
+         provider.selectedTime!.minute,
+      );
+    } else {
+      startAt = provider.selectedDate ?? DateTime.now();
+    }
+
+    bool hasConflict = false;
+    if (provider.duration > 0) {
+        final conflicts = apptProvider.getConflictingAppointments(
+          startAt, 
+          provider.duration,
+          excludeId: widget.initialAppointment?.id
+        );
+        hasConflict = conflicts.isNotEmpty;
+    }
+
+     final bool confirmed = await showModalBottomSheet<bool>(
+       context: context,
+       isScrollControlled: true,
+       backgroundColor: Colors.transparent,
+       builder: (context) => AppointmentConfirmationSheet(
+         host: host,
+         invitees: provider.selectedUsers,
+         title: _titleController.text,
+         startAt: startAt,
+         duration: provider.duration,
+         isHijri: provider.isHijri,
+         hijriAdjustment: provider.hijriAdjustment.toInt(),
+         region: _locationController.text,
+         building: _buildingController.text,
+         hasConflict: hasConflict,
+         privacy: provider.privacy,
+       ),
+     ) ?? false;
+
+    if (!confirmed) return;
+
+    final error = await provider.saveEvent(
+      title: _titleController.text,
+      location: _locationController.text,
+      building: _buildingController.text,
+      description: _descriptionController.text,
+      currentUser: auth.user!,
+      appointmentProvider: apptProvider,
+      locale: context.l10n.localeName,
+      dailyLimit: globalConfig.dailyAppointmentLimit(auth.user),
+      inviteTitle: context.l10n.newInvitation,
+      inviteMessage: context.l10n.invitedYouTo(
+        auth.user?.name ?? auth.user?.username ?? context.l10n.user,
+        _titleController.text
+      ),
+    );
+    
+    if (error != null) {
+       if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: AppColors.error));
+       }
+    } else {
+      if (mounted) _showSuccessMessage();
+    }
+  }
+
+  void _showSuccessMessage() {
+    final provider = context.read<AddEventProvider>();
+    final token = provider.generatedInviteToken;
+    
+    if (token != null) {
+      _showInviteLinkDialog(token);
+    } else {
+      _performClearSilent();
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      } else {
+        context.findAncestorStateOfType<MainScreenState>()?.setIndex(0);
+      }
+    }
+  }
+
+  void _showInviteLinkDialog(String token) {
+    final inviteLink = 'https://sijilli.com/join?token=$token';
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.share, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                context.l10n.localeName == 'ar' ? 'رابط دعوة الضيف' : 'Guest Invite Link',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                context.l10n.localeName == 'ar' 
+                  ? 'تم إنشاء الموعد بنجاح! شارك هذا الرابط المؤقت مع ضيفك ليقوم بالتسجيل وقبول الدعوة مباشرة:' 
+                  : 'Appointment created successfully! Share this temporary link with your guest to sign up and accept the invitation:',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? Colors.grey.shade300 : Colors.grey.shade600,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.grey.shade900 : Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        inviteLink,
+                        style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.copy, size: 20, color: AppColors.primary),
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: inviteLink));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(context.l10n.localeName == 'ar' ? 'تم نسخ الرابط!' : 'Link copied!'),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _performClearSilent();
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                } else {
+                  context.findAncestorStateOfType<MainScreenState>()?.setIndex(0);
+                }
+              },
+              child: Text(
+                context.l10n.localeName == 'ar' ? 'إغلاق ومتابعة' : 'Close & Continue',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _clearForm() {
+    final provider = context.read<AddEventProvider>();
+    if (provider.hasFormData(_titleController.text, _locationController.text, _buildingController.text)) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(context.l10n.clearFormTitle),
+          content: Text(context.l10n.clearFormConfirmation),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(context.l10n.cancel),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _performClear();
+              },
+              child: Text(context.l10n.clear, style: const TextStyle(color: AppColors.warning)),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  void _performClear() {
+    _performClearSilent();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.l10n.formClearedSuccessfully),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+  }
+
+  void _performClearSilent() {
+    _titleController.clear();
+    _locationController.clear();
+    _buildingController.clear();
+    _descriptionController.clear();
+    final provider = context.read<AddEventProvider>();
+    provider.resetForm();
+  }
+}

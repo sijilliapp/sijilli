@@ -510,6 +510,20 @@
         "type": "bool"
       },
       {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text262807852",
+        "max": 0,
+        "min": 0,
+        "name": "apnsToken",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
         "hidden": false,
         "id": "autodate2990389176",
         "name": "created",
@@ -1161,7 +1175,8 @@
   },
   {
     "id": "pbc_1037645436",
-    "listRule": "host = @request.auth.id\n|| invitations_via_appointment.user ?= @request.auth.id",
+    "listRule": "host = @request.auth.id\n|| @collection.invitations.appointment ?= id && @collection.invitations.user ?= @request.auth.id\n|| privacy = \"public\"\n|| (\n  privacy = \"followers\"\n  && (\n    (\n      @collection.friendship.user_a ?= @request.auth.id\n      && @collection.friendship.user_b ?= host\n      && @collection.friendship.a_status = \"accepted\"\n      && @collection.friendship.b_status = \"accepted\"\n    )\n    || (\n      @collection.friendship.user_b ?= @request.auth.id\n      && @collection.friendship.user_a ?= host\n      && @collection.friendship.a_status = \"accepted\"\n      && @collection.friendship.b_status = \"accepted\"\n    )\n  )\n)",
+    "viewRule": "",
     "createRule": "host = @request.auth.id",
     "updateRule": "host = @request.auth.id || @request.auth.role = \"admin\" || invitations_via_appointment.user ?= @request.auth.id",
     "deleteRule": "host = @request.auth.id || @request.auth.role = \"admin\"",
@@ -2413,7 +2428,7 @@
   },
   {
     "id": "pbc_3554030554",
-    "listRule": "appointment.host = @request.auth.id\n|| user = @request.auth.id\n|| privacy = \"public\"\n|| (\n  privacy = \"followers\"\n  && (\n    (\n      @collection.friendship.user_a ?= @request.auth.id\n      && @collection.friendship.user_b ?= appointment.host\n      && @collection.friendship.a_status = \"accepted\"\n      && @collection.friendship.b_status = \"accepted\"\n    )\n    || (\n      @collection.friendship.user_b ?= @request.auth.id\n      && @collection.friendship.user_a ?= appointment.host\n      && @collection.friendship.a_status = \"accepted\"\n      && @collection.friendship.b_status = \"accepted\"\n    )\n  )\n)\n",
+    "listRule": "",
     "viewRule": "appointment.host = @request.auth.id\n|| user = @request.auth.id\n|| privacy = \"public\"\n|| (\n  privacy = \"followers\"\n  && (\n    (\n      @collection.friendship.user_a ?= @request.auth.id\n      && @collection.friendship.user_b ?= appointment.host\n      && @collection.friendship.a_status = \"accepted\"\n      && @collection.friendship.b_status = \"accepted\"\n    )\n    || (\n      @collection.friendship.user_b ?= @request.auth.id\n      && @collection.friendship.user_a ?= appointment.host\n      && @collection.friendship.a_status = \"accepted\"\n      && @collection.friendship.b_status = \"accepted\"\n    )\n  )\n)\n",
     "createRule": "appointment.host = @request.auth.id || user = @request.auth.id",
     "updateRule": "user = @request.auth.id || @request.auth.role = \"admin\"",
@@ -2479,21 +2494,6 @@
       },
       {
         "hidden": false,
-        "id": "select3280214280",
-        "maxSelect": 1,
-        "name": "privacy",
-        "presentable": false,
-        "required": true,
-        "system": false,
-        "type": "select",
-        "values": [
-          "public",
-          "private",
-          "followers"
-        ]
-      },
-      {
-        "hidden": false,
         "id": "select1260552569",
         "maxSelect": 1,
         "name": "post_status",
@@ -2507,6 +2507,21 @@
           "trash",
           "retwited",
           "bookmarked"
+        ]
+      },
+      {
+        "hidden": false,
+        "id": "select3280214280",
+        "maxSelect": 1,
+        "name": "privacy",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "select",
+        "values": [
+          "public",
+          "private",
+          "followers"
         ]
       },
       {

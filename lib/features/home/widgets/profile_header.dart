@@ -733,8 +733,8 @@ class _GreetButtonState extends State<_GreetButton> {
       
       await notificationService.createNotification(
         targetUserId: widget.targetUserId,
-        title: 'ألقى $senderName التحية عليك',
-        message: '👋 أرسل لك $senderName تحية من صفحتك العامة.',
+        title: 'ألقى $senderName التحية',
+        message: '👋 أرسل لك تحية.',
         type: NotificationType.system,
         relatedId: authProvider.user!.id,
       );

@@ -225,20 +225,17 @@ class _AppointmentDetailsSheetState extends State<AppointmentDetailsSheet> {
 
                     const SizedBox(height: AppDimens.spaceL),
 
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppDimens.padding),
-                      child: AppointmentDateTimeCard(
-                        dayName: _dayName,
-                        datesLine: _datesLine,
-                        timeLine: _timeLine,
-                        isAllDay: _appointment.isAllDay,
-                        startDay: _startDay,
-                        startGreg: _startGreg,
-                        startHijri: _startHijri,
-                        endDay: _endDay,
-                        endGreg: _endGreg,
-                        endHijri: _endHijri,
-                      ),
+                    AppointmentDateTimeCard(
+                      dayName: _dayName,
+                      datesLine: _datesLine,
+                      timeLine: _timeLine,
+                      isAllDay: _appointment.isAllDay,
+                      startDay: _startDay,
+                      startGreg: _startGreg,
+                      startHijri: _startHijri,
+                      endDay: _endDay,
+                      endGreg: _endGreg,
+                      endHijri: _endHijri,
                     ),
 
                     if (!_appointment.isReadOnly) ...[

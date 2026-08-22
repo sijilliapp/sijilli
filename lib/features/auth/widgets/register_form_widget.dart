@@ -1,6 +1,7 @@
 // 📍 lib/features/auth/widgets/register_form_widget.dart
 // 🧩 مكون واجهة نموذج التسجيل المطور مع التوسيم الموحد
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +12,7 @@ import 'auth_button.dart';
 import 'captcha_widget.dart';
 import 'password_strength_indicator.dart';
 import '../../../core/extensions/context_l10n.dart';
+import '../screens/privacy_policy_screen.dart';
 
 class RegisterFormWidget extends StatefulWidget {
   const RegisterFormWidget({super.key});
@@ -39,11 +41,25 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
   
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  bool _acceptTerms = false;
   bool _isCaptchaVerified = false;
+  late final TapGestureRecognizer _termsRecognizer;
+
+  @override
+  void initState() {
+    super.initState();
+    _termsRecognizer = TapGestureRecognizer()..onTap = _openTermsScreen;
+  }
+
+  void _openTermsScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()),
+    );
+  }
 
   @override
   void dispose() {
+    _termsRecognizer.dispose();
     _fullNameController.dispose();
     _usernameController.dispose();
     _emailController.dispose();
@@ -138,16 +154,7 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
       );
       return;
     }
-    if (!_acceptTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.agreeToTerms),
-          backgroundColor: Colors.orangeAccent,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
+
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
@@ -295,7 +302,7 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
             },
           ),
           const SizedBox(height: 20),
-          _buildTermsCheckbox(isDark),
+          _buildTermsText(isDark),
           const SizedBox(height: 16),
           CaptchaWidget(
             onVerified: (verified) => setState(() => _isCaptchaVerified = verified),
@@ -358,32 +365,37 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
     );
   }
 
-  Widget _buildTermsCheckbox(bool isDark) {
-    return InkWell(
-      onTap: () => setState(() => _acceptTerms = !_acceptTerms),
-      child: Row(
-        children: [
-          Checkbox(
-            value: _acceptTerms,
-            onChanged: (value) => setState(() => _acceptTerms = value ?? false),
-            activeColor: AppColors.primary,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-          ),
-          Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: TextStyle(fontSize: 14, color: isDark ? Colors.grey.shade300 : Colors.grey.shade800),
-                children: [
-                  TextSpan(text: context.l10n.iAgreeToThe),
-                  TextSpan(
-                    text: ' ${context.l10n.termsAndConditions}',
-                    style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
+  Widget _buildTermsText(bool isDark) {
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Center(
+        child: RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+              height: 1.4,
             ),
+            children: [
+              TextSpan(
+                text: isArabic
+                    ? 'تسجيلك في التطبيق يعني موافقتك على '
+                    : 'By registering, you agree to our ',
+              ),
+              TextSpan(
+                text: context.l10n.termsAndConditions,
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                  decoration: TextDecoration.underline,
+                ),
+                recognizer: _termsRecognizer,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -394,7 +406,7 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
         return AuthButton(
           text: context.l10n.registerAction,
           isLoading: authProvider.isLoading,
-          onPressed: (_acceptTerms && _isCaptchaVerified) ? _handleRegister : null,
+          onPressed: _isCaptchaVerified ? _handleRegister : null,
         );
       },
     );

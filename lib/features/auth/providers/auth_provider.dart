@@ -339,6 +339,13 @@ class AuthProvider extends ChangeNotifier {
       await _clearSession();
       await _localDb.clearUser();
       
+      // 🔔 Unmap push notification token from this user in OneSignal
+      try {
+        await OneSignalService.instance.logoutUser();
+      } catch (err) {
+        debugPrint('⚠️ Error logging out from OneSignal: $err');
+      }
+      
       // 🔒 Clear secure storage
       await _secureStorage.clearAll();
       
