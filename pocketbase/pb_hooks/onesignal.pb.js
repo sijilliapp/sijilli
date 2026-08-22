@@ -24,12 +24,16 @@ onRecordAfterCreate((e) => {
   // Or you can configure it locally on your running server directly in this file without pushing it to GitHub.
   let ONESIGNAL_REST_API_KEY = "YOUR_ONESIGNAL_REST_API_KEY";
   try {
-    const envKey = $os.getenv("ONESIGNAL_REST_API_KEY");
-    if (envKey) {
-      ONESIGNAL_REST_API_KEY = envKey;
+    if (typeof process !== "undefined" && process.env && process.env.ONESIGNAL_REST_API_KEY) {
+      ONESIGNAL_REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY;
+    } else {
+      const envKey = $os.getenv("ONESIGNAL_REST_API_KEY");
+      if (envKey) {
+        ONESIGNAL_REST_API_KEY = envKey;
+      }
     }
   } catch (err) {
-    // Fallback if $os is not available
+    // Fallback if environment access fails
   }
 
   if (ONESIGNAL_REST_API_KEY === "YOUR_ONESIGNAL_REST_API_KEY") {
