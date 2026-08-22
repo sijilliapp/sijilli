@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "168319062712",
+    "project_id": "sijilli-82f12",
+    "storage_bucket": "sijilli-82f12.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:168319062712:android:af6ee9a14286e52b9e5a4d",
+        "android_client_info": {
+          "package_name": "com.sijilli.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCU97Q6X2EDbj4IhZwzPCUnf7qQiPPHfE8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
