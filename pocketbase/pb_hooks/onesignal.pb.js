@@ -1,7 +1,5 @@
-// 📍 pocketbase/pb_hooks/onesignal.pb.js
-// 🔔 PocketBase JS Hook to automatically trigger OneSignal Push Notifications for iOS & Android
-
-onRecordAfterCreate((e) => {
+onRecordCreate((e) => {
+  e.next();
   const record = e.record;
   if (!record) return;
 
