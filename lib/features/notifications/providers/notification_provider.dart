@@ -199,6 +199,9 @@ class NotificationProvider extends ChangeNotifier {
     // Sync APNs token for iOS push notifications
     syncAPNSToken(userId);
     
+    // Sync settings to server on launch
+    _syncSettingsToServer();
+    
     // Show missed notifications that occurred while app was offline
     _showMissedNotifications();
   }
@@ -283,6 +286,7 @@ class NotificationProvider extends ChangeNotifier {
     }
 
     notifyListeners();
+    _syncSettingsToServer();
   }
 
   Future<void> setNotifyFollows(bool value) async {
@@ -290,6 +294,7 @@ class NotificationProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyNotifyFollows, value);
     notifyListeners();
+    _syncSettingsToServer();
   }
 
   Future<void> setNotifyInvites(bool value) async {
@@ -297,6 +302,7 @@ class NotificationProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyNotifyInvites, value);
     notifyListeners();
+    _syncSettingsToServer();
   }
 
   Future<void> setNotifyActive(bool value) async {
@@ -304,6 +310,7 @@ class NotificationProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyNotifyActive, value);
     notifyListeners();
+    _syncSettingsToServer();
   }
 
   Future<void> setNotifyOneDayBefore(bool value) async {
@@ -311,6 +318,7 @@ class NotificationProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyNotifyOneDayBefore, value);
     notifyListeners();
+    _syncSettingsToServer();
   }
 
   Future<void> setNotifyVisits(bool value) async {
@@ -318,6 +326,7 @@ class NotificationProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyNotifyVisits, value);
     notifyListeners();
+    _syncSettingsToServer();
   }
 
   Future<void> setNotifyBookmarks(bool value) async {
@@ -325,6 +334,7 @@ class NotificationProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyNotifyBookmarks, value);
     notifyListeners();
+    _syncSettingsToServer();
   }
 
   Future<void> setNotifyBeforeOffset(bool value) async {
@@ -332,6 +342,7 @@ class NotificationProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyNotifyBeforeOffset, value);
     notifyListeners();
+    _syncSettingsToServer();
   }
 
   Future<void> setNotifyBeforeOffsetMinutes(int value) async {
@@ -339,6 +350,7 @@ class NotificationProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_keyNotifyBeforeOffsetMinutes, value);
     notifyListeners();
+    _syncSettingsToServer();
   }
 
   Future<void> setNotifySalutes(bool value) async {
@@ -346,6 +358,7 @@ class NotificationProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyNotifySalutes, value);
     notifyListeners();
+    _syncSettingsToServer();
   }
 
   Future<void> setNotifySystem(bool value) async {
@@ -353,6 +366,7 @@ class NotificationProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyNotifySystem, value);
     notifyListeners();
+    _syncSettingsToServer();
   }
 
   Future<void> setNotifyReminders(bool value) async {
@@ -360,6 +374,37 @@ class NotificationProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyNotifyReminders, value);
     notifyListeners();
+    _syncSettingsToServer();
+  }
+
+  Future<void> _syncSettingsToServer() async {
+    final userId = _currentUserId;
+    if (userId == null || userId.isEmpty) return;
+    
+    try {
+      final pb = PocketBaseClient.instance.pb;
+      final settingsMap = {
+        'notify_all': _notifyAll,
+        'notify_follows': _notifyFollows,
+        'notify_invites': _notifyInvites,
+        'notify_active': _notifyActive,
+        'notify_one_day_before': _notifyOneDayBefore,
+        'notify_visits': _notifyVisits,
+        'notify_bookmarks': _notifyBookmarks,
+        'notify_before_offset': _notifyBeforeOffset,
+        'notify_before_offset_minutes': _notifyBeforeOffsetMinutes,
+        'notify_salutes': _notifySalutes,
+        'notify_system': _notifySystem,
+        'notify_reminders': _notifyReminders,
+      };
+      
+      await pb.collection('users').update(userId, body: {
+        'notification_settings': jsonEncode(settingsMap),
+      });
+      print('✅ [NotificationProvider] Synced notification preferences to PocketBase server.');
+    } catch (e) {
+      print('⚠️ [NotificationProvider] Failed to sync notification preferences to server: $e');
+    }
   }
 
   /// Fetch initial list

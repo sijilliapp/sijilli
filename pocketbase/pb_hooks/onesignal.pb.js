@@ -14,6 +14,54 @@ onRecordCreate((e) => {
     return;
   }
 
+  // 🛡️ check recipient notification preferences from DB
+  try {
+    const recipientUser = $app.findRecordById("users", userId);
+    const settingsStr = recipientUser.get("notification_settings");
+    if (settingsStr) {
+      const settings = JSON.parse(settingsStr);
+      
+      if (settings.notify_all === false) {
+        $app.logger().info("🔇 [OneSignal Hook] Push skipped: User " + userId + " has globally disabled notifications.");
+        return;
+      }
+
+      // Check if it is a salute (greeting)
+      const isSalute = title.indexOf("التحية") !== -1 || message.indexOf("تحية") !== -1 || message.indexOf("👋") !== -1;
+      if (isSalute && settings.notify_salutes === false) {
+        $app.logger().info("🔇 [OneSignal Hook] Push skipped: User " + userId + " has disabled salute notifications.");
+        return;
+      }
+
+      // Check follows
+      if (type === "follow" && settings.notify_follows === false) {
+        $app.logger().info("🔇 [OneSignal Hook] Push skipped: User " + userId + " has disabled follow notifications.");
+        return;
+      }
+
+      // Check invites & cancellations
+      const isInvite = type === "invite" || type === "cancel" || type === "approval_request";
+      if (isInvite && settings.notify_invites === false) {
+        $app.logger().info("🔇 [OneSignal Hook] Push skipped: User " + userId + " has disabled invite notifications.");
+        return;
+      }
+
+      // Check visits
+      if (type === "visit" && settings.notify_visits === false) {
+        $app.logger().info("🔇 [OneSignal Hook] Push skipped: User " + userId + " has disabled profile visit notifications.");
+        return;
+      }
+
+      // Check reminders
+      if (type === "reminder" && settings.notify_reminders === false) {
+        $app.logger().info("🔇 [OneSignal Hook] Push skipped: User " + userId + " has disabled reminder notifications.");
+        return;
+      }
+    }
+  } catch (err) {
+    $app.logger().warn("⚠️ [OneSignal Hook] Error loading recipient preferences for user " + userId + ": " + err.message);
+  }
+
   // 🔑 OneSignal Credentials
   const ONESIGNAL_APP_ID = "c6b787e8-372e-413a-b64a-31704ff17821";
   

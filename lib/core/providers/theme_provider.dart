@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -5,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:adhan/adhan.dart';
 import '../services/location_service.dart';
 
-class ThemeProvider extends ChangeNotifier {
+class ThemeProvider extends ChangeNotifier with WidgetsBindingObserver {
   // 'Tajawal' = خط التجوال افتراضي للمشترك الجديد
   String _fontFamily = 'Tajawal';
   static const String keyFontFamily = 'font_family';
@@ -14,6 +15,11 @@ class ThemeProvider extends ChangeNotifier {
   String _currentTheme = 'auto'; // Default to auto (System/Sunset)
   static const String keyThemeMode = 'theme_mode';
   bool _isNight = false; // For Auto Mode status
+  Timer? _timer;
+
+  ThemeProvider() {
+    WidgetsBinding.instance.addObserver(this);
+  }
 
   String get fontFamily => _fontFamily;
   String get currentTheme => _currentTheme;
@@ -24,6 +30,31 @@ class ThemeProvider extends ChangeNotifier {
     if (_currentTheme == 'dark') return ThemeMode.dark;
     // Auto (Sunset based)
     return _isNight ? ThemeMode.dark : ThemeMode.light;
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(minutes: 5), (timer) {
+      if (_currentTheme == 'auto') {
+        _checkSunset();
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _currentTheme == 'auto') {
+      _checkSunset();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _timer?.cancel();
+    super.dispose();
   }
 
   final List<String> availableFonts = [
@@ -42,6 +73,7 @@ class ThemeProvider extends ChangeNotifier {
     // Automatically check sunset if auto
     if (_currentTheme == 'auto') {
       await _checkSunset();
+      _startTimer();
     }
     
     notifyListeners();
@@ -96,6 +128,9 @@ class ThemeProvider extends ChangeNotifier {
     
     if (mode == 'auto') {
       await _checkSunset();
+      _startTimer();
+    } else {
+      _timer?.cancel();
     }
     
     notifyListeners();
