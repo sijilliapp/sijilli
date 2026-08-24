@@ -10,6 +10,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:pocketbase/pocketbase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import '../../../../models/notification.dart';
 import '../../../../models/appointment.dart';
 import '../services/notification_service.dart';
@@ -250,6 +251,16 @@ class NotificationProvider extends ChangeNotifier {
     _notifySalutes = prefs.getBool(_keyNotifySalutes) ?? true;
     _notifySystem = prefs.getBool(_keyNotifySystem) ?? true;
     _notifyReminders = prefs.getBool(_keyNotifyReminders) ?? true;
+
+    // مزامنة حالة الاشتراك مع خوادم OneSignal عند تشغيل التطبيق
+    try {
+      if (_notifyAll) {
+        OneSignal.User.pushSubscription.optIn();
+      } else {
+        OneSignal.User.pushSubscription.optOut();
+      }
+    } catch (_) {}
+
     notifyListeners();
   }
 
@@ -257,6 +268,20 @@ class NotificationProvider extends ChangeNotifier {
     _notifyAll = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyNotifyAll, value);
+    
+    // تفعيل أو إيقاف اشتراك الإشعارات بالكامل على خادم OneSignal
+    try {
+      if (value) {
+        await OneSignal.User.pushSubscription.optIn();
+        print('🔔 [OneSignal] Opted in to push notifications');
+      } else {
+        await OneSignal.User.pushSubscription.optOut();
+        print('🔇 [OneSignal] Opted out of push notifications');
+      }
+    } catch (e) {
+      print('⚠️ [OneSignal] Failed to update push subscription status: $e');
+    }
+
     notifyListeners();
   }
 
