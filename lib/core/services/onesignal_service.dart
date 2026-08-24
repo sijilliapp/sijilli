@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OneSignalService {
   static final OneSignalService instance = OneSignalService._internal();
@@ -43,8 +44,50 @@ class OneSignalService {
         debugPrint('🔔 [OneSignalService] Notification clicked: ${event.notification.title}');
       });
 
-      OneSignal.Notifications.addForegroundWillDisplayListener((event) {
+      OneSignal.Notifications.addForegroundWillDisplayListener((event) async {
         debugPrint('🔔 [OneSignalService] Foreground notification received: ${event.notification.title}');
+        
+        try {
+          final title = event.notification.title ?? '';
+          final body = event.notification.body ?? '';
+          
+          final prefs = await SharedPreferences.getInstance();
+          final notifyAll = prefs.getBool('notify_all') ?? true;
+          final notifySalutes = prefs.getBool('notify_salutes') ?? true;
+          final notifyFollows = prefs.getBool('notify_follows') ?? true;
+          final notifyInvites = prefs.getBool('notify_invites') ?? true;
+          final notifyVisits = prefs.getBool('notify_visits') ?? true;
+
+          bool shouldShow = true;
+
+          if (!notifyAll) {
+            shouldShow = false;
+          } else {
+            final isSalute = title.contains('التحية') || body.contains('تحية') || body.contains('👋');
+            final isFollow = title.contains('اعتماد') || title.contains('متابعة');
+            final isInvite = title.contains('دعوة');
+            final isVisit = title.contains('زيارة') || title.contains('تصفح') || title.contains('قرأ');
+
+            if (isSalute) {
+              shouldShow = notifySalutes;
+            } else if (isFollow) {
+              shouldShow = notifyFollows;
+            } else if (isInvite) {
+              shouldShow = notifyInvites;
+            } else if (isVisit) {
+              shouldShow = notifyVisits;
+            }
+          }
+
+          if (!shouldShow) {
+            debugPrint('🔇 [OneSignalService] Muting foreground notification: $title');
+            event.preventDefault(); // كتم الصوت ومنع العرض
+            return;
+          }
+        } catch (e) {
+          debugPrint('⚠️ [OneSignalService] Error filtering foreground push: $e');
+        }
+
         event.notification.display();
       });
 
