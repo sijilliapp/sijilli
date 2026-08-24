@@ -1303,6 +1303,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'Set a custom time to get notified before appointments';
 
   @override
+  String get notifySalutes => 'Greeting Notifications';
+
+  @override
+  String get notifySalutesDesc =>
+      'Get notified when someone sends you a salute/greeting';
+
+  @override
+  String get notifySystem => 'System Alerts';
+
+  @override
+  String get notifySystemDesc =>
+      'Get notified about system announcements and general updates';
+
+  @override
+  String get notifyReminders => 'Appointment Reminders';
+
+  @override
+  String get notifyRemindersDesc =>
+      'Get notified about appointment alerts and reminders';
+
+  @override
   String get minutes10 => '10 minutes before';
 
   @override

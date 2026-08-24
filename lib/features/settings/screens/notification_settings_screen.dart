@@ -173,6 +173,33 @@ class NotificationSettingsScreen extends StatelessWidget {
                 enabled: provider.notifyAll,
                 onChanged: (val) => provider.setNotifyVisits(val),
               ),
+
+              _buildSwitchTile(
+                context: context,
+                title: context.l10n.notifySalutes,
+                subtitle: context.l10n.notifySalutesDesc,
+                value: provider.notifySalutes,
+                enabled: provider.notifyAll,
+                onChanged: (val) => provider.setNotifySalutes(val),
+              ),
+
+              _buildSwitchTile(
+                context: context,
+                title: context.l10n.notifySystem,
+                subtitle: context.l10n.notifySystemDesc,
+                value: provider.notifySystem,
+                enabled: provider.notifyAll,
+                onChanged: (val) => provider.setNotifySystem(val),
+              ),
+
+              _buildSwitchTile(
+                context: context,
+                title: context.l10n.notifyReminders,
+                subtitle: context.l10n.notifyRemindersDesc,
+                value: provider.notifyReminders,
+                enabled: provider.notifyAll,
+                onChanged: (val) => provider.setNotifyReminders(val),
+              ),
             ],
           );
         },

@@ -1326,6 +1326,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get notifyBeforeOffsetDesc => 'تحديد وقت مسبق للتذكير بالمواعيد';
 
   @override
+  String get notifySalutes => 'إشعارات التحية';
+
+  @override
+  String get notifySalutesDesc => 'تلقي تنبيهات عندما يلقي شخص ما التحية عليك';
+
+  @override
+  String get notifySystem => 'التنبيهات العامة';
+
+  @override
+  String get notifySystemDesc => 'تلقي الإعلانات والإشعارات العامة من النظام';
+
+  @override
+  String get notifyReminders => 'تذكيرات المواعيد';
+
+  @override
+  String get notifyRemindersDesc => 'تلقي تذكيرات وتنبيهات مواعيد اللقاءات';
+
+  @override
   String get minutes10 => '10 دقائق قبل الموعد';
 
   @override

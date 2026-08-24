@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../models/notification.dart';
 import '../../../routes/app_router.dart';
+import 'notification_item.dart';
 
 /// 🔔 مدير وموفر الإشعارات داخل التطبيق (In-App Notification Banner Manager)
 class InAppNotificationBanner {
@@ -274,18 +275,12 @@ class _InAppNotificationWidgetState extends State<_InAppNotificationWidget>
                     child: Row(
                       textDirection: TextDirection.rtl,
                       children: [
-                        // الأيقونة المصممة بنعومة
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: _getIconColor().withOpacity(0.12),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            _getIcon(),
-                            color: _getIconColor(),
-                            size: 24,
-                          ),
+                        // الأيقونة أو الصورة الرمزية للمرسل
+                        SenderAvatar(
+                          userId: widget.notification.relatedId,
+                          notificationType: widget.notification.type,
+                          notificationTitle: widget.notification.title,
+                          notificationMessage: widget.notification.message,
                         ),
                         const SizedBox(width: 16),
                         // محتوى الإشعار

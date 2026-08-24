@@ -2378,6 +2378,42 @@ abstract class AppLocalizations {
   /// **'تحديد وقت مسبق للتذكير بالمواعيد'**
   String get notifyBeforeOffsetDesc;
 
+  /// No description provided for @notifySalutes.
+  ///
+  /// In ar, this message translates to:
+  /// **'إشعارات التحية'**
+  String get notifySalutes;
+
+  /// No description provided for @notifySalutesDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'تلقي تنبيهات عندما يلقي شخص ما التحية عليك'**
+  String get notifySalutesDesc;
+
+  /// No description provided for @notifySystem.
+  ///
+  /// In ar, this message translates to:
+  /// **'التنبيهات العامة'**
+  String get notifySystem;
+
+  /// No description provided for @notifySystemDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'تلقي الإعلانات والإشعارات العامة من النظام'**
+  String get notifySystemDesc;
+
+  /// No description provided for @notifyReminders.
+  ///
+  /// In ar, this message translates to:
+  /// **'تذكيرات المواعيد'**
+  String get notifyReminders;
+
+  /// No description provided for @notifyRemindersDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'تلقي تذكيرات وتنبيهات مواعيد اللقاءات'**
+  String get notifyRemindersDesc;
+
   /// No description provided for @minutes10.
   ///
   /// In ar, this message translates to:

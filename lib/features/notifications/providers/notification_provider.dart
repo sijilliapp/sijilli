@@ -66,6 +66,9 @@ class NotificationProvider extends ChangeNotifier {
         _notifyBookmarks = true;
         _notifyBeforeOffset = true;
         _notifyBeforeOffsetMinutes = 15;
+        _notifySalutes = true;
+        _notifySystem = true;
+        _notifyReminders = true;
 
         // Wipe preferences from SharedPreferences
         SharedPreferences.getInstance().then((prefs) {
@@ -78,6 +81,9 @@ class NotificationProvider extends ChangeNotifier {
           prefs.remove(_keyNotifyBookmarks);
           prefs.remove(_keyNotifyBeforeOffset);
           prefs.remove(_keyNotifyBeforeOffsetMinutes);
+          prefs.remove(_keyNotifySalutes);
+          prefs.remove(_keyNotifySystem);
+          prefs.remove(_keyNotifyReminders);
         }).catchError((e) {
           print('⚠️ Failed to clear notification preferences: $e');
         });
@@ -98,6 +104,9 @@ class NotificationProvider extends ChangeNotifier {
   static const String _keyNotifyBookmarks = 'notify_bookmarks';
   static const String _keyNotifyBeforeOffset = 'notify_before_offset';
   static const String _keyNotifyBeforeOffsetMinutes = 'notify_before_offset_minutes';
+  static const String _keyNotifySalutes = 'notify_salutes';
+  static const String _keyNotifySystem = 'notify_system';
+  static const String _keyNotifyReminders = 'notify_reminders';
 
   // Settings State
   bool _notifyAll = true;
@@ -109,6 +118,9 @@ class NotificationProvider extends ChangeNotifier {
   bool _notifyBookmarks = true;
   bool _notifyBeforeOffset = true;
   int _notifyBeforeOffsetMinutes = 15;
+  bool _notifySalutes = true;
+  bool _notifySystem = true;
+  bool _notifyReminders = true;
 
   bool get notifyAll => _notifyAll;
   bool get notifyFollows => _notifyFollows;
@@ -119,6 +131,9 @@ class NotificationProvider extends ChangeNotifier {
   bool get notifyBookmarks => _notifyBookmarks;
   bool get notifyBeforeOffset => _notifyBeforeOffset;
   int get notifyBeforeOffsetMinutes => _notifyBeforeOffsetMinutes;
+  bool get notifySalutes => _notifySalutes;
+  bool get notifySystem => _notifySystem;
+  bool get notifyReminders => _notifyReminders;
   
   // Counts
   int get unreadCount => _notifications.where((n) => !n.isRead).length;
@@ -232,6 +247,9 @@ class NotificationProvider extends ChangeNotifier {
     _notifyBookmarks = prefs.getBool(_keyNotifyBookmarks) ?? true;
     _notifyBeforeOffset = prefs.getBool(_keyNotifyBeforeOffset) ?? true;
     _notifyBeforeOffsetMinutes = prefs.getInt(_keyNotifyBeforeOffsetMinutes) ?? 15;
+    _notifySalutes = prefs.getBool(_keyNotifySalutes) ?? true;
+    _notifySystem = prefs.getBool(_keyNotifySystem) ?? true;
+    _notifyReminders = prefs.getBool(_keyNotifyReminders) ?? true;
     notifyListeners();
   }
 
@@ -295,6 +313,27 @@ class NotificationProvider extends ChangeNotifier {
     _notifyBeforeOffsetMinutes = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_keyNotifyBeforeOffsetMinutes, value);
+    notifyListeners();
+  }
+
+  Future<void> setNotifySalutes(bool value) async {
+    _notifySalutes = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyNotifySalutes, value);
+    notifyListeners();
+  }
+
+  Future<void> setNotifySystem(bool value) async {
+    _notifySystem = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyNotifySystem, value);
+    notifyListeners();
+  }
+
+  Future<void> setNotifyReminders(bool value) async {
+    _notifyReminders = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyNotifyReminders, value);
     notifyListeners();
   }
 
@@ -418,8 +457,17 @@ class NotificationProvider extends ChangeNotifier {
                 shouldShow = _notifyVisits;
                 break;
               case NotificationType.reminder:
+                shouldShow = _notifyReminders;
+                break;
               case NotificationType.system:
-                shouldShow = true; // Default match active/other?
+                final isSalute = newNotification.title.contains('التحية') || 
+                                 newNotification.message.contains('تحية') || 
+                                 newNotification.message.contains('👋');
+                if (isSalute) {
+                  shouldShow = _notifySalutes;
+                } else {
+                  shouldShow = _notifySystem;
+                }
                 break;
               default:
                 shouldShow = true;
