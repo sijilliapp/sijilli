@@ -984,56 +984,71 @@ class ArticleProvider extends ChangeNotifier {
       String deviceName = 'جهاز غير معروف';
       final deviceInfoPlugin = DeviceInfoPlugin();
 
-      if (kIsWeb) {
-        final webInfo = await deviceInfoPlugin.webBrowserInfo;
-        final userAgent = webInfo.userAgent?.toLowerCase() ?? '';
-        final browser = webInfo.browserName.toString().replaceAll('BrowserName.', '');
-        String browserName = browser;
-        if (browser.isNotEmpty) {
-          browserName = browser[0].toUpperCase() + browser.substring(1);
-        }
-        if (browserName == 'Safari') browserName = 'سفاري';
-        if (browserName == 'Chrome') browserName = 'كروم';
-        if (browserName == 'Firefox') browserName = 'فايرفوكس';
+      // التحقق من حالة تسجيل دخول الزائر
+      final pb = PocketBaseClient.instance.pb;
+      final currentUser = pb.authStore.model;
+      final isLoggedIn = pb.authStore.isValid && currentUser != null;
 
-        if (userAgent.contains('iphone')) {
-          deviceName = 'آيفون ($browserName)';
-        } else if (userAgent.contains('ipad')) {
-          deviceName = 'آيباد ($browserName)';
-        } else if (userAgent.contains('android')) {
-          deviceName = 'أندرويد ($browserName)';
-        } else if (userAgent.contains('macintosh') || userAgent.contains('mac os')) {
-          deviceName = 'ماك ($browserName)';
-        } else if (userAgent.contains('windows')) {
-          deviceName = 'ويندوز ($browserName)';
-        } else {
-          deviceName = 'متصفح $browserName';
-        }
+      if (isLoggedIn) {
+        final name = currentUser.getStringValue('name');
+        final username = currentUser.getStringValue('username');
+        deviceName = name.isNotEmpty ? name : (username.isNotEmpty ? username : 'عضو');
       } else {
-        if (Platform.isAndroid) {
-          deviceName = 'أندرويد';
-        } else if (Platform.isIOS) {
-          deviceName = 'آيفون';
-        } else if (Platform.isMacOS) {
-          deviceName = 'ماك';
-        } else if (Platform.isWindows) {
-          deviceName = 'ويندوز';
+        if (kIsWeb) {
+          final webInfo = await deviceInfoPlugin.webBrowserInfo;
+          final userAgent = webInfo.userAgent?.toLowerCase() ?? '';
+          final browser = webInfo.browserName.toString().replaceAll('BrowserName.', '');
+          String browserName = browser;
+          if (browser.isNotEmpty) {
+            browserName = browser[0].toUpperCase() + browser.substring(1);
+          }
+          if (browserName == 'Safari') browserName = 'سفاري';
+          if (browserName == 'Chrome') browserName = 'كروم';
+          if (browserName == 'Firefox') browserName = 'فايرفوكس';
+
+          if (userAgent.contains('iphone')) {
+            deviceName = 'آيفون ($browserName)';
+          } else if (userAgent.contains('ipad')) {
+            deviceName = 'آيباد ($browserName)';
+          } else if (userAgent.contains('android')) {
+            deviceName = 'أندرويد ($browserName)';
+          } else if (userAgent.contains('macintosh') || userAgent.contains('mac os')) {
+            deviceName = 'ماك ($browserName)';
+          } else if (userAgent.contains('windows')) {
+            deviceName = 'ويندوز ($browserName)';
+          } else {
+            deviceName = 'متصفح $browserName';
+          }
+        } else {
+          if (Platform.isAndroid) {
+            deviceName = 'أندرويد';
+          } else if (Platform.isIOS) {
+            deviceName = 'آيفون';
+          } else if (Platform.isMacOS) {
+            deviceName = 'ماك';
+          } else if (Platform.isWindows) {
+            deviceName = 'ويندوز';
+          }
         }
       }
 
       final notificationService = NotificationService();
       
-      // Look for a notification for this article, from this device, created today
+      // Look for a notification for this article, from this device/user, created today
       final existing = await notificationService.getNotifications(
         filter: 'user = "$authorId" && type = "visit" && related_id = "$articleId" && message ~ "$deviceName" && created >= "$startOfDay"',
         perPage: 1
       );
       
       if (existing.isEmpty) {
+        final message = isLoggedIn 
+            ? 'قام العضو $deviceName بقراءة مقالك.'
+            : 'قام $deviceName بقراءة مقالك.';
+
         await notificationService.createNotification(
           targetUserId: authorId,
           title: 'توافد الجمهور',
-          message: 'قام $deviceName بقراءة مقالك.',
+          message: message,
           type: NotificationType.visit,
           relatedId: articleId, // Store article ID to support direct redirect when tapped!
         );

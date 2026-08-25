@@ -157,8 +157,17 @@ class AppRouter {
         NerveGameSheet.show(context);
         return;
       }
-      // إذا كان معرف المقال بطول 15 حرفاً
-      if (relatedId.length == 15) {
+      // إذا كان زيارة ملف شخصي لعضو مسجل
+      final isProfileVisit = notification.message.contains('ملف');
+      
+      if (isProfileVisit && relatedId.length == 15) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PublicProfileScreen(usernameOrId: relatedId),
+          ),
+        );
+      } else if (relatedId.length == 15) {
         try {
           final articleService = PbArticleService();
           final article = await articleService.getArticleById(relatedId);
@@ -177,10 +186,6 @@ class AppRouter {
         } catch (e) {
           print('⚠️ Failed to open article details: $e');
         }
-      } else {
-        // إذا كان زيارة ملف شخصي (معرف طويل)، نفتح صفحة الملف الشخصي الخاصة بالمستخدم نفسه
-        // لأن زيارة ملفه تمت من زائر مجهول، فنكتفي بتوجيهه لقائمة الإشعارات أو لملفه الشخصي.
-        // بما أن المستخدم متواجد بالفعل، فليس هناك صفحة زائر لعرضها.
       }
     }
   }

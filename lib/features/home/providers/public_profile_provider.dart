@@ -12,6 +12,7 @@ import '../../appointments/services/pb_appointment_browse_service.dart';
 import '../../settings/services/pb_moderation_service.dart';
 import '../../notifications/services/notification_service.dart';
 import '../../../../models/notification.dart';
+import '../../../../core/services/pocketbase_client.dart';
 import '../../../../core/local/local_db_service.dart';
 
 class PublicProfileProvider extends ChangeNotifier {
@@ -248,71 +249,82 @@ class PublicProfileProvider extends ChangeNotifier {
       final dateStr = '${now.year}-${now.month}-${now.day}';
       
       String deviceName = 'جهاز غير معروف';
-      
       final deviceInfoPlugin = DeviceInfoPlugin();
       
-      if (kIsWeb) {
-        final webInfo = await deviceInfoPlugin.webBrowserInfo;
-        final userAgent = webInfo.userAgent?.toLowerCase() ?? '';
-        final browser = webInfo.browserName.toString().replaceAll('BrowserName.', '');
-        String browserName = browser;
-        if (browser.isNotEmpty) {
-          browserName = browser[0].toUpperCase() + browser.substring(1);
-        }
-        if (browserName == 'Safari') browserName = 'سفاري';
-        if (browserName == 'Chrome') browserName = 'كروم';
-        if (browserName == 'Firefox') browserName = 'فايرفوكس';
+      // التحقق من حالة تسجيل دخول الزائر
+      final pb = PocketBaseClient.instance.pb;
+      final currentUser = pb.authStore.model;
+      final isLoggedIn = pb.authStore.isValid && currentUser != null;
 
-        if (userAgent.contains('iphone')) {
-          deviceName = 'آيفون ($browserName)';
-        } else if (userAgent.contains('ipad')) {
-          deviceName = 'آيباد ($browserName)';
-        } else if (userAgent.contains('android')) {
-          deviceName = 'أندرويد ($browserName)';
-        } else if (userAgent.contains('macintosh') || userAgent.contains('mac os')) {
-          deviceName = 'ماك ($browserName)';
-        } else if (userAgent.contains('windows')) {
-          deviceName = 'ويندوز ($browserName)';
-        } else {
-          deviceName = 'متصفح $browserName';
-        }
+      if (isLoggedIn) {
+        final name = currentUser.getStringValue('name');
+        final username = currentUser.getStringValue('username');
+        deviceName = name.isNotEmpty ? name : (username.isNotEmpty ? username : 'عضو');
       } else {
-        if (Platform.isIOS) {
-          final iosInfo = await deviceInfoPlugin.iosInfo;
-          deviceName = iosInfo.name;
-        } else if (Platform.isAndroid) {
-          final androidInfo = await deviceInfoPlugin.androidInfo;
-          deviceName = androidInfo.model;
-        } else if (Platform.isMacOS) {
-          deviceName = 'ماك';
-        } else if (Platform.isWindows) {
-          deviceName = 'ويندوز';
+        if (kIsWeb) {
+          final webInfo = await deviceInfoPlugin.webBrowserInfo;
+          final userAgent = webInfo.userAgent?.toLowerCase() ?? '';
+          final browser = webInfo.browserName.toString().replaceAll('BrowserName.', '');
+          String browserName = browser;
+          if (browser.isNotEmpty) {
+            browserName = browser[0].toUpperCase() + browser.substring(1);
+          }
+          if (browserName == 'Safari') browserName = 'سفاري';
+          if (browserName == 'Chrome') browserName = 'كروم';
+          if (browserName == 'Firefox') browserName = 'فايرفوكس';
+
+          if (userAgent.contains('iphone')) {
+            deviceName = 'آيفون ($browserName)';
+          } else if (userAgent.contains('ipad')) {
+            deviceName = 'آيباد ($browserName)';
+          } else if (userAgent.contains('android')) {
+            deviceName = 'أندرويد ($browserName)';
+          } else if (userAgent.contains('macintosh') || userAgent.contains('mac os')) {
+            deviceName = 'ماك ($browserName)';
+          } else if (userAgent.contains('windows')) {
+            deviceName = 'ويندوز ($browserName)';
+          } else {
+            deviceName = 'متصفح $browserName';
+          }
+        } else {
+          if (Platform.isIOS) {
+            final iosInfo = await deviceInfoPlugin.iosInfo;
+            deviceName = iosInfo.name;
+          } else if (Platform.isAndroid) {
+            final androidInfo = await deviceInfoPlugin.androidInfo;
+            deviceName = androidInfo.model;
+          } else if (Platform.isMacOS) {
+            deviceName = 'ماك';
+          } else if (Platform.isWindows) {
+            deviceName = 'ويندوز';
+          }
         }
       }
 
-      final rawString = '$dateStr-$deviceName';
+      final uniqueIdentifier = isLoggedIn ? currentUser.id : deviceName;
+      final rawString = '$dateStr-$uniqueIdentifier';
       final bytes = utf8.encode(rawString);
       final hash = sha256.convert(bytes).toString();
       
       final notificationService = NotificationService();
       
       final existing = await notificationService.getNotifications(
-        filter: 'user = "$targetUserId" && type = "visit" && related_id = "$hash"',
+        filter: 'user = "$targetUserId" && type = "visit" && related_id = "${isLoggedIn ? currentUser.id : hash}" && created >= "$dateStr 00:00:00"',
         perPage: 1
       );
       
       if (existing.isEmpty) {
+        final message = isLoggedIn 
+            ? 'قام العضو $deviceName بتصفح ملفك الشخصي.' 
+            : 'قام $deviceName بتصفح ملفك الشخصي.';
+
         await notificationService.createNotification(
           targetUserId: targetUserId,
           title: 'توافد الجمهور',
-          message: 'قام $deviceName بتصفح ملفك الشخصي.',
+          message: message,
           type: NotificationType.visit,
-          relatedId: hash,
+          relatedId: isLoggedIn ? currentUser.id : hash, // Store user ID if logged in so profile avatar shows!
         );
-      } else {
-        // Option: Update the time of the existing visit?
-        // In PocketBase, we can't easily "touch" updated_at without changing data, 
-        // but for now 1 notification per day per device is perfect to avoid spam.
       }
       
     } catch (e) {
